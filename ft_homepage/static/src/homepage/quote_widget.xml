@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+    <!-- Insert the Quote/Announcement widget below the app icons grid on
+         the Homepage (web_responsive's Apps Menu). -->
+    <t t-inherit="web_responsive.AppsMenu" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-app-menu-list')]" position="after">
+            <FtAnnouncementsPanel/>
+            <FtQuoteWidget/>
+        </xpath>
+    </t>
+
+    <!-- Renders one entry, whatever its content type. Shared by the posts
+         row and the Announcements panel (t-call keeps the calling scope, so
+         `item` and the component's helpers are both available here). -->
+    <t t-name="ft_homepage.QuoteItemContent">
+
+        <!-- TEXT: decorative quotation marks, wrapped over several lines.
+             (It used to scroll past as a marquee, which meant only a sliver
+             of the quote was ever readable at any moment.) -->
+        <div t-if="item.content_type == 'text'" class="ft_quote_widget__media">
+            <blockquote class="ft_quote_widget__text">
+                <span class="ft_quote_widget__mark ft_quote_widget__mark--open">&#8220;</span>
+                <span class="ft_quote_widget__quote_text" t-esc="item.text_content"/>
+                <span class="ft_quote_widget__mark ft_quote_widget__mark--close">&#8221;</span>
+            </blockquote>
+            <span t-if="item.contributor" class="ft_quote_widget__contributor">
+                — <t t-esc="item.contributor"/>
+            </span>
+        </div>
+
+        <!-- IMAGE (static, not scrolled) -->
+        <div t-if="item.content_type == 'image'" class="ft_quote_widget__media">
+            <img t-att-src="item.image_url" class="ft_quote_widget__image" alt="Announcement"/>
+            <span t-if="item.contributor" class="ft_quote_widget__contributor">
+                — <t t-esc="item.contributor"/>
+            </span>
+        </div>
+
+        <!-- VIDEO: uploaded file first, else YouTube embed, else
+             a direct URL; all autoplay muted. -->
+        <div t-if="item.content_type == 'video'" class="ft_quote_widget__media">
+            <video t-if="item.video_src" class="ft_quote_widget__video" controls="controls"
+                   autoplay="autoplay" muted="muted" playsinline="playsinline" loop="loop">
+                <source t-att-src="item.video_src"/>
+            </video>
+            <iframe t-elif="isYoutube(item)"
+                    class="ft_quote_widget__video"
+                    t-att-src="youtubeEmbedUrl(item)"
+                    title="Announcement video"
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowfullscreen="allowfullscreen"/>
+            <video t-else="" class="ft_quote_widget__video" controls="controls"
+                   autoplay="autoplay" muted="muted" playsinline="playsinline">
+                <source t-att-src="item.video_url"/>
+            </video>
+            <span t-if="item.contributor" class="ft_quote_widget__contributor">
+                — <t t-esc="item.contributor"/>
+            </span>
+        </div>
+
+        <!-- SOCIAL MEDIA POST: the server already validated and
+             resolved the pasted URL/embed-code into a safe iframe
+             src (see ft.quote.announcement._ft_resolve_social_embed)
+             — this just renders it, no client-side URL parsing. -->
+        <div t-if="item.content_type == 'social'" class="ft_quote_widget__media">
+            <iframe t-if="item.social_embed_src"
+                    t-att-src="item.social_embed_src"
+                    t-attf-class="ft_quote_widget__social ft_quote_widget__social--{{item.social_platform}}"
+                    t-attf-title="{{item.social_platform}} post"
+                    allowfullscreen="allowfullscreen"/>
+            <a t-elif="item.social_link" t-att-href="item.social_link"
+               target="_blank" rel="noopener noreferrer"
+               class="ft_quote_widget__social_link">
+                View post ↗
+            </a>
+            <span t-if="item.contributor" class="ft_quote_widget__contributor">
+                — <t t-esc="item.contributor"/>
+            </span>
+        </div>
+
+    </t>
+
+    <!-- Text panel — sits to the RIGHT of the app icons grid, and carries
+         EVERY activated text entry whatever its kind (quote / announcement /
+         update). Media never lands here; it goes to the footer below. -->
+    <t t-name="ft_homepage.AnnouncementsPanel">
+        <aside class="ft_announcements" t-if="state.loaded and panelItems.length">
+            <div class="ft_announcements__title">Announcements</div>
+            <div class="ft_announcements__body">
+                <t t-foreach="panelItems" t-as="item" t-key="item.id">
+                    <!-- No title: `title` is documented as an internal label
+                         ("Org Announcement - Holiday List"), not something to
+                         show to every user. -->
+                    <div class="ft_announcements__item">
+                        <t t-call="ft_homepage.QuoteItemContent"/>
+                    </div>
+                </t>
+            </div>
+        </aside>
+    </t>
+
+    <!-- Homepage footer, full width below the icons: media cards only.
+         The quotes marquee that used to run above them is gone — all text now
+         lives in the panel top-right, so the track had nothing left to carry
+         and a scrolling strip meant only a sliver of a quote was readable at
+         any moment anyway. -->
+    <t t-name="ft_homepage.QuoteWidget">
+        <div class="ft_quote_widget" t-if="state.loaded and posts.length">
+
+            <!-- POSTS: images / videos / social embeds, laid out by count. -->
+            <div class="ft_quote_widget__posts" t-att-data-count="posts.length">
+                <t t-foreach="posts" t-as="item" t-key="item.id">
+                    <!-- The content-type modifier lets the stylesheet size a
+                         social embed differently from an image. -->
+                    <div t-attf-class="ft_quote_widget__post ft_quote_widget__post--{{item.content_type}}">
+                        <t t-call="ft_homepage.QuoteItemContent"/>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

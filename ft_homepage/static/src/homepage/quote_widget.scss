@@ -1,0 +1,337 @@
+// Homepage layout for ft_homepage's two widgets:
+//
+//   [            search bar            ]
+//   [        app icons grid       ][ TEXT PANEL ]  <- in the empty gutter
+//   [ posts: image / video / social cards -------]
+//
+// The split between the two is by CONTENT TYPE: all text goes to the panel
+// top-right whatever its kind, all media goes to the footer.
+//
+// The app icon grid is left EXACTLY as web_responsive lays it out — centred
+// in its 850px column. The announcements panel is taken out of flow and
+// pinned into the empty space to its right, so no icon ever moves.
+//
+// No CSS min()/max()/clamp() anywhere in this file: Odoo compiles SCSS with
+// libsass, which resolves min()/max() as Sass functions and fails on mixed
+// units, taking the whole backend asset bundle down with it.
+
+// ----------------------------------------------------------------------
+// Announcements panel — fixed to the right, in the space beside the icons
+// ----------------------------------------------------------------------
+.ft_announcements {
+    box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+    // Wide screens: sit in the empty gutter beside the 850px icon column.
+    //
+    // The width is DERIVED from that gutter — (100vw - 850px) / 2 — rather
+    // than being a fixed number, so there is no viewport at which the panel
+    // is too wide and lands on top of the icons. The arithmetic works out to
+    // a constant 16px clearance from the icon grid at every width:
+    //   panel left = 100vw - 16 - width = 100vw/2 + 441
+    //   grid right = (100vw + 850) / 2  = 100vw/2 + 425
+    // max-width stops it sprawling on very wide screens.
+    //
+    // .app-menu-container is `position: fixed`, so it is already a
+    // containing block for this; nothing about the icon grid is touched.
+    @media (min-width: 1400px) {
+        position: absolute;
+        right: 16px;
+        // Clears the container's 16px padding, the ~50px search bar and the
+        // 16px flex gap, lining the panel up with the top of the icon grid.
+        // The one number to nudge if the search bar's height ever changes.
+        top: 82px;
+        width: calc((100vw - 850px) / 2 - 32px);
+        max-width: 360px;
+    }
+
+    // Narrower screens: no gutter to sit in, so it takes its own line under
+    // the icons and stays right-aligned there.
+    @media (min-width: 768px) and (max-width: 1399.98px) {
+        width: 320px;
+        margin-left: auto;
+        align-self: flex-start;
+    }
+
+    &__title {
+        flex: 0 0 auto;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        opacity: 0.65;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        // Long lists scroll inside the panel instead of stretching the page.
+        max-height: 420px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    &__item {
+        min-width: 0;
+
+        + .ft_announcements__item {
+            padding-top: 14px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+    }
+
+    // Panel text is never clamped. ft.quote.announcement.TEXT_MAX_LENGTH caps
+    // the text at a length that fits here, so the box can size itself to the
+    // words instead of hiding the tail of a sentence behind an ellipsis.
+    .ft_quote_widget__text {
+        font-size: 0.95rem;
+    }
+
+    // Text-only panel, so these two only apply to media left over from before
+    // the split; kept so such an entry still renders sanely.
+    .ft_quote_widget__image {
+        max-height: 130px;
+    }
+
+    .ft_quote_widget__social {
+        height: 300px;
+    }
+
+    // Below the tablet breakpoint the panel is full width under the icons and
+    // the text can afford to stay at its normal size; on the narrowest phones
+    // it steps down so a long quote does not run to a dozen short lines.
+    @media (max-width: 575.98px) {
+        padding: 12px;
+
+        .ft_quote_widget__text {
+            font-size: 0.9rem;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------
+// Footer: media posts (image / video / social). Text never lands here.
+// ----------------------------------------------------------------------
+.ft_quote_widget {
+    width: 100%;
+    margin-top: 24px;
+    padding: 16px 0 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+    // Full-bleed: 100% below is the container's 850px content box, so the
+    // negative margins pull the footer out to the viewport edges. Both
+    // margins symmetrically, so the footer's outer width equals the column
+    // and it cannot be shifted sideways by the container's justify-content.
+    // flex-shrink MUST be 0, or the flex line shrinks it back to 850px.
+    // 24px is deducted from 100vw so a vertical scrollbar can never make the
+    // footer wide enough to trigger a horizontal one.
+    @media (min-width: 992px) {
+        flex: 0 0 auto;
+        width: calc(100vw - 24px);
+        max-width: none;
+        margin-left: calc((100% - 100vw) / 2 + 12px);
+        margin-right: calc((100% - 100vw) / 2 + 12px);
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    &__mark {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.6rem;
+        font-weight: bold;
+        line-height: 0;
+        vertical-align: middle;
+        opacity: 0.55;
+        margin: 0 4px;
+    }
+
+    &__quote_text {
+        font-weight: 500;
+    }
+
+    &__contributor {
+        font-style: normal;
+        font-weight: 600;
+        font-size: 0.85rem;
+        opacity: 0.75;
+        margin-left: 10px;
+    }
+
+    // ------------------------------------------------------------------
+    // Posts row
+    //
+    // Grid, not flex-wrap. With `flex-wrap: wrap` the browser assigns items
+    // to lines using their hypothetical size and only shrinks what is
+    // already on a line — so a card that is 40px too wide drops to its own
+    // row instead of all of them shrinking to fit. Grid tracks split the
+    // row exactly.
+    // ------------------------------------------------------------------
+    &__posts {
+        display: grid;
+        // minmax(0, ...) everywhere: without the 0 floor a track refuses to
+        // shrink below its content and the grid overflows the footer.
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    &__post {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px;
+        overflow: hidden;
+        text-align: center;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.75);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    // 1 post: centred, capped so a lone item doesn't stretch edge to edge.
+    &__posts[data-count="1"] {
+        grid-template-columns: minmax(0, 620px);
+    }
+
+    // 2 posts: a centred pair with equal spacing.
+    &__posts[data-count="2"] {
+        grid-template-columns: repeat(2, minmax(0, 520px));
+    }
+
+    // 3 posts: one centred with one on each side — three equal tracks.
+    &__posts[data-count="3"] {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    // 4 posts: four equal tracks across the full footer width.
+    &__posts[data-count="4"] {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    // ------------------------------------------------------------------
+    // Content types (shared with the announcements panel)
+    // ------------------------------------------------------------------
+    &__media {
+        width: 100%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 8px;
+    }
+
+    // Text, used by the panel beside the app icons.
+    //
+    // No line-clamp and no overflow:hidden, which is what "prevent truncation"
+    // comes down to: the box grows to whatever it is given and shows the whole
+    // quote. That is only safe because TEXT_MAX_LENGTH refuses to store text
+    // longer than the panel can hold — the two are a pair, and relaxing one
+    // without the other brings back either an ellipsis or an overflowing box.
+    &__text {
+        margin: 0;
+        width: 100%;
+        min-width: 0;
+        font-size: 1.05rem;
+        font-style: italic;
+        line-height: 1.55;
+        color: var(--o-brand-primary, #714B67);
+        // `break-word`, never `anywhere`: `anywhere` also lets the box shrink
+        // to a near-zero min-content width, breaking text one letter per line.
+        white-space: normal;
+        overflow-wrap: break-word;
+        // A pasted URL or an unbroken string of characters is the one thing a
+        // character limit cannot make fit; this keeps it inside the box rather
+        // than letting it push the panel over the app icons.
+        word-break: break-word;
+        text-align: left;
+    }
+
+    &__image {
+        max-height: 220px;
+        max-width: 100%;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    // Videos scale with their column instead of a fixed height, so 4 posts
+    // don't overflow the footer and 1 post doesn't leave a gap under itself.
+    &__video {
+        width: 100%;
+        max-width: 620px;
+        aspect-ratio: 16 / 9;
+        height: auto;
+        border: 0;
+        border-radius: 8px;
+    }
+
+    // LinkedIn/Facebook embeds render their own post text and engagement bar,
+    // so they need real height to be worth showing at all.
+    &__social {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        height: 460px;
+    }
+
+    &__posts[data-count="3"] .ft_quote_widget__social,
+    &__posts[data-count="4"] .ft_quote_widget__social {
+        height: 420px;
+    }
+
+    &__social_link {
+        display: inline-block;
+        padding: 8px 14px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--o-brand-primary, #714B67);
+    }
+
+    // ------------------------------------------------------------------
+    // Responsive
+    // ------------------------------------------------------------------
+
+    // Tablet / small laptop: 3 and 4 posts fold to two per row rather than
+    // squeezing into columns too narrow to read.
+    @media (max-width: 1399.98px) {
+        &__posts[data-count="3"],
+        &__posts[data-count="4"] {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    // Mobile: one post per row, full width.
+    @media (max-width: 767.98px) {
+        &__posts[data-count] {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        &__social {
+            height: 420px;
+        }
+
+        &__text {
+            font-size: 1rem;
+        }
+    }
+}

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_hr_dashboard.KpiCard">
+        <div class="fthr_kpi" t-att-class="{ 'fthr_kpi--clickable': clickable }"
+             t-on-click="onCardClick" t-att-title="props.tooltip">
+            <div class="fthr_kpi_icon" t-attf-style="background: {{ props.color || '#4F46E5' }}1A; color: {{ props.color || '#4F46E5' }};">
+                <i class="fa" t-att-class="props.icon || 'fa-chart-bar'"/>
+            </div>
+            <div class="fthr_kpi_body">
+                <div class="fthr_kpi_value">
+                    <span t-if="props.prefix" class="fthr_kpi_affix"><t t-esc="props.prefix"/></span><t t-esc="displayValue"/><span t-if="props.suffix" class="fthr_kpi_affix"><t t-esc="props.suffix"/></span>
+                </div>
+                <div class="fthr_kpi_title"><t t-esc="props.title"/></div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_hr_dashboard.ChartCard">
+        <div class="fthr_chart_card" t-att-class="{ 'fthr_chart_card--full': props.fullWidth }">
+            <div class="fthr_chart_head">
+                <h3 class="fthr_chart_title"><t t-esc="props.title"/></h3>
+                <small class="fthr_chart_note" t-if="props.note"><t t-esc="props.note"/></small>
+            </div>
+            <div class="fthr_chart_canvas_wrap">
+                <canvas t-ref="canvas"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_hr_dashboard.HrDashboard">
+        <div class="fthr_dashboard">
+            <div class="fthr_header">
+                <h1 class="fthr_header_title"><i class="fa fa-users me-2"/>HR Dashboard</h1>
+                <div class="fthr_header_tools">
+                    <div class="fthr_periods">
+                        <t t-foreach="periods" t-as="p" t-key="p.id">
+                            <button class="fthr_period_btn"
+                                    t-att-class="{ 'fthr_period_btn--active': state.period === p.id }"
+                                    t-on-click="() => this.onPeriodChange(p.id)">
+                                <t t-esc="p.label"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div class="fthr_custom" t-if="state.period === 'custom'">
+                        <input type="date" class="fthr_date" t-att-value="state.dateFrom"
+                               t-on-change="(ev) => this.onCustomDateChange('dateFrom', ev)"/>
+                        <span>→</span>
+                        <input type="date" class="fthr_date" t-att-value="state.dateTo"
+                               t-on-change="(ev) => this.onCustomDateChange('dateTo', ev)"/>
+                        <button class="fthr_btn fthr_btn--primary" t-on-click="applyCustomRange">Apply</button>
+                    </div>
+                    <button class="fthr_btn" t-on-click="refresh" title="Refresh"><i class="fa fa-refresh"/></button>
+                </div>
+            </div>
+
+            <div class="fthr_loading" t-if="state.loading">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+            </div>
+
+            <div t-else="" class="fthr_content">
+                <div class="fthr_kpi_grid">
+                    <KpiCard title="'Positions Open'" value="kpis.positions_open"
+                             icon="'fa-briefcase'" color="'#4F46E5'"/>
+                    <KpiCard title="'Applications'" value="kpis.applications"
+                             icon="'fa-file-text-o'" color="'#06B6D4'"/>
+                    <KpiCard title="'Interviews'" value="kpis.interviews"
+                             icon="'fa-comments-o'" color="'#8B5CF6'"/>
+                    <KpiCard title="'Hirings'" value="kpis.hirings"
+                             icon="'fa-user-plus'" color="'#10B981'"/>
+                    <KpiCard title="'Laptops'" value="kpis.laptops"
+                             icon="'fa-laptop'" color="'#F59E0B'"/>
+                    <KpiCard title="'Review'" value="kpis.review"
+                             icon="'fa-star-o'" color="'#EC4899'"
+                             tooltip="'No appraisal module installed yet.'"/>
+                </div>
+
+                <div class="fthr_chart_row">
+                    <ChartCard title="'Candidates by Status'" type="'bar'" data="charts.candidates_by_status"/>
+                    <ChartCard title="'Interviews by Status'" type="'doughnut'" data="charts.interviews_by_status"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

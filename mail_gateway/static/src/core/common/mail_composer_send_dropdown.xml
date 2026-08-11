@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <!--
+        Odoo 19 removed the `mail.MailComposerSendDropdown` component/template
+        (the send-later split button on the full composer). The matching JS patch
+        was already removed; this template inheritance has no valid parent anymore
+        and has been emptied to avoid an owl template-inheritance error.
+    -->
+</templates>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="phase_basic" model="ft.phase">
+            <field name="name">Basic</field>
+            <field name="sequence">1</field>
+        </record>
+
+        <record id="phase_intermediate" model="ft.phase">
+            <field name="name">Intermediate</field>
+            <field name="sequence">2</field>
+        </record>
+
+        <record id="phase_advanced" model="ft.phase">
+            <field name="name">Advanced</field>
+            <field name="sequence">3</field>
+        </record>
+
+    </data>
+</odoo>

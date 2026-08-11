@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sla_policy_agent,ft.helpdesk.sla.policy agent,model_ft_helpdesk_sla_policy,ft_helpdesk_core.group_ft_helpdesk_agent,1,0,0,0
+access_sla_policy_admin,ft.helpdesk.sla.policy admin,model_ft_helpdesk_sla_policy,ft_helpdesk_core.group_ft_helpdesk_admin,1,1,1,1
+access_sla_policy_user,ft.helpdesk.sla.policy user,model_ft_helpdesk_sla_policy,base.group_user,1,0,0,0
+access_sla_status_user,ft.helpdesk.sla.status user,model_ft_helpdesk_sla_status,base.group_user,1,0,0,0
+access_sla_status_agent,ft.helpdesk.sla.status agent,model_ft_helpdesk_sla_status,ft_helpdesk_core.group_ft_helpdesk_agent,1,1,1,0
+access_sla_status_admin,ft.helpdesk.sla.status admin,model_ft_helpdesk_sla_status,ft_helpdesk_core.group_ft_helpdesk_admin,1,1,1,1

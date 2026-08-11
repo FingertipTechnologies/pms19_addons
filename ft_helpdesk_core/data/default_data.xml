@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Default Categories -->
+        <record id="category_general" model="ft.helpdesk.category">
+            <field name="name">General Inquiry</field>
+            <field name="icon">fa-question-circle</field>
+            <field name="sequence">1</field>
+        </record>
+        <record id="category_technical" model="ft.helpdesk.category">
+            <field name="name">Technical Issue</field>
+            <field name="icon">fa-cog</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="category_billing" model="ft.helpdesk.category">
+            <field name="name">Billing &amp; Payments</field>
+            <field name="icon">fa-credit-card</field>
+            <field name="sequence">3</field>
+        </record>
+        <record id="category_feature_request" model="ft.helpdesk.category">
+            <field name="name">Feature Request</field>
+            <field name="icon">fa-lightbulb-o</field>
+            <field name="sequence">4</field>
+        </record>
+        <record id="category_bug_report" model="ft.helpdesk.category">
+            <field name="name">Bug Report</field>
+            <field name="icon">fa-bug</field>
+            <field name="sequence">5</field>
+        </record>
+
+        <!-- Default Ticket Types -->
+        <record id="type_question" model="ft.helpdesk.ticket.type">
+            <field name="name">Question</field>
+            <field name="icon">fa-question</field>
+            <field name="sequence">1</field>
+        </record>
+        <record id="type_incident" model="ft.helpdesk.ticket.type">
+            <field name="name">Incident</field>
+            <field name="icon">fa-exclamation-triangle</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="type_service_request" model="ft.helpdesk.ticket.type">
+            <field name="name">Service Request</field>
+            <field name="icon">fa-wrench</field>
+            <field name="sequence">3</field>
+        </record>
+        <record id="type_feedback" model="ft.helpdesk.ticket.type">
+            <field name="name">Feedback</field>
+            <field name="icon">fa-comment</field>
+            <field name="sequence">4</field>
+        </record>
+
+        <!-- Default Close Reasons -->
+        <record id="close_solved" model="ft.helpdesk.close.reason">
+            <field name="name">Solved</field>
+            <field name="sequence">1</field>
+        </record>
+        <record id="close_workaround" model="ft.helpdesk.close.reason">
+            <field name="name">Workaround Provided</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="close_third_party" model="ft.helpdesk.close.reason">
+            <field name="name">Resolved by Third Party</field>
+            <field name="sequence">3</field>
+        </record>
+        <record id="close_no_response" model="ft.helpdesk.close.reason">
+            <field name="name">Customer Not Responding</field>
+            <field name="sequence">4</field>
+        </record>
+
+        <!-- Cancel Reasons -->
+        <record id="cancel_duplicate" model="ft.helpdesk.close.reason">
+            <field name="name">Duplicate</field>
+            <field name="is_cancel_reason" eval="True"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="cancel_invalid" model="ft.helpdesk.close.reason">
+            <field name="name">Invalid / Not a Real Issue</field>
+            <field name="is_cancel_reason" eval="True"/>
+            <field name="sequence">11</field>
+        </record>
+        <record id="cancel_spam" model="ft.helpdesk.close.reason">
+            <field name="name">Spam</field>
+            <field name="is_cancel_reason" eval="True"/>
+            <field name="sequence">12</field>
+        </record>
+
+        <!-- Default Tags -->
+        <record id="tag_urgent" model="ft.helpdesk.tag">
+            <field name="name">Urgent</field>
+            <field name="color">1</field>
+        </record>
+        <record id="tag_vip" model="ft.helpdesk.tag">
+            <field name="name">VIP Customer</field>
+            <field name="color">5</field>
+        </record>
+        <record id="tag_regression" model="ft.helpdesk.tag">
+            <field name="name">Regression</field>
+            <field name="color">4</field>
+        </record>
+        <record id="tag_documentation" model="ft.helpdesk.tag">
+            <field name="name">Needs Documentation</field>
+            <field name="color">3</field>
+        </record>
+
+        <!-- Default Business Hours (9-5, Mon-Fri) -->
+        <record id="business_hours_default" model="ft.helpdesk.business.hours">
+            <field name="name">Standard Business Hours (9AM-5PM, Mon-Fri)</field>
+            <field name="timezone">UTC</field>
+        </record>
+        <record id="bh_line_mon" model="ft.helpdesk.business.hours.line">
+            <field name="business_hours_id" ref="business_hours_default"/>
+            <field name="day_of_week">0</field>
+            <field name="hour_from">9.0</field>
+            <field name="hour_to">17.0</field>
+        </record>
+        <record id="bh_line_tue" model="ft.helpdesk.business.hours.line">
+            <field name="business_hours_id" ref="business_hours_default"/>
+            <field name="day_of_week">1</field>
+            <field name="hour_from">9.0</field>
+            <field name="hour_to">17.0</field>
+        </record>
+        <record id="bh_line_wed" model="ft.helpdesk.business.hours.line">
+            <field name="business_hours_id" ref="business_hours_default"/>
+            <field name="day_of_week">2</field>
+            <field name="hour_from">9.0</field>
+            <field name="hour_to">17.0</field>
+        </record>
+        <record id="bh_line_thu" model="ft.helpdesk.business.hours.line">
+            <field name="business_hours_id" ref="business_hours_default"/>
+            <field name="day_of_week">3</field>
+            <field name="hour_from">9.0</field>
+            <field name="hour_to">17.0</field>
+        </record>
+        <record id="bh_line_fri" model="ft.helpdesk.business.hours.line">
+            <field name="business_hours_id" ref="business_hours_default"/>
+            <field name="day_of_week">4</field>
+            <field name="hour_from">9.0</field>
+            <field name="hour_to">17.0</field>
+        </record>
+
+        <!-- Default Canned Responses -->
+        <record id="canned_greeting" model="ft.helpdesk.canned.response">
+            <field name="name">Greeting</field>
+            <field name="shortcut">/greet</field>
+            <field name="category">greeting</field>
+            <field name="body"><![CDATA[
+                <p>Hello,</p>
+                <p>Thank you for reaching out to our support team. I'm reviewing your request and will get back to you shortly.</p>
+                <p>Best regards</p>
+            ]]></field>
+        </record>
+        <record id="canned_more_info" model="ft.helpdesk.canned.response">
+            <field name="name">Request More Information</field>
+            <field name="shortcut">/moreinfo</field>
+            <field name="category">info_request</field>
+            <field name="body"><![CDATA[
+                <p>Hello,</p>
+                <p>Thank you for contacting us. To better assist you, could you please provide us with the following additional information:</p>
+                <ul>
+                    <li>Steps to reproduce the issue</li>
+                    <li>Screenshots or error messages (if applicable)</li>
+                    <li>Your browser/device information</li>
+                </ul>
+                <p>This will help us investigate and resolve your issue more efficiently.</p>
+                <p>Best regards</p>
+            ]]></field>
+        </record>
+        <record id="canned_closing" model="ft.helpdesk.canned.response">
+            <field name="name">Closing Message</field>
+            <field name="shortcut">/close</field>
+            <field name="category">closing</field>
+            <field name="body"><![CDATA[
+                <p>Hello,</p>
+                <p>We're glad we could help resolve your issue. We're now closing this ticket.</p>
+                <p>If you need further assistance, feel free to open a new ticket or reply to this one to reopen it.</p>
+                <p>Thank you for choosing our support!</p>
+                <p>Best regards</p>
+            ]]></field>
+        </record>
+    </data>
+</odoo>

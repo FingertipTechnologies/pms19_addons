@@ -1,0 +1,204 @@
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <record id="review_tree" model="ir.ui.view">
+    <field name="name">review.tree</field>
+    <field name="model">review</field>
+    <field name="arch" type="xml">
+      <tree>
+        <field name="review_month"/>
+        <field name="employee_id"/>
+        <field name="role"/>
+        <field name="reviewer_id"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="review_form" model="ir.ui.view">
+    <field name="name">review.form</field>
+    <field name="model">review</field>
+    <field name="arch" type="xml">
+      <form string="Monthly Review">
+        <sheet>
+          <div class="oe_title">
+            <h1><field name="name" readonly="1"/></h1>
+          </div>
+
+          <group>
+            <group>
+              <field name="employee_id"/>
+              <field name="review_month"/>
+            </group>
+            <group>
+              <field name="role"/>
+              <field name="reviewer_id"/>
+            </group>
+          </group>
+
+          <notebook>
+            <page string="Ratings">
+
+              <group string="Common Parameters (All Roles)" colspan="2">
+                <group>
+                  <field name="communication_clarity_rating" string="Communication Clarity (Rating)"/>
+                  <field name="communication_clarity_comment" string="Communication Clarity (Comment)"/>
+                  <field name="accountability_ownership_rating" string="Accountability / Ownership (Rating)"/>
+                  <field name="accountability_ownership_comment" string="Accountability / Ownership (Comment)"/>
+                  <field name="deadline_discipline_rating" string="Deadline Discipline (Rating)"/>
+                  <field name="deadline_discipline_comment" string="Deadline Discipline (Comment)"/>
+                </group>
+                <group>
+                  <field name="work_quality_rating" string="Work Quality (Rating)"/>
+                  <field name="work_quality_comment" string="Work Quality (Comment)"/>
+                  <field name="process_adherence_rating" string="Process Adherence (Rating)"/>
+                  <field name="process_adherence_comment" string="Process Adherence (Comment)"/>
+                  <field name="learning_improvement_rating" string="Learning &amp; Improvement Attitude (Rating)"/>
+                  <field name="learning_improvement_comment" string="Learning &amp; Improvement Attitude (Comment)"/>
+                </group>
+              </group>
+
+              <!-- SALES -->
+              <group string="Sales Parameters" colspan="2" attrs="{'invisible':[('role','!=','sales')]}">
+                <group>
+                  <field name="prospecting_pipeline_discipline_rating" string="Prospecting &amp; Pipeline Discipline (Rating)"/>
+                  <field name="prospecting_pipeline_discipline_comment" string="Prospecting &amp; Pipeline Discipline (Comment)"/>
+                  <field name="follow_up_deal_progression_rating" string="Follow-Up &amp; Deal Progression (Rating)"/>
+                  <field name="follow_up_deal_progression_comment" string="Follow-Up &amp; Deal Progression (Comment)"/>
+                  <field name="discovery_questioning_quality_rating" string="Discovery &amp; Questioning Quality (Rating)"/>
+                  <field name="discovery_questioning_quality_comment" string="Discovery &amp; Questioning Quality (Comment)"/>
+                </group>
+                <group>
+                  <field name="objection_handling_negotiation_rating" string="Objection Handling &amp; Negotiation (Rating)"/>
+                  <field name="objection_handling_negotiation_comment" string="Objection Handling &amp; Negotiation (Comment)"/>
+                  <field name="forecast_accuracy_revenue_ownership_rating" string="Forecast Accuracy &amp; Revenue Ownership (Rating)"/>
+                  <field name="forecast_accuracy_revenue_ownership_comment" string="Forecast Accuracy &amp; Revenue Ownership (Comment)"/>
+                </group>
+              </group>
+
+              <!-- MARKETING -->
+              <group string="Marketing Parameters" colspan="2" attrs="{'invisible':[('role','!=','marketing')]}">
+                <group>
+                  <field name="campaign_planning_execution_rating" string="Campaign Planning &amp; Execution (Rating)"/>
+                  <field name="campaign_planning_execution_comment" string="Campaign Planning &amp; Execution (Comment)"/>
+                  <field name="lead_quality_contribution_rating" string="Lead Quality Contribution (Rating)"/>
+                  <field name="lead_quality_contribution_comment" string="Lead Quality Contribution (Comment)"/>
+                  <field name="performance_tracking_reporting_rating" string="Performance Tracking &amp; Reporting (Rating)"/>
+                  <field name="performance_tracking_reporting_comment" string="Performance Tracking &amp; Reporting (Comment)"/>
+                </group>
+                <group>
+                  <field name="tool_proficiency_ads_automation_crm_rating" string="Tool Proficiency (Ads/Automation/CRM) (Rating)"/>
+                  <field name="tool_proficiency_ads_automation_crm_comment" string="Tool Proficiency (Ads/Automation/CRM) (Comment)"/>
+                  <field name="creativity_experimentation_rating" string="Creativity &amp; Experimentation (Rating)"/>
+                  <field name="creativity_experimentation_comment" string="Creativity &amp; Experimentation (Comment)"/>
+                </group>
+              </group>
+
+              <!-- DEVELOPER -->
+              <group string="Developer Parameters" colspan="2" attrs="{'invisible':[('role','!=','developer')]}">
+                <group>
+                  <field name="technical_competency_rating" string="Technical Competency (Rating)"/>
+                  <field name="technical_competency_comment" string="Technical Competency (Comment)"/>
+                  <field name="code_quality_standards_rating" string="Code Quality &amp; Standards (Rating)"/>
+                  <field name="code_quality_standards_comment" string="Code Quality &amp; Standards (Comment)"/>
+                  <field name="debugging_root_cause_rating" string="Debugging / Root Cause Ability (Rating)"/>
+                  <field name="debugging_root_cause_comment" string="Debugging / Root Cause Ability (Comment)"/>
+                </group>
+                <group>
+                  <field name="requirement_understanding_accuracy_rating" string="Requirement Understanding Accuracy (Rating)"/>
+                  <field name="requirement_understanding_accuracy_comment" string="Requirement Understanding Accuracy (Comment)"/>
+                  <field name="estimation_accuracy_reliability_rating" string="Estimation Accuracy &amp; Reliability (Rating)"/>
+                  <field name="estimation_accuracy_reliability_comment" string="Estimation Accuracy &amp; Reliability (Comment)"/>
+                </group>
+              </group>
+
+              <!-- TEAM LEAD -->
+              <group string="Team Lead Parameters" colspan="2" attrs="{'invisible':[('role','!=','team_lead')]}">
+                <group>
+                  <field name="task_planning_allocation_rating" string="Task Planning &amp; Allocation (Rating)"/>
+                  <field name="task_planning_allocation_comment" string="Task Planning &amp; Allocation (Comment)"/>
+                  <field name="delivery_predictability_rating" string="Delivery Predictability (Rating)"/>
+                  <field name="delivery_predictability_comment" string="Delivery Predictability (Comment)"/>
+                  <field name="mentoring_technical_guidance_rating" string="Mentoring &amp; Technical Guidance (Rating)"/>
+                  <field name="mentoring_technical_guidance_comment" string="Mentoring &amp; Technical Guidance (Comment)"/>
+                </group>
+                <group>
+                  <field name="risk_identification_escalation_rating" string="Risk Identification &amp; Escalation (Rating)"/>
+                  <field name="risk_identification_escalation_comment" string="Risk Identification &amp; Escalation (Comment)"/>
+                  <field name="stakeholder_client_communication_rating" string="Stakeholder / Client Communication (Rating)"/>
+                  <field name="stakeholder_client_communication_comment" string="Stakeholder / Client Communication (Comment)"/>
+                </group>
+              </group>
+
+              <!-- PROJECT MANAGER -->
+              <group string="Project Manager Parameters" colspan="2" attrs="{'invisible':[('role','!=','project_manager')]}">
+                <group>
+                  <field name="project_planning_timeline_control_rating" string="Project Planning &amp; Timeline Control (Rating)"/>
+                  <field name="project_planning_timeline_control_comment" string="Project Planning &amp; Timeline Control (Comment)"/>
+                  <field name="scope_change_management_rating" string="Scope &amp; Change Management (Rating)"/>
+                  <field name="scope_change_management_comment" string="Scope &amp; Change Management (Comment)"/>
+                  <field name="risk_dependency_management_rating" string="Risk &amp; Dependency Management (Rating)"/>
+                  <field name="risk_dependency_management_comment" string="Risk &amp; Dependency Management (Comment)"/>
+                </group>
+                <group>
+                  <field name="stakeholder_communication_rating" string="Stakeholder Communication (Rating)"/>
+                  <field name="stakeholder_communication_comment" string="Stakeholder Communication (Comment)"/>
+                  <field name="status_reporting_accuracy_rating" string="Status Reporting Accuracy (Rating)"/>
+                  <field name="status_reporting_accuracy_comment" string="Status Reporting Accuracy (Comment)"/>
+                </group>
+              </group>
+
+              <!-- TESTER -->
+              <group string="Tester / QA Parameters" colspan="2" attrs="{'invisible':[('role','!=','tester')]}">
+                <group>
+                  <field name="test_case_design_quality_rating" string="Test Case Design Quality (Rating)"/>
+                  <field name="test_case_design_quality_comment" string="Test Case Design Quality (Comment)"/>
+                  <field name="bug_reporting_clarity_rating" string="Bug Reporting Clarity (Rating)"/>
+                  <field name="bug_reporting_clarity_comment" string="Bug Reporting Clarity (Comment)"/>
+                  <field name="coverage_edge_case_thinking_rating" string="Coverage &amp; Edge Case Thinking (Rating)"/>
+                  <field name="coverage_edge_case_thinking_comment" string="Coverage &amp; Edge Case Thinking (Comment)"/>
+                </group>
+                <group>
+                  <field name="regression_discipline_rating" string="Regression Discipline (Rating)"/>
+                  <field name="regression_discipline_comment" string="Regression Discipline (Comment)"/>
+                  <field name="quality_ownership_rating" string="Quality Ownership (Rating)"/>
+                  <field name="quality_ownership_comment" string="Quality Ownership (Comment)"/>
+                </group>
+              </group>
+
+              <!-- HR -->
+              <group string="HR Parameters" colspan="2" attrs="{'invisible':[('role','!=','hr')]}">
+                <group>
+                  <field name="hiring_pipeline_management_rating" string="Hiring Pipeline Management (Rating)"/>
+                  <field name="hiring_pipeline_management_comment" string="Hiring Pipeline Management (Comment)"/>
+                  <field name="policy_compliance_documentation_rating" string="Policy Compliance &amp; Documentation (Rating)"/>
+                  <field name="policy_compliance_documentation_comment" string="Policy Compliance &amp; Documentation (Comment)"/>
+                  <field name="employee_issue_handling_rating" string="Employee Issue Handling (Rating)"/>
+                  <field name="employee_issue_handling_comment" string="Employee Issue Handling (Comment)"/>
+                </group>
+                <group>
+                  <field name="process_improvement_initiative_rating" string="Process Improvement Initiative (Rating)"/>
+                  <field name="process_improvement_initiative_comment" string="Process Improvement Initiative (Comment)"/>
+                  <field name="confidentiality_professionalism_rating" string="Confidentiality &amp; Professionalism (Rating)"/>
+                  <field name="confidentiality_professionalism_comment" string="Confidentiality &amp; Professionalism (Comment)"/>
+                </group>
+              </group>
+
+            </page>
+
+            <page string="Strengths &amp; Goals">
+              <group colspan="2">
+                <field name="strengths_top3" placeholder="1) ...  2) ...  3) ..."/>
+                <field name="improvements_top3" placeholder="1) ...  2) ...  3) ..."/>
+                <field name="goals_next_month" placeholder="1) ...  2) ...  3) ..."/>
+              </group>
+            </page>
+
+          </notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+</odoo>

@@ -1,0 +1,49 @@
+<odoo>
+    <!-- Tree/List View -->
+    <record id="view_module_tree" model="ir.ui.view">
+        <field name="name">cus.module.tree</field>
+        <field name="model">cus.module</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="project_ids" widget="many2many_tags" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_cus_module_form" model="ir.ui.view">
+        <field name="name">cus.module.form</field>
+        <field name="model">cus.module</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="description"/>
+                        <field name="project_ids" widget="many2many_tags" readonly="1"
+                               help="Projects where this module is used via tasks."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_cus_module" model="ir.actions.act_window">
+        <field name="name">Module</field>
+        <field name="res_model">cus.module</field>
+        <field name="view_mode">list,form</field> <!-- FIXED -->
+        <field name="help">Manage the Module for your Task.</field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_cus_module"
+        action="action_cus_module"
+        name="Module"
+        sequence="7"
+        parent="project.menu_project_config"/>
+
+
+</odoo>

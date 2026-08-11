@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pms_suggestion_list" model="ir.ui.view">
+        <field name="name">pms.suggestion.list</field>
+        <field name="model">pms.suggestion</field>
+        <field name="arch" type="xml">
+            <list string="PMS Suggestions">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="category_id"/>
+                <field name="suggested_by_id"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'new'"
+                       decoration-warning="state == 'approved'"
+                       decoration-success="state == 'implemented'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pms_suggestion_form" model="ir.ui.view">
+        <field name="name">pms.suggestion.form</field>
+        <field name="model">pms.suggestion</field>
+        <field name="arch" type="xml">
+            <form string="PMS Suggestion">
+                <header>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="oe_highlight" groups="base.group_system"
+                            invisible="state != 'new'"/>
+                    <button name="action_implement" string="Mark Implemented"
+                            type="object" class="oe_highlight"
+                            groups="base.group_system"
+                            invisible="state != 'approved'"/>
+                    <button name="action_unlock" string="Unlock for Editing"
+                            type="object" groups="base.group_system"
+                            invisible="state == 'new' or admin_unlocked"/>
+                    <button name="action_lock" string="Lock Again"
+                            type="object" groups="base.group_system"
+                            invisible="state == 'new' or not admin_unlocked"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="new,approved,implemented"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                        <h2>
+                            <field name="title" placeholder="Suggestion title"
+                                   readonly="state != 'new' and not admin_unlocked"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category_id"
+                                   readonly="state != 'new' and not admin_unlocked"/>
+                            <field name="suggested_by_id"/>
+                        </group>
+                        <group>
+                            <field name="is_admin" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description"
+                                   readonly="state != 'new' and not admin_unlocked"
+                                   placeholder="Describe the suggested change. You can paste images directly here."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pms_suggestion" model="ir.actions.act_window">
+        <field name="name">Suggestions</field>
+        <field name="res_model">pms.suggestion</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Suggest a PMS improvement.
+            </p>
+            <p>
+                Admins  are notified automatically when you submit one.
+            </p>
+        </field>
+    </record>
+
+    <!-- The Suggestions menus now live in their own top-level app
+         (see suggestion_app_menu.xml) instead of inside PMS. -->
+
+</odoo>

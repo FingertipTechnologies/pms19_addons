@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_kb_category_public,ft.helpdesk.kb.category public,model_ft_helpdesk_kb_category,base.group_public,1,0,0,0
+access_kb_category_portal,ft.helpdesk.kb.category portal,model_ft_helpdesk_kb_category,base.group_portal,1,0,0,0
+access_kb_category_agent,ft.helpdesk.kb.category agent,model_ft_helpdesk_kb_category,ft_helpdesk_core.group_ft_helpdesk_agent,1,0,0,0
+access_kb_category_admin,ft.helpdesk.kb.category admin,model_ft_helpdesk_kb_category,ft_helpdesk_core.group_ft_helpdesk_admin,1,1,1,1
+access_kb_article_public,ft.helpdesk.kb.article public,model_ft_helpdesk_kb_article,base.group_public,1,0,0,0
+access_kb_article_portal,ft.helpdesk.kb.article portal,model_ft_helpdesk_kb_article,base.group_portal,1,0,0,0
+access_kb_article_agent,ft.helpdesk.kb.article agent,model_ft_helpdesk_kb_article,ft_helpdesk_core.group_ft_helpdesk_agent,1,1,1,0
+access_kb_article_admin,ft.helpdesk.kb.article admin,model_ft_helpdesk_kb_article,ft_helpdesk_core.group_ft_helpdesk_admin,1,1,1,1
+access_kb_article_analysis_agent,ft.helpdesk.kb.article.analysis agent,model_ft_helpdesk_kb_article_analysis,ft_helpdesk_core.group_ft_helpdesk_agent,1,0,0,0
+access_kb_article_analysis_admin,ft.helpdesk.kb.article.analysis admin,model_ft_helpdesk_kb_article_analysis,ft_helpdesk_core.group_ft_helpdesk_admin,1,0,0,0

@@ -1,0 +1,92 @@
+// AI Summary button + panel injected into the Project Dashboard. Scoped under
+// .ftpd_dashboard so it reuses that dashboard's CSS variables.
+.ftpd_dashboard {
+
+    .ftpd_btn--ai {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+        color: #6d28d9;
+        border-color: #ddd6fe;
+        background: #f5f3ff;
+        &:hover { color: #5b21b6; }
+        &.ftpd_btn--ai-on { background: #6d28d9; color: #fff; border-color: #6d28d9; }
+    }
+
+    .ftpd_ai {
+        margin: 0 24px;
+        background: var(--ftpd-card);
+        border: 1px solid #e9d5ff;
+        border-radius: 16px;
+        box-shadow: var(--ftpd-shadow);
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+
+        .ftpd_ai_bar {
+            display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: 12px;
+        }
+        .ftpd_ai_left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            i { color: #6d28d9; } }
+        .ftpd_ai_heading { font-size: 15px; font-weight: 700; }
+        .ftpd_ai_period,
+        .ftpd_ai_purpose {
+            border: 1px solid var(--ftpd-border); border-radius: 8px;
+            padding: 7px 10px; font-size: 13px; min-height: 36px;
+        }
+        // The purpose label carries more text than the period preset; cap it so
+        // a long name can't push the Generate button off the bar.
+        .ftpd_ai_purpose { max-width: 240px; }
+        .ftpd_ai_meta { font-size: 12px; color: var(--ftpd-muted); }
+
+        .ftpd_ai_note {
+            background: #fffbeb; border: 1px solid #fcd34d; color: #92400e;
+            border-radius: 10px; padding: 10px 14px; font-size: 13px;
+        }
+        .ftpd_ai_error {
+            background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;
+            border-radius: 10px; padding: 10px 14px; font-size: 13px;
+        }
+        .ftpd_ai_loading {
+            display: flex; align-items: center; gap: 12px; color: #6d28d9;
+            padding: 12px 0; font-weight: 600;
+        }
+
+        .ftpd_ai_headline {
+            font-size: 14.5px; line-height: 1.55; margin: 0; font-weight: 600;
+            white-space: pre-wrap;
+        }
+        .ftpd_ai_sections {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+            @media (max-width: 1100px) { grid-template-columns: 1fr; }
+        }
+        .ftpd_ai_section {
+            background: #fafafa; border: 1px solid var(--ftpd-border);
+            border-top: 4px solid #94a3b8; border-radius: 12px; padding: 14px;
+            &--info { border-top-color: #3b82f6; }
+            &--success { border-top-color: #10b981; }
+            &--warning { border-top-color: #f59e0b; }
+            &--danger { border-top-color: #ef4444; }
+            .ftpd_ai_section_head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+                i { color: #6d28d9; } h4 { margin: 0; font-size: 13.5px; font-weight: 700; } }
+            .ftpd_ai_body { margin: 0 0 8px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+            ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.55; }
+        }
+        .ftpd_ai_cols {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+            @media (max-width: 900px) { grid-template-columns: 1fr; }
+        }
+        .ftpd_ai_box {
+            background: #fafafa; border: 1px solid var(--ftpd-border);
+            border-radius: 12px; padding: 14px;
+            h4 { margin: 0 0 10px; font-size: 13.5px; font-weight: 700;
+                display: flex; align-items: center; gap: 8px; i { color: #6d28d9; } }
+            ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+            &--warn { background: #fffbeb; border-color: #fde68a; h4 i { color: #d97706; } }
+            pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; margin: 0; }
+        }
+    }
+}

@@ -1,0 +1,113 @@
+<odoo>
+    <record id="view_task_form_inherit" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.custom.fields</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <group>
+                    <field name="task_type"/>
+                    <!-- Required: a task with no estimate cannot be measured by
+                         Delivery Efficiency and lands in Not Estimated. The
+                         server constraint is the real enforcement; this is so
+                         the field is marked before the save rather than after. -->
+                    <field name="estimated" widget="float_time" required="1"/>
+                    <field name="actual"/>
+                    <field name="module_id" required="True"/>
+                    <!-- Both hidden until this task has actually been reopened,
+                         so a task that went straight through carries no rework
+                         clutter. Shown together because the count alone does not
+                         say what the second round cost. -->
+                    <field name="ft_reopen_count" invisible="ft_reopen_count == 0"/>
+                    <field name="ft_rework_hours" widget="float_time"
+                           invisible="ft_reopen_count == 0"/>
+                </group>
+            </field>
+            <!-- Deadline is a core field, so it is marked required here rather
+                 than redeclared. Without one a task can never be judged on time
+                 or late: it is excluded from On-Time Delivery and counted as
+                 Delivered Without Deadline. -->
+            <xpath expr="//field[@name='date_deadline']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+        </field>
+    </record>
+ 
+    <!-- Add module_id to quick create form -->
+    <record id="view_quick_create_task_module" model="ir.ui.view">
+        <field name="name">project.task.quick_create.module</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.quick_create_task_form"/>
+        <field name="arch" type="xml">
+            <field name="user_ids" position="before">
+                <field name="module_id" required="True"/>
+                <!-- Both are required by a server constraint, so quick-create
+                     has to offer them or every quick-created task would be
+                     rejected on save with no way to satisfy it from here. -->
+                <field name="estimated" widget="float_time" required="1"/>
+                <field name="date_deadline" required="1"/>
+            </field>
+        </field>
+    </record>
+
+     <record id="view_task_kanban_module_field" model="ir.ui.view">
+        <field name="name">project.task.kanban.module.field</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="module_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Drop the Progress column from the All Tasks list.
+
+         Progress is hr_timesheet's, computed as time spent / allocated hours, so
+         it only ever shows a value on tasks that have Estimated (allocated)
+         hours set. With Estimated at 00:00 the column is permanently blank and
+         its average permanently 0%, so it just costs width.
+
+         Targets the progressbar column specifically: the same view also carries a
+         column_invisible copy of `progress` that the Time Remaining decorations
+         read, and removing that one would break them. column_invisible keeps the
+         field loaded while taking the column out of the list and out of the
+         optional-columns dropdown. -->
+    <record id="view_task_tree_hide_progress" model="ir.ui.view">
+        <field name="name">project.task.list.hide.progress</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="hr_timesheet.view_task_tree2_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='progress'][@widget='project_task_progressbar']"
+                   position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Hide the task state selection (In Progress / Changes Requested /
+         Approved / Cancelled / Done) on the task form. The stage bar
+         (Planned / Working / Testing / ...) is what we track tasks by.
+
+         The containers are hidden rather than the field removed: the field
+         stays loaded, so state keeps computing and every other view and module
+         that reads it is untouched. Kanban and list still show the widget, so
+         tasks can still be closed — stages do not set state in Odoo 18, and
+         reporting on '1_done' would break if nothing could. -->
+    <record id="view_task_form_hide_state" model="ir.ui.view">
+        <field name="name">project.task.form.hide.state.widget</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <!-- Stock renders the widget twice: [1] for active tasks,
+                 [2] for archived ones. -->
+            <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[field[@name='priority']]/field[@name='state'][@widget='project_task_state_selection']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

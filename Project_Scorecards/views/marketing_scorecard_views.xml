@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="view_marketing_scorecard_list" model="ir.ui.view">
+            <field name="name">marketing.scorecard.list</field>
+            <field name="model">marketing.scorecard</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="date"/>
+                    <field name="videos"/>
+                    <field name="posts"/>
+                    <field name="leads"/>
+                    <field name="fb_campaigns"/>
+                    <field name="email_campaigns"/>
+                    <field name="linkedin_campaigns"/>
+                    <field name="fb_leads"/>
+                    <field name="linkedin_leads"/>
+                    <field name="email_leads"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_marketing_scorecard_form" model="ir.ui.view">
+            <field name="name">marketing.scorecard.form</field>
+            <field name="model">marketing.scorecard</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+
+                        <group>
+                            <field name="date"/>
+                        </group>
+
+                        <group string="Content Activity" >
+                            <field name="videos"/>
+                            <field name="posts"/>
+                            <field name="seo_activity"/>
+                        </group>
+
+                        <group string="Campaigns" >
+                            <field name="fb_campaigns"/>
+                            <field name="email_campaigns"/>
+                            <field name="linkedin_campaigns"/>
+                        </group>
+
+                        <group string="Leads" >
+                            <field name="fb_leads"/>
+                            <field name="linkedin_leads"/>
+                            <field name="email_leads"/>
+                            <field name="leads"/>
+                            
+                        </group>
+                        <group>
+                        <field name="description"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_marketing_scorecard_pivot" model="ir.ui.view">
+            <field name="name">marketing.scorecard.pivot</field>
+            <field name="model">marketing.scorecard</field>
+            <field name="arch" type="xml">
+                <pivot>
+                    <field name="date" type="row"/>
+                    <field name="videos" type="measure"/>
+                    <field name="posts" type="measure"/>
+                    <field name="leads" type="measure"/>
+                     <field name="fb_campaigns" type="measure"/>
+                    <field name="email_campaigns" type="measure"/>
+                    <field name="linkedin_campaigns" type="measure"/>
+
+                    <field name="fb_leads" type="measure"/>
+                    <field name="linkedin_leads" type="measure"/>
+                    <field name="email_leads" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <record id="action_marketing_scorecard" model="ir.actions.act_window">
+            <field name="name">Marketing Scorecards</field>
+            <field name="res_model">marketing.scorecard</field>
+            <field name="view_mode">list,form,pivot</field>
+        </record>
+
+        <menuitem id="menu_marketing_scorecard"
+                  name="Marketing"
+                  parent="Project_Scorecards.menu_project_scorecard_root"
+                  action="action_marketing_scorecard"
+                  sequence="30"
+                  groups="group_scorecard_marketing"
+                  />
+
+    </data>
+</odoo>

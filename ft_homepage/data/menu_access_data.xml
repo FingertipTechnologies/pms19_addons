@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data noupdate="0">
+
+    <!-- The Homepage app-icon access matrix.
+         =====================================
+         Only apps ft_homepage DEPENDS ON may be configured here. A
+         <record id="other_module.xyz"> is checked by convert.py's
+         _test_xml_id, which asserts the referenced module is in state
+         'installed' at parse time and aborts the entire upgrade with
+
+             AssertionError: The ID "..." refers to an uninstalled module
+
+         if it is not. That is not a hypothetical: upgrading ft_homepage on
+         staging died on the AI Insights line because that app is not deployed
+         there, taking an unrelated deployment down with it.
+
+         The optional apps — Training, both Helpdesks, Scorecard, Dashboard,
+         AI Insights, Target and the QA test app — are therefore configured
+         from models/ir_ui_menu.py instead, which skips whatever a given
+         database does not have. See the <function> call at the end of this
+         file; the matrix is documented entry by entry there. -->
+
+    <!-- General PMS — All users -->
+    <record id="general.menu_general_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [])]"/>
+    </record>
+
+    <!-- Project app — open to all users, so that the
+         "Quotes / Announcements" menu placed under it is visible to
+         everyone (the standard Project root menu is otherwise limited
+         to Project User / Project Manager groups). -->
+    <record id="project.menu_main_pm" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [])]"/>
+    </record>
+
+    <!-- Training, and both Helpdesk apps, are set from models/ir_ui_menu.py —
+         none of the three is a dependency of ft_homepage. -->
+
+    <!-- Employees — common / all. active=True re-shows it in case a previous
+         run of ft_app_menu_cleanup (which used to list "Employees") hid it. -->
+    <record id="hr.menu_hr_root" model="ir.ui.menu">
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[(6, 0, [])]"/>
+    </record>
+
+    <!-- CRM — Sales team only -->
+    <record id="crm.crm_menu_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('sales_team.group_sale_salesman')])]"/>
+    </record>
+
+    <!-- Sales and Email Marketing are fully removed for everyone —
+         see the deactivation block at the end of this file. -->
+
+    <!-- Scorecard, Dashboard, AI Insights and Target are set from
+         models/ir_ui_menu.py — none of the four is a dependency of
+         ft_homepage, and AI Insights in particular is absent from staging. -->
+
+    <!-- Invoicing — Admin + Sales only -->
+    <record id="account.menu_finance" model="ir.ui.menu">
+        <field name="group_ids" eval="[
+            (6, 0, [
+                ref('base.group_system'),
+                ref('sales_team.group_sale_salesman'),
+            ])
+        ]"/>
+    </record>
+
+    <!-- Invoicing: hide the standard Odoo "Dashboard" (Accounting/Invoicing
+         dashboard kanban). The department Finance Dashboard is added inside
+         Invoicing instead by ft_dashboard_menu_reorg. -->
+    <record id="account.menu_board_journal_1" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- The QA Techstar test app is hidden from models/ir_ui_menu.py — it is
+         not a dependency of ft_homepage either. -->
+
+    <!-- Link Tracker — Sales + Admin. The stock root menu is hidden
+         behind the developer-mode group (base.group_no_one), so we
+         replace its groups outright. -->
+    <record id="utm.menu_link_tracker_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[
+            (6, 0, [
+                ref('base.group_system'),
+                ref('sales_team.group_sale_salesman'),
+            ])
+        ]"/>
+    </record>
+    <record id="link_tracker.link_tracker_menu_main" model="ir.ui.menu">
+        <field name="group_ids" eval="[
+            (6, 0, [
+                ref('base.group_system'),
+                ref('sales_team.group_sale_salesman'),
+            ])
+        ]"/>
+    </record>
+
+    <!-- Website — removed from the Homepage for ALL users -->
+    <record id="website.menu_website_configuration" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- ================================================================
+         Apps removed from the Homepage for EVERYONE (admins included).
+         Deactivating the root menu is the only way to hide an app from
+         admins too — group restrictions don't apply to them since the
+         admin belongs to / implies most groups.
+         ================================================================ -->
+
+    <!-- Discuss -->
+    <record id="mail.menu_root_discuss" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Calendar -->
+    <record id="calendar.mail_menu_calendar" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Sales -->
+    <record id="sale.sale_menu_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- eLearning -->
+    <record id="website_slides.website_slides_menu_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Email Marketing -->
+    <record id="mass_mailing.mass_mailing_menu_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- ================================================================
+         The optional half of the matrix: apps ft_homepage does not depend
+         on, which may be absent from any given database. Applied last so it
+         cannot hold up the records above, and from Python so a missing app is
+         skipped with a log line instead of aborting the upgrade. The list
+         itself is in models/ir_ui_menu.py.
+         ================================================================ -->
+    <function model="ir.ui.menu" name="_ft_apply_optional_menu_access"/>
+
+</data>
+</odoo>

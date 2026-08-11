@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_recruitment_dashboard_form" model="ir.ui.view">
+        <field name="name">recruitment.dashboard.form</field>
+        <field name="model">board.board</field>
+        <field name="arch" type="xml">
+            <form string="Recruitment Dashboard">
+                <board style="2-1">
+                    <column>
+                        <action name="%(action_candidate_pipeline_report)d"
+                                string="Candidate Pipeline"
+                                view_mode="graph"/>
+                        <action name="%(action_open_position_report)d"
+                                string="Openings by Department"
+                                view_mode="graph"/>
+                    </column>
+                    <column>
+                        <action name="%(action_interview_schedule_report)d"
+                                string="Interview Schedule"
+                                view_mode="list"/>
+                        <action name="%(action_offer_status_report)d"
+                                string="Offer Status"
+                                view_mode="list"/>
+                    </column>
+                </board>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recruitment_dashboard" model="ir.actions.act_window">
+        <field name="name">Recruitment Dashboard</field>
+        <field name="res_model">board.board</field>
+        <field name="view_mode">form</field>
+        <field name="usage">menu</field>
+        <field name="view_id" ref="view_recruitment_dashboard_form"/>
+    </record>
+
+    <menuitem id="menu_recruitment_dashboard"
+              name="Dashboard"
+              parent="menu_recruitment_root"
+              action="action_recruitment_dashboard"
+              sequence="5"/>
+
+</odoo>

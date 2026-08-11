@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_project_dashboard_reorg_read,ft.project.dashboard reorg read,ft_project_dashboard.model_ft_project_dashboard,base.group_user,1,0,0,0
+access_ft_sales_dashboard_reorg_read,ft.sales.dashboard reorg read,ft_sales_dashboard.model_ft_sales_dashboard,sales_team.group_sale_salesman,1,0,0,0
+access_ft_marketing_dashboard_reorg_read,ft.marketing.dashboard reorg read,ft_marketing_dashboard.model_ft_marketing_dashboard,Project_Scorecards.group_scorecard_marketing,1,0,0,0
+access_ft_hr_dashboard_reorg_read,ft.hr.dashboard reorg read,ft_hr_dashboard.model_ft_hr_dashboard,base.group_user,1,0,0,0
+access_ft_finance_dashboard_reorg_read,ft.finance.dashboard reorg read,ft_finance_dashboard.model_ft_finance_dashboard,base.group_system,1,0,0,0
+access_ft_finance_dashboard_reorg_read_sales,ft.finance.dashboard reorg read (sales),ft_finance_dashboard.model_ft_finance_dashboard,sales_team.group_sale_salesman,1,0,0,0

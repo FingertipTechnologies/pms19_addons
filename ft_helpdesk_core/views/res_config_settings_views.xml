@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.ft.helpdesk</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="FT Helpdesk" name="ft_helpdesk_core">
+                    <block title="Portal Settings">
+                        <setting string="Allow Portal Close"
+                                 help="Allow customers to close their own tickets from the portal.">
+                            <field name="helpdesk_portal_allow_close"/>
+                        </setting>
+                        <setting string="Allow Portal Reopen"
+                                 help="Allow customers to reopen closed tickets from the portal.">
+                            <field name="helpdesk_portal_allow_reopen"/>
+                        </setting>
+                    </block>
+                    <block title="Automation">
+                        <setting string="Auto-Close Resolved Tickets"
+                                 help="Automatically close resolved tickets after a specified number of days.">
+                            <field name="helpdesk_auto_close_days"/>
+                            <span> days (0 = disabled)</span>
+                        </setting>
+                        <setting string="Default Team">
+                            <field name="helpdesk_default_team_id"/>
+                        </setting>
+                    </block>
+                    <block title="Features">
+                        <setting string="Knowledge Base Suggestions"
+                                 help="Show KB article suggestions when customers create tickets.">
+                            <field name="helpdesk_enable_kb_suggestions"/>
+                        </setting>
+                        <setting string="Customer Satisfaction (CSAT)"
+                                 help="Enable CSAT surveys after ticket resolution.">
+                            <field name="helpdesk_enable_csat"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

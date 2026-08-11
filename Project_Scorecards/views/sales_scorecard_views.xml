@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+<data>
+    <record id="view_sales_scorecard_list" model="ir.ui.view">
+        <field name="name">sales.scorecard.list</field>
+        <field name="model">sales.scorecard</field>
+        <field name="arch" type="xml">
+            <list>
+             <field name="date"/>
+                <field name="new_leads"/>
+                <field name="proposals"/>
+                <field name="closed"/>
+                <field name="closed_amount"/>
+                <field name="source_commission"/>
+                <field name="emails"/>
+                <field name="whatsapp"/>
+                <field name="connected_calls"/>
+                <field name="call_duration"/>
+                <field name="discovery_booked"/>
+                <field name="discovery_done"/>
+                <field name="demos"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="proposal_value"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sales_scorecard_form" model="ir.ui.view">
+        <field name="name">sales.scorecard.form</field>
+        <field name="model">sales.scorecard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="date"/>
+                    </group>
+                    <group>
+                        <field name="new_leads"/>
+                        <field name="proposals"/>
+                        <field name="closed"/>
+                        <field name="closed_amount"/>
+                        <field name="source_commission"/>
+                        <field name="emails"/>
+                        <field name="whatsapp"/>
+                        <field name="connected_calls"/>
+                        <field name="call_duration"/>
+                        <field name="discovery_booked"/>
+                        <field name="discovery_done"/>
+                        <field name="demos"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="proposal_value"
+                                widget="monetary"
+                                options="{'currency_field': 'currency_id'}"/>
+                         <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sales_scorecard_pivot" model="ir.ui.view">
+        <field name="name">sales.scorecard.pivot</field>
+        <field name="model">sales.scorecard</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="date" type="row"/>
+                <field name="new_leads" type="measure"/>
+                <field name="proposals" type="measure"/>
+                <field name="closed" type="measure"/>
+                <field name="closed_amount" type="measure"/>
+                <field name="emails" type="measure"/>
+                <field name="whatsapp" type="measure"/>
+                <field name="connected_calls" type="measure"/>
+                <field name="call_duration" type="measure"/>
+                <field name="proposal_value" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_sales_scorecard" model="ir.actions.act_window">
+        <field name="name">Sales Scorecards</field>
+        <field name="res_model">sales.scorecard</field>
+        <field name="view_mode">list,form,pivot</field>
+    </record>
+
+    <menuitem id="menu_sales_scorecard"
+              name="Sales"
+              parent="Project_Scorecards.menu_project_scorecard_root"
+              action="action_sales_scorecard"
+              sequence="20"
+              groups="group_scorecard_sales"
+              />
+</data>
+</odoo>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Email Template: Ticket Created Confirmation -->
+        <record id="mail_template_ticket_created" model="mail.template">
+            <field name="name">Helpdesk: Ticket Created</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="subject">Your support ticket {{ object.ticket_no }} has been created</field>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_to">{{ object.customer_id.email }}</field>
+            <field name="body_html"><![CDATA[
+<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="background: #7c3aed; padding: 24px 32px; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 20px;">Support Ticket Created</h1>
+    </div>
+    <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            Hello {{ object.customer_id.name }},
+        </p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            We've received your support request and created ticket <strong>{{ object.ticket_no }}</strong>.
+        </p>
+        <div style="background: #f9fafb; border-radius: 6px; padding: 16px 20px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 6px 0; color: #6b7280; font-size: 13px;">Ticket #</td>
+                    <td style="padding: 6px 0; color: #111827; font-weight: 600;">{{ object.ticket_no }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; color: #6b7280; font-size: 13px;">Subject</td>
+                    <td style="padding: 6px 0; color: #111827;">{{ object.name }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; color: #6b7280; font-size: 13px;">Priority</td>
+                    <td style="padding: 6px 0; color: #111827;">{{ dict(object._fields['priority'].selection).get(object.priority, '') }}</td>
+                </tr>
+            </table>
+        </div>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            Our team will review your request and respond as soon as possible. You can track your ticket status anytime through the support portal.
+        </p>
+        <div style="text-align: center; margin: 24px 0;">
+            <a href="/my/support/ticket/{{ object.id }}"
+               style="display: inline-block; background: #7c3aed; color: white; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                View Ticket
+            </a>
+        </div>
+        <p style="color: #9ca3af; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+            This is an automated message. Please do not reply directly to this email.
+        </p>
+    </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Email Template: Ticket Resolved -->
+        <record id="mail_template_ticket_resolved" model="mail.template">
+            <field name="name">Helpdesk: Ticket Resolved</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="subject">Ticket {{ object.ticket_no }} has been resolved</field>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_to">{{ object.customer_id.email }}</field>
+            <field name="body_html"><![CDATA[
+<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="background: #10b981; padding: 24px 32px; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 20px;">Ticket Resolved</h1>
+    </div>
+    <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            Hello {{ object.customer_id.name }},
+        </p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            Great news! Your support ticket <strong>{{ object.ticket_no }}</strong> - "<em>{{ object.name }}</em>" has been resolved.
+        </p>
+        {% if object.resolution_summary %}
+        <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 12px 16px; margin: 20px 0; border-radius: 0 6px 6px 0;">
+            <strong style="color: #166534; font-size: 13px;">Resolution:</strong>
+            <p style="color: #374151; font-size: 14px; margin: 4px 0 0;">{{ object.resolution_summary }}</p>
+        </div>
+        {% endif %}
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            If you feel this issue is not fully resolved, you can reply through the portal or contact us again.
+        </p>
+        <div style="text-align: center; margin: 24px 0;">
+            <a href="/my/support/ticket/{{ object.id }}"
+               style="display: inline-block; background: #10b981; color: white; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                View Ticket
+            </a>
+        </div>
+        <p style="color: #9ca3af; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+            This is an automated message. Please do not reply directly to this email.
+        </p>
+    </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Email Template: Agent Reply Notification -->
+        <record id="mail_template_agent_reply" model="mail.template">
+            <field name="name">Helpdesk: New Reply on Your Ticket</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="subject">New reply on ticket {{ object.ticket_no }}</field>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_to">{{ object.customer_id.email }}</field>
+            <field name="body_html"><![CDATA[
+<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="background: #3b82f6; padding: 24px 32px; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 20px;">New Reply on Your Ticket</h1>
+    </div>
+    <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            Hello {{ object.customer_id.name }},
+        </p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            There's a new reply on your support ticket <strong>{{ object.ticket_no }}</strong> - "<em>{{ object.name }}</em>".
+        </p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+            Please visit the portal to read the full message and respond.
+        </p>
+        <div style="text-align: center; margin: 24px 0;">
+            <a href="/my/support/ticket/{{ object.id }}"
+               style="display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                View Conversation
+            </a>
+        </div>
+        <p style="color: #9ca3af; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+            This is an automated message. Please do not reply directly to this email.
+        </p>
+    </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Email Template: SLA Breach Notification -->
+        <record id="mail_template_sla_breach" model="mail.template">
+            <field name="name">Helpdesk: SLA Breach Alert</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="subject">[SLA BREACH] Ticket {{ object.ticket_no }} - {{ object.name }}</field>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="body_html"><![CDATA[
+<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="background: #ef4444; padding: 24px 32px; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 20px;">SLA Breach Alert</h1>
+    </div>
+    <div style="background: white; padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px 20px; margin-bottom: 20px;">
+            <p style="color: #991b1b; font-weight: 600; margin: 0;">
+                An SLA deadline has been breached for ticket {{ object.ticket_no }}.
+            </p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 13px; width: 120px;">Ticket</td>
+                <td style="padding: 8px 0; color: #111827; font-weight: 600;">{{ object.ticket_no }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">Subject</td>
+                <td style="padding: 8px 0; color: #111827;">{{ object.name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">Customer</td>
+                <td style="padding: 8px 0; color: #111827;">{{ object.customer_id.name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">Team</td>
+                <td style="padding: 8px 0; color: #111827;">{{ object.team_id.name or 'Unassigned' }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">Assignee</td>
+                <td style="padding: 8px 0; color: #111827;">{{ object.assigned_user_id.name or 'Unassigned' }}</td>
+            </tr>
+        </table>
+        <p style="color: #374151; font-size: 14px; margin-top: 16px;">
+            Please take immediate action to address this ticket.
+        </p>
+    </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="False"/>
+        </record>
+    </data>
+</odoo>

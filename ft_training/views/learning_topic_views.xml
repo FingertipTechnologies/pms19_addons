@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_learning_topic_list" model="ir.ui.view">
+        <field name="name">ft.learning.topic.list</field>
+        <field name="model">ft.learning.topic</field>
+        <field name="arch" type="xml">
+            <list string="Learning Trails">
+                <field name="name"/>
+                <field name="domain"/>
+                <field name="phase_id"/>
+                <field name="day"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_learning_topic_form" model="ir.ui.view">
+        <field name="name">ft.learning.topic.form</field>
+        <field name="model">ft.learning.topic</field>
+        <field name="arch" type="xml">
+            <form string="Learning Topic">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Odoo Inventory"/></h1>
+                    </div>
+                    <group>
+                        <field name="domain"/>
+                        <field name="phase_id" options="{'no_quick_create': True}"/>
+                        <field name="day"/>
+                    </group>
+                    <separator string="Description"/>
+                    <field name="description" placeholder="Describe this learning topic..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_learning_topic_search" model="ir.ui.view">
+        <field name="name">ft.learning.topic.search</field>
+        <field name="model">ft.learning.topic</field>
+        <field name="arch" type="xml">
+            <search string="Learning Topics">
+                <field name="name"/>
+                <field name="domain"/>
+                <field name="phase_id"/>
+                <group name="group_by">
+                    <filter name="group_domain" string="Domain" context="{'group_by': 'domain'}"/>
+                    <filter name="group_phase" string="Phase" context="{'group_by': 'phase_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_learning_topic" model="ir.actions.act_window">
+        <field name="name">Learning Trails</field>
+        <field name="res_model">ft.learning.topic</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_learning_topic_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first Learning Topic</p>
+            <p>Build the training curriculum (Title, Domain, Description). Topics appear as
+               the dropdown options when trainees log their Today's Learning.</p>
+        </field>
+    </record>
+
+</odoo>

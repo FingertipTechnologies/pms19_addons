@@ -1,0 +1,86 @@
+/* Left-aligned score columns across the Training lists.
+
+   Odoo 18 right-aligns any integer/float column, and it decides that from the
+   FIELD TYPE alone — a `class` on the field reaches the value cell but never the
+   header, so the arch can't turn it off. These columns are scores and ratings
+   rather than money or totals, so they read better flush left.
+
+   Two hooks are needed per column because the header and the cell are styled
+   separately:
+     - header label: thead th[data-name="..."] .o_list_number_th
+     - value cell:   tbody td[name="..."]
+   Each rule is scoped by the view class on the <list> arch, so no other list in
+   the database is affected. !important because the framework rules being
+   overridden have equal specificity and would otherwise win on source order. */
+
+/* --- Assignment: Marks ------------------------------------------------ */
+.o_ft_assignment_list thead th[data-name="marks"] .o_list_number_th {
+    text-align: left !important;
+}
+
+.o_ft_assignment_list tbody td[name="marks"] {
+    text-align: left !important;
+}
+
+/* --- Evaluation: Rating ----------------------------------------------- */
+.o_ft_evaluation_list thead th[data-name="rating"] .o_list_number_th {
+    text-align: left !important;
+}
+
+.o_ft_evaluation_list tbody td[name="rating"] {
+    text-align: left !important;
+}
+
+/* --- Review: the six competency scores -------------------------------- */
+.o_ft_review_list thead th[data-name="attitude"] .o_list_number_th,
+.o_ft_review_list thead th[data-name="communication"] .o_list_number_th,
+.o_ft_review_list thead th[data-name="understanding"] .o_list_number_th,
+.o_ft_review_list thead th[data-name="technical"] .o_list_number_th,
+.o_ft_review_list thead th[data-name="problem_solving"] .o_list_number_th,
+.o_ft_review_list thead th[data-name="self_dependency"] .o_list_number_th {
+    text-align: left !important;
+}
+
+.o_ft_review_list tbody td[name="attitude"],
+.o_ft_review_list tbody td[name="communication"],
+.o_ft_review_list tbody td[name="understanding"],
+.o_ft_review_list tbody td[name="technical"],
+.o_ft_review_list tbody td[name="problem_solving"],
+.o_ft_review_list tbody td[name="self_dependency"] {
+    text-align: left !important;
+}
+
+/* --- Review: let multi-word headers use two lines ----------------------
+   Odoo truncates every list header to one line (`text-truncate` on the label
+   span), so a column is only as narrow as its label is long — "Review Period
+   From" reserved 130px to caption a value reading "Day 2". With twelve columns
+   that arithmetic is what pushed Description off the screen entirely.
+
+   Wrapping applies to the four labels made of separate words, which then need
+   only their longest word rather than the whole label; the widths in
+   trainee_review_views.xml are set to match and the two go together. Single
+   words ("Communication", "Understanding") are left alone — there is nothing to
+   wrap and breaking mid-word would be worse than the width it saves.
+
+   Scoped to this list's own class, so no other list in the database wraps. */
+/* The label is the only <span> inside the header's flex row (the resize handle
+   is a sibling of that row, not a child), so `> div > span` reaches it without
+   depending on the Bootstrap utility classes it happens to carry. */
+.o_ft_review_list thead th[data-name="review_period"] > div > span,
+.o_ft_review_list thead th[data-name="review_period_to"] > div > span,
+.o_ft_review_list thead th[data-name="problem_solving"] > div > span,
+.o_ft_review_list thead th[data-name="self_dependency"] > div > span {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+/* The sort caret sits beside the label in a flex row; without this it centres
+   itself against a two-line label and stops lining up with the carets in the
+   single-line headers next to it. */
+.o_ft_review_list thead th[data-name="review_period"] > div,
+.o_ft_review_list thead th[data-name="review_period_to"] > div,
+.o_ft_review_list thead th[data-name="problem_solving"] > div,
+.o_ft_review_list thead th[data-name="self_dependency"] > div {
+    align-items: flex-start;
+}

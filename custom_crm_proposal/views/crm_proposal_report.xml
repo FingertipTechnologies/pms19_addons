@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_proposal_report_clean" model="report.paperformat">
+        <field name="name">Proposal Minimal Margin Paper Format</field>
+        <field name="default" eval="True" />
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">25</field>
+        <field name="margin_bottom">25</field>
+        <field name="margin_left">15</field>
+        <field name="margin_right">15</field>
+        <field name="header_line" eval="False" />
+        <field name="header_spacing">20</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_crm_proposal" model="ir.actions.report">
+        <field name="name">Proposal PDF</field>
+        <field name="model">crm.proposal</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">custom_crm_proposal.report_proposal_document</field>
+        <field name="report_file">custom_crm_proposal.report_proposal_document</field>
+        <field name="binding_model_id" ref="model_crm_proposal"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_proposal_report_clean"/>
+    </record>
+
+    <template id="report_proposal_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.basic_layout">
+
+                    <div class="header" style="font-family: 'Helvetica Neue', Arial, sans-serif;">
+                        <div class="row align-items-center mt-2">
+                            <div class="col-6 text-start">
+                                <img t-if="res_company.logo" t-att-src="image_data_uri(res_company.logo)" style="max-height: 45px; display: block;" alt="Company Logo"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="footer" style="border-top: 1px solid #005580 !important; padding-top: 8px; font-size: 11px; color: #7f8c8d; font-family: 'Helvetica Neue', Arial, sans-serif;">
+                        <div class="row">
+                            <div class="col-6 text-start">
+                                <strong>Fingertip Plus Technologies Pvt. Ltd. — Confidential</strong>
+                            </div>
+                            <div class="col-6 text-end">
+                                <span>Page <span class="page"/> of <span class="topage"/></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="page" style="counter-reset: proposal-section; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333; font-size: 13px; margin: 0px !important; padding: 0px !important;">
+                        
+                        <style>
+
+                            /* Clear default body padding rules forced by wkhtmltopdf */
+                            html, body, .container, .article,  {
+                                margin-top: 0px !important;
+                                padding-top: 0px !important;
+                                top: 0px !important;
+                            }
+
+                            /* 2. Give the page text an explicit top spacer to accommodate the repeating logo header */
+                            .page {
+                                padding-top: 55px !important; 
+                                margin-top: 0px !important;
+                            }
+
+                            /* Professional Document Type Styles */
+                            h2.proposal-title {
+                                color: #005580;
+                                font-weight: bold;
+                                border-bottom: 2px solid #005580;
+                                padding-bottom: 10px;
+                            }
+                            
+                            h4.dynamic-section {
+                                border-bottom: 1px solid #005580; 
+                                padding-bottom: 6px; 
+                                font-weight: bold;
+                                color: #005580;
+                                margin-top: 30px;
+                                margin-bottom: 15px;
+                                page-break-after: avoid;
+                            }
+
+                            /* Crash-Proof CSS Counter Engine for Dynamic Section Ordering */
+                            h4.dynamic-section::before {
+                                counter-increment: proposal-section;
+                                content: counter(proposal-section) ". ";
+                            }
+
+                            /* Nested Sub-Headings (e.g., 1.1 About Fingertip, 1.2 Terminology) */
+                            .content-block-wrapper h2, 
+                            .page h2 {
+                                font-size: 16px !important;       /* Slightly smaller than main headers */
+                                font-weight: 600 !important;      /* Medium-bold weighting */
+                                color: #2c3e50 !important;        /* Slate charcoal for clean sub-hierarchy */
+                                margin-top: 15px;
+                                margin-bottom: 8px;
+                                padding-bottom: 0px;
+                                border-bottom: none !important;   /* Keeps it looking clean without too many lines */
+                                page-break-after: avoid;
+                            }
+
+                            /* Table  Typographic Formatting Polish */
+                            .table-professional {
+                                width: 100% !important;
+                                table-layout: fixed;
+                                border-collapse: collapse !important;
+                                margin-bottom: 20px;
+                            }
+                            .table-professional th {
+                                background-color: #005580 !important;
+                                color: #ffffff !important;
+                                font-weight: bold;
+                                text-align: center;
+                                vertical-align: middle;
+                                padding: 10px 8px !important;
+                                border: 1px solid #dee2e6 !important;
+                            }
+
+                            .table-professional td {
+                                padding: 8px !important;
+                                border: 1px solid #dee2e6 !important;
+                                vertical-align: middle;
+                            }
+                            .zebra-striped-rows tr:nth-of-type(even) {
+                                background-color: #f9f9f9 !important;
+                            }
+                            .content-block-wrapper {
+                                line-height: 1.6;
+                                text-align: justify;
+                            }
+                        </style>
+
+                        <div class="row mt-2 mb-4">
+                            <div class="col-12">
+                                <h2 class="proposal-title">Proposal: <span t-field="doc.name"/></h2>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4 bg-light p-3 rounded" style="border: 1px solid #dee2e6; margin-left: 0; margin-right: 0;">
+                            <div class="col-6">
+                                <strong style="color: #005580;">Proposal Date:</strong> 
+                                <span t-field="doc.date_proposal" t-options='{"widget": "date"}'/>
+                            </div>
+                            <div class="col-6">
+                                <strong style="color: #005580;">Opportunity Link:</strong> 
+                                <span t-field="doc.opportunity_id.name"/>
+                            </div>
+                        </div>
+
+                        <t t-if="doc.executive_summary">
+                            <div class="mt-3 content-block-wrapper">
+                                <h4 class="dynamic-section">Executive Summary</h4>
+                                <div><t t-out="doc.executive_summary"/></div>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.project_overview">
+                            <div class="mt-3 content-block-wrapper">
+                                <h4 class="dynamic-section">Project Overview - RTT</h4>
+                                <div><t t-out="doc.project_overview"/></div>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.scope_of_work">
+                            <div class="mt-3 content-block-wrapper">
+                                <h4 class="dynamic-section">Scope of Work</h4>
+                                <div><t t-out="doc.scope_of_work"/></div>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.exclusions">
+                            <div class="mt-3 content-block-wrapper">
+                                <h4 class="dynamic-section">Exclusions</h4>
+                                <div><t t-out="doc.exclusions"/></div>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.project_deliverables">
+                            <div class="mt-3 content-block-wrapper">
+                                <h4 class="dynamic-section">Project Deliverables - RTT</h4>
+                                <div><t t-out="doc.project_deliverables"/></div>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.cost_timeline_ids">
+                            <div class="mt-3 content-block-wrapper" style="page-break-inside: avoid;">
+                                <h4 class="dynamic-section">Commercials</h4>
+                                <table class="table table-sm table-bordered table-professional zebra-striped-rows mt-2">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50%; text-align: left; color: #ffffff !important;">Module</th>
+                                            <th style="width: 25%; text-align: right; color: #ffffff !important;">Cost (₹)</th>
+                                            <th style="width: 25%; text-align: center; color: #ffffff !important;">Timeline</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="doc.cost_timeline_ids" t-as="line">
+                                            <td style="text-align: left;"><span t-field="line.release"/></td>
+                                            <td style="text-align: right;">
+                                                <span t-field="line.cost" t-options='{"widget": "monetary", "display_currency": res_company.currency_id}'/>
+                                            </td>
+                                            <td style="text-align: center;"><span t-field="line.duration"/></td>
+                                        </tr>
+                                        
+                                        <tr style="background-color: #005580 !important; font-weight: bold;">
+                                            <td style="text-align: left; border: 1px solid #dee2e6; color: #ffffff !important;">Project Total</td>
+                                            <td style="text-align: right; border: 1px solid #dee2e6; color: #ffffff !important;">
+                                                <span t-out="sum(line.cost for line in doc.cost_timeline_ids)" t-options='{"widget": "monetary", "display_currency": res_company.currency_id}'/>
+                                            </td>
+                                            <td style="border: 1px solid #dee2e6; background-color: #005580 !important;"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p t-if="doc.gst_note" class="mt-2 text-muted" style="font-size: 11px; font-style: italic;">
+                                    <strong>Note:</strong> All amounts are exclusive of GST (18%). GST will be charged as applicable.
+                                </p>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.milestone_ids">
+                            <div class="mt-3 content-block-wrapper" style="page-break-inside: avoid;">
+                                <h4 class="dynamic-section">Payment Milestones</h4>
+                                <table class="table table-sm table-bordered table-professional zebra-striped-rows mt-2">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%; text-align: center; color: #ffffff !important;">#</th>
+                                            <th style="width: 45%; text-align: left; color: #ffffff !important;">Milestone</th>
+                                            <th style="width: 25%; text-align: right; color: #ffffff !important;">Amount (₹)</th>
+                                            <th style="width: 20%; text-align: center; color: #ffffff !important;">%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-set="row_idx" t-value="1"/>
+                                        <tr t-foreach="doc.milestone_ids" t-as="ms">
+                                            <td style="text-align: center;"><t t-out="row_idx"/></td>
+                                            <td style="text-align: left;"><span t-field="ms.milestone_text"/></td>
+                                            <td style="text-align: right;">
+                                                <span t-field="ms.amount" t-options='{"widget": "monetary", "display_currency": res_company.currency_id}'/>
+                                            </td>
+                                            <td style="text-align: center;"><span t-field="ms.percentage"/>%</td>
+                                            <t t-set="row_idx" t-value="row_idx + 1"/>
+                                        </tr>
+                                        
+                                        <tr style="background-color: #005580 !important; font-weight: bold;">
+                                            <td style="border: 1px solid #dee2e6; background-color: #005580 !important;"></td>
+                                            <td style="text-align: left; border: 1px solid #dee2e6; color: #ffffff !important;">Total</td>
+                                            <td style="text-align: right; border: 1px solid #dee2e6; color: #ffffff !important;">
+                                                <span t-out="sum(ms.amount for ms in doc.milestone_ids)" t-options='{"widget": "monetary", "display_currency": res_company.currency_id}'/>
+                                            </td>
+                                            <td style="text-align: center; border: 1px solid #dee2e6; color: #ffffff !important;">
+                                                <t t-out="int(sum(ms.percentage for ms in doc.milestone_ids))"/>%
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.project_timeline_production">
+                            <div class="mt-3 content-block-wrapper">
+                                <h4 class="dynamic-section">Project Timeline Production RTT</h4>
+                                <div><t t-out="doc.project_timeline_production"/></div>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.dependencies_client">
+                            <div class="mt-4" style="page-break-inside: avoid;">
+                                <h4 class="dynamic-section" style="border-bottom: 1px solid #005580; padding-bottom: 5px; font-weight: bold; color: #005580;">Dependencies from Client</h4>
+                                
+                                <div class="dependencies-nested-container" style="font-size: 13px;">
+                                    <style>
+                                        .dependencies-nested-container {
+                                            counter-reset: dep-sub-section;
+                                        }
+                                        
+                                        /* Target sub-heading text nodes styled via class wrappers */
+                                        .dependencies-nested-container p strong.sub-clause::before {
+                                            counter-increment: dep-sub-section;
+                                            /* Compiles the live main header index value + unique child decimals */
+                                            content: counter(proposal-section) "." counter(dep-sub-section) " ";
+                                        }
+                                        
+                                        .dependencies-nested-container ul {
+                                            margin-top: 4px !important;
+                                            margin-bottom: 15px !important;
+                                            padding-left: 20px !important;
+                                        }
+                                        
+                                        .dependencies-nested-container li {
+                                            margin-bottom: 4px !important;
+                                            line-height: 1.5;
+                                        }
+                                    </style>
+                                    
+                                    <t t-out="doc.dependencies_client"/>
+                                </div>
+                            </div>
+                        </t>
+
+
+
+                        <t t-if="doc.terms_conditions">
+                            <div class="mt-4" style="page-break-inside: avoid;">
+                                <h4 class="dynamic-section" style="border-bottom: 1px solid #005580; padding-bottom: 5px; font-weight: bold; color: #005580;">Terms and Conditions</h4>
+                                
+                            <div class="terms-nested-container" style="font-size: 13px; color: #333333;">
+                                    <style>
+                                    /* Initialize sub-section tracking values */
+                                        .terms-nested-container {
+                                            counter-reset: terms-sub-section;
+                                        }
+                                        
+                                    /* Target heading prefixes to auto-calculate dynamic parent indices */
+                                    .terms-nested-container p strong.sub-clause {
+                                        display: block;
+                                        margin-top: 15px;
+                                        margin-bottom: 5px;
+                                        color: #005580;
+                                    }
+                                    
+                                        .terms-nested-container p strong.sub-clause::before {
+                                            counter-increment: terms-sub-section;
+                                            content: counter(proposal-section) "." counter(terms-sub-section) " ";
+                                        }
+                                    
+                                    /* Style the internal text bullet components cleanly without numbering */
+                                    .terms-nested-container ul.terms-internal-list {
+                                        list-style-type: disc !important;
+                                        margin-top: 5px !important;
+                                        margin-bottom: 15px !important;
+                                        padding-left: 20px !important;
+                                    }
+                                    
+                                    .terms-nested-container ul.terms-internal-list li {
+                                        margin-bottom: 6px !important;
+                                        line-height: 1.6;
+                                        text-align: justify;
+                                    }
+                                    </style>
+                                    
+                                    <t t-out="doc.terms_conditions"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <t t-if="doc.approval_block">
+                            <div class="mt-4 content-block-wrapper" style="page-break-inside: avoid;">
+                                <h4 class="dynamic-section" style="border-bottom: 1px solid #005580;">Approval</h4>
+                                <div class="mt-2"><t t-out="doc.approval_block"/></div>
+                            </div>
+                        </t>
+                        
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

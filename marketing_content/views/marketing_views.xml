@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root Menu -->
+    <menuitem id="menu_marketing_root" name="Marketing" sequence="10" groups="Project_Scorecards.group_scorecard_marketing"/>
+
+    <!-- =========================
+         ARTICLE
+    ========================== -->
+
+    <record id="view_marketing_article_list" model="ir.ui.view">
+        <field name="name">marketing.article.list</field>
+        <field name="model">marketing.article</field>
+        <field name="arch" type="xml">
+            <list string="Articles">
+                <field name="subject"/>
+                <field name="slug"/>
+                <field name="technology"/>
+                <field name="type"/>
+                <field name="site"/>
+                <field name="author_name"/>
+                <field name="is_published"/>
+                <field name="published_on"/>
+                <field name="noindex"/>
+                <field name="active"/>
+                <field name="create_uid" widget="many2one_avatar"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_marketing_article_form" model="ir.ui.view">
+        <field name="name">marketing.article.form</field>
+        <field name="model">marketing.article</field>
+        <field name="arch" type="xml">
+            <form string="Article">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="subject"/>
+                        <h1>
+                            <field name="subject" placeholder="Article Heading"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Article Info">
+                            <field name="industry"/>
+                            <field name="technology"/>
+                            <field name="type"/>
+                            <field name="site"/>
+                            <field name="author_name"/>
+                            <field name="schema_type"/>
+                            <field name="reading_time" readonly="1"/>
+                        </group>
+                        <group string="Publishing">
+                            <field name="is_published"/>
+                            <field name="published_on"/>
+                            <field name="noindex"/>
+                            <field name="active"/>
+                            <field name="create_uid" widget="many2one_avatar" readonly="1"/>
+                            <field name="create_date" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="URL and SEO">
+                            <field name="slug" placeholder="crm-vs-erp-guide"/>
+                            <field name="canonical_url" placeholder="https://www.symake.com/blog/crm-vs-erp-guide"/>
+                            <field name="meta_title" placeholder="Meta title for Google search"/>
+                            <field name="meta_description" placeholder="Meta description for Google search"/>
+                            <field name="meta_keywords" placeholder="crm, erp, business software"/>
+                        </group>
+                        <group string="Display and Media">
+                            <field name="image_url" placeholder="https://..."/>
+                            <field name="excerpt" placeholder="Short summary for listing and SEO"/>
+                            <field name="client"/>
+                            <field name="technologies"/>
+                            <field name="timeline"/>
+                            <field name="team_size"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Body">
+                            <field name="body_html" widget="html"/>
+                        </page>
+
+                        <page string="Social Sharing">
+                            <group>
+                                <group>
+                                    <field name="og_title" placeholder="Social share title"/>
+                                    <field name="og_description" placeholder="Social share description"/>
+                                    <field name="og_image" placeholder="https://..."/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_marketing_article_search" model="ir.ui.view">
+        <field name="name">marketing.article.search</field>
+        <field name="model">marketing.article</field>
+        <field name="arch" type="xml">
+            <search string="Search Articles">
+                <field name="subject"/>
+                <field name="slug"/>
+                <field name="meta_title"/>
+                <field name="industry"/>
+                <field name="technology"/>
+                <field name="type"/>
+                <field name="site"/>
+                <field name="author_name"/>
+
+                <filter string="Published" name="published" domain="[('is_published','=',True)]"/>
+                <filter string="Draft" name="draft" domain="[('is_published','=',False)]"/>
+                <filter string="Indexable" name="indexable" domain="[('noindex','=',False)]"/>
+                <filter string="No Index" name="noindex" domain="[('noindex','=',True)]"/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+
+                <group name="group_by">
+                    <filter string="Industry" name="grp_industry" context="{'group_by':'industry'}"/>
+                    <filter string="Technology" name="grp_technology" context="{'group_by':'technology'}"/>
+                    <filter string="Type" name="grp_type" context="{'group_by':'type'}"/>
+                    <filter string="Site" name="grp_site" context="{'group_by':'site'}"/>
+                    <filter string="Author" name="grp_author" context="{'group_by':'author_name'}"/>
+                    <filter string="Published" name="grp_published" context="{'group_by':'is_published'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_marketing_articles" model="ir.actions.act_window">
+        <field name="name">Articles</field>
+        <field name="res_model">marketing.article</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Restricted to the Marketing team. The root menu is also open to CRM
+         salespeople (they reach Campaigns there), so each Marketing-only menu
+         states its own group to keep them out of the rest of the app. -->
+    <menuitem id="menu_marketing_articles"
+              name="Articles"
+              parent="menu_marketing_root"
+              action="action_marketing_articles"
+              groups="Project_Scorecards.group_scorecard_marketing"
+              sequence="10"/>
+
+    <!-- =========================
+         PAGEVIEWS
+    ========================== -->
+
+    <record id="view_marketing_pageview_list" model="ir.ui.view">
+        <field name="name">marketing.pageview.list</field>
+        <field name="model">marketing.pageview</field>
+        <field name="arch" type="xml">
+            <list string="Pageviews">
+                <field name="name"/>
+                <field name="url"/>
+                <field name="domain"/>
+                <field name="ip"/>
+                <field name="location"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_marketing_pageview_form" model="ir.ui.view">
+        <field name="name">marketing.pageview.form</field>
+        <field name="model">marketing.pageview</field>
+        <field name="arch" type="xml">
+            <form string="Pageview">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="url"/>
+                    </group>
+                    <group>
+                        <field name="domain"/>
+                        <field name="ip"/>
+                        <field name="location"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_marketing_pageview_search" model="ir.ui.view">
+        <field name="name">marketing.pageview.search</field>
+        <field name="model">marketing.pageview</field>
+        <field name="arch" type="xml">
+            <search string="Search Pageviews">
+                <field name="name"/>
+                <field name="url"/>
+                <field name="domain"/>
+                <field name="ip"/>
+                <field name="location"/>
+                <group name="group_by">
+                    <filter string="Domain" name="grp_domain" context="{'group_by':'domain'}"/>
+                    <filter string="IP" name="grp_ip" context="{'group_by':'ip'}"/>
+                    <filter string="Location" name="grp_location" context="{'group_by':'location'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_marketing_pageviews" model="ir.actions.act_window">
+        <field name="name">Pageviews</field>
+        <field name="res_model">marketing.pageview</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_marketing_pageviews"
+              name="Pageviews"
+              parent="menu_marketing_root"
+              action="action_marketing_pageviews"
+              groups="Project_Scorecards.group_scorecard_marketing"
+              sequence="20"/>
+
+    <!-- =========================
+         ENQUIRIES
+    ========================== -->
+
+    <record id="view_marketing_enquiry_list" model="ir.ui.view">
+        <field name="name">marketing.enquiry.list</field>
+        <field name="model">marketing.enquiry</field>
+        <field name="arch" type="xml">
+            <list string="Enquiries">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="location"/>
+                <field name="domain"/>
+                <field name="company"/>
+                <field name="subject"/>
+                <field name="message"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_marketing_enquiry_form" model="ir.ui.view">
+        <field name="name">marketing.enquiry.form</field>
+        <field name="model">marketing.enquiry</field>
+        <field name="arch" type="xml">
+            <form string="Enquiry">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="email"/>
+                        <field name="phone"/>
+                        <field name="location"/>
+                        <field name="domain"/>
+                        <field name="company"/>
+                        <field name="subject"/>
+                    </group>
+                    <group>
+                        <field name="message" placeholder="Customer message..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_marketing_enquiry_search" model="ir.ui.view">
+        <field name="name">marketing.enquiry.search</field>
+        <field name="model">marketing.enquiry</field>
+        <field name="arch" type="xml">
+            <search string="Search Enquiries">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="location"/>
+                <field name="domain"/>
+                <group name="group_by">
+                    <filter string="Location" name="grp_location" context="{'group_by':'location'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_marketing_enquiries" model="ir.actions.act_window">
+        <field name="name">Enquiries</field>
+        <field name="res_model">marketing.enquiry</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_marketing_enquiries"
+              name="Enquiries"
+              parent="menu_marketing_root"
+              action="action_marketing_enquiries"
+              groups="Project_Scorecards.group_scorecard_marketing"
+              sequence="30"/>
+
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <!--
+        Expose the chatter's thread model on the root element so CSS can scope
+        button visibility per model (e.g. hide the Activities button only on the
+        project.task chatter). See hide_chatter_buttons.css.
+    -->
+    <t t-name="mail_gateway_whatsapp_restrict.ChatterModelAttr"
+       t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-Chatter')]" position="attributes">
+            <attribute name="t-att-data-chatter-model">state.thread and state.thread.model</attribute>
+        </xpath>
+    </t>
+</templates>

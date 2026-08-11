@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- KB Category Tree -->
+    <record id="view_kb_category_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.category.tree</field>
+        <field name="model">ft.helpdesk.kb.category</field>
+        <field name="arch" type="xml">
+            <list string="KB Categories">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="icon"/>
+                <field name="portal_published"/>
+                <field name="article_count" string="Articles"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- KB Category Form -->
+    <record id="view_kb_category_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.category.form</field>
+        <field name="model">ft.helpdesk.kb.category</field>
+        <field name="arch" type="xml">
+            <form string="KB Category">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Category Name..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="parent_id"/>
+                            <field name="icon"/>
+                            <field name="color" widget="color_picker"/>
+                            <field name="portal_published"/>
+                        </group>
+                        <group>
+                            <field name="helpdesk_category_id"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Category description..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- KB Article Tree -->
+    <record id="view_kb_article_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.article.tree</field>
+        <field name="model">ft.helpdesk.kb.article</field>
+        <field name="arch" type="xml">
+            <list string="KB Articles"
+                  decoration-muted="not portal_published">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="slug"/>
+                <field name="category_id"/>
+                <field name="author_id" widget="many2one_avatar_user"/>
+                <field name="state"/>
+                <field name="portal_published"/>
+                <field name="view_count"/>
+                <field name="helpful_score" string="Helpful %" widget="progressbar"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- KB Article Form -->
+    <record id="view_kb_article_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.article.form</field>
+        <field name="model">ft.helpdesk.kb.article</field>
+        <field name="arch" type="xml">
+            <form string="KB Article">
+                <header>
+                    <button name="action_publish" type="object" string="Publish"
+                            class="btn-primary" invisible="portal_published"/>
+                    <button name="action_unpublish" type="object" string="Unpublish"
+                            class="btn-secondary" invisible="not portal_published"/>
+                    <button name="action_set_draft" type="object" string="Set to Draft"
+                            class="btn-secondary" invisible="state == 'draft'"/>
+                    <button name="action_set_in_review" type="object" string="In Review"
+                            class="btn-primary" invisible="state == 'in_review'"/>
+                    <button name="action_set_completed" type="object" string="Completed"
+                            class="btn-success" invisible="state == 'completed'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_review,completed"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Published" bg_color="text-bg-success"
+                            invisible="not portal_published"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Article Title..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="slug"/>
+                            <field name="category_id"/>
+                            <field name="author_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group>
+                            <field name="portal_published"/>
+                            <field name="sequence"/>
+                            <field name="keywords" placeholder="keyword1, keyword2, ..."/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="summary" placeholder="Short summary for search results..."/>
+                    </group>
+                    <notebook>
+                        <page string="Content" name="content">
+                            <field name="body_html" nolabel="1"/>
+                        </page>
+                        <page string="Tags" name="tags">
+                            <group>
+                                <field name="tag_ids" widget="many2many_tags"
+                                       options="{'color_field': 'color'}"/>
+                                <field name="customer_visibility" required="1"/>
+                                <field name="customer_ids" widget="many2many_tags"
+                                       invisible="customer_visibility != 'specific'"
+                                       required="customer_visibility == 'specific'"/>
+                            </group>
+                        </page>
+                        <page string="Metrics" name="metrics">
+                            <group>
+                                <group>
+                                    <field name="view_count"/>
+                                    <field name="helpful_yes"/>
+                                    <field name="helpful_no"/>
+                                    <field name="helpful_score" widget="progressbar"/>
+                                </group>
+                                <group string="SEO">
+                                    <field name="meta_description"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- KB Article Search -->
+    <record id="view_kb_article_search" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.article.search</field>
+        <field name="model">ft.helpdesk.kb.article</field>
+        <field name="arch" type="xml">
+            <search string="Search Articles">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="keywords"/>
+                <separator/>
+                <filter string="Published" name="published"
+                        domain="[('portal_published', '=', True)]"/>
+                <filter string="Draft" name="draft"
+                        domain="[('portal_published', '=', False)]"/>
+                <separator/>
+                <filter string="Draft Status" name="state_draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter string="In Review" name="state_in_review"
+                        domain="[('state', '=', 'in_review')]"/>
+                <filter string="Completed" name="state_completed"
+                        domain="[('state', '=', 'completed')]"/>
+                <separator/>
+                <group name="group_by">
+                    <filter string="Category" name="group_category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter string="Author" name="group_author"
+                            context="{'group_by': 'author_id'}"/>
+                    <filter string="Status" name="group_state"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_kb_category" model="ir.actions.act_window">
+        <field name="name">KB Categories</field>
+        <field name="res_model">ft.helpdesk.kb.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_kb_article" model="ir.actions.act_window">
+        <field name="name">KB Articles</field>
+        <field name="res_model">ft.helpdesk.kb.article</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_kb_article_search"/>
+    </record>
+</odoo>

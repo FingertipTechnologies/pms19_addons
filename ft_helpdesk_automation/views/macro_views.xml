@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================== -->
+    <!-- Macro: Tree View         -->
+    <!-- ======================== -->
+    <record id="ft_helpdesk_macro_view_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.macro.tree</field>
+        <field name="model">ft.helpdesk.macro</field>
+        <field name="arch" type="xml">
+            <list string="Macros">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="team_ids" widget="many2many_tags" optional="show"/>
+                <field name="set_state" optional="show"/>
+                <field name="set_priority" optional="show"/>
+                <field name="set_assigned_user_id" optional="hide"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================== -->
+    <!-- Macro: Form View         -->
+    <!-- ======================== -->
+    <record id="ft_helpdesk_macro_view_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.macro.form</field>
+        <field name="model">ft.helpdesk.macro</field>
+        <field name="arch" type="xml">
+            <form string="Macro">
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Escalate to Urgent"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="General">
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                            <field name="team_ids" widget="many2many_tags"
+                                   placeholder="All teams (leave empty)"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Actions" name="actions">
+                            <group>
+                                <group string="Ticket Fields">
+                                    <field name="set_state"/>
+                                    <field name="set_priority"/>
+                                    <field name="set_assigned_user_id"/>
+                                </group>
+                                <group string="Tags">
+                                    <field name="add_tag_ids" widget="many2many_tags"/>
+                                    <field name="remove_tag_ids" widget="many2many_tags"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Reply" name="reply">
+                            <group>
+                                <field name="is_internal_note"/>
+                            </group>
+                            <field name="reply_body" placeholder="Leave empty to skip posting a reply..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================== -->
+    <!-- Macro: Search View       -->
+    <!-- ======================== -->
+    <record id="ft_helpdesk_macro_view_search" model="ir.ui.view">
+        <field name="name">ft.helpdesk.macro.search</field>
+        <field name="model">ft.helpdesk.macro</field>
+        <field name="arch" type="xml">
+            <search string="Search Macros">
+                <field name="name"/>
+                <field name="team_ids"/>
+                <filter string="Archived" name="inactive"
+                        domain="[('active', '=', False)]"/>
+                <group name="group_by">
+                    <filter string="Status Action" name="group_set_state"
+                            context="{'group_by': 'set_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================== -->
+    <!-- Macro: Action            -->
+    <!-- ======================== -->
+    <record id="action_ft_helpdesk_macro" model="ir.actions.act_window">
+        <field name="name">Macros</field>
+        <field name="res_model">ft.helpdesk.macro</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="ft_helpdesk_macro_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first macro
+            </p>
+            <p>
+                Macros let agents apply multiple actions to a ticket with a single click:
+                change status, priority, assignee, tags, and post a templated reply.
+            </p>
+        </field>
+    </record>
+
+</odoo>

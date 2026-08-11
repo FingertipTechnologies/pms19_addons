@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Expense Management — now a section under the General app -->
+    <menuitem id="menu_expense_management_root"
+              name="Expense Management"
+              parent="menu_general_root"
+              sequence="20"
+              groups="group_expense_user"/>
+
+    <menuitem id="menu_expense_claims"
+              name="Expense Claims"
+              parent="menu_expense_management_root"
+              action="action_employee_expense_claim"
+              sequence="10"/>
+
+     <menuitem id="menu_expense_lines"
+              name="Expense Lines"
+              parent="menu_expense_management_root"
+              action="action_employee_expense_line"
+              sequence="15"/>
+
+    <menuitem id="menu_expense_advances"
+              name="Advance Payment"
+              parent="menu_expense_management_root"
+              action="action_employee_advance"
+              sequence="20"/>
+
+    <menuitem id="menu_expense_configuration"
+              name="Configuration"
+              parent="menu_expense_management_root"
+              sequence="90"
+              groups="group_expense_manager"/>
+
+    <menuitem id="menu_expense_categories"
+              name="Expense Categories"
+              parent="menu_expense_configuration"
+              action="action_expense_category"
+              sequence="10"/>
+
+    <!-- Reports sub-menu -->
+    <menuitem id="menu_expense_reports"
+              name="Reports"
+              parent="menu_expense_management_root"
+              sequence="80"/>
+
+    <menuitem id="menu_expense_report_pending"
+              name="Pending Approval Report"
+              parent="menu_expense_reports"
+              action="action_expense_pending_report"
+              sequence="10"/>
+
+    <menuitem id="menu_expense_report_project"
+              name="Project-wise Expense"
+              parent="menu_expense_reports"
+              action="action_expense_project_report"
+              sequence="20"/>
+
+    <menuitem id="menu_expense_report_advance"
+              name="Advance Settlement Report"
+              parent="menu_expense_reports"
+              action="action_advance_settlement_report"
+              sequence="30"/>
+
+    <menuitem id="menu_expense_report_monthly"
+              name="Monthly Expense Summary"
+              parent="menu_expense_reports"
+              action="action_expense_monthly_report"
+              sequence="40"/>
+
+</odoo>

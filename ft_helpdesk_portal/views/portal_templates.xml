@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================= -->
+    <!-- SUPPORT LANDING PAGE          -->
+    <!-- ============================= -->
+    <template id="portal_support_landing" name="Support Landing Page">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title">Support</t>
+            <t t-set="no_breadcrumbs" t-value="True"/>
+            <div class="o_portal_wrap ft-support-portal">
+                <div class="container py-4">
+                    <!-- Logout bar -->
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="/web/session/logout?redirect=/web/login" class="ft-logout-btn">
+                            <i class="fa fa-sign-out me-1"/> Logout
+                        </a>
+                    </div>
+                    <!-- Page Header -->
+                    <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                        <i class="fa fa-headphones fa-2x mb-2" style="opacity: 0.85;"/>
+                        <h2 class="fw-bold mb-1">Welcome to Your Support Portal</h2>
+                    </div>
+
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-tabs ft-support-tabs mb-4" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" href="/my/support/projects">
+                                <i class="fa fa-cubes me-1"/> Projects
+                                <t t-if="project_count">
+                                    <span class="badge text-bg-secondary ms-1"><t t-out="project_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" href="/my/support/tickets">
+                                <i class="fa fa-ticket me-1"/> Tickets
+                                <t t-if="ticket_count">
+                                    <span class="badge text-bg-primary ms-1"><t t-out="ticket_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" href="/my/support/milestones">
+                                <i class="fa fa-flag-checkered me-1"/> Milestones
+                                <t t-if="milestone_count">
+                                    <span class="badge text-bg-info ms-1"><t t-out="milestone_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" href="/my/support/releases">
+                                <i class="fa fa-rocket me-1"/> Releases
+                                <t t-if="release_count">
+                                    <span class="badge text-bg-success ms-1"><t t-out="release_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" href="/my/support/kb">
+                                <i class="fa fa-book me-1"/> Knowledge Base
+                                <t t-if="kb_count">
+                                    <span class="badge text-bg-warning ms-1"><t t-out="kb_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                    </ul>
+                    <!-- Empty tab content area for AJAX tab switching -->
+                    <div class="ft-tab-content"></div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================= -->
+    <!-- SUPPORT HOME — TAB LAYOUT     -->
+    <!-- ============================= -->
+    <template id="portal_support_home" name="Support Home">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title">Support</t>
+            <t t-set="no_breadcrumbs" t-value="True"/>
+            <div class="o_portal_wrap ft-support-portal">
+                <div class="container py-4">
+                    <!-- Logout bar -->
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="/web/session/logout?redirect=/web/login" class="ft-logout-btn">
+                            <i class="fa fa-sign-out me-1"/> Logout
+                        </a>
+                    </div>
+                    <!-- Welcome header: kept here (the shared shell) rather than
+                         only on portal_support_landing, so every tab shows it.
+                         Portal users now land straight on /my/support/projects
+                         and would otherwise never see it. -->
+                    <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                        <i class="fa fa-headphones fa-2x mb-2" style="opacity: 0.85;"/>
+                        <h2 class="fw-bold mb-1">Welcome to Your Support Portal</h2>
+                    </div>
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-tabs ft-support-tabs mb-4" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a t-attf-class="nav-link #{active_tab == 'projects' and 'active' or ''}"
+                               href="/my/support/projects">
+                                <i class="fa fa-cubes me-1"/> Projects
+                                <t t-if="project_count">
+                                    <span class="badge text-bg-secondary ms-1"><t t-out="project_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a t-attf-class="nav-link #{active_tab == 'tickets' and 'active' or ''}"
+                               href="/my/support/tickets">
+                                <i class="fa fa-ticket me-1"/> Tickets
+                                <t t-if="ticket_count">
+                                    <span class="badge text-bg-primary ms-1"><t t-out="ticket_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a t-attf-class="nav-link #{active_tab == 'milestones' and 'active' or ''}"
+                               href="/my/support/milestones">
+                                <i class="fa fa-flag-checkered me-1"/> Milestones
+                                <t t-if="milestone_count">
+                                    <span class="badge text-bg-info ms-1"><t t-out="milestone_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a t-attf-class="nav-link #{active_tab == 'releases' and 'active' or ''}"
+                               href="/my/support/releases">
+                                <i class="fa fa-rocket me-1"/> Releases
+                                <t t-if="release_count">
+                                    <span class="badge text-bg-success ms-1"><t t-out="release_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a t-attf-class="nav-link #{active_tab == 'kb' and 'active' or ''}"
+                               href="/my/support/kb">
+                                <i class="fa fa-book me-1"/> Knowledge Base
+                                <t t-if="kb_count">
+                                    <span class="badge text-bg-warning ms-1"><t t-out="kb_count"/></span>
+                                </t>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content (injected by sub-templates) -->
+                    <div class="ft-tab-content">
+                        <t t-out="0"/>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================= -->
+    <!-- PROJECTS TAB CONTENT          -->
+    <!-- ============================= -->
+    <template id="portal_support_projects" name="Support Projects">
+        <t t-call="ft_helpdesk_portal.portal_support_home">
+            <!-- Page Header -->
+            <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                <i class="fa fa-cubes fa-2x mb-2" style="opacity: 0.85;"/>
+                <h2 class="fw-bold mb-1">Projects</h2>
+                <p class="mb-0" style="opacity: 0.8;">Overview of your active projects</p>
+            </div>
+
+            <t t-if="projects">
+                <div class="row g-4">
+                    <t t-foreach="projects" t-as="proj">
+                        <div class="col-md-6">
+                            <div class="card shadow-sm h-100" style="border: 1px solid #e0e0e0;">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h5 class="fw-bold mb-0">
+                                            <i class="fa fa-folder-open me-2 text-primary"/>
+                                            <t t-esc="proj.name"/>
+                                        </h5>
+                                        <div class="d-flex gap-1 flex-wrap justify-content-end">
+                                            <t t-if="proj.last_update_status == 'on_track'">
+                                                <span class="badge text-bg-success">On Track</span>
+                                            </t>
+                                            <t t-elif="proj.last_update_status == 'at_risk'">
+                                                <span class="badge text-bg-warning">At Risk</span>
+                                            </t>
+                                            <t t-elif="proj.last_update_status == 'off_track'">
+                                                <span class="badge text-bg-danger">Off Track</span>
+                                            </t>
+                                            <t t-elif="proj.last_update_status == 'done'">
+                                                <span class="badge text-bg-primary">Done</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="badge text-bg-secondary">In Progress</span>
+                                            </t>
+                                            <t t-if="proj.is_project_overtime">
+                                                <span class="badge text-bg-danger">Overtime</span>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    <table class="table table-borderless mb-0 small">
+                                        <tbody>
+                                            <t t-if="proj.partner_id">
+                                                <tr>
+                                                    <td class="text-muted py-1 ps-0" style="width:45%;">Customer</td>
+                                                    <td class="py-1"><t t-esc="proj.partner_id.name"/></td>
+                                                </tr>
+                                            </t>
+                                            <t t-if="proj.user_id">
+                                                <tr>
+                                                    <td class="text-muted py-1 ps-0">Project Manager</td>
+                                                    <td class="py-1"><t t-esc="proj.user_id.name"/></td>
+                                                </tr>
+                                            </t>
+                                            <t t-if="proj.date_start">
+                                                <tr>
+                                                    <td class="text-muted py-1 ps-0">Start Date</td>
+                                                    <td class="py-1">
+                                                        <t t-esc="proj.date_start"
+                                                           t-options='{"widget": "date"}'/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                            <t t-if="proj.date">
+                                                <tr>
+                                                    <td class="text-muted py-1 ps-0">Expected Closure</td>
+                                                    <td class="py-1">
+                                                        <t t-esc="proj.date"
+                                                           t-options='{"widget": "date"}'/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                            <t t-if="proj.allocated_hours">
+                                                <tr>
+                                                    <td class="text-muted py-1 ps-0">Allocated Hours</td>
+                                                    <td class="py-1">
+                                                        <t t-esc="'%.2f hrs' % proj.allocated_hours"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                            <tr>
+                                                <td class="text-muted py-1 ps-0">Time Spent</td>
+                                                <td class="py-1">
+                                                    <t t-esc="'%.2f hrs' % proj.effective_hours"/>
+                                                </td>
+                                            </tr>
+                                            <t t-if="proj.allocated_hours">
+                                                <tr>
+                                                    <td class="text-muted py-1 ps-0">Time Remaining</td>
+                                                    <td class="py-1">
+                                                        <t t-if="proj.remaining_hours >= 0">
+                                                            <t t-esc="'%.2f hrs' % proj.remaining_hours"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <span class="text-danger fw-medium">
+                                                                <t t-esc="'%.2f hrs over' % abs(proj.remaining_hours)"/>
+                                                            </span>
+                                                        </t>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="text-center py-5">
+                    <i class="fa fa-cubes fa-3x text-muted mb-3" style="opacity: 0.3;"/>
+                    <p class="text-muted">No projects found.</p>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================= -->
+    <!-- MILESTONES TAB CONTENT        -->
+    <!-- ============================= -->
+    <template id="portal_support_milestones" name="Support Milestones">
+        <t t-call="ft_helpdesk_portal.portal_support_home">
+            <!-- Page Header -->
+            <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                <i class="fa fa-flag-checkered fa-2x mb-2" style="opacity: 0.85;"/>
+                <h2 class="fw-bold mb-1">Milestones</h2>
+                <p class="mb-0" style="opacity: 0.8;">Track your project progress and deliverables</p>
+            </div>
+
+            <!-- Filters & Search Bar -->
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-4">
+                <div class="d-flex gap-2 align-items-center">
+                    <!-- Filter Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle px-3 py-2" type="button" data-bs-toggle="dropdown" style="font-size: 0.9rem;">
+                            Filter: <strong><t t-out="filters[filterby]['label']"/></strong>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <t t-foreach="filters" t-as="f">
+                                <li>
+                                    <a t-attf-href="/my/support/milestones?filterby=#{f}&amp;sortby=#{sortby}&amp;search=#{search}"
+                                       t-attf-class="dropdown-item #{filterby == f and 'active' or ''}">
+                                        <t t-out="filters[f]['label']"/>
+                                    </a>
+                                </li>
+                            </t>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Search -->
+                <form method="GET" action="/my/support/milestones" class="input-group" style="max-width: 300px;">
+                    <input type="hidden" name="filterby" t-att-value="filterby"/>
+                    <input type="hidden" name="sortby" t-att-value="sortby"/>
+                    <input type="text" name="search" class="form-control py-2" style="font-size: 0.9rem;"
+                           t-att-value="search"
+                           placeholder="Search milestones..."/>
+                    <button class="btn btn-outline-secondary px-3" type="submit">
+                        <i class="fa fa-search"/>
+                    </button>
+                </form>
+            </div>
+
+            <t t-if="milestones">
+                <t t-set="qs_tail" t-value="'filterby=%s&amp;search=%s' % (filterby, search)"/>
+                <div class="card shadow-sm" style="border: 1px solid #e0e0e0;">
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="px-4 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'milestone_id'"/>
+                                            <t t-set="label">ID</t>
+                                            <t t-set="base_url" t-value="'/my/support/milestones'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'name'"/>
+                                            <t t-set="label">Milestone</t>
+                                            <t t-set="base_url" t-value="'/my/support/milestones'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'project'"/>
+                                            <t t-set="label">Project</t>
+                                            <t t-set="base_url" t-value="'/my/support/milestones'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'amount'"/>
+                                            <t t-set="label">Amount</t>
+                                            <t t-set="base_url" t-value="'/my/support/milestones'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'paid_amount'"/>
+                                            <t t-set="label">Paid</t>
+                                            <t t-set="base_url" t-value="'/my/support/milestones'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'due_date'"/>
+                                            <t t-set="label">Due Date</t>
+                                            <t t-set="base_url" t-value="'/my/support/milestones'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'status'"/>
+                                            <t t-set="label">Status</t>
+                                            <t t-set="base_url" t-value="'/my/support/milestones'"/>
+                                        </t>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="milestones" t-as="m">
+                                    <tr>
+                                        <td class="px-4"><t t-esc="m.milestone_id or '-'"/></td>
+                                        <td class="px-3 fw-medium"><t t-esc="m.name"/></td>
+                                        <td class="px-3"><t t-esc="m.project_id.name"/></td>
+                                        <td class="px-3"><t t-esc="'%.2f' % m.amount"/></td>
+                                        <td class="px-3"><t t-esc="'%.2f' % m.paid_amount"/></td>
+                                        <td class="px-3">
+                                            <t t-if="m.due_date">
+                                                <t t-esc="m.due_date" t-options='{"widget": "date"}'/>
+                                            </t>
+                                            <t t-else="">-</t>
+                                        </td>
+                                        <td class="px-3">
+                                            <span t-if="m.status == 'paid'" class="badge text-bg-success">Paid</span>
+                                            <span t-elif="m.status == 'partially_paid'" class="badge text-bg-info">Partially Paid</span>
+                                            <span t-elif="m.status == 'invoice_raised'" class="badge text-bg-warning">Invoice Raised</span>
+                                            <span t-elif="m.status == 'completed'" class="badge text-bg-primary">Completed</span>
+                                            <span t-else="" class="badge text-bg-secondary">Not Started</span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="text-center py-5">
+                    <i class="fa fa-flag-checkered fa-3x text-muted mb-3" style="opacity: 0.3;"/>
+                    <t t-if="search or filterby != 'all'">
+                        <p class="text-muted">No milestones match this filter. Try adjusting your filters or search.</p>
+                        <a href="/my/support/milestones?filterby=all" class="btn btn-outline-secondary">
+                            <i class="fa fa-times me-1"/> Clear Filters
+                        </a>
+                    </t>
+                    <t t-else="">
+                        <p class="text-muted">No milestones found for your projects.</p>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================= -->
+    <!-- RELEASES TAB CONTENT          -->
+    <!-- ============================= -->
+    <template id="portal_support_releases" name="Support Releases">
+        <t t-call="ft_helpdesk_portal.portal_support_home">
+            <!-- Page Header -->
+            <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                <i class="fa fa-rocket fa-2x mb-2" style="opacity: 0.85;"/>
+                <h2 class="fw-bold mb-1">Releases</h2>
+                <p class="mb-0" style="opacity: 0.8;">Stay updated on deployments and versions</p>
+            </div>
+
+            <!-- Filters & Search Bar -->
+            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-4">
+                <div class="d-flex gap-2 align-items-center">
+                    <!-- Filter Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle px-3 py-2" type="button" data-bs-toggle="dropdown" style="font-size: 0.9rem;">
+                            Filter: <strong><t t-out="filters[filterby]['label']"/></strong>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <t t-foreach="filters" t-as="f">
+                                <li>
+                                    <a t-attf-href="/my/support/releases?filterby=#{f}&amp;sortby=#{sortby}&amp;search=#{search}"
+                                       t-attf-class="dropdown-item #{filterby == f and 'active' or ''}">
+                                        <t t-out="filters[f]['label']"/>
+                                    </a>
+                                </li>
+                            </t>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Search -->
+                <form method="GET" action="/my/support/releases" class="input-group" style="max-width: 300px;">
+                    <input type="hidden" name="filterby" t-att-value="filterby"/>
+                    <input type="hidden" name="sortby" t-att-value="sortby"/>
+                    <input type="text" name="search" class="form-control py-2" style="font-size: 0.9rem;"
+                           t-att-value="search"
+                           placeholder="Search releases..."/>
+                    <button class="btn btn-outline-secondary px-3" type="submit">
+                        <i class="fa fa-search"/>
+                    </button>
+                </form>
+            </div>
+
+            <t t-if="releases">
+                <t t-set="qs_tail" t-value="'filterby=%s&amp;search=%s' % (filterby, search)"/>
+                <div class="card shadow-sm" style="border: 1px solid #e0e0e0;">
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="px-4 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'name'"/>
+                                            <t t-set="label">Release</t>
+                                            <t t-set="base_url" t-value="'/my/support/releases'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'version'"/>
+                                            <t t-set="label">Version</t>
+                                            <t t-set="base_url" t-value="'/my/support/releases'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'project'"/>
+                                            <t t-set="label">Project</t>
+                                            <t t-set="base_url" t-value="'/my/support/releases'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'release_date'"/>
+                                            <t t-set="label">Release Date</t>
+                                            <t t-set="base_url" t-value="'/my/support/releases'"/>
+                                        </t>
+                                    </th>
+                                    <th class="px-3 ft-sort-th">
+                                        <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                            <t t-set="field" t-value="'status'"/>
+                                            <t t-set="label">Status</t>
+                                            <t t-set="base_url" t-value="'/my/support/releases'"/>
+                                        </t>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="releases" t-as="rel">
+                                    <tr>
+                                        <td class="px-4 fw-medium"><t t-esc="rel.name"/></td>
+                                        <td class="px-3">
+                                            <t t-if="rel.version">
+                                                <span class="badge text-bg-light border"><t t-esc="rel.version"/></span>
+                                            </t>
+                                            <t t-else="">-</t>
+                                        </td>
+                                        <td class="px-3"><t t-esc="rel.project_id.name"/></td>
+                                        <td class="px-3">
+                                            <t t-if="rel.release_date">
+                                                <t t-esc="rel.release_date" t-options='{"widget": "date"}'/>
+                                            </t>
+                                            <t t-else="">-</t>
+                                        </td>
+                                        <td class="px-3">
+                                            <span t-if="rel.status == 'released'" class="badge text-bg-success">Released</span>
+                                            <span t-elif="rel.status == 'in_progress'" class="badge text-bg-primary">In Progress</span>
+                                            <span t-elif="rel.status == 'cancelled'" class="badge text-bg-danger">Cancelled</span>
+                                            <span t-else="" class="badge text-bg-secondary">Planned</span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="text-center py-5">
+                    <i class="fa fa-rocket fa-3x text-muted mb-3" style="opacity: 0.3;"/>
+                    <t t-if="search or filterby != 'all'">
+                        <p class="text-muted">No releases match this filter. Try adjusting your filters or search.</p>
+                        <a href="/my/support/releases?filterby=all" class="btn btn-outline-secondary">
+                            <i class="fa fa-times me-1"/> Clear Filters
+                        </a>
+                    </t>
+                    <t t-else="">
+                        <p class="text-muted">No releases found for your projects.</p>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================= -->
+    <!-- REUSABLE BADGE COMPONENTS     -->
+    <!-- ============================= -->
+    <template id="ticket_state_badge" name="Ticket State Badge">
+        <span t-if="state == 'new'" class="badge rounded-pill text-bg-secondary">New</span>
+        <span t-if="state == 'open'" class="badge rounded-pill text-bg-primary">In Progress</span>
+        <span t-if="state == 'pending_customer'" class="badge rounded-pill text-bg-warning">Pending My Reply</span>
+        <span t-if="state == 'pending_internal'" class="badge rounded-pill text-bg-info">Under Review</span>
+        <span t-if="state == 'resolved'" class="badge rounded-pill text-bg-success">Resolved</span>
+        <span t-if="state == 'closed'" class="badge rounded-pill ft-badge-closed">Closed</span>
+        <span t-if="state == 'cancelled'" class="badge rounded-pill text-bg-danger">Cancelled</span>
+    </template>
+
+    <template id="ticket_priority_badge" name="Ticket Priority Badge">
+        <span t-if="priority == '3'" class="badge rounded-pill text-bg-danger">
+            <i class="fa fa-arrow-up"/> P1 – Critical
+        </span>
+        <span t-if="priority == '2'" class="badge rounded-pill text-bg-warning">
+            <i class="fa fa-arrow-up"/> P2 – High
+        </span>
+    </template>
+
+    <!-- ============================= -->
+    <!-- SORTABLE HEADER LINK          -->
+    <!-- ============================= -->
+    <!-- Caller sets: field, label, base_url. Uses outer context: sortby, qs_tail -->
+    <template id="ft_sort_header" name="Sortable Column Header">
+        <t t-set="asc_key" t-value="field + '_asc'"/>
+        <t t-set="desc_key" t-value="field + '_desc'"/>
+        <t t-set="is_asc" t-value="sortby == asc_key"/>
+        <t t-set="is_desc" t-value="sortby == desc_key"/>
+        <t t-set="next_sort" t-value="asc_key if is_desc else desc_key"/>
+        <a t-attf-href="#{base_url}?sortby=#{next_sort}&amp;#{qs_tail or ''}"
+           t-attf-class="ft-sort-link #{(is_asc or is_desc) and 'active' or ''}">
+            <t t-out="label"/>
+            <i t-if="is_desc" class="fa fa-caret-down ms-1"/>
+            <i t-elif="is_asc" class="fa fa-caret-up ms-1"/>
+            <i t-else="" class="fa fa-sort ms-1 ft-sort-idle"/>
+        </a>
+    </template>
+</odoo>

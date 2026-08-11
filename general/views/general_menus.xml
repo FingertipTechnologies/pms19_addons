@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         SINGLE TOP-LEVEL APP: General
+         All three modules (Asset, Expense, Recruitment) live under this.
+         ============================================================ -->
+    <menuitem id="menu_general_root"
+              name="General"
+              sequence="50"
+              web_icon="general,static/description/icon.png"
+              groups="group_asset_user,group_expense_user,group_recruitment_user"/>
+
+</odoo>

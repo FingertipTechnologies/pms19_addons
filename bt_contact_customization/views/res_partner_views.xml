@@ -1,0 +1,179 @@
+<odoo>
+    <record id="view_partner_form_inherit_custom" model="ir.ui.view">
+        <field name="name">res.partner.form.custom.fields</field>
+        <field name="model">res.partner</field>
+        <field name="priority">1</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='category_id']" position="after">
+<!--                <field name="name" string="Account Name" invisible="is_company == False"/>-->
+                <field name="account_status_id" invisible="is_company == False"/>
+                <field name="activity_count_custom" invisible="is_company == False"/>
+                <!-- Annual Revenue is one of the details that must be filled in
+                     before an Opportunity or Activity can be created for the
+                     account (see _missing_account_fields). The others - Employee
+                     Count (x_Employee), Website and Legal Name (the account
+                     name) - are already elsewhere on this form. -->
+                <field name="annual_revenue" invisible="1"/>
+                <field name="annual_revenue_currency_id" invisible="1"/>
+                <field name="annual_revenue_amount" invisible="is_company == False"/>
+                <field name="annual_revenue_range" invisible="is_company == False"/>
+                <field name="company_linkedin" invisible="is_company == False"/>
+<!--                <field name="phone" invisible="is_company == False"/>-->
+                <field name="industry_id" invisible="is_company == False"/>
+                <field name="rating" invisible="is_company == False"/>
+                <field name="contact_date" invisible="is_company == False"/>
+
+                <field name="number_of_contacts"
+                        invisible="is_company == False"/>
+
+                    <field name="connected_contacts"
+                        widget="many2many_tags"
+                        invisible="is_company == False"/>
+
+                <!-- Audit datetimes, shown at the end below Connected Contacts -->
+                <field name="create_date" string="Created On" readonly="1"/>
+                <field name="write_date" string="Last Modified On" readonly="1"/>
+            </xpath>
+
+            <!-- Salesperson moved above the Phone field -->
+            <xpath expr="//field[@name='phone']" position="before">
+                <field name="user_id" position="move"/>
+            </xpath>
+
+            <!-- Dedicated rich-text Description tab, beside Internal Notes,
+                 shown only for companies. -->
+            <xpath expr="//page[@name='internal_notes']" position="after">
+                <page string="Description" name="company_description"
+                      invisible="is_company == False">
+                    <field name="description" nolabel="1"
+                           placeholder="Company description..."/>
+                </page>
+            </xpath>
+
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="duplicate_check" invisible="is_company == False"/>
+                <field name="company_eid" invisible="is_company == False"/>
+                <field name="employees" invisible="is_company == False"/>
+                <field name="first_activity_datetime" readonly="True"/>
+                <field name="last_activity_datetime" readonly="True"/>
+                <field name="pain_points" invisible="is_company == False"/>
+                <field name="source_id" invisible="is_company == False"/>
+                <field name="sub_vertical" invisible="is_company == False"/>
+                <field name="working_date" invisible="is_company == False"/>
+            </xpath>
+
+            <xpath expr="//field[@name='website']" position="before">
+                <field name="email_1" widget="email" invisible="is_company == True"/>
+                <field name="email_2" widget="email" invisible="is_company == True"/>
+
+            </xpath>
+
+            <!-- Website is mandatory for Companies, optional for Individuals -->
+            <xpath expr="//field[@name='website']" position="attributes">
+                <attribute name="required">is_company == True</attribute>
+            </xpath>
+
+            <!-- Odoo 19 removed res.partner.mobile (merged into phone), so the
+                 secondary number is anchored after Phone instead. -->
+            <xpath expr="//field[@name='phone']" position="after">
+                <field name="mobile_1" widget="phone"/>
+            </xpath>
+
+            <xpath expr="//group[@name='misc']//field[@name='industry_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="contact_eid" invisible="is_company == True"/>
+                <field name="contact_account" invisible="is_company == True"/>
+                <field name="contact_linkedin" invisible="is_company == True"/>
+                <field name="company_id" invisible="is_company == True"/>
+                <field name="department" invisible="is_company == True"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- Contacts list view: enforce column order
+         Name, Email, Phone, Annual Revenue, Activities, Employees, Website,
+         Industry, State, Salesperson, Account Status, Company LinkedIn. -->
+    <record id="view_partner_tree_inherit_custom_order" model="ir.ui.view">
+        <field name="name">res.partner.list.custom.order</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <!-- Email, then Phone, right after Name -->
+            <xpath expr="//field[@name='complete_name']" position="after">
+                <field name="email" position="move"/>
+            </xpath>
+            <xpath expr="//field[@name='email']" position="after">
+                <field name="phone" position="move"/>
+            </xpath>
+
+            <!-- Odoo 19 removed res.partner.mobile (merged into phone), so
+                 there is no longer a Mobile column to position here. -->
+
+            <!-- Annual Revenue (monetary needs its currency field available) -->
+            <xpath expr="//field[@name='phone']" position="after">
+                <field name="annual_revenue_currency_id" column_invisible="1"/>
+                <field name="annual_revenue_amount" optional="show"/>
+            </xpath>
+
+            <!-- Employees. The Activities column is shown automatically at the
+                 far right for activity-enabled models, so we don't add our own
+                 (it would appear twice). -->
+            <xpath expr="//field[@name='annual_revenue_amount']" position="after">
+                <field name="employees" optional="show"/>
+            </xpath>
+
+            <!-- Website -->
+            <xpath expr="//field[@name='employees']" position="after">
+                <field name="website" optional="show"/>
+            </xpath>
+
+            <!-- Industry -->
+            <xpath expr="//field[@name='website']" position="after">
+                <field name="industry_id" optional="show"/>
+            </xpath>
+
+            <!-- State, then Salesperson -->
+            <xpath expr="//field[@name='industry_id']" position="after">
+                <field name="state_id" position="move"/>
+            </xpath>
+            <xpath expr="//field[@name='state_id']" position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
+            <xpath expr="//field[@name='state_id']" position="after">
+                <field name="user_id" position="move"/>
+            </xpath>
+
+            <!-- Account Status, then Company LinkedIn -->
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="account_status_id" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='account_status_id']" position="after">
+                <field name="company_linkedin" optional="show"/>
+            </xpath>
+
+            <!-- Created On / Last Modified On as the last data columns -->
+            <xpath expr="//field[@name='company_linkedin']" position="after">
+                <field name="create_date" string="Created On" optional="show"/>
+                <field name="write_date" string="Last Modified On" optional="show"/>
+            </xpath>
+
+            <!-- Keep the remaining base columns out of the default set -->
+            <xpath expr="//field[@name='city']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='country_id']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

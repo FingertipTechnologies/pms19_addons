@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================= -->
+    <!-- TICKET LIST PAGE              -->
+    <!-- ============================= -->
+    <template id="portal_ticket_list" name="My Tickets">
+        <t t-call="ft_helpdesk_portal.portal_support_home">
+                    <!-- Page Header -->
+                    <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                        <i class="fa fa-ticket fa-2x mb-2" style="opacity: 0.85;"/>
+                        <h2 class="fw-bold mb-1">My Tickets</h2>
+                        <p class="mb-0" style="opacity: 0.8;">
+                            <t t-out="ticket_count"/> ticket(s) found
+                        </p>
+                    </div>
+
+                    <!-- Ticket Table Card -->
+                    <div class="card border-0 shadow-sm">
+                        <!-- Toolbar (always shown, regardless of result count) -->
+                        <div class="card-header bg-white border-bottom py-3">
+                            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                                <div class="d-flex gap-2 align-items-center">
+                                    <!-- Filter Dropdown -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle px-3 py-2" type="button" data-bs-toggle="dropdown" style="font-size: 0.9rem;">
+                                            Filter: <strong><t t-out="filters[filterby]['label']"/></strong>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <t t-foreach="filters" t-as="f">
+                                                <li>
+                                                    <a t-attf-href="/my/support/tickets?filterby=#{f}&amp;sortby=#{sortby}&amp;search=#{search}&amp;search_in=#{search_in}"
+                                                       t-attf-class="dropdown-item #{filterby == f and 'active' or ''}">
+                                                        <t t-out="filters[f]['label']"/>
+                                                    </a>
+                                                </li>
+                                            </t>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <!-- Search -->
+                                    <form method="GET" action="/my/support/tickets" class="input-group" style="max-width: 320px;">
+                                        <input type="hidden" name="filterby" t-att-value="filterby"/>
+                                        <input type="hidden" name="sortby" t-att-value="sortby"/>
+                                        <input type="hidden" name="search_in" t-att-value="search_in"/>
+                                        <input type="text" name="search" class="form-control py-2"
+                                               t-att-value="search"
+                                               placeholder="Search tickets..." style="font-size: 0.9rem;"/>
+                                        <button class="btn btn-outline-secondary px-3" type="submit">
+                                            <i class="fa fa-search"/>
+                                        </button>
+                                    </form>
+                                    <!-- New Ticket -->
+                                    <a href="/my/support/ticket/new" class="btn ft-btn-purple text-nowrap px-4 py-2" style="font-size: 0.95rem;">
+                                        <i class="fa fa-plus me-1"/> New Ticket
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <t t-if="tickets">
+                            <!-- Table -->
+                            <div class="table-responsive">
+                                <t t-set="qs_tail" t-value="'filterby=%s&amp;search=%s&amp;search_in=%s' % (filterby, search, search_in)"/>
+                                <table class="table table-hover table-bordered align-middle mb-0 ft-ticket-table">
+                                    <thead>
+                                        <tr class="bg-light">
+                                            <th class="ps-4 py-3 text-muted small text-uppercase fw-semibold ft-sort-th" style="min-width: 120px;">
+                                                <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                                    <t t-set="field" t-value="'ticket_no'"/>
+                                                    <t t-set="label">Ticket #</t>
+                                                    <t t-set="base_url" t-value="'/my/support/tickets'"/>
+                                                </t>
+                                            </th>
+                                            <th class="py-3 text-muted small text-uppercase fw-semibold ft-sort-th">
+                                                <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                                    <t t-set="field" t-value="'name'"/>
+                                                    <t t-set="label">Subject</t>
+                                                    <t t-set="base_url" t-value="'/my/support/tickets'"/>
+                                                </t>
+                                            </th>
+                                            <th class="py-3 text-muted small text-uppercase fw-semibold text-center ft-sort-th" style="min-width: 90px;">
+                                                <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                                    <t t-set="field" t-value="'priority'"/>
+                                                    <t t-set="label">Priority</t>
+                                                    <t t-set="base_url" t-value="'/my/support/tickets'"/>
+                                                </t>
+                                            </th>
+                                            <th class="py-3 text-muted small text-uppercase fw-semibold ft-sort-th" style="min-width: 130px;">
+                                                <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                                    <t t-set="field" t-value="'category'"/>
+                                                    <t t-set="label">Category</t>
+                                                    <t t-set="base_url" t-value="'/my/support/tickets'"/>
+                                                </t>
+                                            </th>
+                                            <th class="py-3 text-muted small text-uppercase fw-semibold ft-sort-th" style="min-width: 120px;">
+                                                <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                                    <t t-set="field" t-value="'assignee'"/>
+                                                    <t t-set="label">Assignee</t>
+                                                    <t t-set="base_url" t-value="'/my/support/tickets'"/>
+                                                </t>
+                                            </th>
+                                            <th class="py-3 text-muted small text-uppercase fw-semibold ft-sort-th" style="min-width: 100px;">
+                                                <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                                    <t t-set="field" t-value="'create_date'"/>
+                                                    <t t-set="label">Created</t>
+                                                    <t t-set="base_url" t-value="'/my/support/tickets'"/>
+                                                </t>
+                                            </th>
+                                            <th class="py-3 pe-4 text-muted small text-uppercase fw-semibold text-center ft-sort-th" style="min-width: 110px;">
+                                                <t t-call="ft_helpdesk_portal.ft_sort_header">
+                                                    <t t-set="field" t-value="'state'"/>
+                                                    <t t-set="label">Status</t>
+                                                    <t t-set="base_url" t-value="'/my/support/tickets'"/>
+                                                </t>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="tickets" t-as="ticket">
+                                            <tr class="ft-ticket-row" t-attf-onclick="window.location='/my/support/ticket/#{ticket.id}'" style="cursor: pointer;">
+                                                <td class="ps-4 py-3 fw-mono small text-primary fw-medium">
+                                                    <t t-out="ticket.ticket_no"/>
+                                                </td>
+                                                <td class="py-3">
+                                                    <span class="fw-medium text-dark">
+                                                        <t t-out="ticket.name"/>
+                                                    </span>
+                                                </td>
+                                                <td class="py-3 text-center">
+                                                    <t t-call="ft_helpdesk_portal.ticket_priority_badge">
+                                                        <t t-set="priority" t-value="ticket.priority"/>
+                                                    </t>
+                                                </td>
+                                                <td class="py-3 text-muted small">
+                                                    <t t-if="ticket.category_id">
+                                                        <t t-out="ticket.category_id.name"/>
+                                                    </t>
+                                                    <t t-else="">—</t>
+                                                </td>
+                                                <td class="py-3 text-muted small">
+                                                    <t t-if="ticket.assigned_user_id">
+                                                        <i class="fa fa-user-circle me-1 text-secondary"/>
+                                                        <t t-out="ticket.assigned_user_id.name"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="text-muted fst-italic">Unassigned</span>
+                                                    </t>
+                                                </td>
+                                                <td class="py-3 text-muted small">
+                                                    <t t-out="ticket.create_date"
+                                                       t-options='{"widget": "datetime", "format": "dd MMM yyyy"}'/>
+                                                </td>
+                                                <td class="py-3 pe-4 text-center">
+                                                    <t t-call="ft_helpdesk_portal.ticket_state_badge">
+                                                        <t t-set="state" t-value="ticket.state"/>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                </tbody>
+                            </table>
+                        </div>
+                        </t>
+
+                        <!-- Empty State inside the same card so toolbar remains visible -->
+                        <t t-if="not tickets">
+                            <div class="card-body text-center py-5">
+                                <div class="ft-icon-circle bg-light mx-auto mb-3">
+                                    <i class="fa fa-ticket fa-2x text-muted"/>
+                                </div>
+                                <h5 class="text-muted">No tickets found</h5>
+                                <p class="text-muted mb-3">
+                                    <t t-if="search or filterby != 'all'">
+                                        No tickets match this filter. Try adjusting your filters or search query.
+                                    </t>
+                                    <t t-else="">
+                                        You haven't submitted any support tickets yet.
+                                    </t>
+                                </p>
+                                <t t-if="search or filterby != 'all'">
+                                    <a href="/my/support/tickets?filterby=all" class="btn btn-outline-secondary">
+                                        <i class="fa fa-times me-1"/> Clear Filters
+                                    </a>
+                                </t>
+                                <t t-else="">
+                                    <a href="/my/support/ticket/new" class="btn ft-btn-purple">
+                                        <i class="fa fa-plus me-1"/> Create Your First Ticket
+                                    </a>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <t t-if="tickets">
+                        <!-- Pager -->
+                        <div class="d-flex justify-content-center mt-4">
+                            <t t-call="portal.pager"/>
+                        </div>
+                    </t>
+        </t>
+    </template>
+</odoo>

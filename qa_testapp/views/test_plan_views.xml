@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="qa_testapp_view_test_plan_list" model="ir.ui.view">
+        <field name="name">qa_testapp.test_plan.list</field>
+        <field name="model">qa_testapp.test_plan</field>
+        <field name="arch" type="xml">
+            <list string="Test Plans">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="project_org_id"/>
+                <field name="activity_start_date"/>
+                <field name="activity_end_date"/>
+                <field name="test_manager"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+    <!-- Form View -->
+    <record id="qa_testapp_view_test_plan_form" model="ir.ui.view">
+        <field name="name">qa_testapp.test_plan.form</field>
+        <field name="model">qa_testapp.test_plan</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,rejected"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="project_id"/>
+                            <field name="project_org_id"/>
+                        </group>
+                        <group>
+                            <field name="activity_start_date"/>
+                            <field name="activity_end_date"/>
+                            <field name="test_environment"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Overview">
+                            <group>
+                                <field name="introduction"/>
+                                <field name="test_objectives"/>
+                            </group>
+                        </page>
+                        <page string="Scope">
+                            <group>
+                                <field name="scope_in"/>
+                                <field name="scope_out"/>
+                            </group>
+                        </page>
+                        <page string="Approach">
+                            <group>
+                                <field name="test_approach"/>
+                            </group>
+                        </page>
+                        <page string="Entry &amp; Exit Criteria">
+                            <group>
+                                <field name="entry_criteria"/>
+                                <field name="exit_criteria"/>
+                            </group>
+                        </page>
+                        <page string="Roles &amp; Responsibilities">
+                            <group>
+                                <field name="test_manager"/>
+                                <field name="test_engineer"/>
+                                <field name="developer"/>
+                            </group>
+                        </page>
+                        <page string="Defect Management">
+                            <group>
+                                <field name="defect_management"/>
+                            </group>
+                        </page>
+                        <page string="Assumptions &amp; Constraints">
+                            <group>
+                                <field name="assumptions"/>
+                                <field name="constraints"/>
+                            </group>
+                        </page>
+                        <page string="Approval">
+                            <group>
+                                <field name="approval_authority"/>
+                                <field name="sign_off_details"/>
+                            </group>
+                        </page>
+                        <page string="URLs" name="urls">
+                            <field name="url_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="url_type"/>
+                                    <field name="name"/>
+                                    <field name="url" widget="url"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Action -->
+    <record id="qa_testapp_action_test_plan" model="ir.actions.act_window">
+    <field name="name">Test Plans</field>
+    <field name="res_model">qa_testapp.test_plan</field>
+    <field name="view_mode">list,form</field>
+</record>
+</odoo>

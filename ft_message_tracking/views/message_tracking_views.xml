@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_ft_message_tracking_list" model="ir.ui.view">
+        <field name="name">ft.message.tracking.list</field>
+        <field name="model">ft.message.tracking</field>
+        <field name="arch" type="xml">
+            <list string="Message Tracking">
+                <field name="sent_time"/>
+                <field name="message_type"/>
+                <field name="direction"/>
+                <field name="from_number"/>
+                <field name="to_number"/>
+                <field name="partner_id"/>
+                <field name="subject"/>
+                <field name="opened"/>
+                <field name="open_count"/>
+                <field name="last_open_time"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_message_tracking_form" model="ir.ui.view">
+        <field name="name">ft.message.tracking.form</field>
+        <field name="model">ft.message.tracking</field>
+        <field name="arch" type="xml">
+            <form string="Message Tracking">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="message_type"/>
+                            <field name="direction"/>
+                            <field name="from_number"/>
+                            <field name="to_number"/>
+                            <field name="partner_id"/>
+                            <field name="subject"/>
+                        </group>
+                        <group>
+                            <field name="sent_time"/>
+                            <field name="opened"/>
+                            <field name="open_count"/>
+                            <field name="last_open_time"/>
+                            <field name="external_message_id"/>
+                            <field name="tracking_token"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ft_message_tracking_search" model="ir.ui.view">
+        <field name="name">ft.message.tracking.search</field>
+        <field name="model">ft.message.tracking</field>
+        <field name="arch" type="xml">
+            <search string="Search Message Tracking">
+                <field name="from_number"/>
+                <field name="to_number"/>
+                <field name="partner_id"/>
+                <field name="external_message_id"/>
+                <filter string="WhatsApp" name="filter_whatsapp"
+                        domain="[('message_type','=','whatsapp')]"/>
+                <filter string="Email" name="filter_email"
+                        domain="[('message_type','=','email')]"/>
+                <separator/>
+                <filter string="Outbound" name="filter_outbound"
+                        domain="[('direction','=','outbound')]"/>
+                <filter string="Inbound" name="filter_inbound"
+                        domain="[('direction','=','inbound')]"/>
+                <separator/>
+                <filter string="Opened" name="filter_opened"
+                        domain="[('opened','=',True)]"/>
+                <filter string="Not Opened" name="filter_not_opened"
+                        domain="[('opened','=',False)]"/>
+                <group name="group_by">
+                    <filter string="Type" name="group_type"
+                            context="{'group_by': 'message_type'}"/>
+                    <filter string="Contact" name="group_partner"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="Sent Date" name="group_sent"
+                            context="{'group_by': 'sent_time'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ft_message_tracking" model="ir.actions.act_window">
+        <field name="name">Message Tracking</field>
+        <field name="res_model">ft.message.tracking</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_ft_message_tracking_search"/>
+    </record>
+
+    <menuitem id="menu_ft_message_tracking"
+              name="Message Tracking"
+              parent="contacts.menu_contacts"
+              action="action_ft_message_tracking"
+              sequence="2"/>
+
+    <record id="contacts.res_partner_menu_config" model="ir.ui.menu">
+        <field name="sequence">5</field>
+    </record>
+
+</odoo>

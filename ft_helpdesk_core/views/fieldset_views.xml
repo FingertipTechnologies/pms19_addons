@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fieldset_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.fieldset.tree</field>
+        <field name="model">ft.helpdesk.fieldset</field>
+        <field name="arch" type="xml">
+            <list string="Fieldsets">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fieldset_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.fieldset.form</field>
+        <field name="model">ft.helpdesk.fieldset</field>
+        <field name="arch" type="xml">
+            <form string="Fieldset">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Fieldset Name..."/></h1>
+                    </div>
+                    <group>
+                        <field name="description" placeholder="Description..."/>
+                    </group>
+                    <group string="Dynamic Fields">
+                        <field name="field_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="name"/>
+                                <field name="technical_name"/>
+                                <field name="field_type"/>
+                                <field name="selection_options" invisible="field_type != 'selection'"/>
+                                <field name="required"/>
+                                <field name="portal_visible"/>
+                                <field name="placeholder"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fieldset_list" model="ir.actions.act_window">
+        <field name="name">Dynamic Fieldsets</field>
+        <field name="res_model">ft.helpdesk.fieldset</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

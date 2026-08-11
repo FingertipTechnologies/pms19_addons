@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root menu -->
+    <!-- Hidden: the QA TestApp functionality is exposed inside the PMS app
+         (see menu_reorganization.xml). active="False" removes the standalone
+         app icon while keeping the actions available to the PMS menus. -->
+    <menuitem id="qa_testapp_menu_root"
+              name="QA TestApp"
+              sequence="10"
+              active="False"
+              web_icon="qa_testapp,static/description/QA_TestApp.jpeg"/>
+              
+    <!-- Test Plan Menu -->
+    <menuitem id="qa_testapp_menu_test_plan"
+                name="Test Plans"
+                parent="qa_testapp_menu_root"
+                action="qa_testapp_action_test_plan"
+                sequence="10"/>
+
+              
+    <!-- Test Scenario Menu -->
+    <menuitem id="qa_testapp_menu_test_scenario"
+              name="Test Scenarios"
+              parent="qa_testapp_menu_root"
+              action="qa_testapp_action_test_scenario"
+              sequence="20"/>
+              
+    <!-- Test Case Menu -->
+    <menuitem id="qa_testapp_menu_test_case"
+              name="Test Cases"
+              parent="qa_testapp_menu_root"
+              action="qa_testapp_action_test_case"
+              sequence="30"/>
+              
+    <!-- Ticket/Bug Menu -->
+    <menuitem id="qa_testapp_menu_ticket"
+              name="Bug"
+              parent="qa_testapp_menu_root"
+              action="qa_testapp_action_ticket"
+              sequence="40"/>
+
+</odoo>

@@ -1,0 +1,75 @@
+<odoo>
+
+    <!-- list View -->
+    <record id="view_project_custom_milestone_list" model="ir.ui.view">
+        <field name="name">project.custom.milestone.list</field>
+        <field name="model">project.custom.milestone</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="milestone_id"/>
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="amount"/>
+                <field name="paid_amount"/>
+                <field name="hours_spent"/>
+                <field name="status"/>
+                <field name="due_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_project_custom_milestone_form" model="ir.ui.view">
+        <field name="name">project.custom.milestone.form</field>
+        <field name="model">project.custom.milestone</field>
+        <field name="arch" type="xml">
+            <form string="Project Milestone">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="milestone_id"/>
+                            <field name="name"/>
+                            <field name="project_id"/>
+                            <field name="status"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="paid_amount"/>
+                            <field name="percentage"/>
+                            <field name="hours_spent"/>
+                            <field name="due_date"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <field name="description"/>
+                    </group>
+                    <group string="Attachments">
+                        <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_project_custom_milestone" model="ir.actions.act_window">
+        <field name="name">Project Milestones</field>
+        <field name="res_model">project.custom.milestone</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_project_custom_milestone_root"
+              name="Milestones"
+              parent="project.menu_main_pm"
+              sequence="30"/>
+
+    <menuitem id="menu_project_custom_milestone"
+              name="Project Milestones"
+              parent="menu_project_custom_milestone_root"
+              action="action_project_custom_milestone"
+              sequence="10"/>
+
+</odoo>

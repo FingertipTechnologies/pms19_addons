@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2024 Dixmit
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <record model="ir.ui.view" id="mail_compose_gateway_message_form_view">
+        <field name="model">mail.compose.gateway.message</field>
+        <field name="inherit_id" ref="mail.email_compose_message_wizard_form" />
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <!-- Odoo 19: the base composer form uses js_class="mail_composer_form",
+                 a custom chat-style renderer that does not display injected fields
+                 (Gateways, Whatsapp Template) as normal inputs. Render this wizard
+                 with the standard form view so those fields show their widgets. -->
+            <form position="attributes">
+                <attribute name="js_class" />
+                <attribute name="class">pt-0 pb-0</attribute>
+            </form>
+            <!-- Recipients are replaced by gateway channels: hide the "To" label and
+                 the recipients <div> (it holds two partner_ids widgets, so hiding the
+                 field by name only hides the first). -->
+            <label for="partner_ids" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </label>
+            <xpath expr="//div[field[@name='partner_ids']]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <!-- Subject is not used for gateway messages. -->
+            <field name="subject" position="attributes">
+                <attribute name="invisible">1</attribute>
+                <attribute name="required">0</attribute>
+            </field>
+            <!-- Dedicated group so the gateway fields align cleanly (label left,
+                 input right) instead of being interleaved with the recipients div. -->
+            <xpath expr="//group[1]" position="before">
+                <group>
+                    <field name="wizard_partner_ids" invisible="1" />
+                    <field
+                        name="wizard_channel_ids"
+                        string="Gateways"
+                        widget="many2many_tags"
+                        context="{'mail_gateway_partner_info': 1}"
+                        domain="[('partner_id', 'in', wizard_partner_ids)]"
+                    />
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

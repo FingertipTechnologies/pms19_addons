@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="cus_view_project_milestone_add_dates" model="ir.ui.view">
+            <field name="name">project.milestone.form.add.dates</field>
+            <field name="model">project.milestone</field>
+            <field name="inherit_id" ref="project.project_milestone_view_form"/>
+            <field name="arch" type="xml">
+
+
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="project_id"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                </xpath>
+            </field>
+        </record>
+
+
+    </data>
+</odoo>

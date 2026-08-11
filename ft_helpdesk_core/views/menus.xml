@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu -->
+    <menuitem id="menu_ft_helpdesk_root"
+              name="Helpdesk"
+              web_icon="ft_helpdesk_core,static/description/icon.png"
+              groups="base.group_user"
+              sequence="25"/>
+
+    <!-- Level 1: Tickets -->
+    <menuitem id="menu_ft_helpdesk_tickets"
+              name="Tickets"
+              parent="menu_ft_helpdesk_root"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_helpdesk_all_tickets"
+              name="All Tickets"
+              parent="menu_ft_helpdesk_tickets"
+              action="action_ticket_list"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_helpdesk_my_tickets"
+              name="My Tickets"
+              parent="menu_ft_helpdesk_tickets"
+              action="action_my_tickets"
+              sequence="20"/>
+
+    <menuitem id="menu_ft_helpdesk_unassigned"
+              name="Unassigned"
+              parent="menu_ft_helpdesk_tickets"
+              action="action_unassigned_tickets"
+              sequence="30"/>
+
+    <!-- Level 1: Teams -->
+    <menuitem id="menu_ft_helpdesk_teams"
+              name="Teams"
+              parent="menu_ft_helpdesk_root"
+              action="action_team_list"
+              sequence="20"/>
+
+    <!-- Level 1: Configuration -->
+    <menuitem id="menu_ft_helpdesk_configuration"
+              name="Configuration"
+              parent="menu_ft_helpdesk_root"
+              groups="group_ft_helpdesk_admin"
+              sequence="90"/>
+
+    <!-- Settings Action -->
+    <record id="action_ft_helpdesk_config_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="context">{'module': 'ft_helpdesk_core'}</field>
+    </record>
+
+    <menuitem id="menu_ft_helpdesk_config_settings"
+              name="Settings"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_ft_helpdesk_config_settings"
+              sequence="0"/>
+
+    <menuitem id="menu_ft_helpdesk_config_teams"
+              name="Teams"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_team_list"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_helpdesk_config_categories"
+              name="Categories"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_category_list"
+              sequence="20"/>
+
+    <menuitem id="menu_ft_helpdesk_config_subcategories"
+              name="Subcategories"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_subcategory_list"
+              sequence="25"/>
+
+    <menuitem id="menu_ft_helpdesk_config_types"
+              name="Ticket Types"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_ticket_type_list"
+              sequence="30"/>
+
+    <menuitem id="menu_ft_helpdesk_config_fieldsets"
+              name="Dynamic Fieldsets"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_fieldset_list"
+              sequence="35"/>
+
+    <menuitem id="menu_ft_helpdesk_config_tags"
+              name="Tags"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_tag_list"
+              sequence="40"/>
+
+    <menuitem id="menu_ft_helpdesk_config_close_reasons"
+              name="Close Reasons"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_close_reason_list"
+              sequence="50"/>
+
+    <menuitem id="menu_ft_helpdesk_config_canned"
+              name="Canned Responses"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_canned_response_list"
+              sequence="60"/>
+
+    <menuitem id="menu_ft_helpdesk_config_business_hours"
+              name="Business Hours"
+              parent="menu_ft_helpdesk_configuration"
+              action="action_business_hours_list"
+              sequence="70"/>
+</odoo>

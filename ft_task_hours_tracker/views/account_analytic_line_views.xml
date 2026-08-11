@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Adds "Trainees" to Group By on the Timesheets list.
+
+         Anchored after groupby_employee rather than appended to the Group By
+         block as a whole: the block has no name of its own, so an anchor on a
+         named sibling is the only reference that survives Odoo reshuffling
+         the view. -->
+    <record id="view_hr_timesheet_line_search_ft_trainee" model="ir.ui.view">
+        <field name="name">account.analytic.line.search.ft.trainee</field>
+        <field name="model">account.analytic.line</field>
+        <field name="inherit_id" ref="hr_timesheet.hr_timesheet_line_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='groupby_employee']" position="after">
+                <filter string="Trainees" name="ft_groupby_trainee"
+                        context="{'group_by': 'ft_trainee_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

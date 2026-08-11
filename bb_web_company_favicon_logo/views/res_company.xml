@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="view_company_form" model="ir.ui.view">
+            <field name="name">res.company.form</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <field name="color" position="after">
+                    <field name="favicon" widget="image" class="float-start oe_avatar" groups="base.group_no_one"/>
+                    <field name="portal_login_page_image_web" widget="image" class="float-start oe_avatar" groups="base.group_no_one" readonly="0"/>
+                </field>
+            </field>
+        </record>
+
+    </data>
+</odoo>

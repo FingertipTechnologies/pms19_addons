@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate: this is a seed value. Once it has been edited in Settings
+         to match who should actually be notified, a module upgrade must not
+         overwrite that choice. -->
+    <data noupdate="1">
+
+        <!-- Comma-separated logins notified about new suggestions on top of
+             the administrators. Editable at
+             Settings > Technical > Parameters > System Parameters. -->
+        <record id="param_notify_logins" model="ir.config_parameter">
+            <field name="key">ft_pms_suggestions.notify_logins</field>
+            <field name="value">ashitha@fingertipplus.com</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_project_form_inherit_qa_tabs" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.qa.tabs</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="bt_project_customization.view_project_form_inherit_custom"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='extra_info']" position="after">
+
+                <page name="qa_tasks" string="Tasks">
+                    <field name="task_ids" context="{'default_project_id': id}">
+                        <list>
+                            <field name="name"/>
+                            <field name="user_ids" widget="many2many_avatar_user"/>
+                            <field name="date_deadline"/>
+                            <field name="stage_id"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page name="qa_timesheets" string="Timesheets">
+                    <field name="timesheet_ids" context="{'default_project_id': id}">
+                        <list editable="bottom">
+                            <field name="date"/>
+                            <field name="employee_id"/>
+                            <field name="task_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="name"/>
+                            <field name="unit_amount" sum="Total Time" string="Time Spent"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page name="qa_bugs" string="Bugs">
+                    <field name="qa_bug_ids" context="{'default_project_id': id}">
+                        <list>
+                            <field name="bug_id"/>
+                            <field name="title"/>
+                            <field name="severity"/>
+                            <field name="priority"/>
+                            <field name="reproducibility"/>
+                            <field name="environment"/>
+                            <field name="device"/>
+                            <field name="reopen_count"/>
+                            <field name="escalation_level" widget="badge"
+                                   decoration-warning="escalation_level == 'qa_lead'"
+                                   decoration-danger="escalation_level == 'manager'"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page name="qa_test_cases" string="Test Cases">
+                    <field name="qa_test_case_ids" context="{'default_project_id': id}">
+                        <list>
+                            <field name="test_case_id"/>
+                            <field name="test_case_title"/>
+                            <field name="module_id"/>
+                            <field name="status"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page name="qa_test_plans" string="Test Plans">
+                    <field name="qa_test_plan_ids" context="{'default_project_id': id}">
+                        <list>
+                            <field name="name"/>
+                            <field name="activity_start_date"/>
+                            <field name="activity_end_date"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </page>
+
+                <page name="qa_milestones" string="Milestones">
+                    <field name="custom_milestone_ids" context="{'default_project_id': id}">
+                        <list>
+                            <field name="name"/>
+                            <field name="hours_spent"/>
+                            <field name="amount"/>
+                            <field name="status"/>
+                            <field name="due_date"/>
+                            <field name="attachment_ids" widget="many2many_binary" string="Attachments"/>
+                        </list>
+                    </field>
+                </page>
+
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="view_project_form_hide_stages" model="ir.ui.view">
+        <field name="name">project.project.form.hide.stages</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='project_stages']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//setting[field[@name='allow_billable']]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//group[@name='group_sales_invoicing']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <xpath expr="//page[@name='description']" position="before">
+                <xpath expr="//page[@name='settings']" position="move"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

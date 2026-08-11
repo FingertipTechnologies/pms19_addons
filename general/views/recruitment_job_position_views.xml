@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_recruitment_job_position_list" model="ir.ui.view">
+        <field name="name">recruitment.job.position.list</field>
+        <field name="model">recruitment.job.position</field>
+        <field name="arch" type="xml">
+            <list string="Job Positions"
+                  decoration-success="status=='open'"
+                  decoration-warning="status=='on_hold'"
+                  decoration-muted="status=='closed'">
+                <field name="job_title"/>
+                <field name="department"/>
+                <field name="hiring_manager"/>
+                <field name="number_of_openings"/>
+                <field name="employment_type"/>
+                <field name="work_location"/>
+                <field name="status" widget="badge"/>
+                <field name="candidate_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recruitment_job_position_kanban" model="ir.ui.view">
+        <field name="name">recruitment.job.position.kanban</field>
+        <field name="model">recruitment.job.position</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="status">
+                <field name="job_title"/>
+                <field name="department"/>
+                <field name="number_of_openings"/>
+                <field name="candidate_count"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <strong><field name="job_title"/></strong>
+                            <div><field name="department"/></div>
+                            <div>Openings: <field name="number_of_openings"/></div>
+                            <div>Candidates: <field name="candidate_count"/></div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_recruitment_job_position_form" model="ir.ui.view">
+        <field name="name">recruitment.job.position.form</field>
+        <field name="model">recruitment.job.position</field>
+        <field name="arch" type="xml">
+            <form string="Job Position">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_candidates" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="candidate_count" widget="statinfo"
+                                   string="Candidates"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="job_title"/>
+                        <h1><field name="job_title" placeholder="e.g. Salesforce Developer"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="department"/>
+                            <field name="hiring_manager"/>
+                            <field name="employment_type"/>
+                            <field name="work_location"/>
+                            <field name="status"/>
+                        </group>
+                        <group>
+                            <field name="number_of_openings"/>
+                            <field name="experience_required"/>
+                            <field name="salary_range_from"/>
+                            <field name="salary_range_to"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Job Description" name="description">
+                            <field name="job_description"/>
+                        </page>
+                        <page string="Required Skills" name="skills">
+                            <field name="required_skill_ids" widget="many2many_tags"
+                                   options="{'color_field': 'color', 'no_create_edit': False}"
+                                   placeholder="e.g. Salesforce, Apex, LWC"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recruitment_job_position" model="ir.actions.act_window">
+        <field name="name">Job Positions</field>
+        <field name="res_model">recruitment.job.position</field>
+        <field name="view_mode">list,kanban,form</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,37 @@
+<odoo>
+    <record id="stage_not_started" model="project.milestone.stage">
+        <field name="name">Not Started</field>
+        <field name="sequence">1</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="stage_in_progress" model="project.milestone.stage">
+        <field name="name">In Progress</field>
+        <field name="sequence">2</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="stage_completed" model="project.milestone.stage">
+        <field name="name">Completed</field>
+        <field name="sequence">3</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="stage_tested" model="project.milestone.stage">
+        <field name="name">Tested</field>
+        <field name="sequence">4</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="stage_deployed" model="project.milestone.stage">
+        <field name="name">Deployed</field>
+        <field name="sequence">5</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="stage_deferred" model="project.milestone.stage">
+        <field name="name">Deferred</field>
+        <field name="sequence">6</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

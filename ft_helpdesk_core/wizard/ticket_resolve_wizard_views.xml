@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_ticket_resolve_wizard_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.ticket.resolve.wizard.form</field>
+        <field name="model">ft.helpdesk.ticket.resolve.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resolve Ticket">
+                <group>
+                    <field name="ticket_id" invisible="1"/>
+                    <field name="resolution_summary"
+                           string="Resolution Summary"
+                           placeholder="Describe the resolution..."/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object"
+                            string="Confirm" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

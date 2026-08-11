@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-inherit="mail.MessageNotificationPopover" t-inherit-mode="extension">
+        <!-- Odoo 19: notification.persona was replaced by notification.res_partner_id -->
+        <xpath expr="//span[@t-if='notification.res_partner_id']" position="after">
+            <span
+                t-elif="notification.notification_type == 'gateway'"
+                t-esc="notification.channel_name"
+            />
+        </xpath>
+    </t>
+</templates>

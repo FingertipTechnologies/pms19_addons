@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_company_asset_list" model="ir.ui.view">
+        <field name="name">company.asset.list</field>
+        <field name="model">company.asset</field>
+        <field name="arch" type="xml">
+            <list string="Assets" decoration-info="current_status=='available'"
+                  decoration-success="current_status=='assigned'"
+                  decoration-warning="current_status=='under_repair'"
+                  decoration-muted="current_status in ('lost','sold','scrapped')">
+                <field name="asset_code"/>
+                <field name="asset_name"/>
+                <field name="category"/>
+                <field name="brand"/>
+                <field name="model"/>
+                <field name="serial_number"/>
+                <field name="current_status" widget="badge"/>
+                <field name="current_employee"/>
+                <field name="department"/>
+                <field name="warranty_end_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_company_asset_kanban" model="ir.ui.view">
+        <field name="name">company.asset.kanban</field>
+        <field name="model">company.asset</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="current_status">
+                <field name="asset_code"/>
+                <field name="asset_name"/>
+                <field name="category"/>
+                <field name="current_employee"/>
+                <field name="current_status"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="asset_code"/></strong>
+                            </div>
+                            <div><field name="asset_name"/></div>
+                            <div><field name="category"/></div>
+                            <div t-if="record.current_employee.value">
+                                👤 <field name="current_employee"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_company_asset_form" model="ir.ui.view">
+        <field name="name">company.asset.form</field>
+        <field name="model">company.asset</field>
+        <field name="arch" type="xml">
+            <form string="Asset">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_assignments" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="assignment_count" widget="statinfo"
+                                   string="Assignments"/>
+                        </button>
+                        <button name="action_view_maintenance" type="object"
+                                class="oe_stat_button" icon="fa-wrench">
+                            <field name="maintenance_count" widget="statinfo"
+                                   string="Maintenance"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="asset_name"/>
+                        <h1><field name="asset_name" placeholder="e.g. Dell Latitude 5420"/></h1>
+                    </div>
+                    <group>
+                        <group string="Asset">
+                            <field name="asset_code" readonly="1"/>
+                            <field name="category"/>
+                            <field name="brand"/>
+                            <field name="model"/>
+                            <field name="serial_number"/>
+                            <field name="imei_number"/>
+                            <field name="current_status"/>
+                        </group>
+                        <group string="Specs">
+                            <field name="processor"/>
+                            <field name="ram"/>
+                            <field name="storage"/>
+                            <field name="operating_system_software"/>
+                            <field name="asset_condition"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Purchase Details" name="purchase">
+                            <group>
+                                <group>
+                                    <field name="purchase_date"/>
+                                    <field name="purchase_vendor"/>
+                                    <field name="invoice_number"/>
+                                </group>
+                                <group>
+                                    <field name="purchase_cost"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Warranty" name="warranty">
+                            <group>
+                                <field name="warranty_start_date"/>
+                                <field name="warranty_end_date"/>
+                            </group>
+                        </page>
+                        <page string="Status &amp; Location" name="status">
+                            <group>
+                                <field name="current_employee" readonly="1"/>
+                                <field name="department"/>
+                                <field name="location"/>
+                            </group>
+                        </page>
+                        <page string="Documents" name="documents">
+                            <field name="attachment_ids" widget="many2many_binary_preview"/>
+                            <separator string="Remarks"/>
+                            <field name="remarks"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_company_asset_search" model="ir.ui.view">
+        <field name="name">company.asset.search</field>
+        <field name="model">company.asset</field>
+        <field name="arch" type="xml">
+            <search string="Assets">
+                <field name="asset_code"/>
+                <field name="asset_name"/>
+                <field name="serial_number"/>
+                <field name="current_employee"/>
+                <field name="category"/>
+                <filter name="available" string="Available"
+                        domain="[('current_status','=','available')]"/>
+                <filter name="assigned" string="Assigned"
+                        domain="[('current_status','=','assigned')]"/>
+                <filter name="under_repair" string="Under Repair"
+                        domain="[('current_status','=','under_repair')]"/>
+                <separator/>
+                <filter name="warranty_active" string="Warranty Active"
+                        domain="[('warranty_end_date','&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <group name="group_by">
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category'}"/>
+                    <filter name="group_status" string="Status"
+                            context="{'group_by': 'current_status'}"/>
+                    <filter name="group_employee" string="Employee"
+                            context="{'group_by': 'current_employee'}"/>
+                    <filter name="group_department" string="Department"
+                            context="{'group_by': 'department'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_company_asset" model="ir.actions.act_window">
+        <field name="name">Assets</field>
+        <field name="res_model">company.asset</field>
+        <field name="view_mode">list,kanban,form</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         MONTHLY EXPENSE SUMMARY (Claim pivot/graph)
+         ============================================================ -->
+    <record id="view_employee_expense_claim_pivot" model="ir.ui.view">
+        <field name="name">employee.expense.claim.pivot</field>
+        <field name="model">employee.expense.claim</field>
+        <field name="arch" type="xml">
+            <pivot string="Monthly Expense Summary">
+                <field name="employee" type="row"/>
+                <field name="claim_date" interval="month" type="col"/>
+                <field name="total_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_claim_graph" model="ir.ui.view">
+        <field name="name">employee.expense.claim.graph</field>
+        <field name="model">employee.expense.claim</field>
+        <field name="arch" type="xml">
+            <graph string="Expense by Month" type="bar">
+                <field name="claim_date" interval="month"/>
+                <field name="total_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_expense_monthly_report" model="ir.actions.act_window">
+        <field name="name">Monthly Expense Summary</field>
+        <field name="res_model">employee.expense.claim</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No expense claims yet</p>
+            <p>Management dashboard by month, employee and category.</p>
+        </field>
+    </record>
+
+    <!-- Pending Approval report: claims waiting for approval -->
+    <record id="action_expense_pending_report" model="ir.actions.act_window">
+        <field name="name">Pending Approval Report</field>
+        <field name="res_model">employee.expense.claim</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('approval_status', '=', 'submitted')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No claims pending approval</p>
+            <p>Claims that are submitted and waiting for approval.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         PROJECT-WISE EXPENSE (Expense lines pivot)
+         ============================================================ -->
+    <record id="view_employee_expense_line_pivot" model="ir.ui.view">
+        <field name="name">employee.expense.line.pivot</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Project-wise Expense">
+                <field name="project_id" type="row"/>
+                <field name="category" type="col"/>
+                <field name="amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_line_graph" model="ir.ui.view">
+        <field name="name">employee.expense.line.graph</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <graph string="Project / Client Cost" type="bar">
+                <field name="project_id"/>
+                <field name="amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_line_report_list" model="ir.ui.view">
+        <field name="name">employee.expense.line.report.list</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <list string="Expense Lines">
+                <field name="expense_date"/>
+                <field name="expense_claim"/>
+                <field name="category"/>
+                <field name="project_id"/>
+                <field name="partner_id"/>
+                <field name="description"/>
+                <field name="amount" sum="Total"/>
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_line_report_search" model="ir.ui.view">
+        <field name="name">employee.expense.line.report.search</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="category"/>
+                <field name="project_id"/>
+                <field name="partner_id"/>
+                <group name="group_by">
+                    <filter name="group_project" string="Project"
+                            context="{'group_by': 'project_id'}"/>
+                    <filter name="group_partner" string="Client"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category'}"/>
+                    <filter name="group_date" string="Expense Month"
+                            context="{'group_by': 'expense_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_expense_project_report" model="ir.actions.act_window">
+        <field name="name">Project-wise Expense</field>
+        <field name="res_model">employee.expense.line</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_employee_expense_line_report_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No expense lines yet</p>
+            <p>Project or client cost tracking across all claims.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         ADVANCE SETTLEMENT REPORT
+         ============================================================ -->
+    <record id="view_employee_advance_pivot" model="ir.ui.view">
+        <field name="name">employee.advance.pivot</field>
+        <field name="model">employee.advance</field>
+        <field name="arch" type="xml">
+            <pivot string="Advance Settlement Report">
+                <field name="employee" type="row"/>
+                <field name="status" type="col"/>
+                <field name="advance_amount" type="measure"/>
+                <field name="balance_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_advance_settlement_report" model="ir.actions.act_window">
+        <field name="name">Advance Settlement Report</field>
+        <field name="res_model">employee.advance</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No advances yet</p>
+            <p>Open advances and outstanding balances by employee.</p>
+        </field>
+    </record>
+
+</odoo>

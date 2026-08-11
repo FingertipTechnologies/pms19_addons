@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_sales_dashboard.KpiCard">
+        <div class="btsd_kpi" t-att-class="{ 'btsd_kpi--clickable': clickable }"
+             t-on-click="onCardClick" t-att-title="props.tooltip">
+            <div class="btsd_kpi_icon" t-attf-style="background: {{ props.color || '#4F46E5' }}1A; color: {{ props.color || '#4F46E5' }};">
+                <i class="fa" t-att-class="props.icon || 'fa-chart-bar'"/>
+            </div>
+            <div class="btsd_kpi_body">
+                <div class="btsd_kpi_value">
+                    <span t-if="props.prefix" class="btsd_kpi_affix"><t t-esc="props.prefix"/></span><t t-esc="displayValue"/><span t-if="props.suffix" class="btsd_kpi_affix"><t t-esc="props.suffix"/></span>
+                </div>
+                <div class="btsd_kpi_title"><t t-esc="props.title"/></div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_sales_dashboard.ChartCard">
+        <div class="btsd_chart_card" t-att-class="{ 'btsd_chart_card--full': props.fullWidth }">
+            <div class="btsd_chart_head">
+                <h3 class="btsd_chart_title"><t t-esc="props.title"/></h3>
+                <small class="btsd_chart_note" t-if="props.note"><t t-esc="props.note"/></small>
+            </div>
+            <div class="btsd_chart_canvas_wrap">
+                <canvas t-ref="canvas"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_sales_dashboard.TableCard">
+        <div class="btsd_chart_card" t-att-class="{ 'btsd_chart_card--full': props.fullWidth }">
+            <div class="btsd_chart_head">
+                <h3 class="btsd_chart_title"><t t-esc="props.title"/></h3>
+                <small class="btsd_chart_note" t-if="props.note"><t t-esc="props.note"/></small>
+            </div>
+            <div class="btsd_table_wrap">
+                <table class="btsd_table" t-if="props.rows.length">
+                    <thead>
+                        <tr>
+                            <t t-foreach="props.columns" t-as="col" t-key="col.key">
+                                <th t-att-class="cellClass(col)"><t t-esc="col.label"/></th>
+                            </t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="props.rows" t-as="row" t-key="row_index">
+                            <tr t-att-class="{ 'btsd_tr--clickable': clickable }"
+                                t-on-click="() => this.onRowClick(row)">
+                                <t t-foreach="props.columns" t-as="col" t-key="col.key">
+                                    <td t-att-class="cellClass(col)"><t t-esc="format(row, col)"/></td>
+                                </t>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot t-if="props.total">
+                        <tr class="btsd_tr--total"
+                            t-att-class="{ 'btsd_tr--clickable': clickable }"
+                            t-on-click="() => this.onRowClick(props.total)">
+                            <t t-foreach="props.columns" t-as="col" t-key="col.key">
+                                <td t-att-class="cellClass(col)"><t t-esc="format(props.total, col)"/></td>
+                            </t>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div t-else="" class="btsd_funnel_empty">
+                    <t t-esc="props.emptyText || 'No data for this period.'"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_sales_dashboard.MonthBoard">
+        <div class="btsd_chart_card btsd_chart_card--full btsd_board">
+            <div class="btsd_chart_head btsd_board_head">
+                <div>
+                    <h3 class="btsd_chart_title"><t t-esc="props.title"/></h3>
+                    <small class="btsd_chart_note" t-if="props.note"><t t-esc="props.note"/></small>
+                </div>
+                <div class="btsd_board_summary">
+                    <div class="btsd_board_total" t-attf-style="color: {{ color }};">
+                        <t t-esc="totalAmount"/>
+                    </div>
+                    <div class="btsd_board_sub"><t t-esc="totalCount"/> opportunities</div>
+                </div>
+            </div>
+
+            <div t-if="isEmpty" class="btsd_funnel_empty">
+                <t t-esc="props.emptyText || 'Nothing in this window.'"/>
+            </div>
+
+            <div t-else="">
+                <div class="btsd_board_grid">
+                    <t t-foreach="months" t-as="m" t-key="m.key">
+                        <div class="btsd_month" t-att-class="{ 'btsd_month--empty': !m.count }"
+                             t-on-click="() => this.onMonthClick(m)">
+                            <div class="btsd_month_barwrap">
+                                <div class="btsd_month_bar"
+                                     t-attf-style="height: {{ barHeight(m) }}%; background: {{ color }};"/>
+                            </div>
+                            <div class="btsd_month_amount"><t t-esc="money(m.amount)"/></div>
+                            <div class="btsd_month_label">
+                                <t t-esc="m.short"/> <span class="btsd_month_year"><t t-esc="m.year"/></span>
+                            </div>
+                            <div class="btsd_month_count">
+                                <t t-esc="m.count"/> <t t-esc="m.count === 1 ? 'deal' : 'deals'"/>
+                            </div>
+
+                            <div class="btsd_month_list" t-if="state.expanded and m.items.length">
+                                <t t-foreach="m.items" t-as="lead" t-key="lead.id">
+                                    <div class="btsd_lead" t-on-click="(ev) => this.onLeadClick(lead, ev)">
+                                        <div class="btsd_lead_name" t-att-title="lead.name"><t t-esc="lead.name"/></div>
+                                        <div class="btsd_lead_meta">
+                                            <span t-if="lead.partner" t-att-title="lead.partner"><t t-esc="lead.partner"/></span>
+                                            <span class="btsd_lead_amt"><t t-esc="money(lead.amount)"/></span>
+                                        </div>
+                                        <div class="btsd_lead_meta btsd_lead_meta--faint">
+                                            <span><t t-esc="lead.user"/></span>
+                                            <span><t t-esc="lead.date"/></span>
+                                        </div>
+                                    </div>
+                                </t>
+                                <div class="btsd_lead_more" t-if="m.more">
+                                    + <t t-esc="m.more"/> more
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <button class="btsd_board_toggle" t-on-click="toggle">
+                    <i class="fa" t-att-class="state.expanded ? 'fa-chevron-up' : 'fa-chevron-down'"/>
+                    <t t-esc="state.expanded ? 'Hide opportunities' : 'Show opportunities'"/>
+                </button>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_sales_dashboard.FunnelChart">
+        <div class="btsd_chart_card" t-att-class="{ 'btsd_chart_card--full': props.fullWidth }">
+            <div class="btsd_chart_head">
+                <h3 class="btsd_chart_title"><t t-esc="props.title"/></h3>
+                <small class="btsd_chart_note">
+                    <t t-esc="totalCount"/> opportunities in the selected period
+                </small>
+            </div>
+            <div class="btsd_funnel">
+                <t t-foreach="view.stages" t-as="s" t-key="s_index">
+                    <div class="btsd_funnel_row">
+                        <div class="btsd_funnel_num" t-attf-style="color: {{ s.color }};">
+                            <t t-esc="s.num"/>
+                        </div>
+                        <div class="btsd_funnel_bandwrap">
+                            <div class="btsd_funnel_band"
+                                 t-on-click="() => this.onStageClick(s)"
+                                 t-attf-style="clip-path: {{ s.clip }}; -webkit-clip-path: {{ s.clip }}; background: {{ s.color }}; cursor: pointer;">
+                                <span class="btsd_funnel_label">
+                                    <t t-esc="s.label"/>
+                                    <small class="btsd_funnel_count"> (<t t-esc="s.count"/>)</small>
+                                </span>
+                                <span class="btsd_funnel_value"><t t-esc="s.value"/></span>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+                <div class="btsd_funnel_row btsd_funnel_row--tip" t-if="view.tip">
+                    <div class="btsd_funnel_num"/>
+                    <div class="btsd_funnel_bandwrap">
+                        <div class="btsd_funnel_tip"
+                             t-attf-style="clip-path: {{ view.tip.clip }}; -webkit-clip-path: {{ view.tip.clip }}; background: {{ view.tip.color }};"/>
+                    </div>
+                </div>
+                <div t-if="!view.stages.length" class="btsd_funnel_empty">No opportunities found.</div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_sales_dashboard.SalesDashboard">
+        <div class="btsd_dashboard">
+            <div class="btsd_header">
+                <h1 class="btsd_header_title"><i class="fa fa-line-chart me-2"/>Sales Dashboard</h1>
+                <div class="btsd_header_tools">
+                    <div class="btsd_periods">
+                        <t t-foreach="periods" t-as="p" t-key="p.id">
+                            <button class="btsd_period_btn"
+                                    t-att-class="{ 'btsd_period_btn--active': state.period === p.id }"
+                                    t-on-click="() => this.onPeriodChange(p.id)">
+                                <t t-esc="p.label"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div class="btsd_custom" t-if="state.period === 'custom'">
+                        <input type="date" class="btsd_date" t-att-value="state.dateFrom"
+                               t-on-change="(ev) => this.onCustomDateChange('dateFrom', ev)"/>
+                        <span>→</span>
+                        <input type="date" class="btsd_date" t-att-value="state.dateTo"
+                               t-on-change="(ev) => this.onCustomDateChange('dateTo', ev)"/>
+                        <button class="btsd_btn btsd_btn--primary" t-on-click="applyCustomRange">Apply</button>
+                    </div>
+                    <button class="btsd_btn" t-on-click="refresh" title="Refresh"><i class="fa fa-refresh"/></button>
+                </div>
+            </div>
+
+            <div class="btsd_loading" t-if="state.loading">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+            </div>
+
+            <div t-else="" class="btsd_content">
+                <div class="btsd_kpi_grid">
+                    <KpiCard title="'Opportunities'" value="kpis.opportunities"
+                             icon="'fa-bullseye'" color="'#4F46E5'"
+                             tooltip="'Opportunities in every stage — New, Discussion, Demo, Negotiation, Won, Lost — whose Expected Closing falls in the selected period. Archived opportunities are excluded; they are counted by Opportunities Lost.'"
+                             onClick="() => this.openOpportunities()"/>
+                    <KpiCard title="'Pipeline Value'" value="kpis.pipeline_value" prefix="'₹ '"
+                             icon="'fa-filter'" color="'#06B6D4'"
+                             tooltip="'Expected Revenue of the opportunities closing in this period, excluding those already Won. Deals sitting in a Lost stage are still counted.'"
+                             onClick="() => this.openPipeline()"/>
+                    <KpiCard title="'Sales Closed'" value="kpis.sales_closed"
+                             icon="'fa-trophy'" color="'#10B981'"
+                             tooltip="'Opportunities won, by Closed Date in the selected period'"
+                             onClick="() => this.openWon()"/>
+                    <KpiCard title="'Sales Closed Value'" value="kpis.sales_closed_value" prefix="'₹ '"
+                             icon="'fa-inr'" color="'#8B5CF6'"
+                             tooltip="'Closed Amount of opportunities won by Closed Date in the period, falling back to Expected Revenue'"
+                             onClick="() => this.openWon()"/>
+                    <KpiCard title="'Opportunities Lost'" value="kpis.opportunities_lost"
+                             icon="'fa-times-circle'" color="'#EF4444'"
+                             tooltip="'Opportunities marked lost, by Closed Date in the selected period'"
+                             onClick="() => this.openLost()"/>
+                    <KpiCard title="'Conversion Ratio'" value="kpis.conversion_ratio" suffix="'%'"
+                             icon="'fa-percent'" color="'#F59E0B'"
+                             tooltip="'Sales Closed / Opportunities x 100'"/>
+                </div>
+
+                <!-- Breakdown: stage-wise or executive-wise, chosen from the
+                     dropdown. Both are already in the payload, so switching is
+                     instant and needs no refetch. -->
+                <div class="btsd_switchbar">
+                    <span class="btsd_switch_label">Breakdown</span>
+                    <!-- Same pill group as the period filter in the header, so
+                         every "pick one" control on the dashboard looks and
+                         behaves identically. -->
+                    <div class="btsd_periods">
+                        <t t-foreach="breakdowns" t-as="b" t-key="b.id">
+                            <button class="btsd_period_btn"
+                                    t-att-class="{ 'btsd_period_btn--active': state.breakdown === b.id }"
+                                    t-on-click="() => this.setBreakdown(b.id)">
+                                <t t-esc="b.label"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+
+                <div class="btsd_chart_row" t-if="state.breakdown === 'stage'">
+                    <FunnelChart title="'Stage-wise — Expected Revenue by Stage'"
+                                 data="charts.funnel" fullWidth="true"
+                                 onStageClick="(stage) => this.openStage(stage)"/>
+                </div>
+                <div class="btsd_chart_row" t-else="">
+                    <!-- Read-only by design: no onRowClick, which is what
+                         TableCard.clickable keys off, so the rows carry no
+                         pointer styling and a click does nothing. -->
+                    <TableCard title="'Executive-wise — Opportunities, Value and Conversion'"
+                               columns="execColumns" rows="executives" total="executiveTotal"
+                               fullWidth="true"
+                               note="'Opportunities and Expected Revenue by Expected Closing, excluding archived; Sales Closed and Lost by Closed Date — the same measures as the cards above, so the Total row matches them exactly.'"
+                               emptyText="'No opportunities in this period.'"/>
+                </div>
+                <div class="btsd_switchbar">
+                    <span class="btsd_switch_label">Month view</span>
+                    <div class="btsd_periods">
+                        <t t-foreach="monthViews" t-as="v" t-key="v.id">
+                            <button class="btsd_period_btn"
+                                    t-att-class="{ 'btsd_period_btn--active': state.monthView === v.id }"
+                                    t-on-click="() => this.setMonthView(v.id)">
+                                <t t-esc="v.label"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+                <div class="btsd_chart_row">
+                    <MonthBoard title="pipelineTitle"
+                                data="pipelineBoard"
+                                note="'Open opportunities by Expected Closing. Last/Next 6 Months are fixed windows and never overlap; Selected Period follows the filter above.'"
+                                emptyText="'No open opportunities have an Expected Closing in this window.'"
+                                onMonthClick="(m) => this.openBoardMonth(this.boardKey('pipeline'), m)"
+                                onLeadClick="(lead) => this.openLead(lead)"/>
+                </div>
+                <div class="btsd_chart_row">
+                    <MonthBoard title="closedTitle"
+                                data="closedBoard"
+                                note="'Won opportunities, by Closed Date.'"
+                                emptyText="'No opportunities were won in this window.'"
+                                onMonthClick="(m) => this.openBoardMonth(this.boardKey('closed'), m)"
+                                onLeadClick="(lead) => this.openLead(lead)"/>
+                </div>
+                <div class="btsd_chart_row">
+                    <MonthBoard title="lostTitle"
+                                data="lostBoard"
+                                note="'Lost opportunities, by Closed Date.'"
+                                emptyText="'No opportunities were marked lost in this window.'"
+                                onMonthClick="(m) => this.openBoardMonth(this.boardKey('lost'), m)"
+                                onLeadClick="(lead) => this.openLead(lead)"/>
+                </div>
+
+            </div>
+        </div>
+    </t>
+
+</templates>

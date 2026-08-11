@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Expense Line — embedded list inside the claim form
+         ============================================================ -->
+    <record id="view_employee_expense_line_list" model="ir.ui.view">
+        <field name="name">employee.expense.line.list</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <list string="Expense Lines" editable="bottom">
+                <field name="expense_date"/>
+                <field name="category"/>
+                <field name="description"/>
+                <field name="amount"/>
+                <field name="tax_amount"/>
+                <field name="payment_mode"/>
+                <field name="bill_available"/>
+                <field name="bill_attachment" widget="many2many_binary_preview"/>
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_line_form" model="ir.ui.view">
+        <field name="name">employee.expense.line.form</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <form string="Expense Line">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="expense_date"/>
+                            <field name="category"/>
+                            <field name="payment_mode"/>
+                            <field name="bill_available"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="tax_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="project_id"/>
+                            <field name="partner_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="desc">
+                            <field name="description"/>
+                            <separator string="Remarks"/>
+                            <field name="remarks"/>
+                        </page>
+                        <page string="Bill" name="bill">
+                            <field name="bill_attachment" widget="many2many_binary_preview"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Expense Claim — header
+         ============================================================ -->
+    <record id="view_employee_expense_claim_list" model="ir.ui.view">
+        <field name="name">employee.expense.claim.list</field>
+        <field name="model">employee.expense.claim</field>
+        <field name="arch" type="xml">
+            <list string="Expense Claims"
+                  decoration-info="approval_status=='submitted'"
+                  decoration-success="approval_status in ('approved','paid')"
+                  decoration-danger="approval_status=='rejected'"
+                  decoration-muted="approval_status=='draft'">
+                <field name="claim_number"/>
+                <field name="employee"/>
+                <field name="department"/>
+                <field name="claim_date"/>
+                <field name="total_amount"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="approval_status" widget="badge"/>
+                <field name="payment_status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_claim_form" model="ir.ui.view">
+        <field name="name">employee.expense.claim.form</field>
+        <field name="model">employee.expense.claim</field>
+        <field name="arch" type="xml">
+            <form string="Expense Claim">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="claim_number"/>
+                        <h1><field name="claim_number" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee"/>
+                            <field name="department"/>
+                            <field name="claim_date"/>
+                            <field name="total_amount"/>
+                        </group>
+                        <group>
+                            <field name="expense_period_from"/>
+                            <field name="expense_period_to"/>
+                            <field name="project_id"/>
+                            <field name="partner_id"/>
+                            <field name="bill_available"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Expense Lines" name="lines">
+                            <field name="expense_line_ids"
+                                   context="{'default_expense_claim': id}">
+                                <list editable="bottom">
+                                    <field name="expense_date"/>
+                                    <field name="category"/>
+                                    <field name="description"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="tax_amount" sum="Tax"/>
+                                    <field name="payment_mode"/>
+                                    <field name="bill_attachment" widget="many2many_binary_preview"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="total_amount" widget="monetary"/>
+                            </group>
+                        </page>
+                        <page string="Approval &amp; Payment" name="approval">
+                            <group>
+                                <group string="Approval">
+                                    <field name="approved_by"/>
+                                    <field name="approved_date"/>
+                                    <field name="approval_status"/>
+                                </group>
+                                <group string="Payment">
+                                    <field name="payment_status"/>
+                                    <field name="paid_date"/>
+                                    <field name="payment_reference"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Remarks" name="remarks">
+                            <field name="remarks"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_claim_search" model="ir.ui.view">
+        <field name="name">employee.expense.claim.search</field>
+        <field name="model">employee.expense.claim</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="claim_number"/>
+                <field name="employee"/>
+                <field name="department"/>
+                <filter name="my_claims" string="My Claims"
+                        domain="[('employee.user_id','=',uid)]"/>
+                <filter name="draft" string="Draft"
+                        domain="[('approval_status','=','draft')]"/>
+                <filter name="submitted" string="Submitted"
+                        domain="[('approval_status','=','submitted')]"/>
+                <filter name="approved" string="Approved"
+                        domain="[('approval_status','=','approved')]"/>
+                <filter name="paid" string="Paid"
+                        domain="[('approval_status','=','paid')]"/>
+                <separator/>
+                <filter name="unpaid" string="Unpaid"
+                        domain="[('payment_status','=','unpaid')]"/>
+                <group name="group_by">
+                    <filter name="group_employee" string="Employee"
+                            context="{'group_by': 'employee'}"/>
+                    <filter name="group_status" string="Status"
+                            context="{'group_by': 'approval_status'}"/>
+                    <filter name="group_department" string="Department"
+                            context="{'group_by': 'department'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_employee_expense_claim" model="ir.actions.act_window">
+        <field name="name">Expense Claims</field>
+        <field name="res_model">employee.expense.claim</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <!-- Standalone list for the Expense Lines menu (shows parent claim) -->
+    <record id="view_employee_expense_line_standalone_list" model="ir.ui.view">
+        <field name="name">employee.expense.line.standalone.list</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <list string="Expense Lines">
+                <field name="expense_claim"/>
+                <field name="expense_date"/>
+                <field name="category"/>
+                <field name="description"/>
+                <field name="amount" sum="Total"/>
+                <field name="tax_amount" sum="Tax"/>
+                <field name="payment_mode"/>
+                <field name="project_id"/>
+                <field name="partner_id"/>
+                <field name="bill_available"/>
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_line_standalone_form" model="ir.ui.view">
+        <field name="name">employee.expense.line.standalone.form</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <form string="Expense Line">
+                <sheet>
+                    <group>
+                        <group string="Details">
+                            <field name="expense_claim"/>
+                            <field name="expense_date"/>
+                            <field name="category"/>
+                            <field name="description"/>
+                            <field name="payment_mode"/>
+                            <field name="bill_available"/>
+                        </group>
+                        <group string="Amount">
+                            <field name="amount"/>
+                            <field name="tax_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="project_id"/>
+                            <field name="partner_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Remarks" name="desc">
+                            <field name="remarks"/>
+                        </page>
+                        <page string="Bill" name="bill">
+                            <field name="bill_attachment" widget="many2many_binary_preview"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_employee_expense_line_search" model="ir.ui.view">
+        <field name="name">employee.expense.line.search</field>
+        <field name="model">employee.expense.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="expense_claim"/>
+                <field name="category"/>
+                <field name="project_id"/>
+                <field name="partner_id"/>
+                <field name="payment_mode"/>
+                <filter name="has_bill" string="Bill Available"
+                        domain="[('bill_available','=',True)]"/>
+                <filter name="no_bill" string="No Bill"
+                        domain="[('bill_available','=',False)]"/>
+                <group name="group_by">
+                    <filter name="group_claim" string="Claim"
+                            context="{'group_by': 'expense_claim'}"/>
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category'}"/>
+                    <filter name="group_project" string="Project"
+                            context="{'group_by': 'project_id'}"/>
+                    <filter name="group_partner" string="Client"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_date" string="Expense Month"
+                            context="{'group_by': 'expense_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_employee_expense_line" model="ir.actions.act_window">
+        <field name="name">Expense Lines</field>
+        <field name="res_model">employee.expense.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_employee_expense_line_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No expense lines yet</p>
+            <p>All expense lines across every claim, with filters by claim,
+               category, project and client.</p>
+        </field>
+    </record>
+
+    <record id="action_employee_expense_line_list_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_employee_expense_line_standalone_list"/>
+        <field name="act_window_id" ref="action_employee_expense_line"/>
+    </record>
+
+    <record id="action_employee_expense_line_form_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_employee_expense_line_standalone_form"/>
+        <field name="act_window_id" ref="action_employee_expense_line"/>
+    </record>
+
+</odoo>

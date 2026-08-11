@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_assignment_list" model="ir.ui.view">
+        <field name="name">ft.assignment.list</field>
+        <field name="model">ft.assignment</field>
+        <field name="arch" type="xml">
+            <list string="Assignments" class="o_ft_assignment_list">
+                <field name="title" width="200"/>
+                <field name="domain" width="120"/>
+                <field name="phase_id" width="120"/>
+                <field name="deadline" width="120"/>
+                <field name="marks" width="120"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_assignment_form" model="ir.ui.view">
+        <field name="name">ft.assignment.form</field>
+        <field name="model">ft.assignment</field>
+        <field name="arch" type="xml">
+            <form string="Assignment">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="title"/>
+                            <field name="domain"/>
+                            <field name="phase_id"/>
+                            <field name="deadline"/>
+                            <field name="marks"/>
+                        </group>
+                    </group>
+                    <separator string="Description"/>
+                    <field name="description"
+                           placeholder="Describe the assignment..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_assignment_search" model="ir.ui.view">
+        <field name="name">ft.assignment.search</field>
+        <field name="model">ft.assignment</field>
+        <field name="arch" type="xml">
+            <search string="Assignments">
+                <field name="domain"/>
+                <field name="deadline"/>
+                <group name="group_by">
+                    <filter name="group_domain" string="Domain"
+                            context="{'group_by': 'domain'}"/>
+                    <filter name="group_deadline" string="Deadline"
+                            context="{'group_by': 'deadline:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_assignment" model="ir.actions.act_window">
+        <field name="name">Assignment</field>
+        <field name="res_model">ft.assignment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_assignment_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create an assignment</p>
+            <p>Set a domain, deadline and maximum marks, and describe the task.</p>
+        </field>
+    </record>
+
+</odoo>

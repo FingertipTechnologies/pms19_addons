@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_marketing_article_user,access_marketing_article_user,model_marketing_article,base.group_user,1,1,1,1
+access_marketing_pageview_user,access_marketing_pageview_user,model_marketing_pageview,base.group_user,1,1,1,1
+access_marketing_enquiry_user,access_marketing_enquiry_user,model_marketing_enquiry,base.group_user,1,1,1,1

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_helpdesk_macro_agent,ft.helpdesk.macro agent,model_ft_helpdesk_macro,ft_helpdesk_core.group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_macro_admin,ft.helpdesk.macro admin,model_ft_helpdesk_macro,ft_helpdesk_core.group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_trigger_agent,ft.helpdesk.trigger agent,model_ft_helpdesk_trigger,ft_helpdesk_core.group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_trigger_admin,ft.helpdesk.trigger admin,model_ft_helpdesk_trigger,ft_helpdesk_core.group_ft_helpdesk_admin,1,1,1,1

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Top-level app so Suggestions gets its own icon on the Homepage
+         app grid (in addition to the menus inside PMS). Visible to all
+         internal users. -->
+    <menuitem id="menu_pms_suggestion_app_root"
+              name="Suggestions"
+              web_icon="ft_pms_suggestions,static/description/icon.png"
+              sequence="65"/>
+
+    <menuitem id="menu_pms_suggestion_app_all"
+              name="Suggestions"
+              parent="menu_pms_suggestion_app_root"
+              action="action_pms_suggestion"
+              sequence="10"/>
+
+    <menuitem id="menu_pms_suggestion_app_categories"
+              name="Suggestion Modules / Areas"
+              parent="menu_pms_suggestion_app_root"
+              action="action_pms_suggestion_category"
+              groups="base.group_system"
+              sequence="20"/>
+
+</odoo>

@@ -1,0 +1,36 @@
+<odoo>
+ <record id="view_crm_lead_form_inherit_proposal" model="ir.ui.view">
+    <field name="name">crm.lead.form.inherit.proposal</field>
+    <field name="model">crm.lead</field>
+    <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+    <field name="arch" type="xml">
+        <!-- Add the "New Proposal" button to the header -->
+        <xpath expr="//header" position="inside">
+            <button name="action_create_new_proposal" 
+                    string="New Proposal" 
+                    type="object" 
+                    class="oe_highlight"/>
+        </xpath>
+
+        <!-- Add the Proposals Tab and its list view -->
+        <xpath expr="//notebook" position="inside">
+            <page string="Proposals" name="proposals">
+                <field name="proposal_ids" context="{'form_view_ref': 'custom_crm_proposal.view_crm_proposal_form_popup'}">
+                    <!-- open_form_view="0" prevents the automatic popup on click -->
+                    <list create="0" edit="0" open_form_view="0">
+                        <field name="name"/>
+                        <field name="date_proposal"/>
+                        <field name="state" widget="badge" decoration-success="state == 'confirmed'"/>
+                        <!-- Custom button to force full-page navigation -->
+                        <button name="action_open_proposal" 
+                                type="object" 
+                                string="View Full Proposal" 
+                                icon="fa-external-link" 
+                                class="btn-primary"/>
+                    </list>
+                </field>
+            </page>
+        </xpath>
+    </field>
+</record>
+</odoo>

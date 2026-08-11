@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ============================ KPI CARD ============================ -->
+    <t t-name="ft_project_dashboard.KpiCard">
+        <div class="ftpd_kpi" t-att-class="{ 'ftpd_kpi--clickable': clickable }"
+             t-on-click="onCardClick" t-att-title="props.tooltip">
+            <div class="ftpd_kpi_icon" t-attf-style="background: {{ props.color || '#4F46E5' }}1A; color: {{ props.color || '#4F46E5' }};">
+                <i class="fa" t-att-class="props.icon || 'fa-chart-bar'"/>
+            </div>
+            <div class="ftpd_kpi_body">
+                <div class="ftpd_kpi_value">
+                    <t t-esc="displayValue"/><span class="ftpd_kpi_suffix" t-if="props.suffix"><t t-esc="props.suffix"/></span>
+                </div>
+                <div class="ftpd_kpi_title"><t t-esc="props.title"/></div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ========================== SEARCH SELECT ========================== -->
+    <t t-name="ft_project_dashboard.SearchSelect">
+        <div class="ftpd_ss" t-ref="root" t-att-title="props.title">
+            <!-- Caption, when one is given. Two pickers side by side are
+                 indistinguishable once both hold a name. -->
+            <span class="ftpd_ss_name" t-if="props.label"><t t-esc="props.label"/></span>
+            <i class="fa fa-search ftpd_ss_ico" t-else=""/>
+            <!-- While closed the input shows the current pick; while open it is
+                 empty and holds the query, so typing never has to clear the old
+                 value first. -->
+            <input type="text" class="ftpd_ss_input" t-ref="input"
+                   t-att-value="state.open ? state.query : selectedLabel"
+                   t-att-placeholder="props.placeholder"
+                   t-on-focus="onFocus"
+                   t-on-input="onInput"
+                   t-on-keydown="onKeydown"/>
+            <i class="fa ftpd_ss_caret"
+               t-att-class="state.open ? 'fa-angle-up' : 'fa-angle-down'"/>
+
+            <div class="ftpd_ss_menu" t-if="state.open">
+                <t t-foreach="rows" t-as="row" t-key="row.id">
+                    <!-- mousedown, not click: the input's blur would otherwise
+                         close the menu before the click landed. -->
+                    <div class="ftpd_ss_opt"
+                         t-att-class="{ 'ftpd_ss_opt--active': isActive(row_index),
+                                        'ftpd_ss_opt--chosen': isChosen(row) }"
+                         t-on-mousedown.prevent="() => this.pick(row)"
+                         t-on-mouseenter="() => this.state.active = row_index">
+                        <t t-esc="row.name"/>
+                    </div>
+                </t>
+                <div class="ftpd_ss_empty" t-if="!rows.length">No match</div>
+                <div class="ftpd_ss_more" t-if="hiddenCount">
+                    <t t-esc="hiddenCount"/> more — keep typing to narrow
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- =========================== CHART CARD =========================== -->
+    <t t-name="ft_project_dashboard.ChartCard">
+        <div class="ftpd_chart_card" t-att-class="{ 'ftpd_chart_card--full': props.fullWidth }">
+            <div class="ftpd_chart_head ftpd_table_head">
+                <div>
+                    <h3 class="ftpd_chart_title"><t t-esc="props.title"/></h3>
+                    <small class="ftpd_chart_note" t-if="props.note"><t t-esc="props.note"/></small>
+                </div>
+                <div class="ftpd_table_tools" t-if="props.slots and props.slots.tools">
+                    <t t-slot="tools"/>
+                </div>
+            </div>
+            <div class="ftpd_chart_legend" t-if="props.scrollMinWidth">
+                <t t-foreach="props.data.datasets or []" t-as="ds" t-key="ds_index">
+                    <span class="ftpd_legend_item">
+                        <span class="ftpd_legend_dot" t-attf-style="background: {{ ds.backgroundColor }};"/>
+                        <t t-esc="ds.label"/>
+                    </span>
+                </t>
+            </div>
+            <div class="ftpd_chart_canvas_wrap" t-att-class="{ 'ftpd_chart_scroll': props.scrollMinWidth }">
+                <canvas t-if="props.scrollMinWidth" t-ref="axis" class="ftpd_chart_axis"/>
+                <div class="ftpd_chart_scrollarea">
+                    <div class="ftpd_chart_canvas_inner"
+                         t-attf-style="{{ props.scrollMinWidth ? 'min-width:' + props.scrollMinWidth + 'px;' : '' }}">
+                        <canvas t-ref="canvas"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- =========================== DATA TABLE =========================== -->
+    <t t-name="ft_project_dashboard.DataTable">
+        <div class="ftpd_chart_card ftpd_chart_card--full">
+            <div class="ftpd_chart_head ftpd_table_head">
+                <h3 class="ftpd_chart_title"><t t-esc="props.title"/></h3>
+                <div class="ftpd_table_tools" t-if="props.slots and props.slots.tools">
+                    <t t-slot="tools"/>
+                </div>
+            </div>
+            <div class="ftpd_table_wrap ftpd_table_scroll">
+                <table class="ftpd_table">
+                    <thead>
+                        <tr>
+                            <t t-foreach="props.columns" t-as="col" t-key="col.key">
+                                <!-- title carries the full form of an abbreviated
+                                     header (DE, OTD, RWR, DWD) plus how it is
+                                     measured; absent on self-explanatory ones, so
+                                     no empty tooltip appears. -->
+                                <th t-att-class="headClass(col)" t-att-title="col.help"
+                                    t-on-click="() => this.onSort(col.key)">
+                                    <t t-esc="col.label"/>
+                                    <i class="fa ftpd_sort_ico" t-att-class="sortIcon(col)"/>
+                                </th>
+                            </t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="pagedRows" t-as="row" t-key="row_index">
+                            <tr t-att-class="{ 'ftpd_group_child': !row.__first, 'ftpd_group_mid': row.__mid }">
+                                <t t-foreach="props.columns" t-as="col" t-key="col.key">
+                                    <td t-att-class="cellClass(col)"><t t-esc="cellValue(row, col)"/></td>
+                                </t>
+                            </tr>
+                        </t>
+                        <tr t-if="!pagedRows.length">
+                            <td t-att-colspan="props.columns.length" class="ftpd_table_empty">
+                                <t t-esc="props.emptyText || 'No records found.'"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="ftpd_table_foot ftpd_pager" t-if="props.rows.length">
+                <div class="ftpd_pager_left">
+                    <span class="ftpd_table_count">
+                        Showing <t t-esc="rangeStart"/>–<t t-esc="rangeEnd"/> of <t t-esc="sortedRows.length"/>
+                        <t t-if="props.groupKey"> (<t t-esc="groupCount"/> <t t-esc="props.groupLabel || 'groups'"/>)</t>
+                    </span>
+                    <label class="ftpd_page_size">
+                        Rows:
+                        <select t-on-change="onPageSize">
+                            <t t-foreach="pageSizes" t-as="ps" t-key="ps">
+                                <option t-att-value="ps" t-att-selected="ps === state.pageSize"><t t-esc="ps"/></option>
+                            </t>
+                        </select>
+                    </label>
+                </div>
+                <div class="ftpd_pager_ctrls">
+                    <button class="ftpd_page_btn" t-att-disabled="currentPage === 0" t-on-click="prev">
+                        <i class="fa fa-angle-left"/> Prev
+                    </button>
+                    <t t-foreach="pageNumbers" t-as="p" t-key="p">
+                        <button class="ftpd_page_btn"
+                                t-att-class="{ 'ftpd_page_btn--active': p === currentPage }"
+                                t-on-click="() => this.goto(p)"><t t-esc="p + 1"/></button>
+                    </t>
+                    <button class="ftpd_page_btn" t-att-disabled="currentPage >= pageCount - 1" t-on-click="next">
+                        Next <i class="fa fa-angle-right"/>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ========================= MAIN DASHBOARD ========================= -->
+    <t t-name="ft_project_dashboard.ProjectDashboard">
+        <div class="ftpd_dashboard">
+
+            <!-- Sticky header -->
+            <div class="ftpd_header">
+                <h1 class="ftpd_header_title">
+                    <i class="fa fa-rocket me-2"/>Project Dashboard
+                </h1>
+                <div class="ftpd_header_tools">
+                    <div class="ftpd_periods">
+                        <t t-foreach="periods" t-as="p" t-key="p.id">
+                            <button class="ftpd_period_btn"
+                                    t-att-class="{ 'ftpd_period_btn--active': state.period === p.id }"
+                                    t-on-click="() => this.onPeriodChange(p.id)">
+                                <t t-esc="p.label"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div class="ftpd_custom" t-if="state.period === 'custom'">
+                        <input type="date" class="ftpd_date" t-att-value="state.dateFrom"
+                               t-on-change="(ev) => this.onCustomDateChange('dateFrom', ev)"/>
+                        <span>→</span>
+                        <input type="date" class="ftpd_date" t-att-value="state.dateTo"
+                               t-on-change="(ev) => this.onCustomDateChange('dateTo', ev)"/>
+                        <button class="ftpd_btn ftpd_btn--primary" t-on-click="applyCustomRange">Apply</button>
+                    </div>
+                    <!-- Project and Status scope the WHOLE board — every card,
+                         table and chart below. They used to be repeated in each
+                         section, which let five copies of the same question hold
+                         five different answers at once. -->
+                    <!-- Type-to-search rather than a <select>: a native select
+                         only jumps to the first letter, which is unusable across
+                         a few hundred projects. -->
+                    <SearchSelect options="state.filterOptions.projects"
+                                  value="state.projectId"
+                                  allLabel="'All Projects'"
+                                  placeholder="'All Projects'"
+                                  title="'Scope the whole dashboard to one project — type to search'"
+                                  onSelect="(id) => this.onScopePick('projectId', id)"/>
+                    <!-- Project Manager. A project-level scope like the two
+                         beside it: it narrows the board to the projects this
+                         person runs, whoever booked the time on them. Distinct
+                         from the Resource picker inside each section, which
+                         narrows by who did the work; the two compose. -->
+                    <SearchSelect options="state.filterOptions.managers"
+                                  value="state.managerId"
+                                  allLabel="'All Managers'"
+                                  placeholder="'All PMs'"
+                                  title="'Show only the projects this person manages — type to search'"
+                                  onSelect="(id) => this.onScopePick('managerId', id)"/>
+                    <div class="ftpd_filter" title="Scope the whole dashboard to one project stage">
+                        <select class="ftpd_filter_select"
+                                t-on-change="(ev) => this.onScopeChange('stageId', ev)">
+                            <option value="">All Statuses</option>
+                            <t t-foreach="state.filterOptions.stages" t-as="s" t-key="s.id">
+                                <option t-att-value="s.id"
+                                        t-att-selected="isFilterSelected(s.id, state.stageId)"
+                                        t-esc="s.name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <button class="ftpd_btn" t-if="hasScopeFilter"
+                            t-on-click="clearScopeFilters" title="Clear project / status">
+                        <i class="fa fa-times"/>
+                    </button>
+                    <button class="ftpd_btn" t-on-click="refresh" title="Refresh">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading overlay -->
+            <div class="ftpd_loading" t-if="state.loading">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+            </div>
+
+            <div t-else="" class="ftpd_content">
+
+                <!-- One continuous KPI grid. Splitting these into three fixed
+                     rows left whichever row was not an exact multiple of the
+                     column count with an orphan card and a wide empty gap, so
+                     the cards flow as a single grid instead. Order still puts
+                     the four delivery cards together on the last row. -->
+                <section class="ftpd_section">
+                    <h2 class="ftpd_section_title">Project Summary</h2>
+                    <div class="ftpd_kpi_grid">
+                    <KpiCard title="'Active Projects'" value="kpis.active_projects"
+                             icon="'fa-folder-open'" color="'#4F46E5'"
+                             onClick="() => this.openKpi('active_projects')"
+                             tooltip="'Projects not in the General, Hold or Closed stage. Equals Implementation Projects plus AMC Projects.'"/>
+                    <KpiCard title="'Implementation Projects'" value="kpis.implementation_projects"
+                             icon="'fa-cogs'" color="'#8B5CF6'"
+                             onClick="() => this.openKpi('implementation_projects')"
+                             tooltip="'Active projects still being delivered — excludes the AMC stage as well as General, Hold and Closed.'"/>
+                    <KpiCard title="'AMC Projects'" value="kpis.amc_projects"
+                             icon="'fa-refresh'" color="'#14B8A6'"
+                             onClick="() => this.openKpi('amc_projects')"
+                             tooltip="'Active projects in the AMC stage (annual maintenance contract).'"/>
+                    <KpiCard title="'Hours Spent'" value="kpis.hours_spent" suffix="'h'"
+                             icon="'fa-clock-o'" color="'#F59E0B'"
+                             onClick="() => this.openTimesheets(false)"/>
+                    <KpiCard title="'Billable Hours'" value="kpis.billable_hours" suffix="'h'"
+                             icon="'fa-money'" color="'#10B981'"
+                             onClick="() => this.openTimesheets(true)"/>
+                    <!-- Headcount cards. With a Project or Status picked in the
+                         header these count only the people who booked time on
+                         it in the selected period; with neither, they stay the
+                         company-wide headcount. -->
+                    <KpiCard title="'Developers'" value="kpis.developers"
+                             icon="'fa-code'" color="'#06B6D4'"
+                             onClick="() => this.openKpi('developers')"
+                             tooltip="'Active employees in a developer role. With a project or status selected, only those who booked time on it during the selected period — click to list them.'"/>
+                    <KpiCard title="'Testers'" value="kpis.testers"
+                             icon="'fa-bug'" color="'#8B5CF6'"
+                             onClick="() => this.openKpi('testers')"
+                             tooltip="'Active employees in a QA role. With a project or status selected, only those who booked time on it during the selected period.'"/>
+                    <KpiCard title="'Project Managers'" value="kpis.project_managers"
+                             icon="'fa-user-circle'" color="'#EC4899'"
+                             onClick="() => this.openKpi('project_managers')"
+                             tooltip="'Active employees in a project-manager role. With a project or status selected, only those who booked time on it during the selected period — not merely whoever manages it.'"/>
+                    <!-- Trainees sits beside the other headcount cards, and is
+                         counted on its own — never inside Developers/Testers. -->
+                    <KpiCard title="'Trainees'" value="kpis.trainees"
+                             icon="'fa-graduation-cap'" color="'#0EA5E9'"
+                             onClick="() => this.openKpi('trainees')"
+                             tooltip="'Active employees whose Job Position starts with &quot;Trainee&quot;. Counted separately, not included in Developers or Testers. With a project or status selected, only those who booked time on it during the selected period.'"/>
+                    <KpiCard title="'Estimated Hours'" value="kpis.hours_estimated" suffix="'h'"
+                             icon="'fa-hourglass-half'" color="'#3B82F6'"
+                             tooltip="'Estimated time on tasks created in the selected period. Rolled up from the tasks, which is also what the Estimated field on a project shows.'"/>
+                    <KpiCard title="'Remaining Hours'" value="kpis.hours_remaining" suffix="'h'"
+                             icon="'fa-hourglass-end'" color="'#F97316'"
+                             tooltip="'Estimated Hours minus Hours Spent, both for the selected period. Negative means the period burned more time than the work created in it was estimated at.'"/>
+                    <KpiCard title="'Resource Need'" value="kpis.resource_need"
+                             icon="'fa-users'" color="'#EF4444'"
+                             tooltip="'No capacity/planning model installed yet.'"/>
+                    <!-- Delivery cards. Open &amp; Overdue sits beside the
+                         percentage on purpose — the percentage only counts work
+                         that finished, so late work still open is invisible to
+                         it. With 16 cards over 4 columns these four land on the
+                         last row together. -->
+                    <KpiCard title="'On-Time Delivery'" value="kpis.on_time_delivery" suffix="'%'"
+                             icon="'fa-check-circle'" color="'#10B981'"
+                             onClick="() => this.openKpi('on_time_delivery')"
+                             tooltip="'Delivered tasks that met their deadline, in the selected period. Target: 95% or above. Tasks delivered without a deadline are excluded.'"/>
+                    <KpiCard title="'Tasks Delivered'" value="kpis.tasks_delivered"
+                             icon="'fa-flag-checkered'" color="'#4F46E5'"
+                             onClick="() => this.openKpi('tasks_delivered')"
+                             tooltip="'Tasks that reached a Completed stage in the selected period. Excludes cancelled.'"/>
+                    <KpiCard title="'Open &amp; Overdue'" value="kpis.overdue_open_tasks"
+                             icon="'fa-exclamation-triangle'" color="'#EF4444'"
+                             onClick="() => this.openKpi('overdue_open_tasks')"
+                             tooltip="'Tasks still open whose deadline has passed. A snapshot of now, not filtered by the selected period.'"/>
+                    <KpiCard title="'Available Resources'" value="kpis.available_resources"
+                             icon="'fa-user-plus'" color="'#14B8A6'"
+                             tooltip="'No capacity/planning model installed yet.'"/>
+                    </div>
+                </section>
+
+                <!-- Hours Utilisation: every hour figure on the board that is
+                     not a project-level total, in three rows — by role, by
+                     activity, and the task hour totals absorbed from the old
+                     Task Hours Summary section. All three obey the header's
+                     range and scope, and the one PM / Developer bar below
+                     narrows all three at once. Read-only by design: no onClick,
+                     so the cards render unclickable. -->
+                <section class="ftpd_section">
+                    <div class="ftpd_section_head">
+                        <h2 class="ftpd_section_title">Hours Utilisation</h2>
+                        <div class="ftpd_section_tools">
+                            <!-- One picker, one meaning: this person's own hours.
+                                 It replaces a PM box and a Developer box that
+                                 looked alike but answered different questions —
+                                 PM meant "projects she manages" and so included
+                                 her whole team. To see everything happening on a
+                                 manager's projects, scope the board with the
+                                 header's Project picker instead. -->
+                            <SearchSelect options="resourceOptions"
+                                          value="state.hoursPersonId"
+                                          label="'Resource'"
+                                          allLabel="'All Resources'"
+                                          placeholder="'All Resources'"
+                                          title="'Hours booked by this person — type to search'"
+                                          onSelect="(id) => this.onHoursFilter(id)"/>
+                            <button class="ftpd_filter_clear" t-if="hasHoursFilter"
+                                    t-on-click="clearHoursFilters">Clear</button>
+                            <span class="ftpd_filter_label" t-if="state.hoursLoading">…</span>
+                        </div>
+                    </div>
+                    <!-- Role split: who booked the time. A PARTITION of
+                         task-attached hours, so the five cards add up to the
+                         Actual Hours card below. "Other" exists for that reason:
+                         trainees and anyone whose job position is not recognised
+                         were always bucketed but never shown, leaving the row 216 h
+                         short on one project with nothing on screen to say why. -->
+                    <h3 class="ftpd_kpi_subhead">By Role<small> — every hour booked in the selected period, split by job position</small></h3>
+                    <!-- Six columns only while there are unclassified hours to
+                         show; five once every employee has a Job Position and
+                         that card drops away. -->
+                    <div class="ftpd_kpi_grid"
+                         t-att-class="hours.unclassified_hours ? 'ftpd_kpi_grid--six' : 'ftpd_kpi_grid--five'">
+                        <KpiCard title="'Developer Hours'" value="hours.dev_hours" suffix="'h'"
+                                 icon="'fa-code'" color="'#06B6D4'"
+                                 tooltip="'Task time booked in the selected period by people in a developer role.'"/>
+                        <KpiCard title="'PM Hours'" value="hours.pm_hours" suffix="'h'"
+                                 icon="'fa-user-circle'" color="'#EC4899'"
+                                 tooltip="'Task time booked in the selected period by people in a project-manager role.'"/>
+                        <KpiCard title="'QA Hours'" value="hours.qa_hours" suffix="'h'"
+                                 icon="'fa-bug'" color="'#8B5CF6'"
+                                 tooltip="'Task time booked in the selected period by people in a QA role.'"/>
+                        <KpiCard title="'BA Hours'" value="hours.ba_hours" suffix="'h'"
+                                 icon="'fa-clipboard'" color="'#0EA5E9'"
+                                 tooltip="'Task time booked in the selected period by people in a business-analyst role.'"/>
+                        <KpiCard title="'Trainee Hours'" value="hours.trainee_hours" suffix="'h'"
+                                 icon="'fa-graduation-cap'" color="'#0EA5E9'"
+                                 tooltip="'Task time booked in the selected period by people whose Job Position starts with &quot;Trainee&quot;. Counted on its own, never inside Developer or QA Hours, matching how the Trainees headcount card works.'"/>
+                        <!-- Hidden once it reaches zero, which is what will
+                             happen when every employee has a Job Position set. -->
+                        <KpiCard t-if="hours.unclassified_hours"
+                                 title="'Unclassified Hours'" value="hours.unclassified_hours" suffix="'h'"
+                                 icon="'fa-user-o'" color="'#94A3B8'"
+                                 tooltip="'Time booked by people whose Job Position is unset, or is not one of the recognised delivery roles. Almost all of it belongs to employees with no Job Position at all. Shown so this row accounts for every booked hour rather than silently falling short — set their Job Positions and this card disappears.'"/>
+                    </div>
+                    <!-- Activity split, same timesheet lines as the role row so
+                         both answer the same question. These three meeting cards
+                         are the ONLY meeting cards on the board: the old Task
+                         Hours Summary section repeated all three off the task
+                         records instead, which put two different numbers on
+                         screen under one label. -->
+                    <h3 class="ftpd_kpi_subhead">By Activity<small> — time booked in the selected period</small></h3>
+                    <div class="ftpd_kpi_grid ftpd_kpi_grid--five">
+                        <KpiCard title="'Standup Hours'" value="hours.standup_hours" suffix="'h'"
+                                 icon="'fa-users'" color="'#F59E0B'"
+                                 tooltip="'Actual Hours booked on every task in the Fingertip Standup project.'"/>
+                        <KpiCard title="'Meeting Hours'" value="hours.meeting_hours" suffix="'h'"
+                                 icon="'fa-calendar'" color="'#4F46E5'"
+                                 tooltip="'Actual Hours on tasks whose Task Type is Internal Call or External Call.'"/>
+                        <KpiCard title="'Internal Meeting Hours'" value="hours.internal_meeting_hours" suffix="'h'"
+                                 icon="'fa-comments'" color="'#10B981'"
+                                 tooltip="'Actual Hours on tasks whose Task Type is Internal Call.'"/>
+                        <KpiCard title="'External Meeting Hours'" value="hours.external_meeting_hours" suffix="'h'"
+                                 icon="'fa-phone'" color="'#EF4444'"
+                                 tooltip="'Actual Hours on tasks whose Task Type is External Call.'"/>
+                        <!-- The bridge to Project Performance's Actual Hrs: real
+                             project spend that no task-field sum can see. -->
+                        <KpiCard title="'Non-Task Hours'" value="hours.non_task_hours" suffix="'h'"
+                                 icon="'fa-question-circle-o'" color="'#64748B'"
+                                 tooltip="'Time booked on a project but against no task. Counted in the Actual Hrs column of Project Performance, but invisible to any task-based figure — there is no task to hold a total or a billing status. The five By Role cards plus this one account for every hour in that column.'"/>
+                    </div>
+                    <!-- Task hour totals, moved here from the Task Hours Summary
+                         section. Read off stored project.task columns, which is
+                         why these are the only hour cards that can carry a
+                         billing dimension. Deliberately anchored on tasks
+                         CREATED in the range, not time booked in it, so this row
+                         will not tally with the two above when a date filter is
+                         on — hence its own sub-heading saying so.
+
+                         Estimated is here as well as in Project Summary on
+                         purpose: this PMS estimates at both project and task
+                         level and both are wanted. The "(Task)" suffix on the
+                         two that share a label with a Project Summary card is
+                         what keeps them from being read as one figure.
+
+                         Five cards, so this row opts into the five-column grid
+                         variant rather than the 4-column default, which would
+                         strand the fifth card on a row of its own. -->
+                    <h3 class="ftpd_kpi_subhead">Task Hour Totals<small> — tasks created in the selected period</small></h3>
+                    <div class="ftpd_kpi_grid ftpd_kpi_grid--five">
+                        <KpiCard title="'Estimated Hours (Task)'" value="hours.th_estimated_hours" suffix="'h'"
+                                 icon="'fa-hourglass-half'" color="'#3B82F6'"
+                                 tooltip="'Sum of the Estimated field across the selected tasks. The Estimated Hours card in Project Summary sums the same field but over every task, ignoring the selected period.'"/>
+                        <KpiCard title="'Actual Hours'" value="hours.th_actual_hours" suffix="'h'"
+                                 icon="'fa-clock-o'" color="'#F59E0B'"
+                                 tooltip="'Whole-task Actual Hours summed over the tasks CREATED in this period — including time those tasks accrued outside it. A different question from the By Role cards above, which slice only the hours booked inside the period, so the two agree only when every task in scope was also created in the period.'"/>
+                        <KpiCard title="'Billable Hours (Task)'" value="hours.th_billable_hours" suffix="'h'"
+                                 icon="'fa-money'" color="'#14B8A6'"
+                                 tooltip="'Sum of the Billable Hours field on the selected tasks. Defaults to Actual Hours until overridden. Distinct from the Billable Hours card in Project Summary, which sums timesheet lines on billable projects.'"/>
+                        <KpiCard title="'Non Billable Hours'" value="hours.th_non_billable_hours" suffix="'h'"
+                                 icon="'fa-ban'" color="'#EC4899'"
+                                 tooltip="'Sum of Actual Hours minus Billable Hours across the selected tasks.'"/>
+                        <KpiCard title="'Billed Hours'" value="hours.th_billed_hours" suffix="'h'"
+                                 icon="'fa-check-square-o'" color="'#8B5CF6'"
+                                 tooltip="'Billable Hours on tasks whose Billing Status is Billed — hours actually invoiced, not merely invoiceable.'"/>
+                    </div>
+                </section>
+
+                <!-- Tasks Summary: the header's range and scope, counting tasks
+                     instead of hours. Each card anchors on its own date —
+                     created on create date, due on deadline, completed on
+                     completion date — so one range answers each question
+                     correctly. The Resource picker narrows it further. -->
+                <section class="ftpd_section">
+                    <div class="ftpd_section_head">
+                        <h2 class="ftpd_section_title">Tasks Summary</h2>
+                        <div class="ftpd_section_tools">
+                            <!-- Same single picker as Hours Utilisation, so the
+                                 two sections narrow the same way. Unassigned is
+                                 a real subset here, unlike on the hours side:
+                                 plenty of tasks carry no assignee at all. -->
+                            <SearchSelect options="resourceOptions"
+                                          value="state.tasksPersonId"
+                                          label="'Resource'"
+                                          allLabel="'All Resources'"
+                                          placeholder="'All Resources'"
+                                          title="'Tasks assigned to this person — type to search'"
+                                          onSelect="(id) => this.onTasksFilter(id)"/>
+                            <button class="ftpd_filter_clear" t-if="hasTasksFilter"
+                                    t-on-click="clearTasksFilters">Clear</button>
+                            <span class="ftpd_filter_label" t-if="state.tasksLoading">…</span>
+                        </div>
+                    </div>
+                    <div class="ftpd_kpi_grid">
+                        <KpiCard title="'Tasks Created'" value="tasks.tasks_created"
+                                 onClick="() => this.openTaskKpi('tasks_created')"
+                                 icon="'fa-plus-square'" color="'#4F46E5'"
+                                 tooltip="'Tasks whose creation date falls in the selected range.'"/>
+                        <KpiCard title="'Tasks Due'" value="tasks.tasks_due"
+                                 onClick="() => this.openTaskKpi('tasks_due')"
+                                 icon="'fa-calendar-check-o'" color="'#F59E0B'"
+                                 tooltip="'Tasks whose Deadline has arrived or passed and that are not yet Completed — work that should already have been delivered. A snapshot of today, deliberately not filtered by the selected period. Counts tasks due later today too, which is the only difference from Open &amp; Overdue.'"/>
+                        <KpiCard title="'Completed Tasks'" value="tasks.tasks_completed"
+                                 onClick="() => this.openTaskKpi('tasks_completed')"
+                                 icon="'fa-check-circle'" color="'#10B981'"
+                                 tooltip="'Tasks completed in the range — in a folded stage with a completion date, excluding cancelled.'"/>
+                        <KpiCard title="'Open Tasks'" value="tasks.tasks_open"
+                                 onClick="() => this.openTaskKpi('tasks_open')"
+                                 icon="'fa-folder-open'" color="'#06B6D4'"
+                                 tooltip="'Tasks not in a folded stage. A snapshot of now, not filtered by the date range.'"/>
+                        <KpiCard title="'Estimated Tasks'" value="tasks.tasks_estimated"
+                                 onClick="() => this.openTaskKpi('tasks_estimated')"
+                                 icon="'fa-hourglass-half'" color="'#3B82F6'"
+                                 tooltip="'Tasks created in the range that carry an Estimated time. Estimated + Not Estimated = Tasks Created.'"/>
+                        <KpiCard title="'Not Estimated'" value="tasks.tasks_not_estimated"
+                                 onClick="() => this.openTaskKpi('tasks_not_estimated')"
+                                 icon="'fa-hourglass-o'" color="'#EC4899'"
+                                 tooltip="'Tasks created in the range with no Estimated time set.'"/>
+                        <KpiCard title="'Completed on Timeline'" value="tasks.tasks_on_timeline"
+                                 onClick="() => this.openTaskKpi('tasks_on_timeline')"
+                                 icon="'fa-thumbs-o-up'" color="'#14B8A6'"
+                                 tooltip="'Completed tasks that met their deadline, judged by calendar day. Tasks completed without a deadline cannot be judged and are excluded.'"/>
+                        <KpiCard title="'Missed Timeline'" value="tasks.tasks_missed_timeline"
+                                 onClick="() => this.openTaskKpi('tasks_missed_timeline')"
+                                 icon="'fa-exclamation-triangle'" color="'#EF4444'"
+                                 tooltip="'Completed tasks that finished after their deadline.'"/>
+                    </div>
+                    <!-- Open Tasks split by stage. "Open" on its own only says
+                         "not finished", which covers everything from untouched
+                         to blocked — this is what makes the number actionable.
+                         A partition: these add back up to Open Tasks exactly,
+                         which is why the remainder gets a card of its own. -->
+                    <h3 class="ftpd_kpi_subhead">Open Tasks by Stage<small> — a snapshot of now, like Open Tasks itself; adds up to it exactly</small></h3>
+                    <div class="ftpd_kpi_grid"
+                         t-att-class="tasks.tasks_other_open ? 'ftpd_kpi_grid--five' : ''">
+                        <KpiCard title="'Not Yet Started'" value="tasks.tasks_planned"
+                                 onClick="() => this.openTaskKpi('tasks_planned')"
+                                 icon="'fa-hourglass-start'" color="'#64748B'"
+                                 tooltip="'Open tasks sitting in a Planned stage — accepted but not begun.'"/>
+                        <KpiCard title="'In Progress'" value="tasks.tasks_working"
+                                 onClick="() => this.openTaskKpi('tasks_working')"
+                                 icon="'fa-cogs'" color="'#4F46E5'"
+                                 tooltip="'Open tasks in a Working stage — actively being delivered.'"/>
+                        <KpiCard title="'Testing'" value="tasks.tasks_testing"
+                                 onClick="() => this.openTaskKpi('tasks_testing')"
+                                 icon="'fa-bug'" color="'#8B5CF6'"
+                                 tooltip="'Open tasks in a Testing stage — built and under QA.'"/>
+                        <KpiCard title="'Dependency'" value="tasks.tasks_dependency"
+                                 onClick="() => this.openTaskKpi('tasks_dependency')"
+                                 icon="'fa-hand-paper-o'" color="'#F59E0B'"
+                                 tooltip="'Open tasks blocked on somebody else. Covers every stage whose name mentions a dependency — Client Dependencies, Dependencies from Client and Dependency from Telephony Vendor are all counted here.'"/>
+                        <!-- Hidden at zero, so the row is four cards once every
+                             open task falls into one of the named stages. -->
+                        <KpiCard t-if="tasks.tasks_other_open"
+                                 title="'Other Open'" value="tasks.tasks_other_open"
+                                 onClick="() => this.openTaskKpi('tasks_other_open')"
+                                 icon="'fa-folder-open-o'" color="'#94A3B8'"
+                                 tooltip="'Open tasks in none of the four stages beside this one — Post sales, Sandbox Review, Presales and the like, plus tasks with no stage set at all. Shown so the split adds up to Open Tasks rather than quietly falling short.'"/>
+                    </div>
+                </section>
+
+                <!-- Full-width table: per-project delivery performance.
+                     Closed / AMC / General projects are hidden by default — the
+                     table measures how delivery is going, and those three have
+                     none to measure. One toggle each beside the search box, not
+                     one for all three, so reviewing AMC renewals does not drag
+                     every Closed project onto the screen too. The count on each
+                     label says what it is holding back, so a short table never
+                     looks like a bug. -->
+                <div class="ftpd_chart_row">
+                    <DataTable title="'Project Performance'"
+                               columns="projectColumns"
+                               rows="projectRows"
+                               emptyText="'No projects found.'"
+                               defaultSort="{ key: 'project', dir: 'asc' }">
+                        <t t-set-slot="tools">
+                            <div class="ftpd_search">
+                                <i class="fa fa-search"/>
+                                <input type="text" placeholder="Search company…"
+                                       t-att-value="state.projectSearch"
+                                       t-on-input="onProjectSearch"/>
+                            </div>
+                            <!-- Reads as "Show  [ ] Closed  [ ] AMC  [ ] General".
+                                 Without the lead-in a bare "Closed" checkbox
+                                 could as easily mean hide as show. -->
+                            <span class="ftpd_toggle_lead">Show</span>
+                            <t t-foreach="projectStageToggles" t-as="tg" t-key="tg.group">
+                                <label class="ftpd_table_toggle"
+                                       t-attf-title="Show projects in the {{ tg.label }} stage, hidden by default">
+                                    <input type="checkbox"
+                                           t-att-checked="state.projectShowStage[tg.group]"
+                                           t-on-change="(ev) => this.onProjectShowStage(tg.group, ev)"/>
+                                    <span><t t-esc="tg.label"/></span>
+                                    <span class="ftpd_toggle_count" t-if="tg.count">
+                                        <t t-esc="tg.count"/>
+                                    </span>
+                                </label>
+                            </t>
+                        </t>
+                    </DataTable>
+                </div>
+
+                <!-- Full-width table: Resource Status -->
+                <div class="ftpd_chart_row">
+                    <DataTable title="'Resource Status'"
+                               columns="resourceColumns"
+                               rows="resourceRows"
+                               groupKey="'employee'"
+                               groupLabel="'resources'"
+                               emptyText="'No resource activity found.'"
+                               defaultSort="{ key: 'employee', dir: 'asc' }">
+                        <t t-set-slot="tools">
+                            <div class="ftpd_search">
+                                <i class="fa fa-search"/>
+                                <input type="text" placeholder="Search resource…"
+                                       t-att-value="state.resourceSearch"
+                                       t-on-input="onResourceSearch"/>
+                            </div>
+                            <div class="ftpd_search">
+                                <i class="fa fa-search"/>
+                                <input type="text" placeholder="Search project…"
+                                       t-att-value="state.resourceProjectSearch"
+                                       t-on-input="onResourceProjectSearch"/>
+                            </div>
+                        </t>
+                    </DataTable>
+                </div>
+
+                <!-- Full-width table: the three PM KPIs per person, plus DWD.
+                     Role holds the employee's job title, so TLs and Developers
+                     read separately. -->
+                <div class="ftpd_chart_row">
+                    <DataTable title="'Resource Performance'"
+                               columns="deliveryColumns"
+                               rows="deliveryRows"
+                               groupKey="'employee'"
+                               groupLabel="'resources'"
+                               emptyText="'No delivery activity found.'"
+                               defaultSort="{ key: 'employee', dir: 'asc' }">
+                        <t t-set-slot="tools">
+                            <div class="ftpd_search">
+                                <i class="fa fa-search"/>
+                                <input type="text" placeholder="Search resource…"
+                                       t-att-value="state.deliverySearch"
+                                       t-on-input="onDeliverySearch"/>
+                            </div>
+                        </t>
+                    </DataTable>
+                </div>
+
+                <!-- Charts Row: project hours (full width) -->
+                <div class="ftpd_chart_row">
+                    <ChartCard title="'Project Hours Analysis'" type="'bar'"
+                               data="projectHoursData" fullWidth="true"
+                               scrollMinWidth="projectHoursMinWidth"
+                               onSegmentClick="(i) => this.onProjectHoursSegment(i)">
+                        <t t-set-slot="tools">
+                            <div class="ftpd_search">
+                                <i class="fa fa-search"/>
+                                <input type="text" placeholder="Search project…"
+                                       t-att-value="state.projectHoursSearch"
+                                       t-on-input="onProjectHoursSearch"/>
+                            </div>
+                        </t>
+                    </ChartCard>
+                </div>
+
+                <!-- Charts Row: billable + team -->
+                <div class="ftpd_chart_row">
+                    <ChartCard title="'Billable vs Non-Billable Hours'" type="'bar'"
+                               data="charts.billable"/>
+                    <ChartCard title="'Team Composition'" type="'pie'"
+                               data="charts.team_composition"/>
+                </div>
+
+                <!-- Charts Row: progress trend (full width) -->
+                <div class="ftpd_chart_row">
+                    <ChartCard title="'Project Progress Trend'" type="'bar'"
+                               data="charts.progress_trend" options="trendOptions"
+                               fullWidth="true"/>
+                </div>
+
+            </div>
+        </div>
+    </t>
+
+</templates>

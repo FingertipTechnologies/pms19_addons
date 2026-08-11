@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         ASSET REGISTER — pivot + graph (Assets by Category / Status)
+         ============================================================ -->
+    <record id="view_company_asset_pivot" model="ir.ui.view">
+        <field name="name">company.asset.pivot</field>
+        <field name="model">company.asset</field>
+        <field name="arch" type="xml">
+            <pivot string="Asset Register">
+                <field name="category" type="row"/>
+                <field name="current_status" type="col"/>
+                <field name="purchase_cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_company_asset_graph" model="ir.ui.view">
+        <field name="name">company.asset.graph</field>
+        <field name="model">company.asset</field>
+        <field name="arch" type="xml">
+            <graph string="Assets by Category" type="bar">
+                <field name="category"/>
+                <field name="current_status"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Asset Register report action (list+pivot+graph) -->
+    <record id="action_asset_register_report" model="ir.actions.act_window">
+        <field name="name">Asset Register</field>
+        <field name="res_model">company.asset</field>
+        <field name="view_mode">list,pivot,graph,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No assets yet</p>
+            <p>All assets with current owner, status and condition.</p>
+        </field>
+    </record>
+
+    <!-- Warranty Expiry report: assets with a warranty end date, sorted -->
+    <record id="view_company_asset_warranty_list" model="ir.ui.view">
+        <field name="name">company.asset.warranty.list</field>
+        <field name="model">company.asset</field>
+        <field name="arch" type="xml">
+            <list string="Warranty Expiry"
+                  decoration-danger="warranty_end_date and warranty_end_date &lt; current_date"
+                  decoration-warning="warranty_end_date and warranty_end_date &gt;= current_date">
+                <field name="asset_code"/>
+                <field name="asset_name"/>
+                <field name="category"/>
+                <field name="current_employee"/>
+                <field name="warranty_start_date"/>
+                <field name="warranty_end_date"/>
+                <field name="current_status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_asset_warranty_report" model="ir.actions.act_window">
+        <field name="name">Warranty Expiry Report</field>
+        <field name="res_model">company.asset</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="view_id" ref="view_company_asset_warranty_list"/>
+        <field name="domain">[('warranty_end_date', '!=', False)]</field>
+        <field name="context">{'search_default_warranty_active': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No warranty dates recorded</p>
+            <p>Assets with a warranty end date — red rows have already expired.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         EMPLOYEE ASSET REPORT (Assignments pivot/graph)
+         ============================================================ -->
+    <record id="view_asset_assignment_pivot" model="ir.ui.view">
+        <field name="name">asset.assignment.pivot</field>
+        <field name="model">asset.assignment</field>
+        <field name="arch" type="xml">
+            <pivot string="Employee Asset Report">
+                <field name="employee" type="row"/>
+                <field name="assigned_date" interval="month" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_asset_assignment_report" model="ir.actions.act_window">
+        <field name="name">Employee Asset Report</field>
+        <field name="res_model">asset.assignment</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No assignments yet</p>
+            <p>Assets assigned to each employee.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         REPAIR COST REPORT (Maintenance pivot/graph)
+         ============================================================ -->
+    <record id="view_asset_maintenance_pivot" model="ir.ui.view">
+        <field name="name">asset.maintenance.pivot</field>
+        <field name="model">asset.maintenance</field>
+        <field name="arch" type="xml">
+            <pivot string="Repair Cost Report">
+                <field name="asset" type="row"/>
+                <field name="status" type="col"/>
+                <field name="repair_cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_asset_maintenance_graph" model="ir.ui.view">
+        <field name="name">asset.maintenance.graph</field>
+        <field name="model">asset.maintenance</field>
+        <field name="arch" type="xml">
+            <graph string="Repair Cost" type="bar">
+                <field name="issue_date" interval="month"/>
+                <field name="repair_cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_asset_maintenance_report" model="ir.actions.act_window">
+        <field name="name">Repair Cost Report</field>
+        <field name="res_model">asset.maintenance</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No maintenance records yet</p>
+            <p>Repair history and cost by asset, vendor and status.</p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_marketing_dashboard.KpiCard">
+        <div class="ftmd_kpi" t-att-class="{ 'ftmd_kpi--clickable': clickable }"
+             t-on-click="onCardClick" t-att-title="props.tooltip">
+            <div class="ftmd_kpi_icon" t-attf-style="background: {{ props.color || '#4F46E5' }}1A; color: {{ props.color || '#4F46E5' }};">
+                <i class="fa" t-att-class="props.icon || 'fa-chart-bar'"/>
+            </div>
+            <div class="ftmd_kpi_body">
+                <div class="ftmd_kpi_value">
+                    <span t-if="props.prefix" class="ftmd_kpi_affix"><t t-esc="props.prefix"/></span><t t-esc="displayValue"/><span t-if="props.suffix" class="ftmd_kpi_affix"><t t-esc="props.suffix"/></span>
+                </div>
+                <div class="ftmd_kpi_title"><t t-esc="props.title"/></div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_marketing_dashboard.ChartCard">
+        <div class="ftmd_chart_card" t-att-class="{ 'ftmd_chart_card--full': props.fullWidth }">
+            <div class="ftmd_chart_head">
+                <h3 class="ftmd_chart_title"><t t-esc="props.title"/></h3>
+                <small class="ftmd_chart_note" t-if="props.note"><t t-esc="props.note"/></small>
+            </div>
+            <div class="ftmd_chart_canvas_wrap">
+                <canvas t-ref="canvas"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_marketing_dashboard.MarketingDashboard">
+        <div class="ftmd_dashboard">
+            <div class="ftmd_header">
+                <h1 class="ftmd_header_title"><i class="fa fa-bullhorn me-2"/>Marketing Dashboard</h1>
+                <div class="ftmd_header_tools">
+                    <div class="ftmd_periods">
+                        <t t-foreach="periods" t-as="p" t-key="p.id">
+                            <button class="ftmd_period_btn"
+                                    t-att-class="{ 'ftmd_period_btn--active': state.period === p.id }"
+                                    t-on-click="() => this.onPeriodChange(p.id)">
+                                <t t-esc="p.label"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div class="ftmd_custom" t-if="state.period === 'custom'">
+                        <input type="date" class="ftmd_date" t-att-value="state.dateFrom"
+                               t-on-change="(ev) => this.onCustomDateChange('dateFrom', ev)"/>
+                        <span>→</span>
+                        <input type="date" class="ftmd_date" t-att-value="state.dateTo"
+                               t-on-change="(ev) => this.onCustomDateChange('dateTo', ev)"/>
+                        <button class="ftmd_btn ftmd_btn--primary" t-on-click="applyCustomRange">Apply</button>
+                    </div>
+                    <button class="ftmd_btn" t-on-click="refresh" title="Refresh"><i class="fa fa-refresh"/></button>
+                </div>
+            </div>
+
+            <div class="ftmd_loading" t-if="state.loading">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+            </div>
+
+            <div t-else="" class="ftmd_content">
+                <div class="ftmd_kpi_grid">
+                    <KpiCard title="'Leads Generated'" value="kpis.leads_generated"
+                             icon="'fa-users'" color="'#4F46E5'"/>
+                    <KpiCard title="'Campaigns'" value="kpis.campaigns"
+                             icon="'fa-bullhorn'" color="'#06B6D4'"/>
+                    <KpiCard title="'Campaign Spent'" value="kpis.campaign_spent" prefix="'₹ '"
+                             icon="'fa-money'" color="'#F59E0B'"
+                             tooltip="'No campaign spend data available yet.'"/>
+                    <KpiCard title="'Campaign ROI'" value="kpis.campaign_roi" suffix="'%'"
+                             icon="'fa-line-chart'" color="'#10B981'"
+                             tooltip="'No campaign spend/revenue data available yet.'"/>
+                </div>
+
+                <div class="ftmd_chart_row">
+                    <ChartCard title="'Leads by Source'" type="'bar'" data="charts.leads_by_source"/>
+                    <ChartCard title="'Enquiries by Domain'" type="'doughnut'" data="charts.enquiries_by_domain"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

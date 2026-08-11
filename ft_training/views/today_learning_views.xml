@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_today_learning_list" model="ir.ui.view">
+        <field name="name">ft.today.learning.list</field>
+        <field name="model">ft.today.learning</field>
+        <field name="arch" type="xml">
+            <!-- Fixed widths on the short columns; the description is left free
+                 so it takes the leftover space instead of being squeezed while
+                 another column stretches. It is plain text and left-aligned, so
+                 unlike a numeric column it reads correctly when it absorbs the
+                 slack. Kept last so the long free column ends the row.
+
+                 Shown as "Description" here while the field keeps its own
+                 "What Did You Learn?" label elsewhere — same field, same data,
+                 list heading only. -->
+            <list string="Today's Learning">
+                <field name="create_date" string="Date" width="210px"/>
+                <field name="learning_topic_id" width="400px"/>
+                <field name="create_uid" string="Trainee" width="170px"/>
+                <field name="description_preview" string="Description"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_today_learning_form" model="ir.ui.view">
+        <field name="name">ft.today.learning.form</field>
+        <field name="model">ft.today.learning</field>
+        <field name="arch" type="xml">
+            <form string="Today's Learning">
+                <sheet>
+                    <group>
+                        <field name="learning_topic_id"
+                               options="{'no_create': True, 'no_open': True}"/>
+                        <field name="create_uid" string="Trainee" readonly="1"/>
+                        <field name="create_date" string="Date" readonly="1"/>
+                    </group>
+                    <separator string="What did you learn?"/>
+                    <field name="description" widget="html"
+                           placeholder="Write what you learned today. You can format text and paste images..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_today_learning_search" model="ir.ui.view">
+        <field name="name">ft.today.learning.search</field>
+        <field name="model">ft.today.learning</field>
+        <field name="arch" type="xml">
+            <search string="Today's Learning">
+                <field name="learning_topic_id"/>
+                <field name="create_uid" string="Trainee"/>
+                <filter name="my_entries" string="My Entries"
+                        domain="[('create_uid', '=', uid)]"/>
+                <group name="group_by">
+                    <filter name="group_trainee" string="Trainee" context="{'group_by': 'create_uid'}"/>
+                    <filter name="group_topic" string="Learning Topic" context="{'group_by': 'learning_topic_id'}"/>
+                    <filter name="group_date" string="Date" context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_today_learning" model="ir.actions.act_window">
+        <field name="name">Today's Learning</field>
+        <field name="res_model">ft.today.learning</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_today_learning_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Log what you learned today</p>
+            <p>Pick a Learning Topic and describe what you learned. The date is recorded
+               automatically.</p>
+        </field>
+    </record>
+
+</odoo>

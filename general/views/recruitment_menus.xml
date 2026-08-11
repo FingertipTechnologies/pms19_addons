@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Recruitment — moved to the Employees (HR) app -->
+    <menuitem id="menu_recruitment_root"
+              name="Recruitment Management"
+              parent="hr.menu_hr_root"
+              sequence="30"
+              groups="group_recruitment_user"/>
+
+    <menuitem id="menu_recruitment_job_positions"
+              name="Job Positions"
+              parent="menu_recruitment_root"
+              action="action_recruitment_job_position"
+              sequence="10"/>
+
+    <menuitem id="menu_recruitment_candidates"
+              name="Candidates"
+              parent="menu_recruitment_root"
+              action="action_recruitment_candidate"
+              sequence="20"/>
+
+<!--    <menuitem id="menu_recruitment_interviews"-->
+<!--              name="Interviews"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              action="action_recruitment_interview"-->
+<!--              sequence="30"/>-->
+
+<!--    <menuitem id="menu_recruitment_offers"-->
+<!--              name="Offers"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              action="action_recruitment_offer"-->
+<!--              sequence="40"/>-->
+
+<!--    <menuitem id="menu_recruitment_onboarding"-->
+<!--              name="Onboarding"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              action="action_employee_onboarding"-->
+<!--              sequence="50"/>-->
+
+    <!-- Reports sub-menu -->
+    <menuitem id="menu_recruitment_reports"
+              name="Reports"
+              parent="menu_recruitment_root"
+              sequence="80"/>
+
+    <menuitem id="menu_recruitment_report_positions"
+              name="Open Position Report"
+              parent="menu_recruitment_reports"
+              action="action_open_position_report"
+              sequence="10"/>
+
+    <menuitem id="menu_recruitment_report_pipeline"
+              name="Candidate Pipeline"
+              parent="menu_recruitment_reports"
+              action="action_candidate_pipeline_report"
+              sequence="20"/>
+
+<!--    <menuitem id="menu_recruitment_report_interview"-->
+<!--              name="Interview Schedule"-->
+<!--              parent="menu_recruitment_reports"-->
+<!--              action="action_interview_schedule_report"-->
+<!--              sequence="30"/>-->
+
+<!--    <menuitem id="menu_recruitment_report_offer"-->
+<!--              name="Offer Status Report"-->
+<!--              parent="menu_recruitment_reports"-->
+<!--              action="action_offer_status_report"-->
+<!--              sequence="40"/>-->
+
+<!--    <menuitem id="menu_recruitment_report_checklist"-->
+<!--              name="Joining Checklist"-->
+<!--              parent="menu_recruitment_reports"-->
+<!--              action="action_joining_checklist_report"-->
+<!--              sequence="50"/>-->
+
+    <!-- Configuration sub-menu -->
+<!--    <menuitem id="menu_recruitment_configuration"-->
+<!--              name="Configuration"-->
+<!--              parent="menu_recruitment_root"-->
+<!--              sequence="90"-->
+<!--              groups="group_recruitment_manager"/>-->
+
+<!--    <menuitem id="menu_recruitment_skills"-->
+<!--              name="Skills"-->
+<!--              parent="menu_recruitment_configuration"-->
+<!--              action="action_recruitment_skill"-->
+<!--              sequence="10"/>-->
+
+</odoo>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add SLA fields to ticket form view -->
+    <record id="view_ticket_form_sla" model="ir.ui.view">
+        <field name="name">ft.helpdesk.ticket.form.sla</field>
+        <field name="model">ft.helpdesk.ticket</field>
+        <field name="inherit_id" ref="ft_helpdesk_core.view_ticket_form"/>
+        <field name="arch" type="xml">
+            <!-- Add SLA tab to notebook -->
+            <xpath expr="//notebook/page[@name='resolution']" position="after">
+                <page string="SLA" name="sla">
+                    <group>
+                        <group string="SLA Deadlines">
+                            <field name="sla_first_response_deadline"/>
+                            <field name="sla_resolution_deadline"/>
+                            <field name="sla_breached"/>
+                        </group>
+                    </group>
+                    <group string="SLA History">
+                        <field name="sla_status_ids" nolabel="1" readonly="1">
+                            <list create="false" delete="false">
+                                <field name="policy_id"/>
+                                <field name="first_response_deadline"/>
+                                <field name="first_response_done_at"/>
+                                <field name="first_response_breached"/>
+                                <field name="resolution_deadline"/>
+                                <field name="resolution_done_at"/>
+                                <field name="resolution_breached"/>
+                                <field name="sla_state" widget="badge"
+                                       decoration-success="sla_state == 'completed'"
+                                       decoration-info="sla_state == 'on_track'"
+                                       decoration-warning="sla_state == 'at_risk'"
+                                       decoration-danger="sla_state == 'breached'"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+
+            <!-- Add SLA indicator to ticket list -->
+        </field>
+    </record>
+
+    <!-- Add SLA columns to ticket tree view -->
+    <record id="view_ticket_tree_sla" model="ir.ui.view">
+        <field name="name">ft.helpdesk.ticket.tree.sla</field>
+        <field name="model">ft.helpdesk.ticket</field>
+        <field name="inherit_id" ref="ft_helpdesk_core.view_ticket_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='create_date']" position="after">
+                <field name="sla_breached" optional="show" widget="boolean"
+                       string="SLA Breached"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

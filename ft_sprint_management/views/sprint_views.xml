@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="qa_testapp_view_sprint_list" model="ir.ui.view">
+        <field name="name">qa_testapp.sprint.list</field>
+        <field name="model">qa_testapp.sprint</field>
+        <field name="arch" type="xml">
+            <list string="Sprints">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="task_count"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="qa_testapp_view_sprint_form" model="ir.ui.view">
+        <field name="name">qa_testapp.sprint.form</field>
+        <field name="model">qa_testapp.sprint</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar" options="{'clickable': '1'}"
+                           statusbar_visible="planned,working,testing,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_tasks" type="object"
+                                class="oe_stat_button" icon="fa-tasks">
+                            <field name="task_count" widget="statinfo" string="Tasks"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Sprint 1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="project_id"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Tasks">
+                            <field name="task_ids" context="{'default_project_id': project_id}">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="stage_id"/>
+                                    <field name="user_ids" widget="many2many_avatar_user"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="qa_testapp_view_sprint_search" model="ir.ui.view">
+        <field name="name">qa_testapp.sprint.search</field>
+        <field name="model">qa_testapp.sprint</field>
+        <field name="arch" type="xml">
+            <search string="Sprints">
+                <field name="name"/>
+                <field name="project_id"/>
+                <filter name="planned" string="Planned" domain="[('state', '=', 'planned')]"/>
+                <filter name="working" string="Working" domain="[('state', '=', 'working')]"/>
+                <filter name="testing" string="Testing" domain="[('state', '=', 'testing')]"/>
+                <filter name="completed" string="Completed" domain="[('state', '=', 'completed')]"/>
+                <group name="group_by">
+                    <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Add Sprint field on the Task form -->
+    <record id="qa_testapp_view_task_form_sprint" model="ir.ui.view">
+        <field name="name">project.task.form.sprint</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <field name="user_ids" position="after">
+                <field name="sprint_id"
+                       options="{'no_create_edit': True}"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="qa_testapp_action_sprint" model="ir.actions.act_window">
+        <field name="name">Sprints</field>
+        <field name="res_model">qa_testapp.sprint</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="qa_testapp_view_sprint_search"/>
+    </record>
+
+    <!-- Menu: Sprints under the Project (PMS) app -->
+    <menuitem id="menu_ft_sprints"
+              name="Sprints"
+              parent="project.menu_main_pm"
+              action="qa_testapp_action_sprint"
+              sequence="30"/>
+</odoo>

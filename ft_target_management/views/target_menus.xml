@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_ft_target_root"
+              name="Targets"
+              web_icon="ft_target_management,static/description/icon.png"
+              sequence="80"/>
+
+    <menuitem id="menu_ft_target_main"
+              name="Targets"
+              parent="menu_ft_target_root"
+              action="action_ft_target"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_target_config"
+              name="Configuration"
+              parent="menu_ft_target_root"
+              sequence="90"/>
+
+    <menuitem id="menu_ft_target_type"
+              name="Target Types"
+              parent="menu_ft_target_config"
+              action="action_ft_target_type"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_target_period"
+              name="Target Periods"
+              parent="menu_ft_target_config"
+              action="action_ft_target_period"
+              sequence="20"/>
+
+</odoo>

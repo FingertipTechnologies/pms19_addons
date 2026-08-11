@@ -1,0 +1,185 @@
+<odoo>
+    <record id="view_crm_lead_form_custom" model="ir.ui.view">
+        <field name="name">crm.lead.form.custom.fields.v18</field>
+        <field name="model">crm.lead</field>
+        <field name="priority">1</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Stage helper flags + remaining RIGHT column fields (after Tags) -->
+            <xpath expr="//field[@name='tag_ids']" position="after">
+                <field name="is_cold_stage" invisible="1"/>
+                <field name="require_qualified_fields" invisible="1"/>
+                <field name="is_won_stage" invisible="1"/>
+
+                <field name="lead_source" invisible="type != 'opportunity'"/>
+                <field name="cus_campaign_id" invisible="type != 'opportunity'"/>
+                <field name="source_amount" invisible="type != 'opportunity'"/>
+                <field name="date_closed" invisible="type != 'opportunity'"/>
+                <field name="create_uid" invisible="type != 'opportunity'"/>
+                <field name="bdr_id" invisible="type != 'opportunity'"/>
+                <field name="description_text" invisible="type != 'opportunity'"/>       
+            </xpath>
+
+            <!-- RIGHT column: bring mandatory fields to the top.
+                 Expected Closing stays at the top, Closed Amount goes right
+                 below it, and Salesperson is moved underneath them. -->
+            <xpath expr="//group[@invisible=&quot;type == 'lead'&quot; and not(@name)]/div[field[@name='date_deadline']]" position="after">
+                <!-- All stages except Won: shown as "Revenue", optional -->
+                <field name="revenue"
+                       string="Revenue"
+                       invisible="type != 'opportunity' or is_won_stage"/>
+                <!-- Won stage: renamed to "Closed Amount" and mandatory -->
+                <field name="revenue"
+                       string="Closed Amount"
+                       invisible="type != 'opportunity' or not is_won_stage"
+                       required="type == 'opportunity' and is_won_stage"/>
+                <xpath expr="//group[@invisible=&quot;type == 'lead'&quot; and not(@name)]/field[@name='user_id']" position="move"/>
+            </xpath>
+
+            <!-- LEFT column: mandatory fields at the very top, above Contact -->
+            <xpath expr="//group[@name='opportunity_partner']/field[@name='partner_id']" position="before">
+                <field name="next_action"
+                       invisible="type != 'opportunity'"
+                       required="type == 'opportunity' and not is_cold_stage"
+                       placeholder="Describe the next action (minimum 20 characters)"/>
+                <field name="technology_id"
+                       invisible="type != 'opportunity'"
+                       required="type == 'opportunity' and require_qualified_fields"/>
+                <field name="business_challenge"
+                       invisible="type != 'opportunity'"
+                       required="type == 'opportunity' and require_qualified_fields"/>
+            </xpath>
+
+            <!-- Contact is mandatory on an opportunity -->
+            <xpath expr="//group[@name='opportunity_partner']/field[@name='partner_id']" position="attributes">
+                <attribute name="required">type == 'opportunity'</attribute>
+            </xpath>
+
+            <!-- The mandatory account details, read-only, straight under the
+                 Contact. They are what the save-time validation checks, so an
+                 empty one here is exactly what is blocking the save - the
+                 salesperson can see which detail and which account, rather than
+                 only getting an error. Edit them on the account itself.
+                 Legal Name is deliberately NOT shown: it is the account's
+                 company name, so it would just repeat the Contact above. -->
+            <xpath expr="//group[@name='opportunity_partner']/field[@name='partner_id']" position="after">
+                <field name="account_currency_id" invisible="1"/>
+                <field name="account_annual_revenue" readonly="1"
+                       invisible="type != 'opportunity'"/>
+                <field name="account_employee_count" readonly="1"
+                       invisible="type != 'opportunity'"/>
+                <field name="account_website" widget="url" readonly="1"
+                       invisible="type != 'opportunity'"/>
+            </xpath>
+
+            <!-- LEFT column: optional fields lower down -->
+            <xpath expr="//field[@name='lost_reason_id']" position="after">
+                <field name="number_of_users" invisible="type != 'opportunity'"/>
+                <field name="cus_type" invisible="type != 'opportunity'"/>
+            </xpath>
+
+            <!-- Expected Revenue: mandatory from Qualified onward -->
+            <xpath expr="//field[@name='expected_revenue']" position="attributes">
+                <attribute name="required">type == 'opportunity' and require_qualified_fields</attribute>
+            </xpath>
+
+            <!-- Expected Closing: mandatory from Qualified onward -->
+            <xpath expr="//field[@name='date_deadline']" position="attributes">
+                <attribute name="required">type == 'opportunity' and require_qualified_fields</attribute>
+            </xpath>
+
+            <!-- Remove Email & Phone from the opportunity layout -->
+            <xpath expr="//group[@name='opportunity_partner']/label[@for='email_from']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//group[@name='opportunity_partner']/div[field[@name='email_from']]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//group[@name='opportunity_partner']/label[@for='phone']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//group[@name='opportunity_partner']/div[field[@name='phone']]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Source + Campaign on the Lead layout (the right column group
+                 above is opportunity-only, so leads need their own copy). -->
+            <xpath expr="//group[@name='lead_priority']/field[@name='tag_ids']" position="after">
+                <field name="lead_source"/>
+                <field name="cus_campaign_id"/>
+            </xpath>
+
+            <!-- Website mandatory on Leads (visible in the lead_partner group) -->
+            <xpath expr="//group[@name='lead_partner']//field[@name='website']" position="attributes">
+                <attribute name="required">type == 'lead'</attribute>
+            </xpath>
+
+            <!-- LinkedIn URL field, shown right after Website -->
+            <xpath expr="//group[@name='lead_partner']//field[@name='website']" position="after">
+                <field name="linkedin_url" widget="url" placeholder="e.g. https://www.linkedin.com/company/..."/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- BDR column in the opportunity list -->
+    <record id="view_crm_lead_list_bdr" model="ir.ui.view">
+        <field name="name">crm.lead.list.bdr</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="bdr_id" optional="show"/>
+                <field name="lead_source" optional="hide"/>
+                <field name="cus_campaign_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- BDR search field + Group By in the opportunity search view -->
+    <record id="view_crm_lead_search_bdr" model="ir.ui.view">
+        <field name="name">crm.lead.search.bdr</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <!-- Searchable fields -->
+            <xpath expr="//search" position="inside">
+                <field name="bdr_id"/>
+                <field name="cus_campaign_id"/>
+                <field name="lead_source"/>
+            </xpath>
+
+            <!-- Hide the stock UTM group-bys.
+                 Core CRM offers "Campaign" (campaign_id), "Medium" (medium_id)
+                 and "Source" (source_id) - none of which this business fills
+                 in; it uses cus_campaign_id and lead_source instead. Leaving
+                 both meant the Group By menu showed two "Campaign" and two
+                 "Source" entries, and picking the stock one collapsed every
+                 opportunity into a single "None" group.
+                 ('compaign' is spelt that way in core CRM - not a typo here.) -->
+            <xpath expr="//filter[@name='compaign']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='medium']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='source']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- The working Source / Campaign / BDR group-bys, placed inside
+                 the Group By block next to Stage and Lost Reason rather than
+                 trailing at the bottom of the menu. Filter NAMES are unchanged
+                 so existing saved favourites keep working. -->
+            <xpath expr="//filter[@name='lostreason']" position="after">
+                <filter name="group_lead_source" string="Source"
+                        context="{'group_by': 'lead_source'}"/>
+                <filter name="group_cus_campaign" string="Campaign"
+                        context="{'group_by': 'cus_campaign_id'}"/>
+                <filter name="group_bdr" string="BDR"
+                        context="{'group_by': 'bdr_id'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

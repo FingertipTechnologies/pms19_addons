@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ai_insights_orchestrator_user,ai.sales.insights user,model_ft_ai_sales_insights,group_ai_insights_user,1,1,1,0
+access_ai_project_insights_user,ai.project.insights user,model_ft_ai_project_insights,group_ai_insights_user,1,1,1,0
+access_ai_insights_config_user,ai.insights.config user,model_ft_ai_insights_config,group_ai_insights_user,1,0,0,0
+access_ai_insights_config_manager,ai.insights.config manager,model_ft_ai_insights_config,group_ai_insights_manager,1,1,1,1
+access_ai_insights_purpose_user,ai.insights.purpose user,model_ft_ai_insights_purpose,group_ai_insights_user,1,0,0,0
+access_ai_insights_purpose_manager,ai.insights.purpose manager,model_ft_ai_insights_purpose,group_ai_insights_manager,1,1,1,1
+access_ai_insights_log_user,ai.insights.log user,model_ft_ai_insights_log,group_ai_insights_user,1,1,1,0
+access_ai_insights_log_manager,ai.insights.log manager,model_ft_ai_insights_log,group_ai_insights_manager,1,1,1,1

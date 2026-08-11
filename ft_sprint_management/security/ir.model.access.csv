@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qa_sprint_user,QA Sprint,model_qa_testapp_sprint,base.group_user,1,1,1,1

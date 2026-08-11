@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================== -->
+    <!-- Trigger: Tree View       -->
+    <!-- ======================== -->
+    <record id="ft_helpdesk_trigger_view_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.trigger.tree</field>
+        <field name="model">ft.helpdesk.trigger</field>
+        <field name="arch" type="xml">
+            <list string="Triggers">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="trigger_on"/>
+                <field name="set_state" optional="show"/>
+                <field name="set_priority" optional="show"/>
+                <field name="set_assigned_user_id" optional="hide"/>
+                <field name="notify_user_ids" widget="many2many_tags" optional="show"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================== -->
+    <!-- Trigger: Form View       -->
+    <!-- ======================== -->
+    <record id="ft_helpdesk_trigger_view_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.trigger.form</field>
+        <field name="model">ft.helpdesk.trigger</field>
+        <field name="arch" type="xml">
+            <form string="Trigger">
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Auto-assign urgent tickets"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Trigger Condition">
+                            <field name="trigger_on"/>
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Domain Filter">
+                            <field name="domain" widget="domain"
+                                   options="{'model': 'ft.helpdesk.ticket'}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Actions" name="actions">
+                            <group>
+                                <group string="Ticket Fields">
+                                    <field name="set_state"/>
+                                    <field name="set_priority"/>
+                                    <field name="set_assigned_user_id"/>
+                                </group>
+                                <group string="Tags">
+                                    <field name="add_tag_ids" widget="many2many_tags"/>
+                                    <field name="remove_tag_ids" widget="many2many_tags"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Reply" name="reply">
+                            <group>
+                                <field name="is_internal_note"/>
+                            </group>
+                            <field name="reply_body" placeholder="Leave empty to skip posting a reply..."/>
+                        </page>
+                        <page string="Notifications" name="notifications">
+                            <group>
+                                <field name="notify_user_ids" widget="many2many_tags"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ======================== -->
+    <!-- Trigger: Search View     -->
+    <!-- ======================== -->
+    <record id="ft_helpdesk_trigger_view_search" model="ir.ui.view">
+        <field name="name">ft.helpdesk.trigger.search</field>
+        <field name="model">ft.helpdesk.trigger</field>
+        <field name="arch" type="xml">
+            <search string="Search Triggers">
+                <field name="name"/>
+                <field name="trigger_on"/>
+                <filter string="On Create" name="filter_create"
+                        domain="[('trigger_on', '=', 'create')]"/>
+                <filter string="On Status Change" name="filter_state_change"
+                        domain="[('trigger_on', '=', 'state_change')]"/>
+                <filter string="On SLA Breach" name="filter_sla_breach"
+                        domain="[('trigger_on', '=', 'sla_breach')]"/>
+                <filter string="On Customer Reply" name="filter_customer_reply"
+                        domain="[('trigger_on', '=', 'customer_reply')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive"
+                        domain="[('active', '=', False)]"/>
+                <group name="group_by">
+                    <filter string="Trigger Event" name="group_trigger_on"
+                            context="{'group_by': 'trigger_on'}"/>
+                    <filter string="Status Action" name="group_set_state"
+                            context="{'group_by': 'set_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================== -->
+    <!-- Trigger: Action          -->
+    <!-- ======================== -->
+    <record id="action_ft_helpdesk_trigger" model="ir.actions.act_window">
+        <field name="name">Triggers</field>
+        <field name="res_model">ft.helpdesk.trigger</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="ft_helpdesk_trigger_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first trigger
+            </p>
+            <p>
+                Triggers automatically execute actions when specific events occur:
+                ticket creation, status changes, SLA breaches, or customer replies.
+                Use domain filters to target specific tickets.
+            </p>
+        </field>
+    </record>
+
+</odoo>

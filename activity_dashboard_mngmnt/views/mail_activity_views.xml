@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="mail_activity_view_form_partner_mapping" model="ir.ui.view">
+        <field name="name">mail.activity.form.partner.mapping</field>
+        <field name="model">mail.activity.schedule</field>
+        <field name="inherit_id" ref="mail.mail_activity_schedule_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='activity_type_id']" position="after">
+                <field name="parent_partner_id" invisible="res_model != 'res.partner'"/>
+                <field name="child_partner_id" invisible="parent_partner_id == False"/>
+                <field name="account_status_id" invisible="parent_partner_id == False"/>
+                <field name="rnr"/>
+            </xpath>
+        </field>
+    </record>
+<!--    Mail activity form view-->
+    <record id="mail_activity_view_form" model="ir.ui.view">
+        <field name="name">mail.activity.view.form</field>
+        <field name="model">mail.activity</field>
+        <field name="arch" type="xml">
+            <form string="Log an Activity" create="false">
+                <header>
+                    <field name="id" invisible="1"/>
+                    <button invisible="chaining_type == 'trigger' or state == 'done'"
+                            string="Mark as Done" name="action_done"
+                            type="object" class="btn-secondary" data-hotkey="w"
+                            context="{'mail_activity_quick_update': True}"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="planned,today,done"/>
+                </header>
+                <sheet string="Activity">
+                    <group>
+                        <group>
+                            <field name="activity_type_id" required="1"
+                                   readonly="state == 'done'"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="summary" readonly="state == 'done'"
+                                   placeholder="e.g. Discuss proposal"/>
+                            <field name="active" readonly="state == 'done'"/>
+                            <field name="rnr"/>
+                            <field name="parent_partner_id" invisible="res_model != 'res.partner'"/>
+                            <field name="account_status_id" invisible="parent_partner_id == False" readonly='True'/>
+                            <field name="child_partner_id" invisible="parent_partner_id == False"/>
+                            <field name="parent_first_activity_datetime" invisible="res_model != 'res.partner'"/>
+                            <field name="parent_last_activity_datetime" invisible="res_model != 'res.partner'"/>
+                            <field name="child_first_activity_datetime" invisible="parent_partner_id == False"/>
+                            <field name="child_last_activity_datetime" invisible="parent_partner_id == False"/>
+                        </group>
+                        <group>
+                            <field name="chaining_type" invisible="1"/>
+                            <field name="res_model" invisible="1"/>
+                            <field name="date_deadline"
+                                   readonly="state == 'done'"/>
+                            <field name="activity_tag_ids"
+                                   readonly="state == 'done'"
+                                   widget="many2many_tags"
+                                   options="{'color_field': 'color'}"/>
+                        </group>
+                    </group>
+                    <field name="note" readonly="state == 'done'"
+                           class="oe-bordered-editor"
+                           placeholder="Log a note..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!--Inherit mail activity tree view to add extra fields-->
+    <record id="mail_activity_view_tree" model="ir.ui.view">
+        <field name="name">mail.activity.view.tree.inherit.activity.dashboard
+            .mngmnt
+        </field>
+        <field name="model">mail.activity</field>
+        <field name="priority" eval="30"/>
+        <field name="inherit_id" ref="mail.mail_activity_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date_deadline']" position="after">
+                <field name="create_date" optional="hide"/>
+                <field name="parent_partner_id"  optional="hide"/>
+                <field name="child_partner_id" optional="hide"/>
+                <field name="parent_first_activity_datetime" optional="hide"/>
+                <field name="parent_last_activity_datetime" optional="hide"/>
+                <field name="child_first_activity_datetime" optional="hide"/>
+                <field name="child_last_activity_datetime" optional="hide"/>
+                <field name="activity_tag_ids" widget="many2many_tags"
+                       options="{'color_field': 'color'}"/>
+
+            <button name="action_open_document_new"
+                    type="object"
+                    class="oe_link"
+                    icon="fa-external-link"
+                    string="Open Partner"
+                    >
+            </button>
+            </xpath>
+        </field>
+    </record>
+    <!--    Activity Dashboard menu-->
+    <menuitem id="activity_menu_root" name="Activity Management" sequence="1" parent="crm.crm_menu_root"/>
+    <!--   Mail activity Menu-->
+    <menuitem id="mail_activity_menu" name="Activity"
+              parent="activity_menu_root"
+              action="mail.mail_activity_action"
+              sequence="2"/>
+    <record id="crm.crm_lead_menu_my_activities" model="ir.ui.menu">
+            <field name="active" eval="False"/>
+    </record>
+</odoo>

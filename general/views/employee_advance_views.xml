@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_advance_list" model="ir.ui.view">
+        <field name="name">employee.advance.list</field>
+        <field name="model">employee.advance</field>
+        <field name="arch" type="xml">
+            <list string="Employee Advances"
+                  decoration-info="status=='partially_adjusted'"
+                  decoration-success="status=='closed'"
+                  decoration-warning="status=='open'">
+                <field name="advance_number"/>
+                <field name="employee"/>
+                <field name="advance_date"/>
+                <field name="advance_amount"/>
+                <field name="adjusted_amount"/>
+                <field name="balance_amount"/>
+                <field name="status" widget="badge"/>
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_advance_form" model="ir.ui.view">
+        <field name="name">employee.advance.form</field>
+        <field name="model">employee.advance</field>
+        <field name="arch" type="xml">
+            <form string="Employee Advance">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="advance_number" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee"/>
+                            <field name="advance_date"/>
+                            <field name="advance_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="related_expense_claim"/>
+                        </group>
+                        <group>
+                            <field name="adjusted_amount" readonly="1"/>
+                            <field name="balance_amount" readonly="1"/>
+                             <field name="status"/>
+                            <field name="purpose"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_employee_advance" model="ir.actions.act_window">
+        <field name="name">Employee Advances</field>
+        <field name="res_model">employee.advance</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

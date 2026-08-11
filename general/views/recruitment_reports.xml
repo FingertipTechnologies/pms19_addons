@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         OPEN POSITION REPORT
+         ============================================================ -->
+    <record id="view_recruitment_job_position_pivot" model="ir.ui.view">
+        <field name="name">recruitment.job.position.pivot</field>
+        <field name="model">recruitment.job.position</field>
+        <field name="arch" type="xml">
+            <pivot string="Open Position Report">
+                <field name="department" type="row"/>
+                <field name="status" type="col"/>
+                <field name="number_of_openings" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_recruitment_job_position_graph" model="ir.ui.view">
+        <field name="name">recruitment.job.position.graph</field>
+        <field name="model">recruitment.job.position</field>
+        <field name="arch" type="xml">
+            <graph string="Openings by Department" type="bar">
+                <field name="department"/>
+                <field name="number_of_openings" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_open_position_report" model="ir.actions.act_window">
+        <field name="name">Open Position Report</field>
+        <field name="res_model">recruitment.job.position</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="domain">[('status', '=', 'open')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No open positions</p>
+            <p>Open positions and hiring gaps by department.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         CANDIDATE PIPELINE
+         ============================================================ -->
+    <record id="view_recruitment_candidate_pivot" model="ir.ui.view">
+        <field name="name">recruitment.candidate.pivot</field>
+        <field name="model">recruitment.candidate</field>
+        <field name="arch" type="xml">
+            <pivot string="Candidate Pipeline">
+                <field name="applied_position" type="row"/>
+                <field name="candidate_status" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_recruitment_candidate_graph" model="ir.ui.view">
+        <field name="name">recruitment.candidate.graph</field>
+        <field name="model">recruitment.candidate</field>
+        <field name="arch" type="xml">
+            <graph string="Candidates by Stage" type="bar">
+                <field name="candidate_status"/>
+                <field name="source"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_candidate_pipeline_report" model="ir.actions.act_window">
+        <field name="name">Candidate Pipeline</field>
+        <field name="res_model">recruitment.candidate</field>
+        <field name="view_mode">kanban,pivot,graph,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No candidates yet</p>
+            <p>Candidates grouped by recruitment stage, position and source.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         INTERVIEW SCHEDULE
+         ============================================================ -->
+    <record id="view_recruitment_interview_pivot" model="ir.ui.view">
+        <field name="name">recruitment.interview.pivot</field>
+        <field name="model">recruitment.interview</field>
+        <field name="arch" type="xml">
+            <pivot string="Interview Schedule">
+                <field name="interviewer" type="row"/>
+                <field name="status" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_interview_schedule_report" model="ir.actions.act_window">
+        <field name="name">Interview Schedule</field>
+        <field name="res_model">recruitment.interview</field>
+        <field name="view_mode">calendar,list,pivot,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No interviews scheduled</p>
+            <p>Upcoming and completed interviews by date and interviewer.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         OFFER STATUS REPORT
+         ============================================================ -->
+    <record id="view_recruitment_offer_pivot" model="ir.ui.view">
+        <field name="name">recruitment.offer.pivot</field>
+        <field name="model">recruitment.offer</field>
+        <field name="arch" type="xml">
+            <pivot string="Offer Status Report">
+                <field name="job_position" type="row"/>
+                <field name="offer_status" type="col"/>
+                <field name="offered_ctc" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_offer_status_report" model="ir.actions.act_window">
+        <field name="name">Offer Status Report</field>
+        <field name="res_model">recruitment.offer</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No offers yet</p>
+            <p>Offers sent, accepted and rejected by position.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         JOINING CHECKLIST (Onboarding report)
+         ============================================================ -->
+    <record id="action_joining_checklist_report" model="ir.actions.act_window">
+        <field name="name">Joining Checklist</field>
+        <field name="res_model">employee.onboarding</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No onboarding records yet</p>
+            <p>New joiner readiness by joining date and status.</p>
+        </field>
+    </record>
+
+</odoo>

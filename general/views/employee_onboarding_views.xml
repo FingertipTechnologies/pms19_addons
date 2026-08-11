@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_onboarding_list" model="ir.ui.view">
+        <field name="name">employee.onboarding.list</field>
+        <field name="model">employee.onboarding</field>
+        <field name="arch" type="xml">
+            <list string="Onboarding"
+                  decoration-info="status=='in_progress'"
+                  decoration-success="status=='completed'"
+                  decoration-warning="status=='pending'">
+                <field name="candidate"/>
+                <field name="joining_date"/>
+                <field name="department"/>
+                <field name="reporting_manager"/>
+                <field name="employee_created" widget="boolean_toggle"/>
+                <field name="status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_onboarding_form" model="ir.ui.view">
+        <field name="name">employee.onboarding.form</field>
+        <field name="model">employee.onboarding</field>
+        <field name="arch" type="xml">
+            <form string="Onboarding">
+                <header>
+                    <button name="action_create_employee" type="object"
+                            string="Create Employee"
+                            invisible="employee_created"
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="candidate"/>
+                            <field name="joining_date"/>
+                            <field name="department"/>
+                            <field name="reporting_manager"/>
+                            <field name="status"/>
+                        </group>
+                        <group>
+                            <field name="employee_created" readonly="1"/>
+                            <field name="employee_id" readonly="1"
+                                   invisible="not employee_created"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Checklist" name="checklist">
+                            <group>
+                                <group string="Setup">
+                                    <field name="email_created"/>
+                                    <field name="asset_required"/>
+                                    <field name="laptop_required"/>
+                                </group>
+                                <group string="Documents">
+                                    <field name="documents_collected"/>
+                                    <field name="offer_letter_signed"/>
+                                    <field name="nda_signed"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_employee_onboarding" model="ir.actions.act_window">
+        <field name="name">Onboarding</field>
+        <field name="res_model">employee.onboarding</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

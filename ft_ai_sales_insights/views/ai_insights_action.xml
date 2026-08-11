@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- OWL client action: the AI Sales Insights dashboard -->
+    <record id="action_ft_ai_sales_insights" model="ir.actions.client">
+        <field name="name">AI Sales Insights</field>
+        <field name="tag">ft_ai_sales_insights</field>
+    </record>
+
+    <!-- OWL client action: the AI Project Insights dashboard -->
+    <record id="action_ft_ai_project_insights" model="ir.actions.client">
+        <field name="name">AI Project Insights</field>
+        <field name="tag">ft_ai_project_insights</field>
+    </record>
+
+    <!-- Root menu -->
+    <menuitem id="menu_ai_insights_root"
+              name="AI Insights"
+              sequence="95"
+              groups="group_ai_insights_user"/>
+
+    <menuitem id="menu_ai_insights_dashboard"
+              name="Sales Insights"
+              parent="menu_ai_insights_root"
+              action="action_ft_ai_sales_insights"
+              sequence="10"
+              groups="group_ai_insights_user"/>
+
+    <menuitem id="menu_ai_insights_project_dashboard"
+              name="Project Insights"
+              parent="menu_ai_insights_root"
+              action="action_ft_ai_project_insights"
+              sequence="20"
+              groups="group_ai_insights_user"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_ai_insights_config_root"
+              name="Configuration"
+              parent="menu_ai_insights_root"
+              sequence="90"
+              groups="group_ai_insights_manager"/>
+
+    <menuitem id="menu_ai_insights_settings"
+              name="Settings"
+              parent="menu_ai_insights_config_root"
+              action="action_ai_insights_config"
+              sequence="10"/>
+
+    <menuitem id="menu_ai_insights_purposes"
+              name="Purposes"
+              parent="menu_ai_insights_config_root"
+              action="action_ai_insights_purpose"
+              sequence="20"/>
+
+    <menuitem id="menu_ai_insights_logs"
+              name="Request Logs"
+              parent="menu_ai_insights_config_root"
+              action="action_ai_insights_log"
+              sequence="30"/>
+
+</odoo>

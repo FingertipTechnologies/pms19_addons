@@ -1,0 +1,102 @@
+<odoo>
+    <record id="view_contact_upload_wizard_form" model="ir.ui.view">
+        <field name="name">contact.upload.wizard.form</field>
+        <field name="model">contact.upload.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Upload Contacts &amp; Accounts">
+                <field name="state" invisible="1"/>
+
+                <!-- ================= UPLOAD ================= -->
+                <div invisible="state != 'draft'">
+                    <div class="alert alert-info" role="alert">
+                        <p><b>Upload an Excel (.xlsx) file of accounts and contacts.</b></p>
+                        <ul class="mb-0">
+                            <li>Accounts are matched by <b>Website</b>. An existing account with the same website is reused (never updated), and a new account is created only once even if it appears on many rows.</li>
+                            <li>Contacts are matched by <b>Email</b>. A contact whose email already exists (in the database or earlier in the file) is skipped.</li>
+                            <li>Contacts are tagged under their account automatically.</li>
+                            <li>After processing you can download the result file and re-upload any rows that failed.</li>
+                        </ul>
+                    </div>
+                    <group>
+                        <field name="upload_file" filename="file_name"
+                               required="state == 'draft'"
+                               widget="binary" options="{'accepted_file_extensions': '.xlsx'}"/>
+                        <field name="file_name" invisible="1"/>
+                    </group>
+                </div>
+
+                <!-- ================= RESULT ================= -->
+                <div invisible="state != 'done'">
+                    <div class="alert alert-success" role="alert"
+                         invisible="error_count != 0">
+                        Upload finished. All rows were processed successfully.
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="error_count == 0">
+                        Upload finished with some failed rows. Download the result
+                        file, fix the failed rows and re-upload them.
+                    </div>
+
+                    <group>
+                        <group string="Summary">
+                            <field name="total_rows"/>
+                            <field name="account_created_count"/>
+                            <field name="account_existing_count"/>
+                        </group>
+                        <group>
+                            <field name="contact_created_count"/>
+                            <field name="contact_skipped_count"/>
+                            <field name="error_count"/>
+                        </group>
+                    </group>
+                    <group string="Download">
+                        <field name="result_file" filename="result_file_name" readonly="1"/>
+                        <field name="result_file_name" invisible="1"/>
+                    </group>
+
+                    <field name="line_ids">
+                        <list create="0" edit="0" delete="0"
+                              decoration-success="row_status == 'success'"
+                              decoration-warning="row_status == 'skipped'"
+                              decoration-danger="row_status == 'failed'">
+                            <field name="row_number" string="Row"/>
+                            <field name="company_name"/>
+                            <field name="website"/>
+                            <field name="contact_name"/>
+                            <field name="email"/>
+                            <field name="account_status"/>
+                            <field name="contact_status"/>
+                            <field name="row_status"/>
+                            <field name="message"/>
+                            <field name="company_id" column_invisible="1"/>
+                            <field name="partner_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </div>
+
+                <footer>
+                    <button name="action_process" string="Upload &amp; Process"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_reset" string="Upload Another File"
+                            type="object" class="btn-secondary"
+                            invisible="state != 'done'"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_contact_upload_wizard" model="ir.actions.act_window">
+        <field name="name">Upload Contacts &amp; Accounts</field>
+        <field name="res_model">contact.upload.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_contact_upload_wizard"
+              name="Upload"
+              action="action_contact_upload_wizard"
+              parent="crm.crm_menu_root"
+              sequence="24"/>
+</odoo>

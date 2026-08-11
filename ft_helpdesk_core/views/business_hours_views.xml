@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_business_hours_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.business.hours.tree</field>
+        <field name="model">ft.helpdesk.business.hours</field>
+        <field name="arch" type="xml">
+            <list string="Business Hours">
+                <field name="name"/>
+                <field name="timezone"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_business_hours_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.business.hours.form</field>
+        <field name="model">ft.helpdesk.business.hours</field>
+        <field name="arch" type="xml">
+            <form string="Business Hours">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Business Hours Name..."/></h1>
+                    </div>
+                    <group>
+                        <field name="timezone"/>
+                    </group>
+                    <notebook>
+                        <page string="Working Hours" name="working_hours">
+                            <field name="line_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="day_of_week"/>
+                                    <field name="hour_from" widget="float_time"/>
+                                    <field name="hour_to" widget="float_time"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Holidays" name="holidays">
+                            <field name="holiday_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_business_hours_list" model="ir.actions.act_window">
+        <field name="name">Business Hours</field>
+        <field name="res_model">ft.helpdesk.business.hours</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

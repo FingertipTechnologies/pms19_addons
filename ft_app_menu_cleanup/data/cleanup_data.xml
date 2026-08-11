@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Runs every time this module is installed/updated; idempotent -->
+        <function model="ir.ui.menu" name="ft_cleanup_unwanted_apps"/>
+    </data>
+</odoo>

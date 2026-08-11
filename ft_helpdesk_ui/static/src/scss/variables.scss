@@ -1,0 +1,65 @@
+/* ===================================
+   FT Helpdesk Design Tokens
+   Centralized design variables
+   =================================== */
+
+/* Brand Colors */
+$ft-primary: #7c3aed;
+$ft-primary-light: #a78bfa;
+$ft-primary-dark: #5b21b6;
+
+/* Functional Colors */
+$ft-success: #10b981;
+$ft-warning: #f59e0b;
+$ft-danger: #ef4444;
+$ft-info: #3b82f6;
+
+/* Neutrals */
+$ft-gray-50: #f9fafb;
+$ft-gray-100: #f3f4f6;
+$ft-gray-200: #e5e7eb;
+$ft-gray-300: #d1d5db;
+$ft-gray-400: #9ca3af;
+$ft-gray-500: #6b7280;
+$ft-gray-600: #4b5563;
+$ft-gray-700: #374151;
+$ft-gray-800: #1f2937;
+$ft-gray-900: #111827;
+
+/* Ticket State Colors */
+$ft-state-new: #6b7280;
+$ft-state-open: #3b82f6;
+$ft-state-pending-customer: #f59e0b;
+$ft-state-pending-internal: #f97316;
+$ft-state-resolved: #10b981;
+$ft-state-closed: #14b8a6;
+$ft-state-cancelled: #ef4444;
+
+/* Priority Colors */
+$ft-priority-low: #9ca3af;
+$ft-priority-normal: #3b82f6;
+$ft-priority-high: #f59e0b;
+$ft-priority-urgent: #ef4444;
+
+/* Spacing */
+$ft-space-xs: 0.25rem;
+$ft-space-sm: 0.5rem;
+$ft-space-md: 1rem;
+$ft-space-lg: 1.5rem;
+$ft-space-xl: 2rem;
+$ft-space-2xl: 3rem;
+
+/* Border Radius */
+$ft-radius-sm: 0.375rem;
+$ft-radius-md: 0.5rem;
+$ft-radius-lg: 0.75rem;
+$ft-radius-xl: 1rem;
+$ft-radius-full: 9999px;
+
+/* Shadows */
+$ft-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$ft-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+$ft-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+/* Typography */
+$ft-font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', 'Courier New', monospace;

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_ai_insights_config_form" model="ir.ui.view">
+        <field name="name">ft.ai.insights.config.form</field>
+        <field name="model">ft.ai.insights.config</field>
+        <field name="arch" type="xml">
+            <form string="AI Insights Settings">
+                <header>
+                    <button name="action_test_connection" type="object"
+                            string="Test Connection" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Provider">
+                            <field name="provider"/>
+                            <field name="model"/>
+                            <field name="api_key" password="True"
+                                   placeholder="Stored in system parameters"/>
+                            <field name="api_base_url"
+                                   placeholder="Optional / required for Azure &amp; Ollama"/>
+                        </group>
+                        <group string="Tuning">
+                            <field name="temperature"/>
+                            <field name="max_tokens"/>
+                            <field name="request_timeout"/>
+                            <field name="default_purpose_id"/>
+                            <field name="default_project_purpose_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Sales Master Prompt" name="sales_prompt">
+                            <group help="Prepended to every Sales analysis. Edit freely — no code change needed.">
+                                <field name="master_prompt" nolabel="1"/>
+                            </group>
+                        </page>
+                        <page string="Project Master Prompt" name="project_prompt">
+                            <group help="Prepended to every Project analysis. Edit freely — no code change needed.">
+                                <field name="project_master_prompt" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                    <group string="Diagnostics">
+                        <field name="debug_mode"/>
+                        <field name="log_level"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ai_insights_config" model="ir.actions.server">
+        <field name="name">AI Insights Settings</field>
+        <field name="model_id" ref="model_ft_ai_insights_config"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_config()</field>
+    </record>
+
+</odoo>

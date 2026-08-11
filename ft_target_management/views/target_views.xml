@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_ft_target_list" model="ir.ui.view">
+        <field name="name">ft.target.list</field>
+        <field name="model">ft.target</field>
+        <field name="arch" type="xml">
+            <list string="Targets"
+                  decoration-success="achievement &gt;= 1"
+                  decoration-warning="achievement &gt;= 0.5 and achievement &lt; 1"
+                  decoration-danger="achievement &lt; 0.5">
+                <field name="target_type_id"/>
+                <field name="period_id"/>
+                <field name="assigned_to"/>
+                <field name="target_value"/>
+                <field name="actual_value"/>
+                <field name="achievement" widget="percentage" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_target_form" model="ir.ui.view">
+        <field name="name">ft.target.form</field>
+        <field name="model">ft.target</field>
+        <field name="arch" type="xml">
+            <form string="Target">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="target_type_id"/>
+                            <field name="period_id"/>
+                            <field name="assigned_to"/>
+                        </group>
+                        <group>
+                            <field name="target_value"/>
+                            <field name="actual_value"/>
+                            <field name="achievement" widget="percentage"/>
+                        </group>
+                    </group>
+                    <separator string="Description"/>
+                    <field name="description" placeholder="Add notes about this target..."/>
+                    <field name="active" invisible="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ft_target_search" model="ir.ui.view">
+        <field name="name">ft.target.search</field>
+        <field name="model">ft.target</field>
+        <field name="arch" type="xml">
+            <search string="Targets">
+                <field name="target_type_id"/>
+                <field name="period_id"/>
+                <field name="assigned_to"/>
+                <group name="group_by">
+                    <filter name="group_type" string="Target Type"
+                            context="{'group_by': 'target_type_id'}"/>
+                    <filter name="group_period" string="Period"
+                            context="{'group_by': 'period_id'}"/>
+                    <filter name="group_assigned" string="Assigned To"
+                            context="{'group_by': 'assigned_to'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ft_target" model="ir.actions.act_window">
+        <field name="name">Targets</field>
+        <field name="res_model">ft.target</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

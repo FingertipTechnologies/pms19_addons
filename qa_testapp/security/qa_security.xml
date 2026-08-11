@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Module category -->
+        <record id="module_category_qa_testapp" model="ir.module.category">
+            <field name="name">QA TestApp</field>
+            <field name="sequence">25</field>
+        </record>
+
+        <!-- Groups privilege (Odoo 19: res.groups.category_id was replaced by privilege_id) -->
+        <record id="res_groups_privilege_qa_testapp" model="res.groups.privilege">
+            <field name="name">QA TestApp</field>
+            <field name="category_id" ref="module_category_qa_testapp"/>
+            <field name="sequence">25</field>
+        </record>
+
+        <!-- Junior QA / User group -->
+        <record id="group_qa_junior" model="res.groups">
+            <field name="name">Junior QA / User</field>
+            <field name="privilege_id" ref="res_groups_privilege_qa_testapp"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Junior QA users. Bugs and test cases they create require PM approval before work can start.</field>
+        </record>
+
+        <!-- Senior QA group -->
+        <record id="group_qa_senior" model="res.groups">
+            <field name="name">Senior QA</field>
+            <field name="privilege_id" ref="res_groups_privilege_qa_testapp"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Senior QA users. Bugs and test cases they create do NOT need approval - they are created in an editable-by-creator (read-only for others) state. Only the creator can edit; others are read-only.</field>
+        </record>
+
+        <!-- Record rule: everyone can READ all bugs (visibility open to all users).
+             Global rule (no groups) so it applies to every user. The per-group
+             rules below now only restrict WRITE / CREATE / UNLINK. -->
+        <record id="rule_qa_ticket_read_all" model="ir.rule">
+            <field name="name">QA Ticket: read all bugs</field>
+            <field name="model_id" ref="model_qa_testapp_ticket"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: Junior QA can edit only their own bugs (created, reported or assigned) -->
+        <record id="rule_qa_ticket_junior_own" model="ir.rule">
+            <field name="name">QA Ticket: Junior QA - own records only</field>
+            <field name="model_id" ref="model_qa_testapp_ticket"/>
+            <field name="domain_force">['|', '|', ('create_uid', '=', user.id), ('reporter_id', '=', user.id), ('assignee_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_qa_junior'))]"/>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: Senior QA can edit their own / assigned bugs (created, reported or assigned) -->
+        <record id="rule_qa_ticket_senior_own" model="ir.rule">
+            <field name="name">QA Ticket: Senior QA - own records only</field>
+            <field name="model_id" ref="model_qa_testapp_ticket"/>
+            <field name="domain_force">['|', '|', ('create_uid', '=', user.id), ('reporter_id', '=', user.id), ('assignee_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_qa_senior'))]"/>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: Senior QA can approve/edit bugs pending approval (junior QA submissions) -->
+        <record id="rule_qa_ticket_senior_pending" model="ir.rule">
+            <field name="name">QA Ticket: Senior QA - pending approval bugs</field>
+            <field name="model_id" ref="model_qa_testapp_ticket"/>
+            <field name="domain_force">[('approval_state', '=', 'pending_approval')]</field>
+            <field name="groups" eval="[(4, ref('group_qa_senior'))]"/>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: PM can edit only bugs in their projects -->
+        <record id="rule_qa_ticket_pm_own_projects" model="ir.rule">
+            <field name="name">QA Ticket: PM - own projects only</field>
+            <field name="model_id" ref="model_qa_testapp_ticket"/>
+            <field name="domain_force">[('project_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('project.group_project_manager'))]"/>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Record rule: Junior QA sees only their own test cases -->
+        <record id="rule_qa_test_case_junior_own" model="ir.rule">
+            <field name="name">QA Test Case: Junior QA - own records only</field>
+            <field name="model_id" ref="model_qa_testapp_test_case"/>
+            <field name="domain_force">[('create_uid', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_qa_junior'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: Senior QA sees only their own test cases -->
+        <record id="rule_qa_test_case_senior_own" model="ir.rule">
+            <field name="name">QA Test Case: Senior QA - own records only</field>
+            <field name="model_id" ref="model_qa_testapp_test_case"/>
+            <field name="domain_force">[('create_uid', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_qa_senior'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: PM sees only test cases in their projects -->
+        <record id="rule_qa_test_case_pm_own_projects" model="ir.rule">
+            <field name="name">QA Test Case: PM - own projects only</field>
+            <field name="model_id" ref="model_qa_testapp_test_case"/>
+            <field name="domain_force">[('project_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('project.group_project_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

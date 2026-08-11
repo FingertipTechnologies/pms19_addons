@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_finance_dashboard.KpiCard">
+        <div class="ftfd_kpi" t-att-class="{ 'ftfd_kpi--clickable': clickable }"
+             t-on-click="onCardClick" t-att-title="props.tooltip">
+            <div class="ftfd_kpi_icon" t-attf-style="background: {{ props.color || '#4F46E5' }}1A; color: {{ props.color || '#4F46E5' }};">
+                <i class="fa" t-att-class="props.icon || 'fa-chart-bar'"/>
+            </div>
+            <div class="ftfd_kpi_body">
+                <div class="ftfd_kpi_value">
+                    <span t-if="props.prefix" class="ftfd_kpi_affix"><t t-esc="props.prefix"/></span><t t-esc="displayValue"/><span t-if="props.suffix" class="ftfd_kpi_affix"><t t-esc="props.suffix"/></span>
+                </div>
+                <div class="ftfd_kpi_title"><t t-esc="props.title"/></div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_finance_dashboard.ChartCard">
+        <div class="ftfd_chart_card" t-att-class="{ 'ftfd_chart_card--full': props.fullWidth }">
+            <div class="ftfd_chart_head">
+                <h3 class="ftfd_chart_title"><t t-esc="props.title"/></h3>
+                <small class="ftfd_chart_note" t-if="props.note"><t t-esc="props.note"/></small>
+            </div>
+            <div class="ftfd_chart_canvas_wrap">
+                <canvas t-ref="canvas"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_finance_dashboard.FinanceDashboard">
+        <div class="ftfd_dashboard">
+            <div class="ftfd_header">
+                <h1 class="ftfd_header_title"><i class="fa fa-money me-2"/>Finance Dashboard</h1>
+                <div class="ftfd_header_tools">
+                    <div class="ftfd_periods">
+                        <t t-foreach="periods" t-as="p" t-key="p.id">
+                            <button class="ftfd_period_btn"
+                                    t-att-class="{ 'ftfd_period_btn--active': state.period === p.id }"
+                                    t-on-click="() => this.onPeriodChange(p.id)">
+                                <t t-esc="p.label"/>
+                            </button>
+                        </t>
+                    </div>
+                    <div class="ftfd_custom" t-if="state.period === 'custom'">
+                        <input type="date" class="ftfd_date" t-att-value="state.dateFrom"
+                               t-on-change="(ev) => this.onCustomDateChange('dateFrom', ev)"/>
+                        <span>→</span>
+                        <input type="date" class="ftfd_date" t-att-value="state.dateTo"
+                               t-on-change="(ev) => this.onCustomDateChange('dateTo', ev)"/>
+                        <button class="ftfd_btn ftfd_btn--primary" t-on-click="applyCustomRange">Apply</button>
+                    </div>
+                    <button class="ftfd_btn" t-on-click="refresh" title="Refresh"><i class="fa fa-refresh"/></button>
+                </div>
+            </div>
+
+            <div class="ftfd_loading" t-if="state.loading">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+            </div>
+
+            <div t-else="" class="ftfd_content">
+                <div class="ftfd_kpi_grid">
+                    <KpiCard title="'Revenue'" value="kpis.revenue" prefix="'₹ '"
+                             icon="'fa-arrow-up'" color="'#10B981'"/>
+                    <KpiCard title="'Outstanding'" value="kpis.outstanding" prefix="'₹ '"
+                             icon="'fa-hourglass-half'" color="'#F59E0B'"/>
+                    <KpiCard title="'Collection'" value="kpis.collection" prefix="'₹ '"
+                             icon="'fa-handshake-o'" color="'#4F46E5'"/>
+                    <KpiCard title="'Expense'" value="kpis.expense" prefix="'₹ '"
+                             icon="'fa-arrow-down'" color="'#EF4444'"/>
+                </div>
+
+                <div class="ftfd_chart_row">
+                    <ChartCard title="'Summary'" type="'bar'" data="charts.summary"/>
+                    <ChartCard title="'Revenue vs Expense (Monthly)'" type="'line'" data="charts.trend"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_asset_assignment_list" model="ir.ui.view">
+        <field name="name">asset.assignment.list</field>
+        <field name="model">asset.assignment</field>
+        <field name="arch" type="xml">
+            <list string="Assignments"
+                  decoration-success="is_active" decoration-muted="not is_active">
+                <field name="asset"/>
+                <field name="employee"/>
+                <field name="assigned_date"/>
+                <field name="returned_date"/>
+                <field name="return_condition"/>
+                <field name="is_active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_asset_assignment_form" model="ir.ui.view">
+        <field name="name">asset.assignment.form</field>
+        <field name="model">asset.assignment</field>
+        <field name="arch" type="xml">
+            <form string="Asset Assignment">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asset"/>
+                            <field name="employee"/>
+                            <field name="issued_by"/>
+                        </group>
+                        <group>
+                            <field name="assigned_date"/>
+                            <field name="returned_date"/>
+                            <field name="return_condition"
+                                   readonly="not returned_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Handover Notes" name="handover">
+                            <field name="handover_notes"/>
+                        </page>
+                        <page string="Return Notes" name="return">
+                            <field name="return_notes"/>
+                        </page>
+                        <page string="Acknowledgement" name="ack">
+                            <field name="acknowledgement_attachment"
+                                   widget="many2many_binary_preview"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_asset_assignment" model="ir.actions.act_window">
+        <field name="name">Asset Assignments</field>
+        <field name="res_model">asset.assignment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

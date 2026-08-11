@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="Project_Scorecards.Many2ManyBinaryPreviewField">
+        <div t-attf-class="oe_fileupload {{props.className ? props.className : ''}}" aria-atomic="true">
+            <div class="o_attachments">
+                <t t-foreach="files" t-as="file" t-key="file_index">
+                    <t t-call="Project_Scorecards.Many2ManyBinaryPreviewField.attachment"/>
+                </t>
+            </div>
+            <div t-if="!props.readonly &amp;&amp; (!props.numberOfFiles or files.length &lt; props.numberOfFiles)"
+                 class="oe_add">
+                <FileInput
+                    acceptedFileExtensions="props.acceptedFileExtensions"
+                    multiUpload="true"
+                    onUpload.bind="onFileUploaded"
+                    resModel="props.record.resModel"
+                    resId="props.record.resId or 0"
+                >
+                    <button class="btn btn-secondary o_attach" data-tooltip="Attach">
+                        <span class="fa fa-paperclip" aria-label="Attach"/> <t t-esc="uploadText"/>
+                    </button>
+                </FileInput>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="Project_Scorecards.Many2ManyBinaryPreviewField.attachment">
+        <t t-set="editable" t-value="!props.readonly"/>
+        <t t-set="ext" t-value="getExtension(file)"/>
+        <t t-set="url" t-value="getUrl(file.id)"/>
+        <t t-set="viewable" t-value="isViewable(file)"/>
+        <div name="attachment" t-attf-class="o_attachment o_attachment_many2many #{ editable ? 'o_attachment_editable' : '' }" t-att-title="file.name">
+            <div class="o_attachment_wrap">
+                <div class="o_image_box float-start"
+                     t-att-data-tooltip="viewable ? 'Preview ' + file.name : 'Download ' + file.name">
+                    <a t-if="viewable" href="#" aria-label="Preview"
+                       style="cursor: pointer;"
+                       t-on-click.prevent.stop="() => this.onPreview(file)">
+                        <span class="o_image o_hover" t-att-data-mimetype="file.mimetype" t-att-data-ext="ext" role="img"/>
+                    </a>
+                    <a t-else="" t-att-href="url" aria-label="Download" download="">
+                        <span class="o_image o_hover" t-att-data-mimetype="file.mimetype" t-att-data-ext="ext" role="img"/>
+                    </a>
+                </div>
+
+                <div class="caption">
+                    <a t-if="viewable" href="#" class="ml4"
+                       style="cursor: pointer;"
+                       t-att-data-tooltip="'Preview ' + file.name"
+                       t-on-click.prevent.stop="() => this.onPreview(file)"><t t-esc="file.name"/></a>
+                    <a t-else="" class="ml4" t-att-data-tooltip="'Download ' + file.name" t-att-href="url" download=""><t t-esc="file.name"/></a>
+                </div>
+                <div class="caption small">
+                    <a class="ml4 small text-uppercase" t-att-href="url" download=""><b><t t-esc="ext"/></b></a>
+                    <a t-if="viewable" class="ml4 small" href="#"
+                       style="cursor: pointer;"
+                       t-att-data-tooltip="'Download ' + file.name"
+                       t-att-href="url" download=""><i class="fa fa-download" role="img" aria-label="Download"/></a>
+                </div>
+
+                <div t-if="editable" class="o_attachment_delete" t-on-click.stop="() => this.onFileRemove(file.id)"><span role="img" aria-label="Delete" title="Delete">×</span></div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_hr_dashboard_admin,ft.hr.dashboard admin,model_ft_hr_dashboard,base.group_system,1,1,1,0

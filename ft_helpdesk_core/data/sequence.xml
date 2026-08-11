@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_ft_helpdesk_ticket" model="ir.sequence">
+            <field name="name">Helpdesk Ticket</field>
+            <field name="code">ft.helpdesk.ticket</field>
+            <field name="prefix">TKT-</field>
+            <field name="padding">6</field>
+            <field name="number_increment">1</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

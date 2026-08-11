@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Client action that mounts the OWL dashboard component -->
+    <record id="action_ft_project_dashboard" model="ir.actions.client">
+        <field name="name">Project Dashboard</field>
+        <field name="tag">ft_project_dashboard</field>
+    </record>
+
+    <!-- Menu under Odoo's Dashboards app, visible to Admin only -->
+    <menuitem id="menu_ft_project_dashboard_root"
+              name="Project"
+              parent="spreadsheet_dashboard.spreadsheet_dashboard_menu_root"
+              action="action_ft_project_dashboard"
+              sequence="10"
+              groups="base.group_system"/>
+</odoo>

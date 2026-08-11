@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_phase_list" model="ir.ui.view">
+        <field name="name">ft.phase.list</field>
+        <field name="model">ft.phase</field>
+        <field name="arch" type="xml">
+            <list string="Phases" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_phase_form" model="ir.ui.view">
+        <field name="name">ft.phase.form</field>
+        <field name="model">ft.phase</field>
+        <field name="arch" type="xml">
+            <form string="Phase">
+                <sheet>
+                    <group>
+                        <field name="sequence"/>
+                        <field name="name" placeholder="e.g. Basic"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_phase" model="ir.actions.act_window">
+        <field name="name">Phase</field>
+        <field name="res_model">ft.phase</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a training phase</p>
+            <p>Define phases (e.g. Basic, Intermediate, Advanced). They become the
+               Phase options on Learning Trails.</p>
+        </field>
+    </record>
+
+</odoo>

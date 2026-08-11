@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================ List view ============================ -->
+    <record id="view_change_request_list" model="ir.ui.view">
+        <field name="name">project.change.request.list</field>
+        <field name="model">project.change.request</field>
+        <field name="arch" type="xml">
+            <list string="Change Requests" editable="bottom"
+                  decoration-info="status == 'submitted'"
+                  decoration-success="status == 'approved'"
+                  decoration-danger="status == 'rejected'"
+                  decoration-muted="status == 'implemented'">
+                <field name="name" readonly="1"/>
+                <field name="project_id"/>
+                <field name="project_status_id" optional="show"/>
+                <field name="date"/>
+                <field name="status"/>
+                <field name="estimated_hours" sum="Estimated Hours"/>
+                <field name="attachment_ids" widget="many2many_binary_preview" string="Attachments"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================ Form view ============================ -->
+    <record id="view_change_request_form" model="ir.ui.view">
+        <field name="name">project.change.request.form</field>
+        <field name="model">project.change.request</field>
+        <field name="arch" type="xml">
+            <form string="Change Request">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="project_id"/>
+                            <field name="project_status_id"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="status"/>
+                            <field name="estimated_hours"/>
+                        </group>
+                    </group>
+                    <group string="Attachments">
+                        <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================ Search view ========================== -->
+    <record id="view_change_request_search" model="ir.ui.view">
+        <field name="name">project.change.request.search</field>
+        <field name="model">project.change.request</field>
+        <field name="arch" type="xml">
+            <search string="Change Requests">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="project_status_id"/>
+                <filter name="submitted" string="Submitted" domain="[('status', '=', 'submitted')]"/>
+                <filter name="approved" string="Approved" domain="[('status', '=', 'approved')]"/>
+                <filter name="rejected" string="Rejected" domain="[('status', '=', 'rejected')]"/>
+                <filter name="implemented" string="Implemented" domain="[('status', '=', 'implemented')]"/>
+                <group name="group_by">
+                    <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_project_status" string="Project Status" context="{'group_by': 'project_status_id'}"/>
+                    <filter name="group_status" string="Status" context="{'group_by': 'status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================ Action =============================== -->
+    <record id="action_change_request" model="ir.actions.act_window">
+        <field name="name">Change Request</field>
+        <field name="res_model">project.change.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_change_request_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first change request
+            </p>
+        </field>
+    </record>
+
+    <!-- ================ Menu: between Reporting and Configuration ======== -->
+    <menuitem
+        name="Change Request"
+        id="menu_change_request"
+        parent="project.menu_main_pm"
+        action="action_change_request"
+        sequence="99"/>
+
+</odoo>

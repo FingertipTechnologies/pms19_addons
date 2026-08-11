@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qa_test_plan_user,QA Test Plan,model_qa_testapp_test_plan,base.group_user,1,1,1,1
+access_qa_test_scenario_user,QA Test Scenario,model_qa_testapp_test_scenario,base.group_user,1,1,1,1
+access_qa_test_case_user,QA Test Case,model_qa_testapp_test_case,base.group_user,1,1,1,1
+access_qa_ticket_user,QA Ticket,model_qa_testapp_ticket,base.group_user,1,1,1,1
+access_qa_bug_analysis_project_user,QA Bug Analysis Project User,model_qa_testapp_bug_analysis,project.group_project_user,1,0,0,0
+access_qa_bug_analysis_project_manager,QA Bug Analysis Project Manager,model_qa_testapp_bug_analysis,project.group_project_manager,1,0,0,0
+access_qa_ticket_junior,QA Ticket Junior QA,model_qa_testapp_ticket,qa_testapp.group_qa_junior,1,1,1,0
+access_qa_test_case_junior,QA Test Case Junior QA,model_qa_testapp_test_case,qa_testapp.group_qa_junior,1,1,1,0
+access_qa_ticket_senior,QA Ticket Senior QA,model_qa_testapp_ticket,qa_testapp.group_qa_senior,1,1,1,0
+access_qa_test_case_senior,QA Test Case Senior QA,model_qa_testapp_test_case,qa_testapp.group_qa_senior,1,1,1,0
+access_qa_bulk_approve_wizard,QA Bulk Approve Wizard,model_qa_testapp_bulk_approve_wizard,base.group_user,1,1,1,1
+access_qa_resource_url_user,QA Reference URL,model_qa_testapp_resource_url,base.group_user,1,1,1,1

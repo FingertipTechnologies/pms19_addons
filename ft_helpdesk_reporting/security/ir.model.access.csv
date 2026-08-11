@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_helpdesk_ticket_analysis_agent,ft.helpdesk.ticket.analysis agent,model_ft_helpdesk_ticket_analysis,ft_helpdesk_core.group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_ticket_analysis_admin,ft.helpdesk.ticket.analysis admin,model_ft_helpdesk_ticket_analysis,ft_helpdesk_core.group_ft_helpdesk_admin,1,0,0,0
+access_ft_helpdesk_ticket_analysis_user,ft.helpdesk.ticket.analysis user,model_ft_helpdesk_ticket_analysis,base.group_user,1,0,0,0

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tag_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.tag.tree</field>
+        <field name="model">ft.helpdesk.tag</field>
+        <field name="arch" type="xml">
+            <list string="Tags" editable="bottom">
+                <field name="name"/>
+                <field name="color" widget="color_picker"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_tag_list" model="ir.actions.act_window">
+        <field name="name">Tags</field>
+        <field name="res_model">ft.helpdesk.tag</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

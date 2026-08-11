@@ -1,0 +1,59 @@
+// AI-decided layout blocks (Sales Insights). Sits inside .aisi_layout, below the
+// fixed shell (score + executive summary).
+.aisi_layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 16px;
+
+    .aisi_block {
+        h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1F2937;
+            margin: 0 0 10px;
+        }
+    }
+
+    // Chart blocks: fixed height so Chart.js (maintainAspectRatio:false) has a
+    // box to fill; scrolls horizontally on narrow screens rather than squashing.
+    .aisi_block_chart {
+        .aisi_chart_wrap {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+    }
+
+    // Table blocks.
+    .aisi_block_table {
+        .aisi_table_scroll {
+            overflow-x: auto;
+        }
+
+        .aisi_table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+
+            th, td {
+                text-align: left;
+                padding: 8px 12px;
+                border-bottom: 1px solid #EEF0F4;
+                white-space: nowrap;
+            }
+
+            th {
+                font-weight: 600;
+                color: #6B7280;
+                text-transform: uppercase;
+                font-size: 11px;
+                letter-spacing: .04em;
+            }
+
+            tbody tr:hover {
+                background: #F9FAFB;
+            }
+        }
+    }
+}

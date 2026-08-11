@@ -1,0 +1,72 @@
+// Evidence Description: render pasted images as small clickable icons rather
+// than full-size inline pictures. Scoped to the evidence_description field so
+// no other html field is affected.
+.o_field_widget[name='evidence_description'] {
+    // Nothing in the chain from the field down to the editor declares a width,
+    // so each level shrank to its content and the box rendered as a tall, thin
+    // strip. The width has to be handed down explicitly at every level for the
+    // editor to span the form.
+    display: block;
+    width: 100%;
+
+    // html_field's own wrapper (<div class="h-100">) around the editor.
+    > div {
+        width: 100%;
+    }
+
+    // The contenteditable is only as tall as the text inside it, so on an empty
+    // bug the type/paste target was a single line: clicking anywhere else in
+    // the white space landed on the form and Ctrl+V went nowhere. Drawing the
+    // editor as a bordered box fixes both halves of that — the area is visible
+    // before it is clicked, and all of it is live.
+    //
+    // Height on the editable alone is not enough: the editor nests it in a flex
+    // chain (.o-wysiwyg > .flex-grow-1 > editable), and a flex child does not
+    // stretch to a parent that is itself only as tall as its content. So the
+    // box carries the height and every link in the chain is told to fill it.
+    .o-wysiwyg {
+        width: 100%;
+        min-height: 200px;
+        border: 1px solid var(--border-color, #dee2e6);
+        border-radius: 4px;
+        background-color: var(--field-bg, #fff);
+    }
+
+    // Standard focus cue, so it reads as an input like every other field.
+    &:focus-within .o-wysiwyg {
+        border-color: var(--primary, #714B67);
+        box-shadow: 0 0 0 2px rgba(113, 75, 103, 0.15);
+    }
+
+    .o-wysiwyg > .flex-grow-1 {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .odoo-editor-editable,
+    .note-editable {
+        flex: 1 1 auto;
+        min-height: 200px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        // Show the text caret across the whole box, so where you can type or
+        // paste is visible before clicking rather than found by trial and error.
+        cursor: text;
+    }
+
+    img {
+        max-width: 120px;
+        max-height: 90px;
+        object-fit: cover;
+        border: 1px solid var(--border-color, #dee2e6);
+        border-radius: 4px;
+        margin: 2px 4px 2px 0;
+        vertical-align: middle;
+    }
+
+    // Only hint "click to zoom" where the click handler is active (readonly).
+    &.o_readonly img {
+        cursor: zoom-in;
+    }
+}

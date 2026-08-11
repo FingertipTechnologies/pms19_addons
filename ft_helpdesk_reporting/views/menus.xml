@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Level 1: Reporting (under Helpdesk root menu) -->
+    <menuitem id="menu_ft_helpdesk_reporting"
+              name="Reporting"
+              parent="ft_helpdesk_core.menu_ft_helpdesk_root"
+              groups="base.group_user"
+              sequence="50"/>
+
+    <!-- Level 2: Ticket Analysis -->
+    <menuitem id="menu_ft_helpdesk_ticket_analysis"
+              name="Ticket Analysis"
+              parent="menu_ft_helpdesk_reporting"
+              action="action_ft_helpdesk_ticket_analysis"
+              sequence="10"/>
+
+    <!-- Level 2: Project-wise Analysis (for project managers) -->
+    <menuitem id="menu_ft_helpdesk_project_analysis"
+              name="Project-wise Analysis"
+              parent="menu_ft_helpdesk_reporting"
+              action="action_ft_helpdesk_project_analysis"
+              sequence="20"/>
+
+</odoo>

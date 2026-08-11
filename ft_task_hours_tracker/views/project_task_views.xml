@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Show Actual Hours and exceeded warning on task form (no per-task time limit field) -->
+    <record id="view_task_form_ft_hours_tracker" model="ir.ui.view">
+        <field name="name">project.task.form.ft.hours.tracker</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <!-- Apply after ft_sprint_management injects sprint_id (default prio 16),
+             otherwise the sprint_id position="move" below can't find the field. -->
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <!-- Hours shown as a full-width section above the notebook tabs -->
+            <xpath expr="//notebook" position="before">
+                <group string="Hours" name="ft_hours_section">
+                <field name="ft_total_hours_taken"
+                       string="Actual Hours"
+                       widget="float_time"
+                       readonly="1"/>
+                <field name="ft_billable_hours"
+                       string="Billable Hours"
+                       widget="float_time"/>
+                <field name="ft_non_billable_hours"
+                       string="Non Billable Hours"
+                       widget="float_time"
+                       readonly="1"/>
+                <!-- Technical companions to Billable Hours: they record that the
+                     figure was overridden so later timesheets cannot reset it. -->
+                <field name="ft_billable_hours_manual" invisible="1"/>
+                <field name="ft_billable_hours_override" invisible="1"/>
+                <field name="ft_dev_hours_exceeded" invisible="1"/>
+                <field name="ft_qa_hours_exceeded" invisible="1"/>
+                <field name="ft_pm_hours_exceeded" invisible="1"/>
+                <field name="ft_ba_hours_exceeded" invisible="1"/>
+                <field name="ft_trainee_hours_exceeded" invisible="1"/>
+                <field name="ft_dev_hours"
+                       string="Dev Hours"
+                       widget="float_time"
+                       readonly="1"/>
+                <div invisible="not ft_dev_hours_exceeded or not ft_allow_billable">
+                    <small class="text-danger">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        Dev hours time limit reached!
+                        This task has exceeded the allowed Dev hours. Please create a new task to continue the work.
+                    </small>
+                </div>
+                <field name="ft_qa_hours"
+                       string="QA Hours"
+                       widget="float_time"
+                       readonly="1"/>
+                <div invisible="not ft_qa_hours_exceeded or not ft_allow_billable">
+                    <small class="text-danger">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        QA hours time limit reached!
+                        This task has exceeded the allowed QA hours. Please create a new task to continue the work.
+                    </small>
+                </div>
+                <field name="ft_pm_hours"
+                       string="PM Hours"
+                       widget="float_time"
+                       readonly="1"/>
+                <div invisible="not ft_pm_hours_exceeded or not ft_allow_billable">
+                    <small class="text-danger">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        PM hours time limit reached!
+                        This task has exceeded the allowed PM hours. Please create a new task to continue the work.
+                    </small>
+                </div>
+                <field name="ft_ba_hours"
+                       string="BA Hours"
+                       widget="float_time"
+                       readonly="1"/>
+                <div invisible="not ft_ba_hours_exceeded or not ft_allow_billable">
+                    <small class="text-danger">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        BA hours time limit reached!
+                        This task has exceeded the allowed BA hours. Please create a new task to continue the work.
+                    </small>
+                </div>
+                <field name="ft_trainee_hours"
+                       string="Trainee Hours"
+                       widget="float_time"
+                       readonly="1"/>
+                <div invisible="not ft_trainee_hours_exceeded or not ft_allow_billable">
+                    <small class="text-danger">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        Trainee hours time limit reached!
+                        This task has exceeded the allowed Trainee hours. Please create a new task to continue the work.
+                    </small>
+                </div>
+                <div invisible="not ft_hours_exceeded or not ft_allow_billable">
+                    <small class="text-danger">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        Task time limit reached!
+                        This task has exceeded the allowed hours. Please create a new task to continue the work.
+                    </small>
+                </div>
+                </group>
+            </xpath>
+
+            <!-- Re-arrange columns. Anchor on user_ids (Assignees): the base
+                 form has a hidden project_id near the top, so anchoring on
+                 project_id would drop the field outside the group.
+                 Module goes above Assignees on the left; Sprint moves to the
+                 right column after Estimated (where Module used to be). -->
+            <xpath expr="//field[@name='user_ids']" position="before">
+                <field name="module_id" position="move"/>
+            </xpath>
+            <xpath expr="//field[@name='estimated']" position="after">
+                <field name="sprint_id" position="move"/>
+            </xpath>
+
+            <!-- Billing Status goes above Estimated in the right-hand column.
+                 It previously sat after the deadline wrapper div, which put it
+                 among that block's own label/div pairs and left it rendering
+                 without a label. Anchored on a plain field, the group pairs it
+                 with its label normally. -->
+            <xpath expr="//field[@name='estimated']" position="before">
+                <field name="ft_billing_status"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- Hide the bt_project_customization 'actual' field to avoid duplication -->
+    <record id="view_task_form_ft_hide_bt_actual" model="ir.ui.view">
+        <field name="name">project.task.form.ft.hide.bt.actual</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="bt_project_customization.view_task_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='actual']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Hide sale_project billing fields (Customer + Sales Order Item / "Non-billable").
+         sale_project injects these at priority 100, so this view must run AFTER it
+         (priority 110) for the elements to exist when we set them invisible. -->
+    <record id="view_task_form_ft_hide_billing_fields" model="ir.ui.view">
+        <field name="name">project.task.form.ft.hide.billing.fields</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="priority">110</field>
+        <field name="arch" type="xml">
+            <!-- Customer (renders the partner name, e.g. "TTS Company") -->
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <!-- Sales Order Item field + its "Non-billable" placeholder row -->
+            <xpath expr="//div[@name='sale_line_div']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[@name='sale_line_div']/preceding-sibling::label[@for='sale_line_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Hide extra task-form fields not used in this workflow: Milestone, Tags
+         and Allocated Time. allocated_hours is rendered by hr_timesheet as a
+         label + div block (with the % progress), so both are hidden. Priority
+         110 keeps this after the core/hr_timesheet views that add them. -->
+    <record id="view_task_form_ft_hide_extra_fields" model="ir.ui.view">
+        <field name="name">project.task.form.ft.hide.extra.fields</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="priority">110</field>
+        <field name="arch" type="xml">
+            <!-- Milestone -->
+            <xpath expr="//field[@name='milestone_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <!-- Tags -->
+            <xpath expr="//field[@name='tag_ids']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <!-- Allocated Time (hr_timesheet label + value/percentage row) -->
+            <xpath expr="//label[@for='allocated_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[field[@name='allocated_hours']]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Task list: add Estimated and Actual (computed) hours columns. -->
+    <record id="view_task_list_ft_hours_columns" model="ir.ui.view">
+        <field name="name">project.task.list.ft.hours.columns</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_main_base"/>
+        <field name="arch" type="xml">
+            <field name="user_ids" position="after">
+                <field name="estimated" string="Estimated"
+                       widget="float_time" sum="Total Estimated" optional="show"/>
+                <field name="ft_total_hours_taken" string="Actual Hours"
+                       widget="float_time" sum="Total Actual" optional="show"/>
+            </field>
+
+            <!-- Project Stage, Created On and Created By. optional="show" so
+                 they appear by default but can be switched off per user from
+                 the column picker, like the hours columns above. -->
+            <field name="stage_id" position="after">
+                <field name="ft_project_stage_id" string="Project Stage"
+                       optional="show"/>
+                <field name="create_date" string="Created On"
+                       optional="show"/>
+                <field name="create_uid" string="Created By"
+                       widget="many2one_avatar_user" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+
+</odoo>

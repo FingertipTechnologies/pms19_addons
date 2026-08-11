@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    
+
+        <!-- List View -->
+        <record id="view_project_scorecard_list" model="ir.ui.view">
+            <field name="name">project.scorecard.list</field>
+            <field name="model">project.scorecard</field>
+            <field name="arch" type="xml">
+                <list>
+                    <field name="date"/>
+                    <field name="project_id"/>
+                    <field name="stage_id"/>
+                    <field name="meetings"/>
+                    <field name="time_spent" widget="float_time"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                    <field name="uat_date"/>
+                    <field name="go_live_date"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_project_scorecard_form" model="ir.ui.view">
+            <field name="name">project.scorecard.form</field>
+            <field name="model">project.scorecard</field>
+            <field name="arch" type="xml">
+                <form>
+                      <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="project_id" options="{'no_create': True}"/>
+                            <field name="stage_id"/>
+                        </group>
+                        <group>
+                            <field name="meetings"/>
+                            <field name="time_spent" widget="float_time"/>
+                        </group>
+                    </group>
+                    <group string="Project Dates">
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group>
+                            <field name="uat_date"/>
+                            <field name="go_live_date"/> 
+                        </group>
+                        <group><field name="description"/></group>
+                    </group>
+                </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Pivot View -->
+        <record id="view_project_scorecard_pivot" model="ir.ui.view">
+            <field name="name">project.scorecard.pivot</field>
+            <field name="model">project.scorecard</field>
+            <field name="arch" type="xml">
+                <pivot>
+                    <field name="project_id" type="row"/>
+                    <field name="date" type="row"/>
+                    <field name="meetings" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_project_scorecard" model="ir.actions.act_window">
+            <field name="name">Project Scorecards</field>
+            <field name="res_model">project.scorecard</field>
+            <field name="view_mode">list,form,pivot</field>
+        </record>
+
+        <!-- Menus -->
+    <menuitem id="menu_project_scorecard_root"
+            name="Scorecard"
+            sequence="50"
+            web_icon="Project_Scorecards,static/description/icon.png"
+            />
+
+    <menuitem id="menu_project_scorecard"
+            name="Project"
+            parent="menu_project_scorecard_root"
+            action="action_project_scorecard"
+            sequence="10"
+            groups="group_scorecard_project"
+            />
+
+
+</odoo>

@@ -1,0 +1,92 @@
+.fthr_dashboard {
+    --fthr-bg: #f4f6fb;
+    --fthr-card: #ffffff;
+    --fthr-text: #1e293b;
+    --fthr-muted: #64748b;
+    --fthr-border: #e2e8f0;
+    --fthr-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+
+    position: relative;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--fthr-bg);
+    color: var(--fthr-text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: 32px;
+
+    .fthr_header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        gap: 12px; padding: 18px 24px;
+        background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--fthr-border);
+        .fthr_header_title { font-size: 22px; font-weight: 700; margin: 0; }
+        .fthr_header_tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    }
+
+    .fthr_periods { display: inline-flex; background: #eef2f7; border-radius: 10px; padding: 3px; }
+    .fthr_period_btn {
+        border: 0; background: transparent; color: var(--fthr-muted);
+        font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+        transition: all .15s ease;
+        &--active { background: #4f46e5; color: #fff; box-shadow: 0 2px 6px rgba(79,70,229,.35); }
+    }
+
+    .fthr_custom {
+        display: inline-flex; align-items: center; gap: 6px;
+        .fthr_date { border: 1px solid var(--fthr-border); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+    }
+
+    .fthr_btn {
+        border: 1px solid var(--fthr-border); background: #fff; border-radius: 8px;
+        padding: 7px 11px; cursor: pointer; color: var(--fthr-muted);
+        &:hover { color: var(--fthr-text); }
+        &--primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    }
+
+    .fthr_loading { display: flex; align-items: center; justify-content: center; height: 60vh; color: #4f46e5; }
+
+    .fthr_content { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+    .fthr_kpi_grid {
+        display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px;
+        @media (max-width: 1400px) { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 900px)  { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 560px)  { grid-template-columns: 1fr; }
+    }
+
+    .fthr_kpi {
+        display: flex; align-items: center; gap: 14px;
+        background: var(--fthr-card); border: 1px solid var(--fthr-border);
+        border-radius: 16px; padding: 18px; box-shadow: var(--fthr-shadow);
+        transition: transform .15s ease, box-shadow .15s ease;
+        &--clickable { cursor: pointer; &:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15,23,42,.12); } }
+        .fthr_kpi_icon {
+            flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .fthr_kpi_body { min-width: 0; }
+        .fthr_kpi_value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+        .fthr_kpi_affix { font-size: 13px; font-weight: 600; color: var(--fthr-muted); }
+        .fthr_kpi_title {
+            font-size: 12px; color: var(--fthr-muted); margin-top: 3px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+    }
+
+    .fthr_chart_row {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+        @media (max-width: 992px) { grid-template-columns: 1fr; }
+    }
+
+    .fthr_chart_card {
+        background: var(--fthr-card); border: 1px solid var(--fthr-border);
+        border-radius: 16px; padding: 18px 20px; box-shadow: var(--fthr-shadow);
+        grid-column: span 1;
+        &--full { grid-column: 1 / -1; }
+        .fthr_chart_head { margin-bottom: 12px; }
+        .fthr_chart_title { font-size: 15px; font-weight: 700; margin: 0; }
+        .fthr_chart_note { color: var(--fthr-muted); font-size: 11.5px; }
+        .fthr_chart_canvas_wrap { position: relative; height: 320px; }
+    }
+}

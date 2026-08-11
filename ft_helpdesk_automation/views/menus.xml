@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Automation submenu under Configuration -->
+    <menuitem id="menu_ft_helpdesk_config_automation"
+              name="Automation"
+              parent="ft_helpdesk_core.menu_ft_helpdesk_configuration"
+              groups="ft_helpdesk_core.group_ft_helpdesk_admin"
+              sequence="80"/>
+
+    <menuitem id="menu_ft_helpdesk_config_macros"
+              name="Macros"
+              parent="menu_ft_helpdesk_config_automation"
+              action="action_ft_helpdesk_macro"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_helpdesk_config_triggers"
+              name="Triggers"
+              parent="menu_ft_helpdesk_config_automation"
+              action="action_ft_helpdesk_trigger"
+              sequence="20"/>
+
+</odoo>

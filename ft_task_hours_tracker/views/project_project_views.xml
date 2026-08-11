@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_project_form_ft_field_order" model="ir.ui.view">
+        <field name="name">project.project.form.ft.field.order</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='brd_approval_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='brd_submission_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+           
+            <xpath expr="//field[@name='kick_start_meeting_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='sandbox_review_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='support_start_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='uat_start_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='warranty_end_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+             <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+           <xpath expr="//field[@name='pm_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+           
+            <xpath expr="//field[@name='date_start']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='go_live_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Billable sits above Actual Hours; Dev/QA/PM hours follow below it.
+                 Anchor on the allow_billable that sits next to user_id (added by
+                 bt_project_customization), not the one inside the Settings block. -->
+            <xpath expr="//field[@name='user_id']/following-sibling::field[@name='allow_billable']" position="after">
+                <field name="effective_hours" string="Actual Hours" widget="float_time" readonly="1"/>
+                <field name="ft_dev_hours" string="Dev Hours" widget="float_time" readonly="1"/>
+                <field name="ft_qa_hours" string="QA Hours" widget="float_time" readonly="1"/>
+                <field name="ft_pm_hours" string="PM Hours" widget="float_time" readonly="1"/>
+                <field name="ft_ba_hours" string="BA Hours" widget="float_time" readonly="1"/>
+                <field name="ft_trainee_hours" string="Trainee Hours" widget="float_time" readonly="1"/>
+            </xpath>
+            
+            <xpath expr="//group[group/field[@name='date_start']]" position="after">
+
+                <group string="Dates">
+
+                    <group>
+                        <!-- Start / End Date: the core project.date_start /
+                             project.date pair the Project Dashboard reads. The
+                             core "Planned Date" range control is hidden above,
+                             so surface them here for editing. Note: Odoo clears
+                             BOTH if only one is set, and End Date must be on or
+                             after Start Date. -->
+                        <field name="date_start" string="Start Date"/>
+                        <field name="date" string="End Date"/>
+                        <field name="kick_start_meeting_date"/>
+                        <field name="brd_approval_date"/>
+                        <field name="sandbox_review_date"/>
+                        <field name="go_live_date"/>
+                    </group>
+
+                    <group>
+                        <field name="uat_start_date"/>
+                        <field name="support_start_date"/>
+                        <field name="warranty_end_date"/>
+                    </group>
+
+                </group>
+
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_project_list_ft_hours" model="ir.ui.view">
+        <field name="name">project.project.list.ft.hours</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <list string="Projects" decoration-danger="ft_has_exceeded_tasks">
+                <field name="name" string="Project Name"/>
+                <field name="user_id" string="Project Manager" optional="show"/>
+                <field name="partner_id" string="Customer" optional="show"/>
+                <field name="date_start" string="Start Date" optional="show"/>
+                <field name="date" string="Deadline" optional="show"/>
+                <field name="allocated_hours" string="Estimated Hours" widget="float_time" optional="show"/>
+                <field name="effective_hours" string="Actual Hours" widget="float_time" optional="show"/>
+                <field name="ft_has_exceeded_tasks" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_project_form_inherit_task_fields" model="ir.ui.view">
+    <field name="name">project.project.form.inherit.task.fields</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="qa_testapp.view_project_form_inherit_qa_tabs"/>
+    <field name="arch" type="xml">
+
+        <xpath expr="//page[@name='qa_tasks']//field[@name='date_deadline']"
+               position="after">
+            <field name="estimated"
+                       string="Estimated"
+                       widget="float_time"/>
+            <field name="ft_total_hours_taken"
+                       string="Actual Hours"
+                       widget="float_time"
+                       readonly="1"/>
+        </xpath>
+
+    </field>
+</record>
+
+<record id="project_form_inherit_estimated_time" model="ir.ui.view">
+    <field name="name">project.project.form.estimated.time</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="hr_timesheet.project_invoice_form"/>
+    <field name="arch" type="xml">
+     <xpath expr="//field[@name='allocated_hours']" position="attributes">
+            <attribute name="invisible">1</attribute>
+        </xpath>
+
+        <!-- Estimated Time above Actual Hours. This is the project's own
+             `estimated` field (the roll-up of the tasks' Estimated hours), NOT
+             core allocated_hours, which stays hidden. -->
+        <xpath expr="//field[@name='user_id']" position="after">
+            <field name="estimated"
+                   string="Estimated Time"
+                   widget="float_time"
+                   readonly="1"/>
+        </xpath>
+
+
+    </field>
+</record>
+
+</odoo>

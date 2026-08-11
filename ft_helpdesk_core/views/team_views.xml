@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Team Tree View -->
+    <record id="view_team_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.team.tree</field>
+        <field name="model">ft.helpdesk.team</field>
+        <field name="arch" type="xml">
+            <list string="Teams">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="leader_user_id" widget="many2one_avatar_user"/>
+                <field name="auto_assign_mode"/>
+                <field name="portal_enabled"/>
+                <field name="open_ticket_count" string="Open Tickets"/>
+                <field name="ticket_count" string="Total Tickets"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Team Form View -->
+    <record id="view_team_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.team.form</field>
+        <field name="model">ft.helpdesk.team</field>
+        <field name="arch" type="xml">
+            <form string="Team">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="action" class="oe_stat_button" icon="fa-ticket"
+                                name="%(action_ticket_list)d"
+                                context="{'search_default_team_id': id}">
+                            <field name="ticket_count" string="Tickets" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Team Name..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Team Settings">
+                            <field name="leader_user_id" widget="many2one_avatar_user"/>
+                            <field name="default_assignee_id" widget="many2one_avatar_user"/>
+                            <field name="auto_assign_mode"/>
+                            <field name="default_type_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Portal">
+                            <field name="portal_enabled"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                    </group>
+                    <group string="Members">
+                        <field name="member_user_ids" widget="many2many_tags"
+                               options="{'color_field': 'color'}" nolabel="1"/>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Team description..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Team Kanban -->
+    <record id="view_team_kanban" model="ir.ui.view">
+        <field name="name">ft.helpdesk.team.kanban</field>
+        <field name="model">ft.helpdesk.team</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard" sample="1" highlight_color="color">
+                <field name="name"/>
+                <field name="leader_user_id"/>
+                <field name="ticket_count"/>
+                <field name="open_ticket_count"/>
+                <field name="color"/>
+                <templates>
+                    <t t-name="card">
+                        <!-- Odoo 19: kanban card color is applied automatically via the
+                             kanban `highlight_color` attribute; the kanban_color() helper
+                             was removed. -->
+                        <div>
+                            <div class="o_kanban_card_header">
+                                <div class="o_kanban_card_header_title mb-2">
+                                    <h3 class="mt-0 mb-0"><field name="name"/></h3>
+                                </div>
+                            </div>
+                            <div class="container o_kanban_card_content mt-3">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <button class="btn btn-primary" type="action"
+                                                name="%(action_ticket_list)d"
+                                                context="{'search_default_team_id': id, 'search_default_active_tickets': 1}">
+                                            <field name="open_ticket_count"/> Open
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-secondary" type="action"
+                                                name="%(action_ticket_list)d"
+                                                context="{'search_default_team_id': id}">
+                                            <field name="ticket_count"/> Total
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_kanban_card_manage_pane dropdown-menu" role="menu">
+                                <div class="o_kanban_card_manage_section o_kanban_manage_reports">
+                                    <div role="menuitem">
+                                        <a type="edit">Settings</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Team Action -->
+    <record id="action_team_list" model="ir.actions.act_window">
+        <field name="name">Teams</field>
+        <field name="res_model">ft.helpdesk.team</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+</odoo>

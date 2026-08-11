@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- This file is intentionally minimal as stages are defined as selection field values.
+         If we move to a configurable stage model in the future, stage data goes here. -->
+</odoo>

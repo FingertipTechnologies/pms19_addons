@@ -1,0 +1,246 @@
+/* ===================================
+   FT Helpdesk Shared UI Components
+   =================================== */
+
+/* ---- Status Pills ---- */
+.ft-status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: $ft-radius-full;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+
+    &.status-new { background: rgba($ft-state-new, 0.12); color: $ft-state-new; }
+    &.status-open { background: rgba($ft-state-open, 0.12); color: $ft-state-open; }
+    &.status-pending { background: rgba($ft-state-pending-customer, 0.12); color: #c47d08; }
+    &.status-resolved { background: rgba($ft-state-resolved, 0.12); color: $ft-state-resolved; }
+    &.status-closed { background: rgba($ft-state-closed, 0.12); color: $ft-state-closed; }
+    &.status-cancelled { background: rgba($ft-state-cancelled, 0.12); color: $ft-state-cancelled; }
+}
+
+/* ---- Priority Indicators ---- */
+.ft-priority-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: $ft-space-xs;
+
+    &.priority-low { background: $ft-priority-low; }
+    &.priority-normal { background: $ft-priority-normal; }
+    &.priority-high { background: $ft-priority-high; }
+    &.priority-urgent { background: $ft-priority-urgent; animation: pulse 2s infinite; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ---- Card Styles ---- */
+.ft-card {
+    background: white;
+    border: none;
+    border-radius: $ft-radius-lg;
+    box-shadow: $ft-shadow-sm;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+    &:hover {
+        box-shadow: $ft-shadow-md;
+    }
+
+    &.ft-card-interactive:hover {
+        transform: translateY(-2px);
+        box-shadow: $ft-shadow-lg;
+    }
+}
+
+.ft-card-header {
+    padding: $ft-space-lg;
+    border-bottom: 1px solid $ft-gray-100;
+    background: transparent;
+}
+
+.ft-card-body {
+    padding: $ft-space-lg;
+}
+
+/* ---- Empty State ---- */
+.ft-empty-state {
+    text-align: center;
+    padding: $ft-space-2xl $ft-space-xl;
+    color: $ft-gray-400;
+
+    .ft-empty-icon {
+        font-size: 3rem;
+        margin-bottom: $ft-space-md;
+        opacity: 0.5;
+    }
+
+    h5 {
+        color: $ft-gray-500;
+        margin-bottom: $ft-space-sm;
+    }
+
+    p {
+        max-width: 24rem;
+        margin: 0 auto $ft-space-lg;
+    }
+}
+
+/* ---- Stat Card ---- */
+.ft-stat-card {
+    text-align: center;
+    padding: $ft-space-lg $ft-space-md;
+
+    .ft-stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: $ft-space-xs;
+    }
+
+    .ft-stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: $ft-gray-500;
+    }
+}
+
+/* ---- Timeline ---- */
+.ft-timeline {
+    position: relative;
+    padding-left: 2rem;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 0.75rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: $ft-gray-200;
+    }
+
+    .ft-timeline-item {
+        position: relative;
+        padding-bottom: $ft-space-lg;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: -1.625rem;
+            top: 0.375rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: $ft-gray-300;
+            border: 2px solid white;
+        }
+
+        &.timeline-agent::before { background: $ft-success; }
+        &.timeline-customer::before { background: $ft-info; }
+        &.timeline-system::before { background: $ft-gray-400; }
+    }
+}
+
+/* ---- Filter Chips ---- */
+.ft-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $ft-space-sm;
+
+    .ft-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: $ft-radius-full;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid $ft-gray-200;
+        background: white;
+        color: $ft-gray-600;
+
+        &:hover {
+            border-color: $ft-primary;
+            color: $ft-primary;
+        }
+
+        &.active {
+            background: $ft-primary;
+            border-color: $ft-primary;
+            color: white;
+        }
+
+        .ft-chip-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.25rem;
+            height: 1.25rem;
+            margin-left: $ft-space-xs;
+            padding: 0 0.25rem;
+            border-radius: $ft-radius-full;
+            font-size: 0.65rem;
+            font-weight: 700;
+            background: $ft-gray-100;
+        }
+
+        &.active .ft-chip-count {
+            background: rgba(255, 255, 255, 0.25);
+        }
+    }
+}
+
+/* ---- Avatar ---- */
+.ft-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 600;
+    text-transform: uppercase;
+    flex-shrink: 0;
+
+    &.ft-avatar-sm { width: 28px; height: 28px; font-size: 0.7rem; }
+    &.ft-avatar-md { width: 36px; height: 36px; font-size: 0.85rem; }
+    &.ft-avatar-lg { width: 48px; height: 48px; font-size: 1.1rem; }
+
+    &.ft-avatar-customer { background: rgba($ft-info, 0.15); color: $ft-info; }
+    &.ft-avatar-agent { background: rgba($ft-success, 0.15); color: $ft-success; }
+}
+
+/* ---- Ticket Number Monospace ---- */
+.ft-ticket-no {
+    font-family: $ft-font-mono;
+    font-size: 0.85em;
+    color: $ft-gray-500;
+}
+
+/* ---- SLA Indicator ---- */
+.ft-sla-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: $ft-space-xs;
+    font-size: 0.75rem;
+    font-weight: 500;
+
+    &.sla-on-track { color: $ft-success; }
+    &.sla-at-risk { color: $ft-warning; }
+    &.sla-breached { color: $ft-danger; }
+    &.sla-completed { color: $ft-gray-400; }
+
+    .ft-sla-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+}

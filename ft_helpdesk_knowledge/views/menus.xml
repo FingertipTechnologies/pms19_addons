@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- KB Menu under Helpdesk root -->
+    <menuitem id="menu_ft_helpdesk_knowledge"
+              name="Knowledge Base"
+              parent="ft_helpdesk_core.menu_ft_helpdesk_root"
+              sequence="30"/>
+
+    <menuitem id="menu_ft_helpdesk_kb_articles"
+              name="Articles"
+              parent="menu_ft_helpdesk_knowledge"
+              action="action_kb_article"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_helpdesk_kb_categories"
+              name="Categories"
+              parent="menu_ft_helpdesk_knowledge"
+              action="action_kb_category"
+              sequence="20"/>
+
+    <!-- KB Article Analysis under Reporting -->
+    <menuitem id="menu_ft_helpdesk_kb_article_analysis"
+              name="KB Article Analysis"
+              parent="ft_helpdesk_reporting.menu_ft_helpdesk_reporting"
+              action="action_kb_article_analysis"
+              sequence="20"/>
+</odoo>

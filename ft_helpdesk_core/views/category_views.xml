@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Category Tree -->
+    <record id="view_category_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.category.tree</field>
+        <field name="model">ft.helpdesk.category</field>
+        <field name="arch" type="xml">
+            <list string="Categories">
+                <field name="sequence" widget="handle"/>
+                <field name="complete_name"/>
+                <field name="icon"/>
+                <field name="portal_visible"/>
+                <field name="ticket_count" string="Tickets"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Category Form -->
+    <record id="view_category_form" model="ir.ui.view">
+        <field name="name">ft.helpdesk.category.form</field>
+        <field name="model">ft.helpdesk.category</field>
+        <field name="arch" type="xml">
+            <form string="Category">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Category Name..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="parent_id"/>
+                            <field name="icon"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                        <group>
+                            <field name="portal_visible"/>
+                            <field name="sequence"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="Subcategories">
+                        <field name="child_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="name"/>
+                                <field name="portal_visible"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Category description..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Subcategory Tree -->
+    <record id="view_subcategory_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.subcategory.tree</field>
+        <field name="model">ft.helpdesk.subcategory</field>
+        <field name="arch" type="xml">
+            <list string="Subcategories" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="portal_visible"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Category Action -->
+    <record id="action_category_list" model="ir.actions.act_window">
+        <field name="name">Categories</field>
+        <field name="res_model">ft.helpdesk.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Subcategory Action -->
+    <record id="action_subcategory_list" model="ir.actions.act_window">
+        <field name="name">Subcategories</field>
+        <field name="res_model">ft.helpdesk.subcategory</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

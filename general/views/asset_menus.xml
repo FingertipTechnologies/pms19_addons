@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Asset Management — now a section under the General app -->
+    <menuitem id="menu_asset_management_root"
+              name="Asset Management"
+              parent="menu_general_root"
+              sequence="10"
+              groups="group_asset_user"/>
+
+    <!-- Operational sub-menus -->
+    <menuitem id="menu_asset_assets"
+              name="Assets"
+              parent="menu_asset_management_root"
+              action="action_company_asset"
+              sequence="10"/>
+
+    <menuitem id="menu_asset_assignments"
+              name="Assignments"
+              parent="menu_asset_management_root"
+              action="action_asset_assignment"
+              sequence="20"/>
+
+    <menuitem id="menu_asset_maintenance"
+              name="Maintenance"
+              parent="menu_asset_management_root"
+              action="action_asset_maintenance"
+              sequence="30"/>
+
+    <!-- Configuration sub-menu -->
+    <menuitem id="menu_asset_configuration"
+              name="Configuration"
+              parent="menu_asset_management_root"
+              sequence="90"
+              groups="group_asset_manager"/>
+
+    <menuitem id="menu_asset_categories"
+              name="Asset Categories"
+              parent="menu_asset_configuration"
+              action="action_asset_category"
+              sequence="10"/>
+
+    <!-- Reports sub-menu -->
+    <menuitem id="menu_asset_reports"
+              name="Reports"
+              parent="menu_asset_management_root"
+              sequence="80"/>
+
+    <menuitem id="menu_asset_report_register"
+              name="Asset Register"
+              parent="menu_asset_reports"
+              action="action_asset_register_report"
+              sequence="10"/>
+
+    <menuitem id="menu_asset_report_employee"
+              name="Employee Asset Report"
+              parent="menu_asset_reports"
+              action="action_asset_assignment_report"
+              sequence="20"/>
+
+    <menuitem id="menu_asset_report_repair_cost"
+              name="Repair Cost Report"
+              parent="menu_asset_reports"
+              action="action_asset_maintenance_report"
+              sequence="30"/>
+
+    <menuitem id="menu_asset_report_warranty"
+              name="Warranty Expiry Report"
+              parent="menu_asset_reports"
+              action="action_asset_warranty_report"
+              sequence="40"/>
+
+</odoo>

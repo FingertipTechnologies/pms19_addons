@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_ft_homepage" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.ft.homepage</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Homepage" name="ft_homepage">
+                    <block title="Login &amp; Homepage">
+                        <setting string="Land on Homepage after login"
+                                 help="Default landing page after login is the Homepage
+                                       (app icons grid) for every user, instead of
+                                       Discuss or Invoicing. Individual users can
+                                       still change this in their own Preferences.">
+                            <field name="homepage_default_landing"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

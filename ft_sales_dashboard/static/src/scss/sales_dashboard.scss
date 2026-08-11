@@ -1,0 +1,398 @@
+.btsd_dashboard {
+    --btsd-bg: #f4f6fb;
+    --btsd-card: #ffffff;
+    --btsd-text: #1e293b;
+    --btsd-muted: #64748b;
+    --btsd-border: #e2e8f0;
+    --btsd-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+
+    position: relative;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--btsd-bg);
+    color: var(--btsd-text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: 32px;
+
+    .btsd_header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 24px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--btsd-border);
+
+        .btsd_header_title { font-size: 22px; font-weight: 700; margin: 0; }
+        .btsd_header_tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    }
+
+    .btsd_periods {
+        display: inline-flex;
+        background: #eef2f7;
+        border-radius: 10px;
+        padding: 3px;
+    }
+    .btsd_period_btn {
+        border: 0;
+        background: transparent;
+        color: var(--btsd-muted);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 7px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all .15s ease;
+        &--active { background: #4f46e5; color: #fff; box-shadow: 0 2px 6px rgba(79,70,229,.35); }
+    }
+
+    .btsd_custom {
+        display: inline-flex; align-items: center; gap: 6px;
+        .btsd_date { border: 1px solid var(--btsd-border); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+    }
+
+    .btsd_btn {
+        border: 1px solid var(--btsd-border);
+        background: #fff;
+        border-radius: 8px;
+        padding: 7px 11px;
+        cursor: pointer;
+        color: var(--btsd-muted);
+        &:hover { color: var(--btsd-text); }
+        &--primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    }
+
+    .btsd_loading { display: flex; align-items: center; justify-content: center; height: 60vh; color: #4f46e5; }
+
+    .btsd_content { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+    .btsd_kpi_grid {
+        display: grid;
+        // minmax(0, 1fr) throughout — see the note on .btsd_board_grid. A long
+        // formatted amount would otherwise widen its card and overflow the row.
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        @media (max-width: 1100px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @media (max-width: 560px)  { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .btsd_kpi {
+        display: flex; align-items: center; gap: 14px;
+        background: var(--btsd-card);
+        border: 1px solid var(--btsd-border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--btsd-shadow);
+        transition: transform .15s ease, box-shadow .15s ease;
+        &--clickable {
+            cursor: pointer;
+            &:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15,23,42,.12); }
+        }
+        .btsd_kpi_icon {
+            flex: 0 0 auto; width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
+        }
+        .btsd_kpi_body { min-width: 0; }
+        .btsd_kpi_value { font-size: 24px; font-weight: 700; line-height: 1.1; }
+        .btsd_kpi_affix { font-size: 14px; font-weight: 600; color: var(--btsd-muted); }
+        .btsd_kpi_title {
+            font-size: 12.5px; color: var(--btsd-muted); margin-top: 3px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+    }
+
+    .btsd_chart_row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+        @media (max-width: 992px) { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .btsd_chart_card {
+        background: var(--btsd-card);
+        border: 1px solid var(--btsd-border);
+        border-radius: 16px;
+        padding: 18px 20px;
+        box-shadow: var(--btsd-shadow);
+        grid-column: span 1;
+        &--full { grid-column: 1 / -1; }
+
+        .btsd_chart_head { margin-bottom: 12px; }
+        .btsd_chart_title { font-size: 15px; font-weight: 700; margin: 0; }
+        .btsd_chart_note { color: var(--btsd-muted); font-size: 11.5px; }
+        .btsd_chart_canvas_wrap { position: relative; height: 320px; }
+    }
+
+    // View switcher above a card. Sits outside the card so it reads as a
+    // control over what follows, not as part of the data.
+    .btsd_switchbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 4px 2px -6px;
+    }
+    .btsd_switch_label {
+        font-size: 11.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--btsd-muted);
+        margin: 0;
+    }
+    // The pill group itself is .btsd_periods / .btsd_period_btn, shared with the
+    // header period filter — deliberately not restyled here, so both controls
+    // stay identical if either is ever changed.
+
+    // Month board — six month columns, each a proportional bar plus the deals
+    // behind it. Bars share one scale so the months compare honestly.
+    .btsd_board {
+        .btsd_board_head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .btsd_board_summary { text-align: right; white-space: nowrap; }
+        .btsd_board_total { font-size: 20px; font-weight: 800; line-height: 1.1; }
+        .btsd_board_sub { color: var(--btsd-muted); font-size: 11.5px; }
+
+        // minmax(0, 1fr), never plain 1fr: a grid track defaults to a min size
+        // of auto, so a single long opportunity name would widen its column
+        // past its share, overflow the grid and push the WHOLE dashboard into
+        // horizontal scroll (which also drags the sticky header out of view).
+        // Allowing the track to shrink below its content is what lets the
+        // ellipsis rules further down actually take effect.
+        .btsd_board_grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+            align-items: start;
+            @media (max-width: 1200px) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            @media (max-width: 700px)  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        .btsd_month {
+            // Same reason as the track sizing above, for the card's own children.
+            min-width: 0;
+            border: 1px solid var(--btsd-border);
+            border-radius: 12px;
+            padding: 10px 10px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .15s, box-shadow .15s, transform .15s;
+            &:hover {
+                border-color: rgba(79, 70, 229, 0.45);
+                box-shadow: 0 4px 14px rgba(0, 0, 0, .07);
+                transform: translateY(-1px);
+            }
+            &--empty { opacity: .55; cursor: default; &:hover { transform: none; box-shadow: none; } }
+        }
+
+        // Fixed-height rail so every bar is measured against the same baseline.
+        .btsd_month_barwrap {
+            height: 110px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .btsd_month_bar {
+            width: 62%;
+            border-radius: 6px 6px 2px 2px;
+            min-height: 3px;
+        }
+
+        .btsd_month_amount { font-size: 13px; font-weight: 700; }
+        .btsd_month_label  { font-size: 12px; font-weight: 600; margin-top: 2px; }
+        .btsd_month_year   { color: var(--btsd-muted); font-weight: 500; }
+        .btsd_month_count  { color: var(--btsd-muted); font-size: 11px; }
+
+        .btsd_month_list {
+            margin-top: 10px;
+            border-top: 1px dashed var(--btsd-border);
+            padding-top: 8px;
+            text-align: left;
+        }
+        .btsd_lead {
+            padding: 6px 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            &:hover { background: rgba(79, 70, 229, 0.07); }
+            + .btsd_lead { margin-top: 2px; }
+        }
+        .btsd_lead_name {
+            font-size: 11.5px;
+            font-weight: 600;
+            // Long opportunity names must not stretch the column.
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .btsd_lead_meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            font-size: 10.5px;
+            color: var(--btsd-muted);
+            // min-width: 0 for the same reason as the grid tracks — a flex item
+            // will not shrink below its content without it, so the customer
+            // name would push the amount out of the card instead of truncating.
+            span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            &--faint { opacity: .75; }
+        }
+        .btsd_lead_amt { font-weight: 700; color: inherit; white-space: nowrap; }
+        .btsd_lead_more {
+            font-size: 10.5px;
+            color: var(--btsd-muted);
+            padding: 4px 6px;
+            font-style: italic;
+        }
+
+        .btsd_board_toggle {
+            margin-top: 12px;
+            width: 100%;
+            background: transparent;
+            border: 1px dashed var(--btsd-border);
+            border-radius: 10px;
+            padding: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--btsd-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            &:hover { color: inherit; border-color: rgba(79, 70, 229, 0.45); }
+        }
+    }
+
+    // Executive-wise report table. Scrolls inside its own card rather than
+    // widening the dashboard, so a long salesperson list cannot push the page
+    // into horizontal scroll.
+    .btsd_table_wrap {
+        overflow-x: auto;
+        max-height: 360px;
+        overflow-y: auto;
+    }
+
+    .btsd_table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+
+        th, td {
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--btsd-border);
+            text-align: left;
+            white-space: nowrap;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background: var(--btsd-card);
+            color: var(--btsd-muted);
+            font-weight: 600;
+            font-size: 11.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            z-index: 1;
+        }
+        td { font-weight: 500; }
+        .btsd_td--num { text-align: right; font-variant-numeric: tabular-nums; }
+        tbody tr:last-child td { border-bottom: 0; }
+        .btsd_tr--clickable {
+            cursor: pointer;
+            &:hover { background: rgba(79, 70, 229, 0.06); }
+        }
+
+        // Totals row. Pinned to the bottom of the scroll area so the figure a
+        // manager reconciles against the KPI cards stays on screen however long
+        // the executive list is.
+        tfoot {
+            position: sticky;
+            bottom: 0;
+            z-index: 1;
+
+            td {
+                background: var(--btsd-card);
+                border-top: 2px solid var(--btsd-border);
+                border-bottom: 0;
+                font-weight: 700;
+            }
+        }
+    }
+
+    // Inverted funnel (Sales Funnel) — tapering trapezoids forming a cone,
+    // with the 01/02/… stage number in a left gutter and a closing tip.
+    .btsd_funnel {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 16px 8px 8px;
+
+        .btsd_funnel_row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btsd_funnel_num {
+            flex: 0 0 56px;
+            text-align: right;
+            font-size: 30px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .btsd_funnel_bandwrap {
+            flex: 1 1 auto;
+            position: relative;
+            height: 58px;
+        }
+        .btsd_funnel_band {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-align: center;
+            padding: 0 8px;
+            transition: clip-path 0.3s ease;
+        }
+        .btsd_funnel_label {
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1.15;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .btsd_funnel_value {
+            font-weight: 700;
+            font-size: 12px;
+            opacity: 0.92;
+            margin-top: 2px;
+        }
+        .btsd_funnel_row--tip .btsd_funnel_bandwrap {
+            height: 34px;
+        }
+        .btsd_funnel_tip {
+            position: absolute;
+            inset: 0;
+            opacity: 0.85;
+        }
+        .btsd_funnel_empty {
+            color: var(--btsd-muted);
+            padding: 20px;
+            text-align: center;
+        }
+    }
+}

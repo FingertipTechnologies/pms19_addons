@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_recruitment_candidate_list" model="ir.ui.view">
+        <field name="name">recruitment.candidate.list</field>
+        <field name="model">recruitment.candidate</field>
+        <field name="arch" type="xml">
+            <list string="Candidates"
+                  decoration-info="candidate_status in ('new','screened')"
+                  decoration-warning="candidate_status=='interview'"
+                  decoration-success="candidate_status in ('selected','offered','joined')"
+                  decoration-danger="candidate_status=='rejected'">
+                <field name="candidate_name"/>
+                <field name="mobile_number"/>
+                <field name="email"/>
+                <field name="applied_position"/>
+                <field name="total_experience"/>
+                <field name="expected_ctc"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="source"/>
+                <field name="candidate_status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recruitment_candidate_kanban" model="ir.ui.view">
+        <field name="name">recruitment.candidate.kanban</field>
+        <field name="model">recruitment.candidate</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="candidate_status">
+                <field name="candidate_name"/>
+                <field name="applied_position"/>
+                <field name="total_experience"/>
+                <field name="expected_ctc"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <strong><field name="candidate_name"/></strong>
+                            <div><field name="applied_position"/></div>
+                            <div>Exp: <field name="total_experience"/> yrs</div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_recruitment_candidate_form" model="ir.ui.view">
+        <field name="name">recruitment.candidate.form</field>
+        <field name="model">recruitment.candidate</field>
+        <field name="arch" type="xml">
+            <form string="Candidate">
+                <header>
+                    <field name="candidate_status" widget="statusbar"
+                           options="{'clickable': '1'}"
+                           statusbar_visible="new,screened,interview,selected,offered,joined,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_interviews" type="object"
+                                class="oe_stat_button" icon="fa-comments">
+                            <field name="interview_count" widget="statinfo"
+                                   string="Interviews"/>
+                        </button>
+                        <button name="action_view_offers" type="object"
+                                class="oe_stat_button" icon="fa-envelope">
+                            <field name="offer_count" widget="statinfo"
+                                   string="Offers"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="candidate_name"/>
+                        <h1><field name="candidate_name" placeholder="Candidate Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Contact">
+                            <field name="mobile_number"/>
+                            <field name="email"/>
+                            <field name="current_location"/>
+                            <field name="preferred_location"/>
+                        </group>
+                        <group string="Source">
+                            <field name="source"/>
+                            <field name="referred_by"/>
+                        </group>
+                        <group string="Application">
+                            <field name="applied_position"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Experience" name="exp">
+                            <group>
+                                <group>
+                                    <field name="current_company"/>
+                                    <field name="current_designation"/>
+                                </group>
+                                <group>
+                                    <field name="total_experience"/>
+                                    <field name="relevant_experience"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Compensation" name="comp">
+                            <group>
+                                <group>
+                                    <field name="current_ctc"/>
+                                    <field name="expected_ctc"/>
+                                </group>
+                                <group>
+                                    <field name="notice_period"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Documents &amp; Links" name="docs">
+                            <group>
+                                <field name="resume_attachment" widget="many2many_binary_preview"/>
+                                <field name="linkedin_url"/>
+                                <field name="portfolio_github_url"/>
+                            </group>
+                        </page>
+                        <page string="Skills" name="skills">
+                            <field name="skill_ids" widget="many2many_tags"
+                                   options="{'color_field': 'color', 'no_create_edit': False}"
+                                   placeholder="e.g. Apex, LWC, Odoo"/>
+                        </page>
+                        <page string="Remarks" name="remarks">
+                            <field name="remarks"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_recruitment_candidate_search" model="ir.ui.view">
+        <field name="name">recruitment.candidate.search</field>
+        <field name="model">recruitment.candidate</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="candidate_name"/>
+                <field name="mobile_number"/>
+                <field name="email"/>
+                <field name="applied_position"/>
+                <field name="source"/>
+                <field name="skill_ids"/>
+                <filter name="new" string="New"
+                        domain="[('candidate_status','=','new')]"/>
+                <filter name="interview" string="Interview Stage"
+                        domain="[('candidate_status','=','interview')]"/>
+                <filter name="selected" string="Selected"
+                        domain="[('candidate_status','=','selected')]"/>
+                <filter name="offered" string="Offered"
+                        domain="[('candidate_status','=','offered')]"/>
+                <filter name="joined" string="Joined"
+                        domain="[('candidate_status','=','joined')]"/>
+                <group name="group_by">
+                    <filter name="group_position" string="Position"
+                            context="{'group_by': 'applied_position'}"/>
+                    <filter name="group_status" string="Status"
+                            context="{'group_by': 'candidate_status'}"/>
+                    <filter name="group_source" string="Source"
+                            context="{'group_by': 'source'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_recruitment_candidate" model="ir.actions.act_window">
+        <field name="name">Candidates</field>
+        <field name="res_model">recruitment.candidate</field>
+        <field name="view_mode">list,kanban,form</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="js_error_logger_bootstrap" inherit_id="web.webclient_bootstrap">
+        <t t-set="head_web" position="inside">
+            <script type="text/javascript">
+                (function () {
+                    function causeChain(err) {
+                        var chain = [];
+                        var c = err &amp;&amp; err.cause;
+                        var depth = 0;
+                        while (c &amp;&amp; depth &lt; 6) {
+                            chain.push({
+                                message: c.message ? c.message : String(c),
+                                stack: c.stack ? c.stack : "",
+                            });
+                            c = c.cause;
+                            depth++;
+                        }
+                        return chain;
+                    }
+                    function report(payload) {
+                        try {
+                            var body = JSON.stringify(payload);
+                            if (navigator.sendBeacon) {
+                                navigator.sendBeacon(
+                                    "/js_error_log",
+                                    new Blob([body], {type: "text/plain"})
+                                );
+                            } else {
+                                fetch("/js_error_log", {
+                                    method: "POST",
+                                    headers: {"Content-Type": "text/plain"},
+                                    body: body,
+                                    keepalive: true,
+                                });
+                            }
+                        } catch (e) {
+                            /* swallow */
+                        }
+                    }
+                    window.addEventListener("error", function (e) {
+                        report({
+                            kind: "window.error",
+                            message: e.message,
+                            source: e.filename,
+                            line: e.lineno,
+                            col: e.colno,
+                            stack: e.error &amp;&amp; e.error.stack ? e.error.stack : "",
+                            causes: causeChain(e.error),
+                        });
+                    });
+                    window.addEventListener("unhandledrejection", function (e) {
+                        var r = e.reason || {};
+                        report({
+                            kind: "unhandledrejection",
+                            message: r.message ? r.message : String(r),
+                            stack: r.stack ? r.stack : "",
+                            causes: causeChain(r),
+                        });
+                    });
+                })();
+            </script>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_ai_sales_insights.AiChart">
+        <div class="aisi_chart_wrap">
+            <canvas t-ref="canvas"/>
+        </div>
+    </t>
+
+    <t t-name="ft_ai_sales_insights.BlockRenderer">
+        <div class="aisi_block">
+
+            <!-- KPI tiles -->
+            <div t-if="props.block.type === 'kpi_tiles'" class="aisi_block_kpis">
+                <h4 t-if="props.block.title"><t t-esc="props.block.title"/></h4>
+                <div class="aisi_kpi_row">
+                    <InsightKpi t-foreach="props.block._items or []" t-as="k"
+                                t-key="k_index" kpi="k"/>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div t-elif="props.block.type === 'table'" class="aisi_block_table">
+                <h4 t-if="props.block.title"><t t-esc="props.block.title"/></h4>
+                <div class="aisi_table_scroll">
+                    <table class="aisi_table">
+                        <thead>
+                            <tr>
+                                <th t-foreach="props.block.columns" t-as="col" t-key="col_index">
+                                    <t t-esc="col.label or col.key"/>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="props.block._rows or []" t-as="row" t-key="row_index">
+                                <td t-foreach="props.block.columns" t-as="col" t-key="col_index">
+                                    <t t-esc="cell(row, col.key)"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div t-elif="isChart" class="aisi_block_chart">
+                <h4 t-if="props.block.title"><t t-esc="props.block.title"/></h4>
+                <AiChart block="props.block"/>
+            </div>
+
+            <!-- Section / callout: reuse the existing section renderer -->
+            <InsightSection t-elif="props.block.type === 'section' or props.block.type === 'callout'"
+                            section="props.block"/>
+
+        </div>
+    </t>
+
+</templates>

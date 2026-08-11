@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Portal users may only read tickets where they are the customer. -->
+    <record id="rule_ft_helpdesk_ticket_portal" model="ir.rule">
+        <field name="name">Helpdesk Ticket: portal users see own tickets</field>
+        <field name="model_id" ref="model_ft_helpdesk_ticket"/>
+        <field name="domain_force">[('customer_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!--
+        Portal access to project.custom.milestone is handled via sudo()
+        in the portal controller, which only fetches milestones for the
+        ticket's project.  The ticket itself is already protected by the
+        rule above, so no separate milestone rule is needed.
+    -->
+
+</odoo>

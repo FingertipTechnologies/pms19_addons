@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Inject the AI Summary button + panel into the Project Dashboard,
+         without editing ft_project_dashboard's own template. -->
+    <t t-inherit="ft_project_dashboard.ProjectDashboard" t-inherit-mode="extension">
+
+        <xpath expr="//button[@t-on-click='refresh']" position="before">
+            <button class="ftpd_btn ftpd_btn--ai" t-on-click="toggleAi"
+                    t-att-class="{ 'ftpd_btn--ai-on': aiState.open }" title="AI Summary">
+                <i class="fa fa-magic"/> AI Summary
+            </button>
+        </xpath>
+
+        <xpath expr="//div[hasclass('ftpd_header')]" position="after">
+            <div class="ftpd_ai" t-if="aiState.open">
+                <div class="ftpd_ai_bar">
+                    <div class="ftpd_ai_left">
+                        <i class="fa fa-magic"/>
+                        <span class="ftpd_ai_heading">AI Project Summary</span>
+                        <select class="ftpd_ai_purpose" t-on-change="onAiPurpose"
+                                title="What to analyse">
+                            <t t-foreach="aiState.purposes" t-as="pu" t-key="pu.id">
+                                <option t-att-value="pu.id" t-att-selected="pu.id === aiState.purposeId">
+                                    <t t-esc="pu.name"/>
+                                </option>
+                            </t>
+                        </select>
+                        <select class="ftpd_ai_period" t-on-change="onAiPeriod">
+                            <t t-foreach="aiState.periods" t-as="p" t-key="p.key">
+                                <option t-att-value="p.key" t-att-selected="p.key === aiState.period">
+                                    <t t-esc="p.label"/>
+                                </option>
+                            </t>
+                        </select>
+                        <button class="ftpd_btn ftpd_btn--primary" t-on-click="runAiSummary"
+                                t-att-disabled="aiState.loading or !aiState.configured">
+                            <i class="fa fa-bolt"/> Generate
+                        </button>
+                    </div>
+                    <span class="ftpd_ai_meta" t-if="aiMeta.model">
+                        <t t-if="aiMeta.purpose"><t t-esc="aiMeta.purpose"/> · </t>
+                        <t t-esc="aiMeta.provider"/> · <t t-esc="aiMeta.model"/>
+                        <t t-if="aiMeta.tokens"> · <t t-esc="aiMeta.tokens"/> tokens</t>
+                    </span>
+                </div>
+
+                <div class="ftpd_ai_note" t-if="!aiState.configured">
+                    <i class="fa fa-exclamation-triangle"/>
+                    No AI provider configured. Set one under
+                    <b>AI Insights &gt; Configuration &gt; Settings</b>
+                    (or use Ollama — no key needed).
+                </div>
+
+                <div class="ftpd_ai_loading" t-if="aiState.loading">
+                    <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                    <span>Analysing project data with AI…</span>
+                </div>
+
+                <div class="ftpd_ai_error" t-if="aiState.error and !aiState.loading">
+                    <i class="fa fa-exclamation-circle"/> <t t-esc="aiState.error"/>
+                </div>
+
+                <div class="ftpd_ai_result" t-if="aiState.result and !aiState.loading">
+                    <t t-if="aiSummary">
+                        <p class="ftpd_ai_headline" t-if="aiSummary.headline" t-esc="aiSummary.headline"/>
+                        <div class="ftpd_ai_sections">
+                            <div class="ftpd_ai_section" t-foreach="aiSummary.sections or []" t-as="sec" t-key="sec_index"
+                                 t-att-class="'ftpd_ai_section--' + (sec.tone || 'info')">
+                                <div class="ftpd_ai_section_head">
+                                    <i class="fa" t-att-class="sec.icon || 'fa-info-circle'"/>
+                                    <h4><t t-esc="sec.title"/></h4>
+                                </div>
+                                <p class="ftpd_ai_body" t-if="sec.body" t-esc="sec.body"/>
+                                <ul t-if="sec.items and sec.items.length">
+                                    <li t-foreach="sec.items" t-as="it" t-key="it_index"><t t-esc="it"/></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="ftpd_ai_cols">
+                            <div class="ftpd_ai_box" t-if="aiSummary.recommended_actions and aiSummary.recommended_actions.length">
+                                <h4><i class="fa fa-check-square-o"/> Recommended Actions</h4>
+                                <ul>
+                                    <li t-foreach="aiSummary.recommended_actions" t-as="a" t-key="a_index"><t t-esc="a"/></li>
+                                </ul>
+                            </div>
+                            <div class="ftpd_ai_box ftpd_ai_box--warn" t-if="aiSummary.warnings and aiSummary.warnings.length">
+                                <h4><i class="fa fa-exclamation-triangle"/> Warnings</h4>
+                                <ul>
+                                    <li t-foreach="aiSummary.warnings" t-as="w" t-key="w_index"><t t-esc="w"/></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </t>
+                    <div class="ftpd_ai_box" t-if="!aiSummary and aiRaw">
+                        <pre t-esc="aiRaw"/>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_trainee_review_list" model="ir.ui.view">
+        <field name="name">ft.trainee.review.list</field>
+        <field name="model">ft.trainee.review</field>
+        <field name="arch" type="xml">
+            <!-- Column widths are a fixed budget, not a per-column preference.
+                 A `width` in the arch becomes BOTH the min and the max width
+                 (see getWidthSpecs in web/.../list/column_width_hook.js), so a
+                 column that carries one can never give space back. Description
+                 is the only column with no width, which makes it the only one
+                 that absorbs the slack — and equally the only one that pays for
+                 the others. Once the fixed widths outgrew the table, Description
+                 collapsed to the 80px minimum every text column has and left the
+                 viewport behind the horizontal scrollbar. Adding the review
+                 period's second day, and lengthening the first one's label to
+                 "Review Period From", is what tipped it over.
+
+                 So each width below is the narrowest that keeps its header
+                 readable, not a round number:
+                  - the four multi-word headers wrap onto two lines rather than
+                    reserving one line's worth of width for a label sitting over
+                    a single digit (see training_lists.css). They need their
+                    longest WORD, not their whole label.
+                  - "Communication" and "Understanding" are single words that
+                    cannot wrap, so they keep the width they already had.
+                  - Date carries no width at all: Odoo sizes a datetime column to
+                    exactly one formatted value, which is better than any number
+                    guessed here.
+
+                 The scores are left-aligned (see training_lists.css) so the
+                 digit stays under its header instead of drifting to the far edge
+                 of the column. Description renders truncated to one line, so row
+                 heights stay uniform and the score columns read straight down. -->
+            <list string="Reviews" class="o_ft_review_list">
+                <field name="trainee_id" width="150px"/>
+                <field name="reviewer_id" width="130px"/>
+                <field name="review_period" width="105px"/>
+                <field name="review_period_to" width="100px"/>
+                <field name="attitude" width="90px"/>
+                <field name="communication" width="125px"/>
+                <field name="understanding" width="125px"/>
+                <field name="technical" width="95px"/>
+                <field name="problem_solving" width="95px"/>
+                <field name="self_dependency" width="105px"/>
+                <field name="create_date" string="Date"/>
+                <field name="description" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_trainee_review_form" model="ir.ui.view">
+        <field name="name">ft.trainee.review.form</field>
+        <field name="model">ft.trainee.review</field>
+        <field name="arch" type="xml">
+            <form string="Review">
+                <sheet>
+                    <notebook>
+                        <page string="Review" name="review">
+                            <group>
+                                <group>
+                                    <field name="trainee_id"
+                                           options="{'no_create': True}"/>
+                                    <field name="reviewer_id"
+                                           options="{'no_create': True}"/>
+                                    <field name="review_period"/>
+                                    <field name="review_period_to"/>
+                                    <field name="description"/>
+                                </group>
+                                <group string="Scores (0 - 10)">
+                                    <field name="attitude"/>
+                                    <field name="communication"/>
+                                    <field name="understanding"/>
+                                    <field name="technical"/>
+                                    <field name="problem_solving"/>
+                                    <field name="self_dependency"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_trainee_review_search" model="ir.ui.view">
+        <field name="name">ft.trainee.review.search</field>
+        <field name="model">ft.trainee.review</field>
+        <field name="arch" type="xml">
+            <search string="Reviews">
+                <field name="trainee_id"/>
+                <field name="reviewer_id"/>
+                <field name="review_period"/>
+                <field name="review_period_to"/>
+
+                <filter name="my_reviews" string="My Reviews"
+                        domain="[('reviewer_id', '=', uid)]"/>
+                <separator/>
+                <filter name="no_review_period" string="Review Period Not Set"
+                        domain="[('review_period', '=', False)]"/>
+
+                <group name="group_by">
+                    <filter name="group_trainee" string="Trainee"
+                            context="{'group_by': 'trainee_id'}"/>
+                    <filter name="group_reviewer" string="Reviewer"
+                            context="{'group_by': 'reviewer_id'}"/>
+                    <filter name="group_review_period" string="Review Period"
+                            context="{'group_by': 'review_period'}"/>
+                    <filter name="group_date" string="Date"
+                            context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_trainee_review" model="ir.actions.act_window">
+        <field name="name">Review</field>
+        <field name="res_model">ft.trainee.review</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_trainee_review_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record a trainee review</p>
+            <p>Pick a trainee and score them across the competencies (0 - 10).</p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Replace the grouped "Sales" dropdown (crm.crm_menu_sales) with
+        standalone top-level menus under the CRM app:
+          - My Pipeline + Customers take the place of the old Sales menu (start)
+          - My Quotations + Teams move to the end, just before Configuration
+
+        We update ONLY parent_id + sequence on the existing menus (via <record>)
+        so their original name, action and groups are preserved. The empty
+        "Sales" grouping menu is then hidden.
+    -->
+
+    <!-- Start: Customers (0), then My Pipeline (1) - where "Sales" used to sit.
+         Customers at seq 0 so it leads; My Pipeline at seq 1 stays ahead of the
+         custom "Activity Management" menu (also seq 1, sorts after by id). -->
+    <record id="crm.res_partner_menu_customer" model="ir.ui.menu">
+        <field name="name">Customers</field>
+        <field name="parent_id" ref="crm.crm_menu_root"/>
+        <field name="sequence">0</field>
+    </record>
+    <record id="crm.menu_crm_opportunities" model="ir.ui.menu">
+        <field name="name">My Pipeline</field>
+        <field name="parent_id" ref="crm.crm_menu_root"/>
+        <field name="sequence">1</field>
+    </record>
+
+    <!-- End: My Quotations (21), Teams (22), Reporting (23), Upload (24),
+         then Configuration (25). Upload is set to 24 in bt_contact_customization. -->
+    <record id="sale_crm.sale_order_menu_quotations_crm" model="ir.ui.menu">
+        <field name="name">My Quotations</field>
+        <field name="parent_id" ref="crm.crm_menu_root"/>
+        <field name="sequence">21</field>
+    </record>
+    <record id="crm.sales_team_menu_team_pipeline" model="ir.ui.menu">
+        <field name="name">Teams</field>
+        <field name="parent_id" ref="crm.crm_menu_root"/>
+        <field name="sequence">22</field>
+    </record>
+    <!-- Reporting just before Upload/Configuration -->
+    <record id="crm.crm_menu_report" model="ir.ui.menu">
+        <field name="sequence">23</field>
+    </record>
+
+    <!-- Hide the now-empty "Sales" grouping menu -->
+    <record id="crm.crm_menu_sales" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Hide the top-level "Leads" menu (permanent, upgrade-safe) -->
+    <record id="crm.crm_menu_leads" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+</odoo>

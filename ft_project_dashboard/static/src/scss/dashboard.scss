@@ -1,0 +1,728 @@
+.ftpd_dashboard {
+    --ftpd-bg: #f4f6fb;
+    --ftpd-card: #ffffff;
+    --ftpd-text: #1e293b;
+    --ftpd-muted: #64748b;
+    --ftpd-border: #e2e8f0;
+    --ftpd-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+
+    position: relative;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--ftpd-bg);
+    color: var(--ftpd-text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: 32px;
+
+    // ---------------- Header ----------------
+    .ftpd_header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 24px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--ftpd-border);
+
+        .ftpd_header_title {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .ftpd_header_tools {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+    }
+
+    .ftpd_periods {
+        display: inline-flex;
+        background: #eef2f7;
+        border-radius: 10px;
+        padding: 3px;
+    }
+    .ftpd_period_btn {
+        border: 0;
+        background: transparent;
+        color: var(--ftpd-muted);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 7px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all .15s ease;
+
+        &--active {
+            background: #4f46e5;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, .35);
+        }
+    }
+
+    .ftpd_custom {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        .ftpd_date {
+            border: 1px solid var(--ftpd-border);
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+    }
+
+    .ftpd_btn {
+        border: 1px solid var(--ftpd-border);
+        background: #fff;
+        border-radius: 8px;
+        padding: 7px 11px;
+        cursor: pointer;
+        color: var(--ftpd-muted);
+        &:hover { color: var(--ftpd-text); }
+        &--primary {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+        }
+    }
+
+    .ftpd_loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 60vh;
+        color: #4f46e5;
+    }
+
+    .ftpd_content {
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    // ---------------- Sections ----------------
+    // .ftpd_content is a flex column with its own gap, so a section only needs
+    // to space its heading from its own grid.
+    .ftpd_section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .ftpd_section_title {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+        color: var(--ftpd-muted);
+        margin: 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--ftpd-border);
+    }
+    // Section heading with its own filter bar. The rule moves onto the head so
+    // it still spans the full width once the title stops being the only child.
+    .ftpd_section_head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--ftpd-border);
+
+        .ftpd_section_title {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+    }
+    .ftpd_section_tools {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        // Sibling of the .ftpd_filter boxes here, so it needs its own styling
+        // rather than the nested variant used inside table tools.
+        .ftpd_filter_clear {
+            border: 1px solid var(--ftpd-border);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--ftpd-muted);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 10px;
+            cursor: pointer;
+
+            &:hover { color: var(--ftpd-text); }
+        }
+    }
+
+    // ---------------- KPI cards ----------------
+    // 4 columns, not 5: Project Summary has 16 cards, so 4 divides them into
+    // four full rows with no orphan card left stranded on a row of its own, and
+    // the Hours Utilisation role and activity rows hold exactly 4 each. The
+    // breakpoints below step down through divisors of 16 for the same reason.
+    // The one row that does not hold a multiple of 4 opts into --five below.
+    .ftpd_kpi_grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        align-items: stretch;
+
+        // 16 only divides by 4, 2 and 1, so those are the only counts that
+        // leave no orphan. 4 columns is held down to 1100px (~260px per card)
+        // rather than dropping to 2 early and wasting the width.
+        @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 560px)  { grid-template-columns: 1fr; }
+    }
+
+    // A 5-card row (Task Hour Totals). Steps 5 -> 3 -> 2 -> 1 rather than
+    // through divisors: 5 is prime, so no column count divides it evenly and
+    // the aim is instead to avoid leaving a single card alone on a row. 5 across
+    // needs ~1400px to keep each card readable; at 3 across it breaks 3+2.
+    .ftpd_kpi_grid--five {
+        grid-template-columns: repeat(5, 1fr);
+
+        @media (max-width: 1400px) { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 560px)  { grid-template-columns: 1fr; }
+    }
+
+    // A 6-card row: the By Role split while unclassified hours still exist.
+    // 6 divides cleanly, so every step down leaves full rows — 3+3, then 2+2+2.
+    .ftpd_kpi_grid--six {
+        grid-template-columns: repeat(6, 1fr);
+
+        @media (max-width: 1500px) { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 560px)  { grid-template-columns: 1fr; }
+    }
+
+    // Row label inside a section that stacks several KPI grids. Hours
+    // Utilisation needs these: its three rows are measured off different
+    // records over different date anchors, so a reader has to be able to see
+    // which basis a card belongs to. Lighter than .ftpd_section_title so the
+    // section heading still reads as the parent.
+    .ftpd_kpi_subhead {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--ftpd-muted);
+        margin: 4px 0 0;
+
+        small {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0;
+            text-transform: none;
+            opacity: .8;
+        }
+    }
+
+    .ftpd_kpi {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--ftpd-card);
+        border: 1px solid var(--ftpd-border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--ftpd-shadow);
+        transition: transform .15s ease, box-shadow .15s ease;
+
+        &--clickable {
+            cursor: pointer;
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 18px rgba(15, 23, 42, .12);
+            }
+        }
+
+        .ftpd_kpi_icon {
+            flex: 0 0 auto;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .ftpd_kpi_body { min-width: 0; }
+        .ftpd_kpi_value {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+        .ftpd_kpi_suffix {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ftpd-muted);
+            margin-left: 3px;
+        }
+        .ftpd_kpi_title {
+            font-size: 12.5px;
+            color: var(--ftpd-muted);
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    // ---------------- Chart cards ----------------
+    .ftpd_chart_row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+
+        @media (max-width: 992px) { grid-template-columns: 1fr; }
+    }
+
+    .ftpd_chart_card {
+        background: var(--ftpd-card);
+        border: 1px solid var(--ftpd-border);
+        border-radius: 16px;
+        padding: 18px 20px;
+        box-shadow: var(--ftpd-shadow);
+        grid-column: span 1;
+
+        &--full { grid-column: 1 / -1; }
+
+        .ftpd_chart_head {
+            margin-bottom: 12px;
+        }
+        .ftpd_chart_title {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .ftpd_chart_note {
+            color: var(--ftpd-muted);
+            font-size: 11.5px;
+        }
+        .ftpd_chart_canvas_wrap {
+            position: relative;
+            height: 300px;
+        }
+        &--full .ftpd_chart_canvas_wrap {
+            height: 340px;
+        }
+    }
+
+    // Full-width data tables (Project Status / Resource Status)
+    .ftpd_table_head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .ftpd_table_tools {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .ftpd_search {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        border: 1px solid var(--ftpd-border);
+        border-radius: 8px;
+        padding: 6px 10px;
+        color: var(--ftpd-muted);
+
+        i { font-size: 12px; }
+        input {
+            border: 0;
+            outline: 0;
+            background: transparent;
+            font-size: 13px;
+            color: var(--ftpd-text);
+            min-width: 180px;
+        }
+    }
+    // An abbreviated column header carrying a hover explanation. The dotted
+    // underline is the only thing telling a reader the tooltip exists — DE, OTD,
+    // RWR and DWD mean nothing without it.
+    .ftpd_th_help {
+        cursor: help;
+        text-decoration: underline dotted currentColor;
+        text-underline-offset: 3px;
+    }
+
+    // Lead-in for the group of row-filter toggles ("Show  [ ] Closed ...").
+    // Sits outside the boxes so it does not read as one of the options.
+    .ftpd_toggle_lead {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+        color: var(--ftpd-muted);
+        // Cancels the tools strip's 10px gap on the right so the label sits
+        // against its first checkbox rather than floating between controls.
+        margin-right: -4px;
+    }
+
+    // Boolean row filter sitting beside a table's search box. Matches
+    // .ftpd_search's height and border so the two read as one control strip.
+    // Several of these sit side by side, so the padding is tighter than
+    // .ftpd_search's and the label is kept to a single word.
+    .ftpd_table_toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        background: #fff;
+        border: 1px solid var(--ftpd-border);
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ftpd-muted);
+        cursor: pointer;
+        user-select: none;
+
+        &:hover { color: var(--ftpd-text); }
+
+        input {
+            margin: 0;
+            cursor: pointer;
+            // Same indigo the KPI cards default to; there is no --ftpd-primary.
+            accent-color: #4F46E5;
+        }
+        // How many rows the toggle is holding back. Reads as a count badge, not
+        // a status colour — it is neutral information, not a warning.
+        .ftpd_toggle_count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            padding: 0 6px;
+            border-radius: 10px;
+            background: var(--ftpd-border);
+            color: var(--ftpd-text);
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 18px;
+        }
+    }
+
+    // Type-to-search picker replacing a long <select>. Sized and bordered like
+    // .ftpd_filter so the header still reads as one row of controls.
+    .ftpd_ss {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        border: 1px solid var(--ftpd-border);
+        border-radius: 8px;
+        padding: 4px 8px;
+        color: var(--ftpd-muted);
+
+        .ftpd_ss_ico { font-size: 12px; }
+        .ftpd_ss_caret { font-size: 12px; pointer-events: none; }
+
+        // Caption in place of the magnifier, when the picker is labelled. Same
+        // treatment as .ftpd_filter_name so a labelled search box and a labelled
+        // dropdown read as the same kind of control.
+        .ftpd_ss_name {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--ftpd-muted);
+            white-space: nowrap;
+            padding-right: 6px;
+            border-right: 1px solid var(--ftpd-border);
+        }
+
+        .ftpd_ss_input {
+            border: 0;
+            outline: 0;
+            background: transparent;
+            font-size: 13px;
+            color: var(--ftpd-text);
+            min-width: 190px;
+            padding: 2px 0;
+        }
+
+        // Floats over the cards below, so it needs to sit above them. The header
+        // is sticky, hence a z-index high enough to clear it too.
+        .ftpd_ss_menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            min-width: 240px;
+            max-height: 320px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid var(--ftpd-border);
+            border-radius: 8px;
+            box-shadow: var(--ftpd-shadow);
+            z-index: 60;
+            padding: 4px;
+        }
+        .ftpd_ss_opt {
+            padding: 7px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--ftpd-text);
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            // Keyboard and mouse share one highlight, so arrowing down and
+            // hovering cannot disagree about what Enter would pick.
+            &--active { background: var(--ftpd-bg); }
+            &--chosen { font-weight: 700; color: #4F46E5; }
+        }
+        .ftpd_ss_empty,
+        .ftpd_ss_more {
+            padding: 7px 10px;
+            font-size: 12px;
+            color: var(--ftpd-muted);
+        }
+        .ftpd_ss_more { border-top: 1px solid var(--ftpd-border); }
+    }
+
+    // Per-table filter controls (status dropdown + start-date range).
+    .ftpd_filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        border: 1px solid var(--ftpd-border);
+        border-radius: 8px;
+        padding: 4px 8px;
+        color: var(--ftpd-muted);
+
+        .ftpd_filter_label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        // Says which picker this is. Without it the two boxes are
+        // indistinguishable once a name is selected, and they do not mean the
+        // same thing: PM is "projects this person manages", Developer is "the
+        // person who booked it". Separated by a hairline so the label reads as a
+        // caption rather than as part of the value.
+        .ftpd_filter_name {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--ftpd-muted);
+            white-space: nowrap;
+            padding-right: 6px;
+            border-right: 1px solid var(--ftpd-border);
+        }
+        .ftpd_filter_select {
+            border: 0;
+            outline: 0;
+            background: transparent;
+            font-size: 13px;
+            color: var(--ftpd-text);
+            cursor: pointer;
+            min-width: 130px;
+        }
+        .ftpd_date {
+            border: 1px solid var(--ftpd-border);
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-size: 12.5px;
+            color: var(--ftpd-text);
+            background: #fff;
+        }
+        .ftpd_filter_clear {
+            padding: 4px 7px;
+            line-height: 1;
+        }
+    }
+    .ftpd_table_foot {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 12px;
+
+        .ftpd_table_count {
+            font-size: 12px;
+            color: var(--ftpd-muted);
+        }
+        .ftpd_link {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4f46e5;
+            padding: 5px 10px;
+        }
+    }
+    .ftpd_table_wrap {
+        overflow-x: auto;
+        // Vertical scroll for long tables; the sticky header stays visible.
+        &.ftpd_table_scroll {
+            max-height: 520px;
+            overflow-y: auto;
+        }
+    }
+    .ftpd_table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+
+        th, td {
+            padding: 9px 14px;
+            text-align: left;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--ftpd-border);
+        }
+        thead th {
+            background: #eef0f4;
+            font-weight: 700;
+            color: var(--ftpd-muted);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.03em;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+
+            &.ftpd_sortable {
+                cursor: pointer;
+                user-select: none;
+            }
+            &.ftpd_sortable:hover {
+                background: rgba(79, 70, 229, 0.10);
+                color: var(--ftpd-text);
+            }
+            &.ftpd_sort_active { color: #4f46e5; }
+            .ftpd_sort_ico { margin-left: 4px; font-size: 11px; }
+        }
+        tbody tr:hover {
+            background: rgba(79, 70, 229, 0.04);
+        }
+        .ftpd_num {
+            text-align: right;
+        }
+        // Consolidated resource groups: rows after the first for a resource have
+        // a blank name/role cell, and rows within a group drop the divider so
+        // consecutive projects for one person read as a single entry.
+        tbody tr.ftpd_group_mid td {
+            border-bottom-color: transparent;
+        }
+        .ftpd_res_name {
+            font-weight: 600;
+        }
+        .ftpd_table_empty {
+            text-align: center;
+            color: var(--ftpd-muted);
+            padding: 18px;
+        }
+    }
+
+    // Pagination bar: rows-per-page selector + Prev / numbered pages / Next.
+    .ftpd_pager {
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+
+        .ftpd_pager_left {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .ftpd_page_size {
+            font-size: 12px;
+            color: var(--ftpd-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+
+            select {
+                border: 1px solid var(--ftpd-border);
+                border-radius: 6px;
+                padding: 3px 6px;
+                font-size: 12px;
+                background: #fff;
+                color: var(--ftpd-text);
+                cursor: pointer;
+            }
+        }
+        .ftpd_pager_ctrls {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .ftpd_page_btn {
+            min-width: 32px;
+            padding: 5px 9px;
+            font-size: 13px;
+            border: 1px solid var(--ftpd-border);
+            background: #fff;
+            color: var(--ftpd-text);
+            border-radius: 6px;
+            cursor: pointer;
+
+            &:hover:not(:disabled) { background: rgba(79, 70, 229, 0.08); }
+            &:disabled { opacity: 0.5; cursor: default; }
+            &--active {
+                background: #4f46e5;
+                border-color: #4f46e5;
+                color: #fff;
+                font-weight: 700;
+            }
+        }
+    }
+
+    // The canvas fills its wrapper. In fixed-Y scroll mode only the inner scroll
+    // area moves horizontally; the axis overlay stays pinned on the left.
+    .ftpd_chart_scrollarea { height: 100%; }
+    .ftpd_chart_canvas_inner { height: 100%; }
+    .ftpd_chart_canvas_wrap.ftpd_chart_scroll {
+        .ftpd_chart_scrollarea {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .ftpd_chart_axis {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 54px;
+            z-index: 2;
+            background: var(--ftpd-card, #fff);
+            pointer-events: none;
+        }
+    }
+    // HTML legend for scroll mode (the canvas legend would scroll off-screen).
+    .ftpd_chart_legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 8px;
+        font-size: 12px;
+        color: var(--ftpd-text);
+
+        .ftpd_legend_item { display: inline-flex; align-items: center; gap: 6px; }
+        .ftpd_legend_dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    }
+}

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Email template sent to the customer when a new ticket is created -->
+        <record id="mt_ticket_new_email_template" model="mail.template">
+            <field name="name">Helpdesk Ticket: New Ticket Confirmation</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="subject">Ticket {{ object.ticket_no }} - Confirmation</field>
+            <field name="partner_to">{{ object.customer_id.id }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Dear <strong>{{ object.customer_id.name }}</strong>,</p>
+    <p style="font-size: 14px; color: #333;">Thank you for contacting us. Your support ticket has been created successfully.</p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0; border-radius: 6px;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 150px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Ticket Number</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px; font-weight: 600; color: #6f42c1;">{{ object.ticket_no }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; width: 150px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Subject</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">{{ object.name }}</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 150px; font-size: 13px; color: #555; vertical-align: top;">Description</td>
+            <td style="padding: 10px 14px; font-size: 14px;">{{ object.description or 'N/A' }}</td>
+        </tr>
+    </table>
+    <p style="font-size: 14px; color: #333;">Our support team will review your request and get back to you as soon as possible.</p>
+    <p style="font-size: 14px; color: #333;">Best regards,<br/><strong>{{ object.company_id.name }} Support Team</strong></p>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Email template sent to the internal user when a ticket is assigned to them -->
+        <record id="mt_ticket_assigned_email_template" model="mail.template">
+            <field name="name">Helpdesk Ticket: Assigned to You</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="subject">[{{ object.ticket_no }}] Ticket assigned to you: {{ object.name }}</field>
+            <field name="email_to">{{ object.assigned_user_id.email }}</field>
+            <field name="body_html"><![CDATA[
+<p>Hello <t t-out="object.assigned_user_id.name or ''"/>,</p>
+<p>A helpdesk ticket has been assigned to you:</p>
+<table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+    <tr>
+        <td style="padding: 8px; font-weight: bold; width: 150px;">Ticket:</td>
+        <td style="padding: 8px;"><t t-out="object.ticket_no"/> – <t t-out="object.name or ''"/></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Customer:</td>
+        <td style="padding: 8px;"><t t-out="object.customer_id.name or ''"/></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Priority:</td>
+        <td style="padding: 8px;">
+            <t t-set="priority_label" t-value="dict(object._fields['priority'].selection).get(object.priority, '')"/>
+            <t t-out="priority_label"/>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Team:</td>
+        <td style="padding: 8px;"><t t-out="object.team_id.name or 'Unassigned'"/></td>
+    </tr>
+</table>
+<p>Please review this ticket at your earliest convenience.</p>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>

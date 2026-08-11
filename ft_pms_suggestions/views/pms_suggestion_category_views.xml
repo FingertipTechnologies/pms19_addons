@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pms_suggestion_category_list" model="ir.ui.view">
+        <field name="name">pms.suggestion.category.list</field>
+        <field name="model">pms.suggestion.category</field>
+        <field name="arch" type="xml">
+            <list string="Modules / Areas" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_pms_suggestion_category" model="ir.actions.act_window">
+        <field name="name">Suggestion Modules / Areas</field>
+        <field name="res_model">pms.suggestion.category</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Seed a few common areas so the dropdown isn't empty on install -->
+    <record id="category_general" model="pms.suggestion.category">
+        <field name="name">General PMS</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="category_training" model="pms.suggestion.category">
+        <field name="name">Training</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="category_helpdesk" model="pms.suggestion.category">
+        <field name="name">Help Desk</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="category_sfa" model="pms.suggestion.category">
+        <field name="name">SFA / CRM</field>
+        <field name="sequence">40</field>
+    </record>
+
+    <!-- One category per app on the Homepage/App Switcher, so a suggestion
+         can be tagged to the exact module it's about. Additive only —
+         the 5 categories above are untouched so existing suggestions
+         keep their current Module/Area. -->
+    <record id="category_pms" model="pms.suggestion.category">
+        <field name="name">PMS (Project)</field>
+        <field name="sequence">15</field>
+    </record>
+    <record id="category_general_app" model="pms.suggestion.category">
+        <field name="name">General (Asset / Expense)</field>
+        <field name="sequence">25</field>
+    </record>
+    <record id="category_marketing" model="pms.suggestion.category">
+        <field name="name">Marketing</field>
+        <field name="sequence">35</field>
+    </record>
+    <record id="category_employees" model="pms.suggestion.category">
+        <field name="name">Employees</field>
+        <field name="sequence">45</field>
+    </record>
+    <record id="category_invoicing" model="pms.suggestion.category">
+        <field name="name">Invoicing</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="category_contacts" model="pms.suggestion.category">
+        <field name="name">Contacts</field>
+        <field name="sequence">55</field>
+    </record>
+    <record id="category_todo" model="pms.suggestion.category">
+        <field name="name">To-do</field>
+        <field name="sequence">60</field>
+    </record>
+    <record id="category_performance_reviews" model="pms.suggestion.category">
+        <field name="name">Performance Reviews</field>
+        <field name="sequence">65</field>
+    </record>
+    <record id="category_scorecard" model="pms.suggestion.category">
+        <field name="name">Scorecard</field>
+        <field name="sequence">70</field>
+    </record>
+    <record id="category_targets" model="pms.suggestion.category">
+        <field name="name">Targets</field>
+        <field name="sequence">75</field>
+    </record>
+    <record id="category_ai_insights" model="pms.suggestion.category">
+        <field name="name">AI Insights</field>
+        <field name="sequence">80</field>
+    </record>
+    <record id="category_suggestions" model="pms.suggestion.category">
+        <field name="name">Suggestions</field>
+        <field name="sequence">85</field>
+    </record>
+
+    <record id="category_other" model="pms.suggestion.category">
+        <field name="name">Other</field>
+        <field name="sequence">100</field>
+    </record>
+
+</odoo>

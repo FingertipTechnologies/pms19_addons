@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- OWL client action -->
+    <record id="action_ft_finance_dashboard" model="ir.actions.client">
+        <field name="name">Finance Dashboard</field>
+        <field name="tag">ft_finance_dashboard</field>
+    </record>
+
+    <!-- Menu under Odoo's Dashboards app, visible to Admin only -->
+    <menuitem id="menu_finance_dashboard_in_dashboards"
+              name="Finance"
+              parent="spreadsheet_dashboard.spreadsheet_dashboard_menu_root"
+              action="action_ft_finance_dashboard"
+              sequence="30"
+              groups="base.group_system"/>
+
+</odoo>

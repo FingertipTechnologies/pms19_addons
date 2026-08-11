@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- OWL client action -->
+    <record id="action_ft_hr_dashboard" model="ir.actions.client">
+        <field name="name">HR Dashboard</field>
+        <field name="tag">ft_hr_dashboard</field>
+    </record>
+
+    <!-- Menu under Odoo's Dashboards app. Visible to Administrators and HR
+         only: a user needs ANY one of these groups. hr.group_hr_manager is not
+         listed because it implies hr.group_hr_user, so HR Administrators are
+         already covered. -->
+    <menuitem id="menu_hr_dashboard_in_dashboards"
+              name="HR"
+              parent="spreadsheet_dashboard.spreadsheet_dashboard_menu_root"
+              action="action_ft_hr_dashboard"
+              sequence="50"
+              groups="base.group_system,hr.group_hr_user"/>
+
+</odoo>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <!-- HR Root Menu (child of Scorecard root) -->
+        <menuitem id="menu_hr_scorecard_root"
+                  name="HR"
+                  parent="Project_Scorecards.menu_project_scorecard_root"
+                  sequence="40"/>
+
+        <!-- HR Recruitment List View -->
+        <record id="view_hr_recruitment_list" model="ir.ui.view">
+            <field name="name">hr.recruitment.scorecard.list</field>
+            <field name="model">hr.recruitment.scorecard</field>
+            <field name="arch" type="xml">
+                <list>
+                     <field name="date"/>
+                    <field name="department_id"/>
+                    <field name="positions"/>
+                   <field name="description"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- HR Recruitment Form View -->
+        <record id="view_hr_recruitment_form" model="ir.ui.view">
+            <field name="name">hr.recruitment.scorecard.form</field>
+            <field name="model">hr.recruitment.scorecard</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <field name="date" />
+                        </group>
+                        <group>
+                            <field name="department_id"/>
+                            <field name="positions"/>
+                            <field name="description"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- HR Recruitment Pivot View -->
+        <record id="view_hr_recruitment_pivot" model="ir.ui.view">
+            <field name="name">hr.recruitment.scorecard.pivot</field>
+            <field name="model">hr.recruitment.scorecard</field>
+            <field name="arch" type="xml">
+                <pivot>
+                    <field name="department_id" type="row"/>
+                    <field name="date" type="row"/>
+                    <field name="positions" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- HR Recruitment Action -->
+        <record id="action_hr_recruitment_scorecard" model="ir.actions.act_window">
+            <field name="name">Recruitment Scorecard</field>
+            <field name="res_model">hr.recruitment.scorecard</field>
+            <field name="view_mode">list,form,pivot</field>
+        </record>
+
+        <!-- HR Recruitment Menu -->
+        <menuitem id="menu_hr_recruitment_scorecard"
+                  name="Recruitment"
+                  parent="Project_Scorecards.menu_hr_scorecard_root"
+                  action="action_hr_recruitment_scorecard"
+                  sequence="10"
+                  groups="group_scorecard_hr"/>
+
+    </data>
+</odoo>

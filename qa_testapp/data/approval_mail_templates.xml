@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Bug: Pending Approval - notify PM -->
+        <record id="email_template_bug_pending_approval" model="mail.template">
+            <field name="name">QA Bug: Pending Approval (to PM)</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_ticket"/>
+            <field name="subject">Approval needed: Bug [{{ object.bug_id }}] {{ object.title }}</field>
+            <field name="email_to">{{ object.approver_id.email_formatted }}</field>
+            <field name="description">Sent to the project manager when a Junior QA submits a bug for approval.</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="font-size: 14px;">
+                        Hello <t t-out="object.approver_id.name"/>,<br/><br/>
+                        A new bug has been submitted for your approval on project
+                        <strong><t t-out="object.project_id.name"/></strong>.
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 140px; font-weight: bold; color: #555;">Bug ID:</td><td><t t-out="object.bug_id"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Title:</td><td><t t-out="object.title"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Reporter:</td><td><t t-out="object.reporter_id.name"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Severity:</td><td><t t-out="object.severity"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Priority:</td><td><t t-out="object.priority"/></td></tr>
+                    </table>
+                    <p>
+                        <a t-att-href="'/web#id=%s&amp;model=qa_testapp.ticket&amp;view_type=form' % object.id"
+                           style="background-color: #714B67; padding: 10px 20px; text-decoration: none; color: #fff; border-radius: 5px; font-weight: bold;">
+                            Review &amp; Approve
+                        </a>
+                    </p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Bug: Approved - notify assignee -->
+        <record id="email_template_bug_approved" model="mail.template">
+            <field name="name">QA Bug: Approved (to Assignee)</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_ticket"/>
+            <field name="subject">Bug Approved - Please start: [{{ object.bug_id }}] {{ object.title }}</field>
+            <field name="email_to">{{ object.assignee_id.email_formatted }}</field>
+            <field name="description">Sent to the assignee once the PM approves a bug.</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="font-size: 14px;">
+                        Hello <t t-out="object.assignee_id.name"/>,<br/><br/>
+                        The following bug has been approved by
+                        <strong><t t-out="object.approver_id.name"/></strong>
+                        and assigned to you. Please start working on it.
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 140px; font-weight: bold; color: #555;">Bug ID:</td><td><t t-out="object.bug_id"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Title:</td><td><t t-out="object.title"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Project:</td><td><t t-out="object.project_id.name"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Severity:</td><td><t t-out="object.severity"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Priority:</td><td><t t-out="object.priority"/></td></tr>
+                    </table>
+                    <p>
+                        <a t-att-href="'/web#id=%s&amp;model=qa_testapp.ticket&amp;view_type=form' % object.id"
+                           style="background-color: #28a745; padding: 10px 20px; text-decoration: none; color: #fff; border-radius: 5px; font-weight: bold;">
+                            Open Bug Ticket
+                        </a>
+                    </p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Bug: Created & Assigned by PM (no approval step) - notify assignee -->
+        <record id="email_template_bug_assigned" model="mail.template">
+            <field name="name">QA Bug: Assigned (to Assignee)</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_ticket"/>
+            <field name="subject">New Bug assigned - Please start: [{{ object.bug_id }}] {{ object.title }}</field>
+            <field name="email_to">{{ object.assignee_id.email_formatted }}</field>
+            <field name="description">Sent to the assignee when a PM creates a bug directly (no approval step needed).</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="font-size: 14px;">
+                        Hello <t t-out="object.assignee_id.name"/>,<br/><br/>
+                        A new bug has been created and assigned to you. Please start working on it.
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 140px; font-weight: bold; color: #555;">Bug ID:</td><td><t t-out="object.bug_id"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Title:</td><td><t t-out="object.title"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Project:</td><td><t t-out="object.project_id.name"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Severity:</td><td><t t-out="object.severity"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Priority:</td><td><t t-out="object.priority"/></td></tr>
+                    </table>
+                    <p>
+                        <a t-att-href="'/web#id=%s&amp;model=qa_testapp.ticket&amp;view_type=form' % object.id"
+                           style="background-color: #28a745; padding: 10px 20px; text-decoration: none; color: #fff; border-radius: 5px; font-weight: bold;">
+                            Open Bug Ticket
+                        </a>
+                    </p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Bug: Rejected - notify reporter -->
+        <record id="email_template_bug_rejected" model="mail.template">
+            <field name="name">QA Bug: Rejected (to Reporter)</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_ticket"/>
+            <field name="subject">Bug Rejected: [{{ object.bug_id }}] {{ object.title }}</field>
+            <field name="email_to">{{ object.reporter_id.email_formatted }}</field>
+            <field name="description">Sent to the reporter when the PM rejects a bug.</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="font-size: 14px;">
+                        Hello <t t-out="object.reporter_id.name"/>,<br/><br/>
+                        Your bug submission has been rejected by
+                        <strong><t t-out="object.approver_id.name"/></strong>.
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 140px; font-weight: bold; color: #555;">Bug ID:</td><td><t t-out="object.bug_id"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Title:</td><td><t t-out="object.title"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Reason:</td><td><t t-out="object.rejection_reason or '(no reason given)'"/></td></tr>
+                    </table>
+                </div>
+            </field>
+        </record>
+
+        <!-- Test Case: Pending Approval - notify PM -->
+        <record id="email_template_test_case_pending_approval" model="mail.template">
+            <field name="name">QA Test Case: Pending Approval (to PM)</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_test_case"/>
+            <field name="subject">Approval needed: Test Case [{{ object.test_case_id }}] {{ object.test_case_title }}</field>
+            <field name="email_to">{{ object.approver_id.email_formatted }}</field>
+            <field name="description">Sent to the project manager when a Junior QA submits a test case for approval.</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="font-size: 14px;">
+                        Hello <t t-out="object.approver_id.name"/>,<br/><br/>
+                        A new test case has been submitted for your approval on project
+                        <strong><t t-out="object.project_id.name"/></strong>.
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 140px; font-weight: bold; color: #555;">Test Case ID:</td><td><t t-out="object.test_case_id"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Title:</td><td><t t-out="object.test_case_title"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Created by:</td><td><t t-out="object.create_uid.name"/></td></tr>
+                    </table>
+                    <p>
+                        <a t-att-href="'/web#id=%s&amp;model=qa_testapp.test_case&amp;view_type=form' % object.id"
+                           style="background-color: #714B67; padding: 10px 20px; text-decoration: none; color: #fff; border-radius: 5px; font-weight: bold;">
+                            Review &amp; Approve
+                        </a>
+                    </p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Test Case: Approved - notify creator -->
+        <record id="email_template_test_case_approved" model="mail.template">
+            <field name="name">QA Test Case: Approved (to Creator)</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_test_case"/>
+            <field name="subject">Test Case Approved: [{{ object.test_case_id }}] {{ object.test_case_title }}</field>
+            <field name="email_to">{{ object.create_uid.email_formatted }}</field>
+            <field name="description">Sent to the creator when the PM approves a test case.</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="font-size: 14px;">
+                        Hello <t t-out="object.create_uid.name"/>,<br/><br/>
+                        Your test case has been approved by
+                        <strong><t t-out="object.approver_id.name"/></strong>.
+                        You may now proceed with execution.
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 140px; font-weight: bold; color: #555;">Test Case ID:</td><td><t t-out="object.test_case_id"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Title:</td><td><t t-out="object.test_case_title"/></td></tr>
+                    </table>
+                </div>
+            </field>
+        </record>
+
+        <!-- Test Case: Rejected - notify creator -->
+        <record id="email_template_test_case_rejected" model="mail.template">
+            <field name="name">QA Test Case: Rejected (to Creator)</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_test_case"/>
+            <field name="subject">Test Case Rejected: [{{ object.test_case_id }}] {{ object.test_case_title }}</field>
+            <field name="email_to">{{ object.create_uid.email_formatted }}</field>
+            <field name="description">Sent to the creator when the PM rejects a test case.</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="font-size: 14px;">
+                        Hello <t t-out="object.create_uid.name"/>,<br/><br/>
+                        Your test case has been rejected by
+                        <strong><t t-out="object.approver_id.name"/></strong>.
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr><td style="width: 140px; font-weight: bold; color: #555;">Test Case ID:</td><td><t t-out="object.test_case_id"/></td></tr>
+                        <tr><td style="font-weight: bold; color: #555;">Reason:</td><td><t t-out="object.rejection_reason or '(no reason given)'"/></td></tr>
+                    </table>
+                </div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

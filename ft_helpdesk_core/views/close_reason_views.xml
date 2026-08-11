@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_close_reason_tree" model="ir.ui.view">
+        <field name="name">ft.helpdesk.close.reason.tree</field>
+        <field name="model">ft.helpdesk.close.reason</field>
+        <field name="arch" type="xml">
+            <list string="Close Reasons" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="is_cancel_reason"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_close_reason_list" model="ir.actions.act_window">
+        <field name="name">Close Reasons</field>
+        <field name="res_model">ft.helpdesk.close.reason</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

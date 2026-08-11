@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_learning_topic_trainee,learning.topic.trainee,model_ft_learning_topic,ft_training.group_training_trainee,1,0,0,0
+access_learning_topic_manager,learning.topic.manager,model_ft_learning_topic,ft_training.group_training_manager,1,1,1,1
+access_phase_user,phase.user,model_ft_phase,base.group_user,1,0,0,0
+access_phase_manager,phase.manager,model_ft_phase,ft_training.group_training_manager,1,1,1,1
+access_today_learning_trainee,today.learning.trainee,model_ft_today_learning,ft_training.group_training_trainee,1,1,1,0
+access_today_learning_manager,today.learning.manager,model_ft_today_learning,ft_training.group_training_manager,1,1,1,1
+access_trainee_review_user,trainee.review.user,model_ft_trainee_review,base.group_user,1,0,0,0
+access_trainee_review_admin,trainee.review.admin,model_ft_trainee_review,ft_training.group_training_manager,1,1,1,1
+access_trainee_review_hr,trainee.review.hr,model_ft_trainee_review,hr.group_hr_user,1,1,1,1
+access_assignment_user,assignment.user,model_ft_assignment,base.group_user,1,0,0,0
+access_assignment_admin,assignment.admin,model_ft_assignment,ft_training.group_training_manager,1,1,1,1
+access_assignment_hr,assignment.hr,model_ft_assignment,hr.group_hr_user,1,1,1,1
+access_evaluation_user,evaluation.user,model_ft_evaluation,base.group_user,1,0,0,0
+access_evaluation_admin,evaluation.admin,model_ft_evaluation,ft_training.group_training_manager,1,1,1,1
+access_evaluation_hr,evaluation.hr,model_ft_evaluation,hr.group_hr_user,1,1,1,1

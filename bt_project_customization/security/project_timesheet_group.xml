@@ -1,0 +1,33 @@
+<odoo>
+
+    <record id="module_category_project_timesheet" model="ir.module.category">
+        <field name="name">Project Timesheet Groups</field>
+        <field name="description">Groups for managing project and timesheet hierarchy</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record model="res.groups.privilege" id="res_groups_privilege_project_timesheet">
+        <field name="name">Project Timesheet Groups</field>
+        <field name="category_id" ref="module_category_project_timesheet"/>
+    </record>
+    <record id="group_dev_group" model="res.groups">
+        <field name="name">Developer Group</field>
+        <field name="privilege_id" ref="res_groups_privilege_project_timesheet"/>
+    </record>
+
+    <record id="group_qa_group" model="res.groups">
+        <field name="name">QA Group</field>
+        <field name="privilege_id" ref="res_groups_privilege_project_timesheet"/>
+    </record>
+
+    <record id="group_project_manager" model="res.groups">
+        <field name="name">Project Manager Group</field>
+        <field name="privilege_id" ref="res_groups_privilege_project_timesheet"/>
+    </record>
+
+    <record id="group_architecture" model="res.groups">
+        <field name="name">Architecture Group</field>
+        <field name="privilege_id" ref="res_groups_privilege_project_timesheet"/>
+    </record>
+
+</odoo>

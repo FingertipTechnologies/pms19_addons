@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_ft_helpdesk_config_sla_policies"
+              name="SLA Policies"
+              parent="ft_helpdesk_core.menu_ft_helpdesk_configuration"
+              action="action_sla_policy"
+              sequence="80"/>
+
+    <menuitem id="menu_ft_helpdesk_sla_status"
+              name="SLA Status"
+              parent="ft_helpdesk_core.menu_ft_helpdesk_tickets"
+              action="action_sla_status"
+              sequence="40"
+              groups="ft_helpdesk_core.group_ft_helpdesk_team_lead"/>
+</odoo>

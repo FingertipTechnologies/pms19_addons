@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+<data>
+ 
+        <record id="module_category_scorecard" model="ir.module.category">
+<field name="name">Scorecard</field>
+<field name="sequence" eval="20"/>
+</record>
+ 
+        <record model="res.groups.privilege" id="res_groups_privilege_scorecard">
+            <field name="name">Scorecard</field>
+            <field name="category_id" ref="module_category_scorecard"/>
+        </record>
+        <record id="group_scorecard_project" model="res.groups">
+<field name="name">Project</field>
+<field name="privilege_id" ref="res_groups_privilege_scorecard"/>
+</record>
+ 
+        <record id="group_scorecard_sales" model="res.groups">
+<field name="name">Sales</field>
+<field name="privilege_id" ref="res_groups_privilege_scorecard"/>
+</record>
+ 
+        <record id="group_scorecard_hr" model="res.groups">
+<field name="name">HR</field>
+<field name="privilege_id" ref="res_groups_privilege_scorecard"/>
+</record>
+ 
+        <record id="group_scorecard_marketing" model="res.groups">
+<field name="name">Marketing</field>
+<field name="privilege_id" ref="res_groups_privilege_scorecard"/>
+</record>
+ 
+        <record id="group_scorecard_finance" model="res.groups">
+<field name="name">Finance</field>
+<field name="privilege_id" ref="res_groups_privilege_scorecard"/>
+</record>
+ 
+        <record id="group_scorecard_manager" model="res.groups">
+<field name="name">Manager</field>
+<field name="privilege_id" ref="res_groups_privilege_scorecard"/>
+<field name="implied_ids" eval="[
+
+                (4, ref('group_scorecard_project')),
+
+                (4, ref('group_scorecard_sales')),
+
+                (4, ref('group_scorecard_hr')),
+
+                (4, ref('group_scorecard_marketing')),
+
+                (4, ref('group_scorecard_finance'))
+
+            ]"/>
+</record>
+ 
+        
+</data>
+</odoo>
+ 

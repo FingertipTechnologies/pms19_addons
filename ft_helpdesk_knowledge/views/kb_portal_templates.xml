@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================= -->
+    <!-- KB INDEX PAGE                 -->
+    <!-- ============================= -->
+    <template id="kb_portal_index" name="Knowledge Base Index">
+        <t t-call="ft_helpdesk_portal.portal_support_home">
+            <!-- Page Header -->
+            <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                <i class="fa fa-book fa-2x mb-2" style="opacity: 0.85;"/>
+                <h2 class="fw-bold mb-1">Knowledge Base</h2>
+                <p class="mb-0" style="opacity: 0.8;">Find answers, guides, and documentation</p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-6">
+                    <form method="GET" action="/my/support/kb">
+                        <div class="input-group input-group-lg shadow-sm">
+                            <input type="text" name="search" class="form-control"
+                                   t-att-value="search"
+                                   placeholder="Search articles..."/>
+                            <button class="btn px-4 ft-btn-purple" type="submit">
+                                <i class="fa fa-search"/>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+                    <!-- Search Results -->
+                    <t t-if="articles">
+                        <h4 class="fw-semibold mb-3">
+                            Search Results for "<t t-out="search"/>"
+                        </h4>
+                        <div class="row g-3 mb-5">
+                            <t t-foreach="articles" t-as="article">
+                                <div class="col-md-6">
+                                    <a t-attf-href="/my/support/kb/#{article.slug}"
+                                       class="text-decoration-none">
+                                        <div class="card border-0 shadow-sm h-100 ft-action-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title fw-semibold text-primary">
+                                                    <i class="fa fa-file-text-o me-2"/>
+                                                    <t t-out="article.name"/>
+                                                </h6>
+                                                <p t-if="article.summary"
+                                                   class="card-text text-muted small mb-0">
+                                                    <t t-out="article.summary[:150]"/>...
+                                                </p>
+                                                <div class="mt-2 d-flex gap-2 align-items-center small text-muted">
+                                                    <span><i class="fa fa-eye me-1"/><t t-out="article.view_count"/> views</span>
+                                                    <span><i class="fa fa-folder-o me-1"/><t t-out="article.category_id.name"/></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+
+                    <t t-if="search and not articles">
+                        <div class="text-center py-5 mb-5">
+                            <i class="fa fa-search fa-3x text-muted mb-3"/>
+                            <h5 class="text-muted">No articles found for "<t t-out="search"/>"</h5>
+                            <p class="text-muted">Try different keywords or browse categories below.</p>
+                        </div>
+                    </t>
+
+                    <!-- Category Grid -->
+                    <t t-if="not search or not articles">
+                        <h4 class="fw-semibold mb-3" t-if="search">Browse by Category</h4>
+                        <div class="row g-4">
+                            <t t-foreach="categories" t-as="cat">
+                                <div class="col-md-4 col-lg-3">
+                                    <a t-attf-href="/my/support/kb/category/#{cat.id}"
+                                       class="text-decoration-none">
+                                        <div class="card border-0 shadow-sm h-100 ft-action-card text-center">
+                                            <div class="card-body py-4">
+                                                <div class="ft-icon-circle bg-primary bg-opacity-10 text-primary mx-auto mb-3">
+                                                    <i t-attf-class="fa #{cat.icon or 'fa-folder-open'} fa-2x"/>
+                                                </div>
+                                                <h6 class="card-title fw-semibold">
+                                                    <t t-out="cat.name"/>
+                                                </h6>
+                                                <p class="card-text text-muted small">
+                                                    <t t-out="category_article_counts.get(cat.id, 0)"/> articles
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+
+                    <!-- CTA -->
+                    <div class="text-center mt-5 py-4">
+                        <p class="text-muted mb-2">Can't find what you're looking for?</p>
+                        <a href="/my/support/ticket/new" class="btn ft-btn-purple">
+                            <i class="fa fa-plus me-1"/> Submit a Support Ticket
+                        </a>
+                    </div>
+        </t>
+    </template>
+
+    <!-- ============================= -->
+    <!-- KB CATEGORY PAGE              -->
+    <!-- ============================= -->
+    <template id="kb_portal_category" name="KB Category">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title" t-value="category.name"/>
+            <div class="o_portal_wrap">
+                <div class="container py-4">
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/my/support">Support</a></li>
+                            <li class="breadcrumb-item"><a href="/my/support/kb">Knowledge Base</a></li>
+                            <li class="breadcrumb-item active"><t t-out="category.name"/></li>
+                        </ol>
+                    </nav>
+
+                    <h2 class="fw-bold mb-1">
+                        <i t-attf-class="fa #{category.icon or 'fa-folder-open'} me-2 text-primary"/>
+                        <t t-out="category.name"/>
+                    </h2>
+                    <p t-if="category.description" class="text-muted mb-4">
+                        <t t-out="category.description"/>
+                    </p>
+
+                    <t t-if="articles">
+                        <div class="list-group list-group-flush">
+                            <t t-foreach="articles" t-as="article">
+                                <a t-attf-href="/my/support/kb/#{article.slug}"
+                                   class="list-group-item list-group-item-action py-3 border-0 shadow-sm mb-2 rounded">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1 fw-medium">
+                                                <i class="fa fa-file-text-o me-2 text-muted"/>
+                                                <t t-out="article.name"/>
+                                            </h6>
+                                            <p t-if="article.summary" class="text-muted small mb-0">
+                                                <t t-out="article.summary[:200]"/>
+                                            </p>
+                                        </div>
+                                        <div class="text-muted small text-nowrap ms-3">
+                                            <i class="fa fa-eye me-1"/>
+                                            <t t-out="article.view_count"/>
+                                        </div>
+                                    </div>
+                                </a>
+                            </t>
+                        </div>
+                    </t>
+
+                    <t t-if="not articles">
+                        <div class="text-center py-5">
+                            <i class="fa fa-file-text-o fa-3x text-muted mb-3"/>
+                            <h5 class="text-muted">No articles in this category yet</h5>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================= -->
+    <!-- KB ARTICLE PAGE               -->
+    <!-- ============================= -->
+    <template id="kb_portal_article" name="KB Article">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title" t-value="article.name"/>
+            <div class="o_portal_wrap">
+                <div class="container py-4">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <!-- Breadcrumb -->
+                            <nav aria-label="breadcrumb" class="mb-3">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/my/support/kb">Knowledge Base</a></li>
+                                    <li class="breadcrumb-item">
+                                        <a t-attf-href="/my/support/kb/category/#{article.category_id.id}">
+                                            <t t-out="article.category_id.name"/>
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item active"><t t-out="article.name"/></li>
+                                </ol>
+                            </nav>
+
+                            <!-- Article -->
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body p-4 p-lg-5">
+                                    <h1 class="fw-bold mb-3"><t t-out="article.name"/></h1>
+                                    <div class="d-flex gap-3 text-muted small mb-4">
+                                        <span><i class="fa fa-user me-1"/><t t-out="article.author_id.name"/></span>
+                                        <span><i class="fa fa-eye me-1"/><t t-out="article.view_count"/> views</span>
+                                    </div>
+                                    <hr/>
+                                    <div class="ft-article-body">
+                                        <t t-out="article.body_html"/>
+                                    </div>
+                                </div>
+
+                                <!-- Helpful Section -->
+                                <div class="card-footer bg-light p-4 text-center">
+                                    <p class="mb-2 fw-medium">Was this article helpful?</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button class="btn btn-outline-success btn-sm px-4"
+                                                onclick="voteArticle(true)">
+                                            <i class="fa fa-thumbs-up me-1"/> Yes
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm px-4"
+                                                onclick="voteArticle(false)">
+                                            <i class="fa fa-thumbs-down me-1"/> No
+                                        </button>
+                                    </div>
+                                    <div id="vote_thanks" style="display:none;" class="mt-2">
+                                        <span class="text-success"><i class="fa fa-check me-1"/>Thanks for your feedback!</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script type="text/javascript">
+                                function voteArticle(helpful) {
+                                    fetch('/my/support/kb/vote/<t t-out="article.id"/>', {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/json'},
+                                        body: JSON.stringify({
+                                            jsonrpc: '2.0', method: 'call',
+                                            params: {article_id: <t t-out="article.id"/>, helpful: helpful}
+                                        })
+                                    }).then(function() {
+                                        document.getElementById('vote_thanks').style.display = '';
+                                    });
+                                }
+                            </script>
+                        </div>
+
+                        <!-- Sidebar: Related Articles -->
+                        <div class="col-lg-4">
+                            <t t-if="related_articles">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white py-3">
+                                        <h6 class="mb-0 fw-semibold">Related Articles</h6>
+                                    </div>
+                                    <div class="list-group list-group-flush">
+                                        <t t-foreach="related_articles" t-as="rel">
+                                            <a t-attf-href="/my/support/kb/#{rel.slug}"
+                                               class="list-group-item list-group-item-action py-3">
+                                                <i class="fa fa-file-text-o me-2 text-muted"/>
+                                                <t t-out="rel.name"/>
+                                            </a>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <div class="card border-0 shadow-sm mt-4">
+                                <div class="card-body text-center py-4">
+                                    <p class="mb-2 text-muted">Still need help?</p>
+                                    <a href="/my/support/ticket/new" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-plus me-1"/> Create a Ticket
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

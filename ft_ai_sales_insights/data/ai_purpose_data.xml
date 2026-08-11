@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate="1": admins may edit prompts freely; upgrades won't overwrite. -->
+    <data noupdate="1">
+
+        <record id="purpose_executive_summary" model="ft.ai.insights.purpose">
+            <field name="name">Executive Sales Summary</field>
+            <field name="code">executive_summary</field>
+            <field name="sequence">10</field>
+            <field name="icon">fa-briefcase</field>
+            <field name="description">Board-level health, revenue, pipeline, forecast, risks and priorities.</field>
+            <field name="prompt">Produce an executive sales summary covering overall commercial health, revenue achieved, pipeline strength, a short forecast, the top risks, and the 3-5 priorities leadership should act on now. Give an overall_score (0-100) with a score_label.</field>
+        </record>
+
+        <record id="purpose_sales_performance" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Sales Performance</field>
+            <field name="code">sales_performance</field>
+            <field name="sequence">20</field>
+            <field name="icon">fa-line-chart</field>
+            <field name="prompt">Analyse overall sales performance: revenue vs pipeline, momentum, conversion and win rate, and how performance is distributed across teams and salespeople. Call out what is driving or dragging results.</field>
+        </record>
+
+        <record id="purpose_pipeline_health" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Pipeline Health</field>
+            <field name="code">pipeline_health</field>
+            <field name="sequence">30</field>
+            <field name="icon">fa-filter</field>
+            <field name="prompt">Assess pipeline health: total pipeline value, stage distribution and coverage, stalled and aging opportunities, high-risk deals, and opportunities missing activities. Flag concentration risk and gaps.</field>
+        </record>
+
+        <record id="purpose_win_loss" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Win/Loss Ratio</field>
+            <field name="code">win_loss</field>
+            <field name="sequence">40</field>
+            <field name="icon">fa-balance-scale</field>
+            <field name="prompt">Analyse the win/loss ratio and its trend. Break down wins vs losses by value and count, identify patterns in what is won vs lost, and recommend how to shift the ratio.</field>
+        </record>
+
+        <record id="purpose_conversion_rates" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Conversion Rates</field>
+            <field name="code">conversion_rates</field>
+            <field name="sequence">50</field>
+            <field name="icon">fa-exchange</field>
+            <field name="prompt">Calculate and explain the conversion funnel: Lead to Opportunity, Opportunity to Quotation, Quotation to Sales Order, and Sales Order to Invoice, using the available data. Identify the weakest transition and how to improve it.</field>
+        </record>
+
+        <record id="purpose_salesperson_performance" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Salesperson Performance</field>
+            <field name="code">salesperson_performance</field>
+            <field name="sequence">60</field>
+            <field name="icon">fa-user</field>
+            <field name="prompt">Analyse individual salesperson performance: revenue, open value, won deals, win rate and average deal size. Populate salesperson_performance with a highlight and a specific coaching suggestion per person.</field>
+        </record>
+
+        <record id="purpose_revenue_forecast" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Revenue Forecast</field>
+            <field name="code">revenue_forecast</field>
+            <field name="sequence">70</field>
+            <field name="icon">fa-area-chart</field>
+            <field name="prompt">Analyse the revenue forecast using pipeline value weighted by probability and expected close timing. Give a forecast range with a confidence level and the assumptions behind it.</field>
+        </record>
+
+        <record id="purpose_quotation_performance" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Quotation Performance</field>
+            <field name="code">quotation_performance</field>
+            <field name="sequence">80</field>
+            <field name="icon">fa-file-text-o</field>
+            <field name="prompt">Analyse quotation performance: open quotation value, acceptance rate and confirmed-order value. Identify where quotations stall and how to lift acceptance.</field>
+        </record>
+
+        <record id="purpose_followup" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Follow-up Effectiveness</field>
+            <field name="code">followup_effectiveness</field>
+            <field name="sequence">90</field>
+            <field name="icon">fa-reply</field>
+            <field name="prompt">Analyse follow-up effectiveness using open and overdue activities against the pipeline. Highlight where follow-up gaps put revenue at risk and recommend a cadence.</field>
+        </record>
+
+        <record id="purpose_customer_acquisition" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Customer Acquisition</field>
+            <field name="code">customer_acquisition</field>
+            <field name="sequence">100</field>
+            <field name="icon">fa-user-plus</field>
+            <field name="prompt">Analyse customer acquisition: new leads and opportunities generated, and which customers represent the largest new opportunity value. Recommend where to focus acquisition effort.</field>
+        </record>
+
+        <record id="purpose_lead_sources" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Lead Sources</field>
+            <field name="code">lead_sources</field>
+            <field name="sequence">110</field>
+            <field name="icon">fa-sitemap</field>
+            <field name="prompt">Analyse lead sources and channels by volume and resulting value/conversion. Identify the best and worst performing sources and where to reallocate effort.</field>
+        </record>
+
+        <record id="purpose_lost_opportunities" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Lost Opportunities</field>
+            <field name="code">lost_opportunities</field>
+            <field name="sequence">120</field>
+            <field name="icon">fa-times-circle</field>
+            <field name="prompt">Analyse lost opportunities: dominant loss reasons, value lost, and likely causes (pricing, slow response, follow-up gaps, competitor). Recommend concrete improvements to recover this revenue.</field>
+        </record>
+
+        <record id="purpose_sales_activities" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Sales Activities</field>
+            <field name="code">sales_activities</field>
+            <field name="sequence">130</field>
+            <field name="icon">fa-tasks</field>
+            <field name="prompt">Analyse sales activity levels (open and overdue activities) relative to pipeline and results. Identify under- or over-servicing and recommend a healthier activity distribution.</field>
+        </record>
+
+        <record id="purpose_sales_cycle" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Sales Cycle Duration</field>
+            <field name="code">sales_cycle</field>
+            <field name="sequence">140</field>
+            <field name="icon">fa-clock-o</field>
+            <field name="prompt">Analyse the average sales cycle duration and its impact on velocity and forecast. Identify stages that lengthen the cycle and how to compress them.</field>
+        </record>
+
+        <record id="purpose_customer_retention" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Customer Retention</field>
+            <field name="code">customer_retention</field>
+            <field name="sequence">150</field>
+            <field name="icon">fa-heart</field>
+            <field name="prompt">Analyse customer retention signals from repeat opportunities and order patterns. Flag customers at risk of churn and recommend retention actions.</field>
+        </record>
+
+        <record id="purpose_upsell" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Upsell Opportunities</field>
+            <field name="code">upsell</field>
+            <field name="sequence">160</field>
+            <field name="icon">fa-arrow-up</field>
+            <field name="prompt">Identify upsell opportunities within the existing customer base using order value and product mix. Prioritise the highest-potential accounts with a suggested next step.</field>
+        </record>
+
+        <record id="purpose_crosssell" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Cross-Sell Opportunities</field>
+            <field name="code">crosssell</field>
+            <field name="sequence">170</field>
+            <field name="icon">fa-random</field>
+            <field name="prompt">Identify cross-sell opportunities based on product revenue distribution and customer purchase patterns. Recommend product pairings and target accounts.</field>
+        </record>
+
+        <record id="purpose_sales_risks" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Sales Risks</field>
+            <field name="code">sales_risks</field>
+            <field name="sequence">180</field>
+            <field name="icon">fa-exclamation-triangle</field>
+            <field name="prompt">Identify the key sales risks: revenue concentration, stalled high-value deals, forecast gaps, follow-up gaps and cycle slippage. Rank risks by likely revenue impact.</field>
+        </record>
+
+        <record id="purpose_revenue_leakage" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Revenue Leakage</field>
+            <field name="code">revenue_leakage</field>
+            <field name="sequence">190</field>
+            <field name="icon">fa-tint</field>
+            <field name="prompt">Identify revenue leakage: expired or stalled quotations, dormant opportunities, missing follow-ups, delayed quotations and lost renewals. Estimate the potential revenue loss and how to plug each leak.</field>
+        </record>
+
+        <record id="purpose_forecast_monthly" model="ft.ai.insights.purpose">
+            <field name="name">Forecast Monthly Revenue</field>
+            <field name="code">forecast_monthly</field>
+            <field name="sequence">200</field>
+            <field name="icon">fa-calendar</field>
+            <field name="prompt">Forecast the likely revenue for the current/next month from pipeline probability, historical conversion, sales velocity and expected close dates. Provide a low/expected/high range with confidence and key assumptions.</field>
+        </record>
+
+        <record id="purpose_sales_coach" model="ft.ai.insights.purpose">
+            <field name="name">AI Sales Coach</field>
+            <field name="code">sales_coach</field>
+            <field name="sequence">210</field>
+            <field name="icon">fa-graduation-cap</field>
+            <field name="prompt">Act as a sales coach. Based on the data, give practical coaching on follow-up cadence, deal prioritisation, objection handling, pipeline management, closing technique and time management. Make each tip specific to what the data shows.</field>
+        </record>
+
+        <record id="purpose_sales_strategy" model="ft.ai.insights.purpose">
+            <field name="name">AI Sales Strategy</field>
+            <field name="code">sales_strategy</field>
+            <field name="sequence">220</field>
+            <field name="icon">fa-chess-board</field>
+            <field name="prompt">Propose a sales strategy for the period ahead: where to focus, which segments and products to push, how to allocate effort across the team, and the measurable goals to track.</field>
+        </record>
+
+        <record id="purpose_custom" model="ft.ai.insights.purpose">
+            <field name="name">Custom Analysis</field>
+            <field name="code">custom</field>
+            <field name="sequence">900</field>
+            <field name="icon">fa-magic</field>
+            <field name="description">General-purpose analysis; edit this prompt for ad-hoc needs.</field>
+            <field name="prompt">Analyse the supplied sales and CRM data and surface the most important, actionable insights for a sales leader, with specific recommended actions and priorities.</field>
+        </record>
+
+        <!-- ============================================================
+             Project purposes (applies_to='project').
+             The payload here is delivery data (projects, resources,
+             task_health, milestones, accounts) — see ProjectDataCollector.
+             Add more by creating records; no Python change needed.
+             ============================================================ -->
+
+        <record id="purpose_project_status" model="ft.ai.insights.purpose">
+            <field name="name">Project Status Summary</field>
+            <field name="code">project_status</field>
+            <field name="applies_to">project</field>
+            <field name="sequence">10</field>
+            <field name="icon">fa-folder-open</field>
+            <field name="description">Overall delivery status: project-wise and resource-wise work, plus task health.</field>
+            <field name="prompt">Produce an executive delivery status summary.
+
+Emit sections in exactly this order, omitting any whose data is absent:
+1. "Project-wise Summary" (fa-folder-open) — used vs estimated hours, completed vs pending tasks, variance_pct.
+2. "Resource-wise Summary" (fa-users) — workload per person from the resources block.
+3. "Task Health" (fa-tasks) — open/overdue/unassigned/no-deadline counts and throughput from task_health.
+4. "Accounts, Opportunities &amp; Activities" (fa-handshake-o) — ONLY if an accounts block is present.
+
+Call out what is on track and what is slipping. Where variance_pct is null there is no estimate to compare against: report that as an estimation gap, never as being on budget.</field>
+        </record>
+
+        <record id="purpose_project_delivery_risk" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Delivery Risk</field>
+            <field name="code">project_delivery_risk</field>
+            <field name="applies_to">project</field>
+            <field name="sequence">20</field>
+            <field name="icon">fa-exclamation-triangle</field>
+            <field name="description">Overdue tasks and projects trending over estimate.</field>
+            <field name="prompt">Assess delivery risk. Use overdue_tasks, no_deadline_tasks and per-project variance_pct to identify which projects are most at risk and why. Rank risks by severity, quantify each, and give a concrete mitigation per risk. Put anything needing immediate attention in warnings.
+
+Emit sections in this order: "At-Risk Delivery" (fa-exclamation-triangle), then "Schedule Gaps" (fa-calendar-times-o) covering work with no deadline.
+
+Only overdue_tasks evidences lateness. A task or project that is merely open, pending or unestimated is NOT late — say the schedule cannot be assessed instead of inferring delay.</field>
+        </record>
+
+        <record id="purpose_project_resource_utilisation" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Resource Utilisation</field>
+            <field name="code">project_resource_utilisation</field>
+            <field name="applies_to">project</field>
+            <field name="sequence">30</field>
+            <field name="icon">fa-users</field>
+            <field name="description">Who is over- or under-loaded, and how work is distributed.</field>
+            <field name="prompt">Analyse resource utilisation from the resources block. Identify over-loaded and under-utilised people using logged hours and pending vs completed task counts, and comment on how evenly work is distributed. Flag key-person concentration risk and recommend specific rebalancing actions.</field>
+        </record>
+
+        <record id="purpose_project_estimate_accuracy" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Estimate Accuracy</field>
+            <field name="code">project_estimate_accuracy</field>
+            <field name="applies_to">project</field>
+            <field name="sequence">40</field>
+            <field name="icon">fa-balance-scale</field>
+            <field name="description">Used vs estimated hours, and which projects consistently over-run.</field>
+            <field name="prompt">Analyse estimation accuracy using used_hours, estimated_hours and variance_pct per project. Identify which projects over-run and which are under-estimated, quantify the gap, and look for patterns. Note where variance_pct is null (no estimate recorded) as an estimation-discipline gap rather than treating it as accurate. Recommend how to improve estimation.</field>
+        </record>
+
+        <record id="purpose_project_milestone_progress" model="ft.ai.insights.purpose">
+            <field name="name">Milestone Billing &amp; Revenue</field>
+            <field name="code">project_milestone_billing</field>
+            <field name="applies_to">project</field>
+            <field name="include_milestones" eval="True"/>
+            <field name="sequence">50</field>
+            <field name="icon">fa-money</field>
+            <field name="description">Delivered-but-unbilled and invoiced-but-unpaid milestone value.</field>
+            <field name="prompt">Analyse milestone BILLING using the milestones block. These are payment milestones (see status_meaning), not a delivery schedule.
+
+Lead with the cash: completed_not_invoiced is delivered work that has never been billed, and awaiting_payment is invoiced work not yet collected. Quantify both in money and count — they are the point of this analysis. Then cover the status mix in by_status and reconcile total_amount, paid_amount and outstanding_amount.
+
+Emit sections in this order:
+1. "Unbilled Value" (fa-money) — completed_not_invoiced, and what to invoice now.
+2. "Collection" (fa-credit-card) — awaiting_payment and outstanding_amount.
+3. "Milestone Mix" (fa-list) — by_status breakdown.
+
+Do NOT comment on delivery timing, delay or progress: these records carry no usable due dates. If no_due_date is high, state once that due dates are not maintained so schedule cannot be assessed, and move on. Never call a milestone late unless it appears in overdue_list.
+
+If the milestones block reports available=false or total=0, say milestone data is unavailable rather than inferring anything.</field>
+        </record>
+
+        <record id="purpose_project_backlog_hygiene" model="ft.ai.insights.purpose">
+            <field name="name">Analyse Backlog Hygiene</field>
+            <field name="code">project_backlog_hygiene</field>
+            <field name="applies_to">project</field>
+            <field name="sequence">60</field>
+            <field name="icon">fa-tasks</field>
+            <field name="description">Unassigned tasks, missing deadlines and stalled backlog.</field>
+            <field name="prompt">Analyse backlog hygiene using the task_health block: open_tasks, completed_tasks, overdue_tasks, unassigned_tasks, no_deadline_tasks, completed_in_period and by_stage. by_stage shows how the work is spread across the project's stages (Planned, Working, Testing, Completed) — use it to say where the pipeline is bunching up. Quantify how much of the backlog is unassigned or has no deadline, comment on throughput (completed_in_period vs open_tasks), and recommend specific clean-up actions for the PMO.</field>
+        </record>
+
+        <record id="purpose_project_custom" model="ft.ai.insights.purpose">
+            <field name="name">Custom Project Analysis</field>
+            <field name="code">project_custom</field>
+            <field name="applies_to">project</field>
+            <field name="sequence">900</field>
+            <field name="icon">fa-magic</field>
+            <field name="description">General-purpose delivery analysis; edit this prompt for ad-hoc needs.</field>
+            <field name="prompt">Analyse the supplied project delivery data and surface the most important, actionable insights for a delivery leader, with specific recommended actions and priorities.</field>
+        </record>
+
+    </data>
+</odoo>

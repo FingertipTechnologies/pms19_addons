@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="qa_testapp_view_ticket_list" model="ir.ui.view">
+        <field name="name">qa_testapp.ticket.list</field>
+        <field name="model">qa_testapp.ticket</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="severity == 'blocker' or escalation_level == 'manager' or approval_state == 'rejected'"
+                  decoration-warning="severity == 'critical' or escalation_level == 'qa_lead' or approval_state == 'pending_approval'"
+                  decoration-success="status == 'fixed'"
+                  decoration-muted="status == 'closed'">
+                <field name="bug_id"/>
+                <field name="title"/>
+                <field name="project_id"/>
+                <field name="approval_state" widget="badge"
+                       decoration-warning="approval_state == 'pending_approval'"
+                       decoration-success="approval_state == 'approved'"
+                       decoration-danger="approval_state == 'rejected'"/>
+                <field name="severity"/>
+                <field name="priority"/>
+                <field name="target_response_time" optional="show"/>
+                <field name="target_deadline" optional="hide"/>
+                <field name="status"/>
+                <field name="reopen_count"/>
+                <field name="escalation_level" widget="badge"
+                       decoration-warning="escalation_level == 'qa_lead'"
+                       decoration-danger="escalation_level == 'manager'"
+                       optional="show"/>
+                <field name="environment"/>
+                <field name="device"/>
+                <field name="reproducibility"/>
+                    <!-- <field name="reporter_id"/> -->
+                    <field name="reporter_display" string="Reporter"/>
+                <field name="assignee_id"/>
+                <field name="reported_date"/>
+            </list>
+        </field>
+    </record>
+    <!-- Form View -->
+    <record id="qa_testapp_view_ticket_form" model="ir.ui.view">
+        <field name="name">qa_testapp.ticket.form</field>
+        <field name="model">qa_testapp.ticket</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_creator_edit" type="object" string="Edit"
+                            class="btn-primary"
+                            invisible="not is_creator or creator_unlocked"/>
+                    <button name="action_approve" type="object" string="Approve"
+                            class="btn-success"
+                            invisible="approval_state != 'pending_approval' or not is_current_user_approver"/>
+                    <button name="action_reject_open_wizard" type="object" string="Reject"
+                            class="btn-danger"
+                            invisible="approval_state != 'pending_approval' or not is_current_user_approver"/>
+                    <button name="action_in_progress" type="object" string="In Progress"
+                            class="btn-primary"
+                            invisible="approval_state != 'approved' or status in ('in_progress', 'fixed', 'closed')"/>
+                    <button name="action_fixed" type="object" string="Fixed"
+                            class="btn-success"
+                            invisible="approval_state != 'approved' or status in ('open', 'fixed', 'closed')"/>
+                    <button name="action_closed" type="object" string="Close"
+                            class="btn-secondary"
+                            invisible="approval_state != 'approved' or status in ('open', 'closed')"/>
+                    <button name="action_reopen" type="object" string="Re-Open"
+                            class="btn-warning"
+                            invisible="approval_state != 'approved' or status not in ('fixed', 'closed')"/>
+                    <field name="approval_state" widget="statusbar" statusbar_visible="pending_approval,approved"/>
+                    <field name="status" widget="statusbar" clickable="1"
+                           statusbar_visible="open,in_progress,fixed,closed,reopened"
+                           invisible="approval_state != 'approved'"/>
+                    <field name="is_current_user_approver" invisible="1"/>
+                    <field name="is_creator" invisible="1"/>
+                    <field name="creator_unlocked" invisible="1"/>
+                </header>
+                <!-- Only the creator can edit (after clicking Edit). Everyone
+                     else - including the PM - is read-only, in every state.
+                     The 'id and' guard keeps a brand-new record editable. -->
+                <!-- Read-only for everyone except the creator who clicked Edit.
+                     Applied per-field (a readonly on <sheet> does not cascade).
+                     'id and ...' keeps a brand-new record editable. -->
+                <sheet>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="approval_state != 'pending_approval'">
+                        Pending approval from <field name="approver_id" readonly="1" nolabel="1" class="oe_inline"/>.
+                        Working status is locked until approval.
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="approval_state != 'rejected'">
+                        RFingertip-PMSejected: <field name="rejection_reason" readonly="1" nolabel="1" class="oe_inline"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="bug_id" readonly="1" class="text-muted"/>
+                        </h1>
+                        <h2>
+                            <field name="title" readonly="id and not (is_creator and creator_unlocked)"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group string="Classification">
+                            <field name="severity" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="priority" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="target_response_time"/>
+                            <field name="target_deadline"/>
+                            <field name="reproducibility" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="environment" required="1" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="device" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="reopen_count"/>
+                            <field name="escalation_level" widget="badge"
+                                   decoration-warning="escalation_level == 'qa_lead'"
+                                   decoration-danger="escalation_level == 'manager'"/>
+                        </group>
+                        <group string="Project and Reporter">
+                            <field name="approver_id" readonly="1"/>
+                            <field name="project_id" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="module_id"
+                                   options="{'no_create': True}"
+                                   domain="[('project_ids', '=', project_id)]"
+                                   readonly="id and not (is_creator and creator_unlocked)"/>
+
+                                <label for="is_client" string="Reporters"/>
+                                <div class="o_row">
+                                    <field name="is_client" readonly="id and not (is_creator and creator_unlocked)"/> <span class="me-3">Client</span>
+                                    <field name="is_internal" readonly="id and not (is_creator and creator_unlocked)"/> <span>Internal</span>
+                                </div>
+
+                                <field name="reporter_id"
+                                       invisible="not is_internal"
+                                       required="is_internal"
+                                       readonly="id and not (is_creator and creator_unlocked)"/>
+
+                            <field name="assignee_id" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="reported_date" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="test_case_id" readonly="id and not (is_creator and creator_unlocked)"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" readonly="id and not (is_creator and creator_unlocked)"/>
+                        </page>
+                        <page string="Steps to Reproduce">
+                            <field name="steps_to_reproduce" readonly="id and not (is_creator and creator_unlocked)"/>
+                        </page>
+                        <page string="Results">
+                            <group>
+                                <field name="expected_result" readonly="id and not (is_creator and creator_unlocked)"/>
+                                <field name="actual_result" readonly="id and not (is_creator and creator_unlocked)"/>
+                            </group>
+                        </page>
+                        <page string="Evidence">
+                            <separator string="Paste screenshots/images here (Ctrl + V). To upload files, use the Attachments section below"/>
+                            <!-- qa_evidence_html: the standard description editor
+                                 (type + paste screenshots), with pasted images
+                                 shown small and click-to-preview. -->
+                            <field name="evidence_description" widget="qa_evidence_html"
+                                   nolabel="1"
+                                   readonly="id and not (is_creator and creator_unlocked)"
+                                   options="{'height': 200}"
+                                   placeholder="Describe the evidence. Paste screenshots directly here."/>
+                            <!-- Legacy plain-text notes: only shown when an older
+                                 record already has some, so no data is hidden. -->
+                            <field name="evidence_notes" invisible="not evidence_notes"
+                                   readonly="id and not (is_creator and creator_unlocked)"/>
+                            <separator string="Attachments"/>
+                            <!-- qa_evidence_files: same upload/delete as
+                                 many2many_binary, plus click-to-preview. -->
+                            <field name="evidence_attachment_ids" widget="qa_evidence_files"
+                                   nolabel="1"
+                                   readonly="id and not (is_creator and creator_unlocked)"/>
+                        </page>
+                        <page string="URLs" name="urls">
+                            <field name="url_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="url_type"/>
+                                    <field name="name"/>
+                                    <field name="url" widget="url"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                 <chatter />
+            </form>
+        </field>
+    </record>
+    <!-- Kanban View -->
+    <record id="qa_testapp_view_ticket_kanban" model="ir.ui.view">
+        <field name="name">qa_testapp.ticket.kanban</field>
+        <field name="model">qa_testapp.ticket</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="status">
+                <field name="bug_id"/>
+                <field name="title"/>
+                <field name="severity"/>
+                <field name="priority"/>
+                <field name="status"/>
+                <field name="reporter_id"/>
+                <field name="project_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <strong>[<field name="bug_id"/>] <field name="title"/></strong>
+                            <div><field name="severity"/> | <field name="priority"/></div>
+                            <div><field name="project_id"/></div>
+                            <div class="oe_kanban_bottom_left">
+                                <field name="reporter_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+
+    <record id="qa_testapp_view_ticket_search" model="ir.ui.view">
+        <field name="name">qa_testapp.ticket.search</field>
+        <field name="model">qa_testapp.ticket</field>
+        <field name="arch" type="xml">
+            <search string="Search Bugs">
+                <field name="bug_id"/>
+                <field name="title"/>
+                <field name="project_id"/>
+                <field name="assignee_id"/>
+
+                <filter string="My Bugs" name="my_bugs" domain="[('assignee_id', '=', uid)]"/>
+                <filter string="All Bugs" name="all_bugs" domain="[]"/>
+                <separator/>
+                <filter string="Pending Approval" name="filter_pending_approval"
+                        domain="[('approval_state', '=', 'pending_approval')]"/>
+                <filter string="Awaiting My Approval" name="filter_awaiting_my_approval"
+                        domain="[('approval_state', '=', 'pending_approval'), ('approver_id', '=', uid)]"/>
+                <filter string="Approved" name="filter_approved"
+                        domain="[('approval_state', '=', 'approved')]"/>
+                <filter string="Rejected" name="filter_rejected"
+                        domain="[('approval_state', '=', 'rejected')]"/>
+
+                <separator/>
+                <group name="group_by">
+                    <filter string="Project" name="group_by_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Approval State" name="group_by_approval_state" context="{'group_by': 'approval_state'}"/>
+                    <filter string="Priority" name="group_by_priority" context="{'group_by': 'priority'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="qa_testapp_action_ticket" model="ir.actions.act_window">
+        <field name="name">Bug</field>
+        <field name="res_model">qa_testapp.ticket</field>
+        <field name="view_mode">list,form,kanban</field>
+        <!-- <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
+        <field name="context">{'search_default_my_bugs': 1}</field>  -->
+    </record>
+    <record id="qa_testapp_action_my_bugs" model="ir.actions.act_window">
+        <field name="name">My Bugs</field>
+        <field name="res_model">qa_testapp.ticket</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
+        <field name="context">{'search_default_my_bugs': 1}</field>
+    </record>
+
+    <record id="qa_testapp_action_all_bugs" model="ir.actions.act_window">
+        <field name="name">All Bugs</field>
+        <field name="res_model">qa_testapp.ticket</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
+        <field name="context">{}</field>
+    </record>
+    
+    <!-- Action -->
+    <record id="qa_testapp_action_test_plan" model="ir.actions.act_window">
+        <field name="name">Test Plans</field>
+        <field name="res_model">qa_testapp.test_plan</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p>No test plans found. Let's create one!</p>
+        </field>
+    </record>
+
+        <record id="email_template_bug_assigned" model="mail.template">
+            <field name="name">QA Ticket: Bug Assigned Notification</field>
+            <field name="model_id" ref="qa_testapp.model_qa_testapp_ticket"/>
+            <field name="subject">📋 Bug Assignment Notification: [{{ object.bug_id }}] {{ object.title }}</field>
+            <field name="email_to">{{ object.assignee_id.email_formatted }}</field>
+            <field name="description">Sent automatically to the assignee when a bug ticket is assigned to them.</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: 'Arial', sans-serif;">
+                    <p style="margin: 0px; padding: 0px; font-size: 14px;">
+                        Hello <t t-out="object.assignee_id.name"/>,<br/><br/>
+                        You have been assigned to the following QA bug ticket:
+                    </p>
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; font-size: 14px;">
+                        <tr>
+                            <td style="width: 120px; padding: 8px 0; font-weight: bold; color: #555555;">Bug ID:</td>
+                            <td style="padding: 8px 0;"><t t-out="object.bug_id"/></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; color: #555555;">Title:</td>
+                            <td style="padding: 8px 0;"><t t-out="object.title"/></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; color: #555555;">Project:</td>
+                            <td style="padding: 8px 0;"><t t-out="object.project_id.name"/></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; color: #555555;">Severity:</td>
+                            <td style="padding: 8px 0;"><t t-out="object.severity.capitalize()"/></td>
+                        </tr>
+                    </table>
+                    <p style="margin: 20px 0 0 0;">
+                        <a t-att-href="'/web#id=%s&amp;model=qa_testapp.ticket&amp;view_type=form' % object.id" 
+                           style="background-color: #714B67; padding: 10px 20px; text-decoration: none; color: #ffffff; border-radius: 5px; font-weight: bold; display: inline-block;">
+                            View Bug Ticket
+                        </a>
+                    </p>
+                    <p style="margin: 20px 0 0 0; font-size: 12px; color: #888888;">
+                        This is an automated system notification. Please do not reply directly to this email.
+                    </p>
+                </div>
+            </field>
+        </record>
+</odoo>

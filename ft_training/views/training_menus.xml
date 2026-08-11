@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- App root (top bar) -->
+    <menuitem id="menu_training_root"
+              name="Training"
+              web_icon="ft_training,static/description/icon.png"
+              sequence="50"/>
+
+    <!-- Tab 1: Learning Trails (the curriculum of topics) -->
+    <menuitem id="menu_training_trails"
+              name="Learning Trails"
+              parent="menu_training_root"
+              action="action_learning_topic"
+              sequence="10"/>
+
+    <!-- Tab 2: Today's Learning (daily trainee entries) -->
+    <menuitem id="menu_training_today"
+              name="Today's Learning"
+              parent="menu_training_root"
+              action="action_today_learning"
+              sequence="20"/>
+
+    <!-- Tab 3: Assignment (assignment definitions) -->
+    <menuitem id="menu_training_assignment"
+              name="Assignment"
+              parent="menu_training_root"
+              action="action_assignment"
+              sequence="30"/>
+
+    <!-- Tab 4: Evaluation (assignment ratings per trainee) -->
+    <menuitem id="menu_training_evaluation"
+              name="Evaluation"
+              parent="menu_training_root"
+              action="action_evaluation"
+              sequence="40"/>
+
+    <!-- Tab 5: Review (trainee evaluations, Admin/HR maintained) -->
+    <menuitem id="menu_training_review"
+              name="Review"
+              parent="menu_training_root"
+              action="action_trainee_review"
+              sequence="50"/>
+
+    <!-- Tab 6: Phase (configurable training phases) -->
+    <menuitem id="menu_training_phase"
+              name="Phase"
+              parent="menu_training_root"
+              action="action_phase"
+              sequence="60"/>
+
+</odoo>

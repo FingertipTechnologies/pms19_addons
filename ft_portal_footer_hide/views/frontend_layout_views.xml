@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Hide the stock frontend footer.
+
+        web.frontend_layout renders:
+
+            <footer t-cache="no_footer,no_copyright" t-if="not no_footer" ...>
+                <div id="footer"/>                     <- website.footer_custom
+                <div t-if="not no_copyright" class="o_footer_copyright"> ... </div>
+            </footer>
+
+        so setting `no_footer` drops the whole element: the "Useful Links /
+        About us / Connect with us" block, the "Copyright (c) Company name"
+        bar, and the grey band they sit on.
+
+        Deactivating `website.footer_custom` instead would only empty the
+        inner div and leave the band plus the copyright line on the page.
+
+        The `t-set` goes immediately BEFORE the footer so the value is in
+        scope when it is evaluated - the same pattern Odoo itself uses in
+        `website.footer_no_copyright`.
+    -->
+    <template id="frontend_layout_no_footer"
+              inherit_id="web.frontend_layout"
+              name="FT: Hide Frontend Footer">
+        <xpath expr="//footer[@id='bottom']" position="before">
+            <t t-set="no_footer" t-value="True"/>
+        </xpath>
+    </template>
+
+</odoo>

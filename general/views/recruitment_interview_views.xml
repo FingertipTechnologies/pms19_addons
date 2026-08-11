@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_recruitment_interview_list" model="ir.ui.view">
+        <field name="name">recruitment.interview.list</field>
+        <field name="model">recruitment.interview</field>
+        <field name="arch" type="xml">
+            <list string="Interviews"
+                  decoration-info="status=='scheduled'"
+                  decoration-success="status=='completed' and result=='selected'"
+                  decoration-danger="status=='completed' and result=='rejected'"
+                  decoration-muted="status in ('no_show','cancelled')">
+                <field name="candidate"/>
+                <field name="job_position"/>
+                <field name="interview_round"/>
+                <field name="interview_date"/>
+                <field name="interview_mode"/>
+                <field name="interviewer"/>
+                <field name="status" widget="badge"/>
+                <field name="rating"/>
+                <field name="result"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_recruitment_interview_calendar" model="ir.ui.view">
+        <field name="name">recruitment.interview.calendar</field>
+        <field name="model">recruitment.interview</field>
+        <field name="arch" type="xml">
+            <calendar string="Interviews" date_start="interview_date"
+                      mode="month" color="interviewer">
+                <field name="candidate"/>
+                <field name="job_position"/>
+                <field name="interview_round"/>
+                <field name="interviewer"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_recruitment_interview_form" model="ir.ui.view">
+        <field name="name">recruitment.interview.form</field>
+        <field name="model">recruitment.interview</field>
+        <field name="arch" type="xml">
+            <form string="Interview">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="candidate"/>
+                            <field name="job_position"/>
+                            <field name="interview_round"/>
+                            <field name="interviewer"/>
+                            <field name="status"/>
+                        </group>
+                        <group>
+                            <field name="interview_date"/>
+                            <field name="interview_mode"/>
+                            <field name="meeting_link"
+                                   invisible="interview_mode != 'online'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Feedback &amp; Result" name="result">
+                            <group>
+                                <group>
+                                    <field name="rating"/>
+                                    <field name="result"/>
+                                    <field name="next_round_required"
+                                           invisible="result != 'selected'"/>
+                                </group>
+                            </group>
+                            <separator string="Feedback"/>
+                            <field name="feedback"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_recruitment_interview" model="ir.actions.act_window">
+        <field name="name">Interviews</field>
+        <field name="res_model">recruitment.interview</field>
+        <field name="view_mode">list,calendar,form</field>
+    </record>
+
+</odoo>

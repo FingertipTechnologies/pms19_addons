@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_x_enquiry_public,x.enquiry public,model_x_enquiry,,1,0,1,0
+access_x_enquiry_admin,x.enquiry admin,model_x_enquiry,base.group_user,1,1,1,1

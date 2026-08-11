@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Pivot View -->
+    <record id="view_kb_article_analysis_pivot" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.article.analysis.pivot</field>
+        <field name="model">ft.helpdesk.kb.article.analysis</field>
+        <field name="arch" type="xml">
+            <pivot string="KB Article Analysis" sample="1">
+                <field name="category_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="view_count" type="measure"/>
+                <field name="helpful_score" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Graph View -->
+    <record id="view_kb_article_analysis_graph" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.article.analysis.graph</field>
+        <field name="model">ft.helpdesk.kb.article.analysis</field>
+        <field name="arch" type="xml">
+            <graph string="KB Article Analysis" sample="1">
+                <field name="category_id"/>
+                <field name="view_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_kb_article_analysis_list" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.article.analysis.list</field>
+        <field name="model">ft.helpdesk.kb.article.analysis</field>
+        <field name="arch" type="xml">
+            <list string="KB Article Analysis" create="false" edit="false" delete="false">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="author_id"/>
+                <field name="customer_id"/>
+                <field name="state"/>
+                <field name="portal_published"/>
+                <field name="view_count" sum="Total Views"/>
+                <field name="helpful_yes" sum="Total Yes"/>
+                <field name="helpful_no" sum="Total No"/>
+                <field name="helpful_score" avg="Avg Helpfulness"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_kb_article_analysis_search" model="ir.ui.view">
+        <field name="name">ft.helpdesk.kb.article.analysis.search</field>
+        <field name="model">ft.helpdesk.kb.article.analysis</field>
+        <field name="arch" type="xml">
+            <search string="KB Article Analysis">
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="author_id"/>
+                <field name="customer_id"/>
+                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_in_review" string="In Review" domain="[('state', '=', 'in_review')]"/>
+                <filter name="filter_completed" string="Completed" domain="[('state', '=', 'completed')]"/>
+                <separator/>
+                <filter name="filter_published" string="Published" domain="[('portal_published', '=', True)]"/>
+                <filter name="filter_unpublished" string="Unpublished" domain="[('portal_published', '=', False)]"/>
+                <separator/>
+                <group name="group_by">
+                    <filter name="groupby_category" string="Category" context="{'group_by': 'category_id'}"/>
+                    <filter name="groupby_author" string="Author" context="{'group_by': 'author_id'}"/>
+                    <filter name="groupby_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="groupby_customer" string="Customer" context="{'group_by': 'customer_id'}"/>
+                    <filter name="groupby_published" string="Published" context="{'group_by': 'portal_published'}"/>
+                    <filter name="groupby_create_date" string="Created On" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_kb_article_analysis" model="ir.actions.act_window">
+        <field name="name">KB Article Analysis</field>
+        <field name="res_model">ft.helpdesk.kb.article.analysis</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_kb_article_analysis_search"/>
+    </record>
+</odoo>

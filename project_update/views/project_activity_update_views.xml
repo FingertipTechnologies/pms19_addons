@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <record id="view_project_activity_update_list" model="ir.ui.view">
+            <field name="name">project.activity.update.list</field>
+            <field name="model">project.activity.update</field>
+            <field name="arch" type="xml">
+                <list string="Project Activity Updates" editable="bottom">
+                    <field name="name"/>
+                    <field name="stage_id" string="Project STATUS"/>
+                    <field name="update_date"/>
+                    <field name="project_id"
+                            domain="[('stage_id.fold','=',False)]"
+                           context="{'active_test': True}"/>
+                    <field name="project_manager_id"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_project_activity_update_pivot" model="ir.ui.view">
+            <field name="name">project.activity.update.pivot</field>
+            <field name="model">project.activity.update</field>
+            <field name="arch" type="xml">
+                <pivot string="Project Activity Updates Analysis">
+                    <field name="project_id" type="row"/>
+                    <field name="update_date" interval="month" type="col"/>
+                    <field name="project_manager_id" type="row"/>
+                    <field name="stage_id" type="row"/>
+                </pivot>
+            </field>
+        </record>
+
+        <record id="view_project_activity_update_search" model="ir.ui.view">
+            <field name="name">project.activity.update.search</field>
+            <field name="model">project.activity.update</field>
+            <field name="arch" type="xml">
+                <search string="Search Project Activity Updates">
+                    <field name="name"/>
+                    <field name="project_id"/>
+                    <field name="project_manager_id"/>
+                    <field name="stage_id"/>
+                    <field name="update_date"/>
+                                    
+                    <filter string="Today" name="today" 
+                            domain="[('update_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                    <filter string="This Week" name="week" 
+                            domain="[('update_date', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                    <filter string="This Month" name="month" 
+                            domain="[('update_date', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
+                    <group name="group_by">
+                        <filter string="Project" name="group_project" context="{'group_by': 'project_id'}"/>
+                        <filter string="Project Manager" name="group_manager" context="{'group_by': 'project_manager_id'}"/>
+                        <filter string="Project Stage" name="group_stage" context="{'group_by': 'stage_id'}"/>
+                        <filter string="Date" name="group_date" context="{'group_by': 'update_date'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_project_activity_update" model="ir.actions.act_window">
+            <field name="name">Project Update</field>
+            <field name="res_model">project.activity.update</field>
+            <field name="view_mode">list,pivot</field>
+            <field name="domain">[('stage_id.fold', '=', False)]</field>
+            <field name="context">{'search_default_active_projects': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new Project Activity Update
+                </p>
+                <p>
+                    Track project activity updates with dates and project managers.
+                </p>
+            </field>
+        </record>
+
+        <menuitem id="menu_project_activity_update"
+                  name="Project Update"
+                  parent="project.menu_main_pm"
+                  action="action_project_activity_update"
+                  sequence="20"/>
+
+    </data>
+</odoo>

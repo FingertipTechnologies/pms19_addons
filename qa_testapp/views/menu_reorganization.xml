@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================= -->
+    <!-- Rename Project menu to PMS     -->
+    <!-- ============================= -->
+    <record id="project.menu_main_pm" model="ir.ui.menu">
+        <field name="name">PMS</field>
+    </record>
+
+    <!-- ============================= -->
+    <!-- Reorder existing menus         -->
+    <!-- ============================= -->
+    <!-- Projects: sequence 10 -->
+    <record id="project.menu_projects" model="ir.ui.menu">
+        <field name="sequence">10</field>
+    </record>
+    <record id="project.menu_projects_group_stage" model="ir.ui.menu">
+        <field name="sequence">10</field>
+    </record>
+
+    <!-- Tasks: sequence 20 -->
+    <record id="project.menu_project_management" model="ir.ui.menu">
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- Timesheets: reparent stock hr_timesheet root under PMS (sequence 21, right beside Tasks) -->
+    <record id="hr_timesheet.timesheet_menu_root" model="ir.ui.menu">
+        <field name="parent_id" ref="project.menu_main_pm"/>
+        <field name="sequence">21</field>
+    </record>
+
+    <record id="qa_testapp_action_my_bugs" model="ir.actions.act_window">
+        <field name="name">My Bugs</field>
+        <field name="res_model">qa_testapp.ticket</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
+        <field name="context">{'search_default_my_bugs': 1}</field>
+    </record>
+
+    <record id="qa_testapp_action_all_bugs" model="ir.actions.act_window">
+        <field name="name">All Bugs</field>
+        <field name="res_model">qa_testapp.ticket</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- ============================= -->
+    <!-- Add QA TestApp menus           -->
+    <!-- ============================= -->
+    <!-- Bug: sequence 40 -->
+    <menuitem id="menu_updates_bug"
+              name="Bugs"
+              parent="project.menu_main_pm"
+              action="qa_testapp.qa_testapp_action_ticket"
+              sequence="40"/>
+    
+    <!--  My Bugs: sequence 10 -->
+    <menuitem id="qa_testapp_menu_my_bugs" 
+              name="My Bugs" 
+              parent="menu_updates_bug" 
+              action="qa_testapp_action_my_bugs" 
+              sequence="10"/>
+
+    <menuitem id="qa_testapp_menu_all_bugs" 
+              name="All Bugs" 
+              parent="menu_updates_bug" 
+              action="qa_testapp_action_all_bugs" 
+              sequence="20"/>
+
+    <!-- Test Cases: sequence 50 -->
+    <menuitem id="menu_updates_test_cases"
+              name="Test Cases"
+              parent="project.menu_main_pm"
+              action="qa_testapp.qa_testapp_action_test_case"
+              sequence="50"/>
+
+    <!-- Test Plans: sequence 60 -->
+    <menuitem id="menu_updates_test_plans"
+              name="Test Plans"
+              parent="project.menu_main_pm"
+              action="qa_testapp.qa_testapp_action_test_plan"
+              sequence="60"/>
+
+    <!-- Test Scenarios: sequence 65 (right after Test Plans) -->
+    <menuitem id="menu_updates_test_scenarios"
+              name="Test Scenarios"
+              parent="project.menu_main_pm"
+              action="qa_testapp.qa_testapp_action_test_scenario"
+              sequence="65"/>
+
+    <!-- ============================= -->
+    <!-- Reorder Milestones / Releases  -->
+    <!-- ============================= -->
+    <!-- Milestones: sequence 70 -->
+    <record id="project_custom_milestone.menu_project_custom_milestone_root" model="ir.ui.menu">
+        <field name="sequence">70</field>
+    </record>
+
+    <!-- Releases: sequence 80 -->
+    <record id="ft_helpdesk_portal.menu_ft_helpdesk_release" model="ir.ui.menu">
+        <field name="sequence">80</field>
+    </record>
+
+    <!-- ============================= -->
+    <!-- Updates: first menu (sequence 5) -->
+    <!-- ============================= -->
+    <record id="project_update.menu_project_activity_update" model="ir.ui.menu">
+        <field name="name">Updates</field>
+        <field name="sequence">5</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <!-- ============================= -->
+    <!-- Reporting + Configuration      -->
+    <!-- ============================= -->
+    <!-- Reporting: sequence 90 -->
+    <record id="project.menu_project_report" model="ir.ui.menu">
+        <field name="sequence">90</field>
+    </record>
+
+    <!-- PMS → Reporting → Project-wise Analysis (bug analysis) -->
+    <menuitem id="menu_pms_project_wise_analysis"
+              name="Project-wise Analysis"
+              parent="project.menu_project_report"
+              action="action_pms_bug_analysis"
+              groups="project.group_project_user"
+              sequence="50"/>
+
+    <!-- Configuration: sequence 100 -->
+    <record id="project.menu_project_config" model="ir.ui.menu">
+        <field name="sequence">100</field>
+    </record>
+
+</odoo>

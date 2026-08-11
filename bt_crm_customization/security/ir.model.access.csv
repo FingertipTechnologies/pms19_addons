@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_features,cus.features,model_cus_features,base.group_user,1,1,1,1
+access_cus_technology,cus.technology,model_cus_technology,base.group_user,1,1,1,1
+access_cus_campaign_user,cus.campaign.user,model_cus_campaign,base.group_user,1,0,0,0
+access_cus_campaign_marketing,cus.campaign.marketing,model_cus_campaign,Project_Scorecards.group_scorecard_marketing,1,1,1,1
+access_cus_campaign_admin,cus.campaign.admin,model_cus_campaign,base.group_system,1,1,1,1

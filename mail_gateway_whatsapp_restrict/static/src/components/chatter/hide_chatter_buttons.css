@@ -1,0 +1,19 @@
+/*
+ * Chatter top-bar button visibility.
+ *
+ * "Send message" stays hidden on every record (all models, all users).
+ * "Activities" is now VISIBLE everywhere EXCEPT on the Task (project.task)
+ * chatter, where it is hidden.
+ *
+ * The per-model scoping relies on the data-chatter-model attribute added to
+ * the chatter root by chatter_model_attr.xml. "Log note" and the WhatsApp
+ * button stay visible. Pure asset change - no module upgrade needed, the
+ * assets bundle just has to rebuild.
+ */
+.o-mail-Chatter-sendMessage {
+    display: none !important;
+}
+
+.o-mail-Chatter[data-chatter-model="project.task"] .o-mail-Chatter-activity {
+    display: none !important;
+}

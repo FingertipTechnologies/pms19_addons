@@ -1,0 +1,36 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_helpdesk_ticket_agent,ft.helpdesk.ticket agent,model_ft_helpdesk_ticket,group_ft_helpdesk_agent,1,1,1,0
+access_ft_helpdesk_ticket_admin,ft.helpdesk.ticket admin,model_ft_helpdesk_ticket,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_ticket_portal,ft.helpdesk.ticket portal,model_ft_helpdesk_ticket,base.group_portal,1,0,1,0
+access_ft_helpdesk_team_agent,ft.helpdesk.team agent,model_ft_helpdesk_team,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_team_team_lead,ft.helpdesk.team team lead,model_ft_helpdesk_team,group_ft_helpdesk_team_lead,1,1,1,1
+access_ft_helpdesk_team_admin,ft.helpdesk.team admin,model_ft_helpdesk_team,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_category_agent,ft.helpdesk.category agent,model_ft_helpdesk_category,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_category_portal,ft.helpdesk.category portal,model_ft_helpdesk_category,base.group_portal,1,0,0,0
+access_ft_helpdesk_category_admin,ft.helpdesk.category admin,model_ft_helpdesk_category,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_subcategory_agent,ft.helpdesk.subcategory agent,model_ft_helpdesk_subcategory,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_subcategory_portal,ft.helpdesk.subcategory portal,model_ft_helpdesk_subcategory,base.group_portal,1,0,0,0
+access_ft_helpdesk_subcategory_admin,ft.helpdesk.subcategory admin,model_ft_helpdesk_subcategory,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_tag_agent,ft.helpdesk.tag agent,model_ft_helpdesk_tag,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_tag_admin,ft.helpdesk.tag admin,model_ft_helpdesk_tag,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_close_reason_agent,ft.helpdesk.close.reason agent,model_ft_helpdesk_close_reason,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_close_reason_admin,ft.helpdesk.close.reason admin,model_ft_helpdesk_close_reason,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_ticket_type_agent,ft.helpdesk.ticket.type agent,model_ft_helpdesk_ticket_type,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_ticket_type_portal,ft.helpdesk.ticket.type portal,model_ft_helpdesk_ticket_type,base.group_portal,1,0,0,0
+access_ft_helpdesk_ticket_type_admin,ft.helpdesk.ticket.type admin,model_ft_helpdesk_ticket_type,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_fieldset_agent,ft.helpdesk.fieldset agent,model_ft_helpdesk_fieldset,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_fieldset_admin,ft.helpdesk.fieldset admin,model_ft_helpdesk_fieldset,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_dynamic_field_agent,ft.helpdesk.dynamic.field agent,model_ft_helpdesk_dynamic_field,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_dynamic_field_portal,ft.helpdesk.dynamic.field portal,model_ft_helpdesk_dynamic_field,base.group_portal,1,0,0,0
+access_ft_helpdesk_dynamic_field_admin,ft.helpdesk.dynamic.field admin,model_ft_helpdesk_dynamic_field,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_canned_response_agent,ft.helpdesk.canned.response agent,model_ft_helpdesk_canned_response,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_canned_response_admin,ft.helpdesk.canned.response admin,model_ft_helpdesk_canned_response,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_business_hours_agent,ft.helpdesk.business.hours agent,model_ft_helpdesk_business_hours,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_business_hours_admin,ft.helpdesk.business.hours admin,model_ft_helpdesk_business_hours,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_business_hours_line_agent,ft.helpdesk.business.hours.line agent,model_ft_helpdesk_business_hours_line,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_business_hours_line_admin,ft.helpdesk.business.hours.line admin,model_ft_helpdesk_business_hours_line,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_business_hours_holiday_agent,ft.helpdesk.business.hours.holiday agent,model_ft_helpdesk_business_hours_holiday,group_ft_helpdesk_agent,1,0,0,0
+access_ft_helpdesk_business_hours_holiday_admin,ft.helpdesk.business.hours.holiday admin,model_ft_helpdesk_business_hours_holiday,group_ft_helpdesk_admin,1,1,1,1
+access_ft_helpdesk_ticket_close_wizard_agent,ft.helpdesk.ticket.close.wizard agent,model_ft_helpdesk_ticket_close_wizard,group_ft_helpdesk_agent,1,1,1,1
+access_ft_helpdesk_ticket_resolve_wizard_agent,ft.helpdesk.ticket.resolve.wizard agent,model_ft_helpdesk_ticket_resolve_wizard,group_ft_helpdesk_agent,1,1,1,1
+access_ft_helpdesk_ticket_assign_wizard_agent,ft.helpdesk.ticket.assign.wizard agent,model_ft_helpdesk_ticket_assign_wizard,group_ft_helpdesk_agent,1,1,1,1

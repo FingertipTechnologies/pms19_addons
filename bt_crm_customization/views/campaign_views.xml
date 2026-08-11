@@ -1,0 +1,157 @@
+<odoo>
+    <!-- List View -->
+    <record id="view_cus_campaign_list" model="ir.ui.view">
+        <field name="name">cus.campaign.list</field>
+        <field name="model">cus.campaign</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="source"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="amount" sum="Amount"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_cus_campaign_form" model="ir.ui.view">
+        <field name="name">cus.campaign.form</field>
+        <field name="model">cus.campaign</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Campaign Name"/>
+                        <h1><field name="name" placeholder="e.g. Q3 LinkedIn Outreach"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="source"/>
+                            <field name="amount"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_cus_campaign_search" model="ir.ui.view">
+        <field name="name">cus.campaign.search</field>
+        <field name="model">cus.campaign</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Campaign"/>
+                <field name="source"/>
+                <field name="date_start"/>
+
+                <!-- One filter per channel. They sit in a single block with no
+                     <separator/> between them, so ticking several ORs them
+                     together (e.g. LinkedIn + Meta shows both).
+                     Kept in step with SOURCE_SELECTION in models/campaign.py -
+                     a channel added there needs a filter added here. -->
+                <filter name="source_linkedin" string="LinkedIn"
+                        domain="[('source', '=', 'linkedin')]"/>
+                <filter name="source_meta" string="Meta"
+                        domain="[('source', '=', 'meta')]"/>
+                <filter name="source_whatsapp" string="WhatsApp"
+                        domain="[('source', '=', 'whatsapp')]"/>
+                <filter name="source_odoo" string="Odoo"
+                        domain="[('source', '=', 'odoo')]"/>
+                <filter name="source_salesforce" string="Salesforce"
+                        domain="[('source', '=', 'salesforce')]"/>
+                <filter name="source_website" string="Website"
+                        domain="[('source', '=', 'website')]"/>
+                <filter name="source_youtube" string="YouTube"
+                        domain="[('source', '=', 'youtube')]"/>
+                <filter name="source_google_ads" string="Google Ads"
+                        domain="[('source', '=', 'google_ads')]"/>
+                <filter name="source_none" string="No Source"
+                        domain="[('source', '=', False)]"/>
+
+                <separator/>
+                <!-- Run dates, relative to today -->
+                <filter name="running" string="Running"
+                        domain="['&amp;',
+                                 '|', ('date_start', '=', False), ('date_start', '&lt;=', context_today().strftime('%Y-%m-%d')),
+                                 '|', ('date_end', '=', False), ('date_end', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="upcoming" string="Upcoming"
+                        domain="[('date_start', '&gt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="finished" string="Finished"
+                        domain="[('date_end', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+
+                <separator/>
+                <filter name="inactive" string="Archived" domain="[('active', '=', False)]"/>
+
+                <group name="group_by">
+                    <filter name="group_source" string="Source"
+                            context="{'group_by': 'source'}"/>
+                    <filter name="group_date_start" string="Start Date"
+                            context="{'group_by': 'date_start'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_cus_campaign" model="ir.actions.act_window">
+        <field name="name">Campaigns</field>
+        <field name="res_model">cus.campaign</field>
+        <field name="view_mode">list,form</field>
+        <!-- Pinned explicitly so the Campaigns menu in Marketing always opens
+             with the Source / run-date filters, rather than relying on Odoo
+             picking up the search view by model. -->
+        <field name="search_view_id" ref="view_cus_campaign_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a campaign</p>
+            <p>Track the campaigns your leads and opportunities come from,
+               together with their budget and run dates.</p>
+        </field>
+    </record>
+
+    <!-- Menu Item
+
+         Campaigns live in the Marketing app, not under CRM > Configuration:
+         they are run by the Marketing team, who have no access to CRM.
+
+         The xml id is unchanged, so on upgrade Odoo re-parents the EXISTING
+         menu record rather than creating a second one - which is what removes
+         it from CRM > Configuration. Records, views, action and access rules
+         are untouched.
+
+         Visible to the Marketing team and Settings admins (who manage
+         campaigns) and to CRM salespeople, who get read-only access - see
+         ir.model.access.csv. Note that Settings admins are NOT exempt from
+         access rules: only the superuser is, so base.group_system has to be
+         named on both the menu and the access rule. -->
+    <menuitem id="menu_cus_campaign"
+        action="action_cus_campaign"
+        name="Campaigns"
+        sequence="40"
+        parent="marketing_content.menu_marketing_root"
+        groups="Project_Scorecards.group_scorecard_marketing,sales_team.group_sale_salesman,base.group_system"/>
+
+    <!-- The Marketing app root is restricted to the Marketing team. CRM
+         salespeople and Settings admins need to reach Campaigns there now that
+         it has left CRM, so add their groups to the root menu. (4, ref) ADDS a
+         group, leaving the Marketing team's own access intact. The other
+         Marketing menus are restricted to the Marketing team in
+         marketing_content, so a CRM user opening the app sees Campaigns only. -->
+    <record id="marketing_content.menu_marketing_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[
+            (4, ref('sales_team.group_sale_salesman')),
+            (4, ref('base.group_system')),
+        ]"/>
+    </record>
+
+</odoo>

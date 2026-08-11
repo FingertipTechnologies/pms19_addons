@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================= -->
+    <!-- CREATE TICKET PAGE            -->
+    <!-- ============================= -->
+    <template id="portal_ticket_create" name="Create Ticket">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title">New Ticket</t>
+            <div class="o_portal_wrap ft-support-portal">
+                <div class="container py-4">
+                    <!-- Page Header Banner -->
+                    <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
+                        <i class="fa fa-pencil-square-o fa-2x mb-2" style="opacity: 0.85;"/>
+                        <h2 class="fw-bold mb-1">Submit a Support Request</h2>
+                        <p class="mb-0" style="opacity: 0.8;">Fill in the details below and we'll get back to you as soon as possible.</p>
+                    </div>
+
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+
+                            <!-- Error Messages -->
+                            <t t-if="error_message">
+                                <div class="alert alert-danger alert-dismissible" role="alert">
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"/>
+                                    <ul class="mb-0">
+                                        <t t-foreach="error_message" t-as="err">
+                                            <li><t t-out="err"/></li>
+                                        </t>
+                                    </ul>
+                                </div>
+                            </t>
+
+                            <!-- KB Suggestions Area (populated via JS) -->
+                            <div id="kb_suggestions" class="mb-3" style="display:none;">
+                                <div class="alert alert-info border-0">
+                                    <h6 class="alert-heading fw-semibold">
+                                        <i class="fa fa-lightbulb-o me-1"/>
+                                        Related Articles
+                                    </h6>
+                                    <p class="small mb-2">
+                                        We found some articles that might help:
+                                    </p>
+                                    <div id="kb_suggestions_list"></div>
+                                </div>
+                            </div>
+
+                            <!-- Ticket Form -->
+                            <form method="POST" action="/my/support/ticket/create"
+                                  enctype="multipart/form-data"
+                                  class="card border-0 shadow-sm ft-ticket-form" id="ticket_create_form">
+                                <input type="hidden" name="csrf_token"
+                                       t-att-value="request.csrf_token()"/>
+                                <div class="card-body p-4">
+                                    <!-- Step 1: Category & Type -->
+                                    <div class="mb-4">
+                                        <h5 class="fw-semibold border-bottom pb-2 mb-3">
+                                            <span class="ft-step-badge me-2">1</span>
+                                            Categorize Your Request
+                                        </h5>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="category_id" class="form-label fw-medium">Category</label>
+                                                <select name="category_id" id="category_id"
+                                                        class="form-select">
+                                                    <option value="">-- Select Category --</option>
+                                                    <t t-foreach="categories" t-as="cat">
+                                                        <option t-att-value="cat.id"
+                                                                t-att-selected="str(cat.id) == str(category_id) if category_id else None">
+                                                            <t t-out="cat.name"/>
+                                                        </option>
+                                                    </t>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6" id="subcategory_wrapper" style="display:none;">
+                                                <label for="subcategory_id" class="form-label fw-medium">Subcategory</label>
+                                                <select name="subcategory_id" id="subcategory_id"
+                                                        class="form-select">
+                                                    <option value="">-- Select Subcategory --</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="type_id" class="form-label fw-medium">Ticket Type</label>
+                                                <select name="type_id" id="type_id"
+                                                        class="form-select">
+                                                    <option value="">-- Select Type --</option>
+                                                    <t t-foreach="ticket_types" t-as="ttype">
+                                                        <option t-att-value="ttype.id"
+                                                                t-att-selected="str(ttype.id) == str(type_id) if type_id else None">
+                                                            <t t-out="ttype.name"/>
+                                                        </option>
+                                                    </t>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="priority" class="form-label fw-medium">Priority</label>
+                                                <select name="priority" id="priority"
+                                                        class="form-select">
+                                                    <option value="3">P1 – Critical</option>
+                                                    <option value="2">P2 – High</option>
+                                                    <option value="1" selected="selected">P3 – Medium</option>
+                                                    <option value="0">P4 – Low</option>
+                                                </select>
+                                            </div>
+                                            <!-- Portal user with exactly one project: show as read-only default -->
+                                            <div class="col-md-6" t-if="is_portal_user and projects and len(projects) == 1">
+                                                <label class="form-label fw-medium">Project</label>
+                                                <t t-set="single_project" t-value="projects[0]"/>
+                                                <input type="hidden" name="project_id" t-att-value="single_project.id"/>
+                                                <div class="form-control bg-light">
+                                                    <t t-out="single_project.name"/>
+                                                </div>
+                                            </div>
+                                            <!-- Multiple projects (portal or admin): show dropdown -->
+                                            <div class="col-md-6" t-elif="projects">
+                                                <label for="project_id" class="form-label fw-medium">Project</label>
+                                                <select name="project_id" id="project_id"
+                                                        class="form-select">
+                                                    <option value="">-- Select Project --</option>
+                                                    <t t-foreach="projects" t-as="proj">
+                                                        <option t-att-value="proj.id"
+                                                                t-att-selected="'selected' if project_id and str(proj.id) == str(project_id) else None">
+                                                            <t t-out="proj.name"/>
+                                                        </option>
+                                                    </t>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 2: Details -->
+                                    <div class="mb-4">
+                                        <h5 class="fw-semibold border-bottom pb-2 mb-3">
+                                            <span class="ft-step-badge me-2">2</span>
+                                            Describe Your Issue
+                                        </h5>
+                                        <div class="mb-3">
+                                            <label for="name" class="form-label fw-medium">
+                                                Subject <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" name="name" id="ticket_subject"
+                                                   t-att-value="name if name else ''"
+                                                   class="form-control"
+                                                   t-attf-class="form-control #{error.get('name') and 'is-invalid' or ''}"
+                                                   placeholder="Brief summary of your issue"
+                                                   required="required"/>
+                                            <div t-if="error.get('name')" class="invalid-feedback">
+                                                Subject is required.
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="description" class="form-label fw-medium">
+                                                Description <span class="text-danger">*</span>
+                                            </label>
+                                            <textarea name="description" id="ticket_description"
+                                                      rows="6"
+                                                      t-attf-class="form-control #{error.get('description') and 'is-invalid' or ''}"
+                                                      placeholder="Please provide as much detail as possible: what happened, what you expected, steps to reproduce..."
+                                                      required="required"><t t-if="description" t-out="description"/></textarea>
+                                            <div t-if="error.get('description')" class="invalid-feedback">
+                                                Description is required.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dynamic Fields Container (populated via JS) -->
+                                    <div id="dynamic_fields_container" class="mb-4" style="display:none;">
+                                        <h5 class="fw-semibold border-bottom pb-2 mb-3">
+                                            <span class="ft-step-badge me-2">3</span>
+                                            Additional Information
+                                        </h5>
+                                        <div id="dynamic_fields_body" class="row g-3"></div>
+                                    </div>
+
+                                    <!-- Attachments -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-medium">
+                                            <i class="fa fa-paperclip me-1"/> Attachments
+                                        </label>
+                                        <input type="file" name="attachments" multiple="multiple"
+                                               class="form-control"
+                                               accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.mp4,.mov,.avi,.webm"/>
+                                        <div class="form-text">
+                                            Accepted formats: images, PDF, Office documents, text files, ZIP, video (MP4, MOV, AVI, WEBM).
+                                            Max 10MB per file.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit -->
+                                <div class="card-footer bg-light border-0 p-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="/my/support/tickets" class="btn btn-outline-secondary">
+                                            <i class="fa fa-arrow-left me-1"/> Back
+                                        </a>
+                                        <button type="submit" class="btn btn-lg px-5 ft-btn-purple">
+                                            <i class="fa fa-paper-plane me-1"/> Submit Ticket
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

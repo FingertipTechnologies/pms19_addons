@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_helpdesk_release_user,ft.helpdesk.release user,model_ft_helpdesk_release,base.group_user,1,1,1,1
+access_ft_helpdesk_release_portal,ft.helpdesk.release portal,model_ft_helpdesk_release,base.group_portal,1,0,0,0

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+    <t t-name="mail_gateway_whatsapp_restrict.SendWhatsappButton"
+       t-inherit="mail_gateway_whatsapp.SendWhatsappButton"
+       t-inherit-mode="extension">
+        <xpath expr="//a" position="attributes">
+            <attribute name="t-if">canSendWhatsapp</attribute>
+        </xpath>
+    </t>
+
+</templates>

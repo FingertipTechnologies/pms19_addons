@@ -1,0 +1,99 @@
+.ftfd_dashboard {
+    --ftfd-bg: #f4f6fb;
+    --ftfd-card: #ffffff;
+    --ftfd-text: #1e293b;
+    --ftfd-muted: #64748b;
+    --ftfd-border: #e2e8f0;
+    --ftfd-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+
+    position: relative;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--ftfd-bg);
+    color: var(--ftfd-text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: 32px;
+
+    .ftfd_header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 24px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--ftfd-border);
+
+        .ftfd_header_title { font-size: 22px; font-weight: 700; margin: 0; }
+        .ftfd_header_tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    }
+
+    .ftfd_periods { display: inline-flex; background: #eef2f7; border-radius: 10px; padding: 3px; }
+    .ftfd_period_btn {
+        border: 0; background: transparent; color: var(--ftfd-muted);
+        font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+        transition: all .15s ease;
+        &--active { background: #4f46e5; color: #fff; box-shadow: 0 2px 6px rgba(79,70,229,.35); }
+    }
+
+    .ftfd_custom {
+        display: inline-flex; align-items: center; gap: 6px;
+        .ftfd_date { border: 1px solid var(--ftfd-border); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+    }
+
+    .ftfd_btn {
+        border: 1px solid var(--ftfd-border); background: #fff; border-radius: 8px;
+        padding: 7px 11px; cursor: pointer; color: var(--ftfd-muted);
+        &:hover { color: var(--ftfd-text); }
+        &--primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    }
+
+    .ftfd_loading { display: flex; align-items: center; justify-content: center; height: 60vh; color: #4f46e5; }
+
+    .ftfd_content { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+    .ftfd_kpi_grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+        @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 560px)  { grid-template-columns: 1fr; }
+    }
+
+    .ftfd_kpi {
+        display: flex; align-items: center; gap: 14px;
+        background: var(--ftfd-card); border: 1px solid var(--ftfd-border);
+        border-radius: 16px; padding: 18px; box-shadow: var(--ftfd-shadow);
+        transition: transform .15s ease, box-shadow .15s ease;
+        &--clickable { cursor: pointer; &:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15,23,42,.12); } }
+        .ftfd_kpi_icon {
+            flex: 0 0 auto; width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
+        }
+        .ftfd_kpi_body { min-width: 0; }
+        .ftfd_kpi_value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+        .ftfd_kpi_affix { font-size: 13px; font-weight: 600; color: var(--ftfd-muted); }
+        .ftfd_kpi_title {
+            font-size: 12.5px; color: var(--ftfd-muted); margin-top: 3px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+    }
+
+    .ftfd_chart_row {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+        @media (max-width: 992px) { grid-template-columns: 1fr; }
+    }
+
+    .ftfd_chart_card {
+        background: var(--ftfd-card); border: 1px solid var(--ftfd-border);
+        border-radius: 16px; padding: 18px 20px; box-shadow: var(--ftfd-shadow);
+        grid-column: span 1;
+        &--full { grid-column: 1 / -1; }
+        .ftfd_chart_head { margin-bottom: 12px; }
+        .ftfd_chart_title { font-size: 15px; font-weight: 700; margin: 0; }
+        .ftfd_chart_note { color: var(--ftfd-muted); font-size: 11.5px; }
+        .ftfd_chart_canvas_wrap { position: relative; height: 320px; }
+    }
+}

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Agent: see tickets of their team(s) -->
+    <record id="rule_ticket_agent" model="ir.rule">
+        <field name="name">Helpdesk Ticket: Agent sees own team tickets</field>
+        <field name="model_id" ref="model_ft_helpdesk_ticket"/>
+        <field name="domain_force">[
+            '|',
+            ('team_id.member_user_ids', 'in', [user.id]),
+            ('assigned_user_id', '=', user.id)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_ft_helpdesk_agent'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Team Lead: see all tickets in their teams -->
+    <record id="rule_ticket_team_lead" model="ir.rule">
+        <field name="name">Helpdesk Ticket: Team Lead sees all team tickets</field>
+        <field name="model_id" ref="model_ft_helpdesk_ticket"/>
+        <field name="domain_force">[
+            '|',
+            ('team_id.leader_user_id', '=', user.id),
+            ('team_id.member_user_ids', 'in', [user.id])
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_ft_helpdesk_team_lead'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Admin: see all tickets (company-scoped) -->
+    <record id="rule_ticket_admin" model="ir.rule">
+        <field name="name">Helpdesk Ticket: Admin sees all company tickets</field>
+        <field name="model_id" ref="model_ft_helpdesk_ticket"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_ft_helpdesk_admin'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Portal: see only own company tickets (commercial partner scope) -->
+    <record id="rule_ticket_portal" model="ir.rule">
+        <field name="name">Helpdesk Ticket: Portal sees own company tickets</field>
+        <field name="model_id" ref="model_ft_helpdesk_ticket"/>
+        <field name="domain_force">[
+            ('customer_id.commercial_partner_id', '=', user.partner_id.commercial_partner_id.id)
+        ]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Multi-company rule for teams -->
+    <record id="rule_team_company" model="ir.rule">
+        <field name="name">Helpdesk Team: Multi-Company</field>
+        <field name="model_id" ref="model_ft_helpdesk_team"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+</odoo>

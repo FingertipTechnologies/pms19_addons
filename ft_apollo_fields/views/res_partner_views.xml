@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Apollo enrichment fields shown as a two-column section (half the
+         fields on each side) below the main company info block. -->
+    <record id="view_partner_form_apollo_fields" model="ir.ui.view">
+        <field name="name">res.partner.form.apollo.fields</field>
+        <field name="model">res.partner</field>
+        <field name="priority">2</field>
+        <field name="inherit_id" ref="bt_contact_customization.view_partner_form_inherit_custom"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']/ancestor::group[2]" position="after">
+                <field name="apollo_currency_id" invisible="1"/>
+                <group string="Apollo Enrichment" invisible="is_company == False">
+                    <group>
+                        <field name="apollo_company_name_for_emails"/>
+                        <field name="apollo_facebook_url"/>
+                        <field name="apollo_company_city"/>
+                        <field name="apollo_company_state"/>
+                        <field name="apollo_company_country"/>
+                        <field name="apollo_keywords"/>
+                        <field name="founded_year"/>
+                    </group>
+                    <group>
+                        <field name="apollo_technologies"/>
+                        <field name="apollo_total_funding"/>
+                        <field name="apollo_latest_funding"/>
+                        <field name="apollo_latest_funding_amount"/>
+                        <field name="apollo_last_raised_at"/>
+                        <field name="apollo_record_id"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

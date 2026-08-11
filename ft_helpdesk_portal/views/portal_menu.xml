@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add Support to portal menu -->
+    <template id="portal_my_home_helpdesk" name="Show Support"
+              inherit_id="portal.portal_my_home" priority="40">
+        <!-- Support Tickets card removed: /my/home is now redirected for portal users -->
+    </template>
+
+    <!-- Override "My Account" dropdown link to point to /my/support -->
+    <template id="portal_account_link_override" name="My Account Link Override"
+              inherit_id="portal.my_account_link" priority="30">
+        <xpath expr="//a[@href='/my/home']" position="attributes">
+            <attribute name="href">/my/support</attribute>
+        </xpath>
+    </template>
+
+    <!-- Breadcrumb: hide home icon for portal users -->
+    <template id="portal_breadcrumb_home_override" name="Support Home Breadcrumb"
+              inherit_id="portal.portal_breadcrumbs" priority="30">
+        <xpath expr="//li[hasclass('breadcrumb-item')]/a[@href='/my/home']/.." position="replace">
+            <!-- Home breadcrumb item removed -->
+        </xpath>
+    </template>
+
+    <!-- Breadcrumb -->
+    <template id="portal_breadcrumb_support" name="Support Breadcrumb"
+              inherit_id="portal.portal_breadcrumbs" priority="40">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'support_home'"
+                class="breadcrumb-item active">
+                Support
+            </li>
+            <li t-if="page_name in ('ticket_list', 'ticket_create', 'ticket_detail', 'milestones', 'releases')"
+                class="breadcrumb-item">
+                <a href="/my/support">Support</a>
+            </li>
+            <li t-if="page_name == 'ticket_list'"
+                class="breadcrumb-item active">
+                My Tickets
+            </li>
+            <li t-if="page_name == 'ticket_create'"
+                class="breadcrumb-item active">
+                New Ticket
+            </li>
+            <li t-if="page_name == 'ticket_detail'"
+                class="breadcrumb-item active">
+                <t t-out="ticket.ticket_no"/>
+            </li>
+            <li t-if="page_name == 'milestones'"
+                class="breadcrumb-item active">
+                Milestones
+            </li>
+            <li t-if="page_name == 'releases'"
+                class="breadcrumb-item active">
+                Releases
+            </li>
+        </xpath>
+    </template>
+</odoo>

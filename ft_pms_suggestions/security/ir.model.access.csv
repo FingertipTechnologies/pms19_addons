@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pms_suggestion_user,pms.suggestion.user,model_pms_suggestion,base.group_user,1,1,1,0
+access_pms_suggestion_admin,pms.suggestion.admin,model_pms_suggestion,base.group_system,1,1,1,1
+access_pms_suggestion_category_user,pms.suggestion.category.user,model_pms_suggestion_category,base.group_user,1,0,0,0
+access_pms_suggestion_category_admin,pms.suggestion.category.admin,model_pms_suggestion_category,base.group_system,1,1,1,1

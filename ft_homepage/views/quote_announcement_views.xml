@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_ft_quote_announcement_list" model="ir.ui.view">
+        <field name="name">ft.quote.announcement.list</field>
+        <field name="model">ft.quote.announcement</field>
+        <field name="arch" type="xml">
+            <list string="Quotes / Announcements">
+                <field name="sequence" widget="handle"/>
+                <field name="title"/>
+                <field name="kind"/>
+                <field name="content_type"/>
+                <field name="contributor_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <!-- Only HR / Admin may activate (the "active" toggle). Other
+                     users can add entries but cannot publish them. -->
+                <field name="active" widget="boolean_toggle"
+                       groups="hr.group_hr_user,base.group_system"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_quote_announcement_form" model="ir.ui.view">
+        <field name="name">ft.quote.announcement.form</field>
+        <field name="model">ft.quote.announcement</field>
+        <field name="arch" type="xml">
+            <form string="Quote / Announcement">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="title"/>
+                        <h1><field name="title" placeholder="e.g. Quote of the Day - 20 Jul"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="kind"/>
+                            <field name="content_type" widget="radio"/>
+                            <!-- The box grows with the text as it is typed
+                                 (Odoo's text widget auto-sizes). ft_limited_text
+                                 adds the character counter and stops the
+                                 textarea at max_length, so the author meets the
+                                 cap while writing rather than as an error on
+                                 save; _check_text_length on the model is still
+                                 what actually enforces it.
+
+                                 max_length, the placeholder below and
+                                 TEXT_MAX_LENGTH in ft_quote_announcement.py are
+                                 the same number — change them together. -->
+                            <field name="text_content" invisible="content_type != 'text'"
+                                   widget="ft_limited_text"
+                                   options="{'max_length': 300}"
+                                   placeholder="The quote or announcement text (max 300 characters, so it fits the Homepage panel without being cut off)..."/>
+                            <field name="image" widget="image" invisible="content_type != 'image'"/>
+                            <field name="video_file" widget="binary"
+                                   filename="video_filename"
+                                   invisible="content_type != 'video'"/>
+                            <field name="video_filename" invisible="1"/>
+                            <field name="video_url" invisible="content_type != 'video'"
+                                   placeholder="...or paste a YouTube / .mp4 link"/>
+                            <field name="social_url" invisible="content_type != 'social'"
+                                   placeholder="Best: paste the whole &lt;iframe&gt; embed code from the post's ••• menu → Embed. A plain LinkedIn/Facebook post URL also works."/>
+                        </group>
+                        <group>
+                            <field name="contributor_id"/>
+                            <field name="contributor_name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="sequence"/>
+                            <!-- Only HR / Admin may activate/publish an entry. -->
+                            <field name="active"
+                                   groups="hr.group_hr_user,base.group_system"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ft_quote_announcement" model="ir.actions.act_window">
+        <field name="name">Quotes / Announcements</field>
+        <field name="res_model">ft.quote.announcement</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add a Quote of the Day, an announcement, or an org-wide update.
+            </p>
+            <p>
+                It will show below the app icons on everyone's Homepage.
+            </p>
+        </field>
+    </record>
+
+    <!-- Inside the General app. Visible to ALL internal users so anyone can
+         add a quote/announcement entry; only HR / Admin can activate
+         (publish) it — enforced by the gated "active" field above and by the
+         create/write guards on the model. -->
+    <menuitem id="menu_ft_quote_announcement"
+              name="Quotes / Announcements"
+              parent="general.menu_general_root"
+              action="action_ft_quote_announcement"
+              sequence="60"/>
+
+    <!-- Set explicitly via a record (not the menuitem groups attribute)
+         so the stored restriction in the DB is reliably replaced on
+         every upgrade. All internal users may reach it (to add entries). -->
+    <record id="menu_ft_quote_announcement" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [
+            ref('base.group_user'),
+        ])]"/>
+    </record>
+
+</odoo>

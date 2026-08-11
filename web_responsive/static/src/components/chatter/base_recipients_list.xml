@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<templates>
+    <!--
+        Odoo 19 removed the `mail.BaseRecipientsList` owl template. The chatter
+        recipients UI is now built from mail.RecipientsInput / mail.RecipientsPopover.
+        The original inheritance here only added a cosmetic CSS class
+        (o-mail-Chatter-recipientList); with no valid parent template it raised an
+        owl template-inheritance error, so it has been removed.
+    -->
+</templates>
