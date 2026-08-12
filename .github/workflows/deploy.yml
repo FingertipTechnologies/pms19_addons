@@ -1,0 +1,49 @@
+name: Deploy CRM19
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build & Deploy
+        env:
+          SERVER_HOST: ${{ secrets.CRM19_HOST }}
+          SSH_USER: odoo-crm19
+          REPO_PATH: /opt/crm19-staging/custom-addons
+          SSH_KEY: ${{ secrets.CRM19_SSH_KEY }}
+          SERVICE_TO_RESTART: crm19-staging.service
+          SSH_PORT: 5522
+
+        run: |
+          which ssh-agent || (apt-get update && apt-get install -y openssh-client rsync)
+
+          eval "$(ssh-agent -s)"
+          ssh-add <(echo "$SSH_KEY")
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+          echo "Deploying the code..."
+
+          rsync -avzh --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            -e "ssh -p $SSH_PORT" \
+            ./ "$SSH_USER@$SERVER_HOST:$REPO_PATH/"
+
+          echo "Code deployed. Restarting Odoo service..."
+
+          ssh -p "$SSH_PORT" "$SSH_USER@$SERVER_HOST" \
+            "sudo /usr/bin/systemctl restart $SERVICE_TO_RESTART"
+
+          echo "Odoo service restarted."
