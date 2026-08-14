@@ -1,4 +1,25 @@
 <odoo>
+    <!-- Keep this record before every other inheritance of view_task_form2.
+         On an upgraded database, the stored Odoo 18 version of this view
+         targets a second o_state_container which no longer exists in Odoo 19.
+         Updating another child view first makes Odoo validate that stale arch
+         and abort the module upgrade before it can reach this correction. -->
+    <record id="view_task_form_hide_state" model="ir.ui.view">
+        <field name="name">project.task.form.hide.state.widget</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <!-- Odoo 19 uses o_state_container for active tasks and a separate
+                 priority/state container for archived tasks. -->
+            <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[field[@name='priority']]/field[@name='state'][@widget='project_task_state_selection']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_task_form_inherit" model="ir.ui.view">
         <field name="name">project.task.form.inherit.custom.fields</field>
         <field name="model">project.task</field>
@@ -81,31 +102,6 @@
             <xpath expr="//field[@name='progress'][@widget='project_task_progressbar']"
                    position="attributes">
                 <attribute name="column_invisible">1</attribute>
-            </xpath>
-        </field>
-    </record>
-
-    <!-- Hide the task state selection (In Progress / Changes Requested /
-         Approved / Cancelled / Done) on the task form. The stage bar
-         (Planned / Working / Testing / ...) is what we track tasks by.
-
-         The containers are hidden rather than the field removed: the field
-         stays loaded, so state keeps computing and every other view and module
-         that reads it is untouched. Kanban and list still show the widget, so
-         tasks can still be closed — stages do not set state in Odoo 18, and
-         reporting on '1_done' would break if nothing could. -->
-    <record id="view_task_form_hide_state" model="ir.ui.view">
-        <field name="name">project.task.form.hide.state.widget</field>
-        <field name="model">project.task</field>
-        <field name="inherit_id" ref="project.view_task_form2"/>
-        <field name="arch" type="xml">
-            <!-- Stock renders the widget twice: [1] for active tasks,
-                 [2] for archived ones. -->
-            <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//div[field[@name='priority']]/field[@name='state'][@widget='project_task_state_selection']" position="attributes">
-                <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>
