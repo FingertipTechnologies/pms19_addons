@@ -124,7 +124,9 @@ class ProjectTask(models.Model):
         if self.env.su or self.env.user.has_group('base.group_system'):
             return
         employee = self.env.user.employee_id
-        job_name = (employee.job_id.name or '').strip().lower() if employee else ''
+        # sudo: since 19.0 job_id is delegated to hr.version, so reading it
+        # traverses the HR-officer-only hr.employee.version_id field.
+        job_name = (employee.sudo().job_id.name or '').strip().lower() if employee else ''
         if job_name not in TASK_CREATE_JOBS:
             raise UserError(_(
                 "You are not allowed to create tasks. Only a Technical Lead, "

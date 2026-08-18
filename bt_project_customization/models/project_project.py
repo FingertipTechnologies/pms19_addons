@@ -271,7 +271,9 @@ class InheritProjectProject(models.Model):
         # may change the project status/stage (the status bar = stage_id).
         if ('status' in vals or 'stage_id' in vals) and not self.env.su:
             user = self.env.user
-            job = (user.employee_id.job_id.name or '').strip().lower() if user.employee_id else ''
+            # sudo: since 19.0 job_id is delegated to hr.version, so reading it
+            # traverses the HR-officer-only hr.employee.version_id field.
+            job = (user.employee_id.sudo().job_id.name or '').strip().lower() if user.employee_id else ''
             if job not in PM_JOB_NAMES and not user.has_group('base.group_system'):
                 raise UserError(_("Only a Project Manager can change the project status."))
         if 'timesheet_ids' in vals:

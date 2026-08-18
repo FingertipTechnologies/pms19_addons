@@ -22,8 +22,14 @@ class ResUsers(models.Model):
     # filter a real record picker listing exactly those positions.
     job_id = fields.Many2one(
         related='employee_id.job_id',
-        readonly=False,
-        related_sudo=False,
+        # Read-only + sudo, deliberately. Since 19.0 hr.employee delegates
+        # job_id to hr.version, so the read traverses hr.employee.version_id,
+        # which carries groups="hr.group_hr_user" - a plain (related_sudo=False)
+        # read raised AccessError for every non-HR user. Reading it under sudo
+        # fixes that, but a WRITABLE sudo related field would then let any user
+        # set their own job position, and bt_project_customization gates task
+        # creation and project-status changes on the job name. So: read only.
+        readonly=True,
         string='Job Position',
         help="Job Position from the linked employee record. Filterable as a "
              "dropdown, unlike the free-text Job Position on the contact.",

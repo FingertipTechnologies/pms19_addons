@@ -62,7 +62,7 @@ class ProjectProject(models.Model):
         for project in self:
             totals = dict.fromkeys(('dev', 'qa', 'pm', 'ba', 'trainee'), 0.0)
             for line in project.timesheet_ids:
-                bucket = ProjectTask._ft_job_bucket(line.employee_id.job_id)
+                bucket = ProjectTask._ft_job_bucket(line.employee_id.sudo().job_id)
                 if bucket:
                     totals[bucket] += line.unit_amount
             project.ft_dev_hours = totals['dev']
