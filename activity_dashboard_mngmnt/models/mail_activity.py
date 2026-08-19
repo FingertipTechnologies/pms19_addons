@@ -34,7 +34,7 @@ class MailActivity(models.Model):
                                         help='Select activity tags.')
     state = fields.Selection(selection_add=[
         ('done', 'Done'),
-    ], string='State', help='State of the activity')
+    ], string='State', help='State of the activity', search='_search_state')
     rnr = fields.Boolean()
     parent_partner_id = fields.Many2one(
         'res.partner',
@@ -58,6 +58,40 @@ class MailActivity(models.Model):
 
     child_first_activity_datetime = fields.Datetime(index=True,related='child_partner_id.first_activity_datetime',string='Child First Activity Datetime')
     child_last_activity_datetime = fields.Datetime(index=True,related='child_partner_id.last_activity_datetime',string='Child Last Activity Datetime')
+
+    # ---------------------------------------------------------
+    # Make the computed `state` searchable
+    # ---------------------------------------------------------
+    def _search_state(self, operator, value):
+        """Translate a domain on `state` into stored-field leaves.
+
+        Core computes state from `active` + `date_deadline`
+        (see mail.activity._compute_state), and the field is not stored, so
+        Odoo 19 raises "Cannot convert mail.activity.state to SQL because it
+        is not stored" for any domain on it. The dashboard actions filter on
+        state, so rewrite those leaves here.
+        """
+        today = fields.Date.context_today(self)
+        # Each entry is a self-contained domain, so they can be OR'ed together.
+        leaf_by_state = {
+            'done': [('active', '=', False)],
+            'overdue': ['&', ('active', '=', True), ('date_deadline', '<', today)],
+            'today': ['&', ('active', '=', True), ('date_deadline', '=', today)],
+            'planned': ['&', ('active', '=', True), ('date_deadline', '>', today)],
+        }
+        # The domain engine may pass a single value or an iterable of values.
+        values = [value] if isinstance(value, str) else list(value)
+        positive = operator in ('=', 'in', 'like', 'ilike', '=like', '=ilike')
+
+        leaves = [leaf_by_state[val] for val in values if val in leaf_by_state]
+        if not leaves:
+            # Unknown value: match nothing when positive, everything otherwise.
+            return [('id', '=', False)] if positive else []
+
+        combined = leaves[0]
+        for leaf in leaves[1:]:
+            combined = ['|'] + combined + leaf
+        return combined if positive else ['!'] + combined
 
     # ---------------------------------------------------------
     # Defaults when activity created from partner
