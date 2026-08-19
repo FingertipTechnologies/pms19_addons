@@ -4,7 +4,7 @@ import logging
 
 from odoo import http, fields, _
 from odoo.http import request
-from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
+from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.addons.web.controllers.home import Home
 from odoo.exceptions import AccessError, MissingError
 from odoo.fields import Domain
@@ -20,7 +20,7 @@ _logger = logging.getLogger(__name__)
 TICKETS_PER_PAGE = 10
 
 
-class HelpdeskPortal(CustomerPortal):
+class HelpdeskPortal(HelpdeskPortalBase):
 
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
@@ -82,14 +82,20 @@ class HelpdeskPortal(CustomerPortal):
         }
 
     # =============================
-    # Redirect portal users to /my/support/projects
+    # Redirect portal users to /my/support
     # =============================
 
-    @http.route(['/my', '/my/home'], type='http', auth='user', website=True)
-    def portal_my_home(self, **kw):
+    @http.route()
+    def home(self, **kw):
+        """Portal users get the support portal instead of the stock /my page.
+
+        Odoo 19 renamed ``CustomerPortal.portal_my_home`` to ``home``. Keeping
+        the old name only added a duplicate ``/my`` rule that werkzeug never
+        matched, so customers kept landing on the stock "My account" page.
+        """
         if request.env.user.has_group('base.group_portal'):
-            return request.redirect('/my/support/projects')
-        return super().portal_my_home(**kw)
+            return request.redirect(PORTAL_LANDING)
+        return super().home(**kw)
 
     # =============================
     # Support Home — landing page
@@ -728,7 +734,7 @@ class HelpdeskPortal(CustomerPortal):
         return fields_data
 
 
-PORTAL_LANDING = '/my/support/projects'
+PORTAL_LANDING = '/my/support'
 
 # Default post-login targets we take over for portal users. Odoo sends a
 # non-internal user to /web/login_successful, which lands them on Odoo's stock
@@ -737,7 +743,7 @@ _GENERIC_LANDINGS = {'/my', '/my/home', '/web/login_successful'}
 
 
 class HelpdeskLoginRedirect(Home):
-    """Land portal users on the support projects page after login."""
+    """Land portal users on the support portal after login."""
 
     def _login_redirect(self, uid, redirect=None):
         """Override the single chokepoint every login path funnels through.

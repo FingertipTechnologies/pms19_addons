@@ -12,13 +12,20 @@ class HelpdeskPortal(CustomerPortal):
             values['ticket_count'] = request.env['ft.helpdesk.ticket'].search_count([])
         return values
 
-    @http.route(['/my', '/my/home'], type='http', auth='user', website=True)
-    def portal_my_home_redirect(self, **kw):
+    @http.route()
+    def home(self, **kw):
+        """Send portal users straight to the support portal.
+
+        Odoo 19 renamed ``CustomerPortal.portal_my_home`` to ``home``. The
+        previous override kept the old name, so it registered a *second*
+        ``/my`` rule that werkzeug never matched (the stock ``home`` rule is
+        registered first) and portal users stayed on the stock account page.
+        """
         user = request.env.user
         if user.has_group('base.group_portal'):
-            return request.redirect('/my/support/projects')
+            return request.redirect('/my/support')
         # Internal users: show normal home page
-        return super().portal_my_home(**kw)
+        return super().home(**kw)
     # ------------------------------------------------------------------
     # /my/tickets  – ticket list
     # ------------------------------------------------------------------

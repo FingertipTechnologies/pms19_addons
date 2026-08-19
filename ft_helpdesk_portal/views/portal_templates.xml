@@ -88,8 +88,8 @@
                     </div>
                     <!-- Welcome header: kept here (the shared shell) rather than
                          only on portal_support_landing, so every tab shows it.
-                         Portal users now land straight on /my/support/projects
-                         and would otherwise never see it. -->
+                         Portal users land on /my/support and may jump
+                         straight into a tab, so keep it on every tab. -->
                     <div class="ft-page-header text-center text-white rounded-3 p-4 mb-4">
                         <i class="fa fa-headphones fa-2x mb-2" style="opacity: 0.85;"/>
                         <h2 class="fw-bold mb-1">Welcome to Your Support Portal</h2>
