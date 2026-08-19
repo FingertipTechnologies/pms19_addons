@@ -1,4 +1,4 @@
-name: Deploy CRM19
+name: Deploy CRM19-Prod
 
 on:
   push:
@@ -17,9 +17,9 @@ jobs:
         env:
           SERVER_HOST: ${{ secrets.CRM19_HOST }}
           SSH_USER: odoo-crm19
-          REPO_PATH: /opt/crm19-staging/custom-addons
+          REPO_PATH: /opt/crm19-prod/custom-addons
           SSH_KEY: ${{ secrets.CRM19_SSH_KEY }}
-          SERVICE_TO_RESTART: crm19-staging.service
+          SERVICE_TO_RESTART: crm19-prod.service
           SSH_PORT: 5522
 
         run: |
