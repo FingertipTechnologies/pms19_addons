@@ -1,0 +1,28 @@
+// v18 sized these cards at 400px; v19 shrank them to 350px, which is too
+// narrow for the figures this module puts back (8-digit amounts collide with
+// their labels). Slightly wider than v18 so large currencies still fit.
+.o_crm_team_kanban .o_kanban_renderer {
+    --KanbanRecord-width: 420px;
+
+    // let the label truncate inside the flex row instead of pushing the
+    // amount out of the card
+    .ft_team_stats {
+        min-width: 0;
+    }
+
+    .ft_team_stat_label {
+        min-width: 0;
+    }
+
+    .ft_team_stat_amount {
+        white-space: nowrap;
+    }
+
+    // the invoicing target block, styled like v18's o_dashboard_bottom_block
+    // but with bootstrap variables so it follows the light/dark theme
+    .o_dashboard_bottom_block {
+        border-top: 1px solid var(--bs-border-color, #dee2e6);
+        padding-top: 0.5rem;
+        margin-top: 0.5rem;
+    }
+}

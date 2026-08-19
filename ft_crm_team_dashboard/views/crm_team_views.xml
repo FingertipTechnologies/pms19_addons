@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Puts back what Odoo 19 dropped from the sales team dashboard card:
+         the Pipeline button, the pipeline/quotation figures, the weekly bar
+         chart and the invoicing target. Applied on top of the crm and sale
+         inherits, which this module depends on. -->
+    <record id="crm_team_view_kanban_dashboard" model="ir.ui.view">
+        <field name="name">crm.team.view.kanban.dashboard.inherit.ft</field>
+        <field name="model">crm.team</field>
+        <field name="inherit_id" ref="sales_team.crm_team_view_kanban_dashboard"/>
+        <field name="arch" type="xml">
+            <data>
+                <!-- use_opportunities / use_leads / invoiced_target are already
+                     declared by the crm and sale inherits -->
+                <xpath expr="//templates" position="before">
+                    <field name="currency_id"/>
+                    <field name="dashboard_button_name"/>
+                    <field name="opportunities_count"/>
+                    <field name="opportunities_amount"/>
+                    <field name="opportunities_overdue_count"/>
+                    <field name="opportunities_overdue_amount"/>
+                    <field name="quotations_count"/>
+                    <field name="quotations_amount"/>
+                    <field name="sales_to_invoice_count"/>
+                    <field name="invoiced"/>
+                    <field name="dashboard_graph_data"/>
+                </xpath>
+
+                <xpath expr="//field[@name='name']/.." position="after">
+                    <div class="d-flex align-items-start mt-3 px-2">
+                        <div class="flex-shrink-0 me-3">
+                            <button type="object" class="btn text-wrap btn-primary"
+                                    name="action_primary_channel_button">
+                                <field name="dashboard_button_name"/>
+                            </button>
+                        </div>
+                        <!-- flex rather than a col-8/col-4 grid: the label
+                             truncates, the amount never gets clipped -->
+                        <div class="ft_team_stats flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-baseline"
+                                 t-if="record.opportunities_count.raw_value">
+                                <a class="ft_team_stat_label text-truncate me-2" type="action"
+                                   name="%(crm.crm_case_form_view_salesteams_opportunity)d"
+                                   context="{'search_default_open_opportunities': True}">
+                                    <field name="opportunities_count" class="me-1"/>
+                                    <t t-if="record.opportunities_count.raw_value == 1">Open Opportunity</t>
+                                    <t t-else="">Open Opportunities</t>
+                                </a>
+                                <field name="opportunities_amount" widget="monetary"
+                                       class="ft_team_stat_amount"
+                                       options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-baseline"
+                                 t-if="record.opportunities_overdue_count.raw_value">
+                                <a class="ft_team_stat_label text-truncate me-2" type="action"
+                                   name="%(crm.crm_lead_action_team_overdue_opportunity)d">
+                                    <field name="opportunities_overdue_count" class="me-1"/>
+                                    <t t-if="record.opportunities_overdue_count.raw_value == 1">Overdue Opportunity</t>
+                                    <t t-else="">Overdue Opportunities</t>
+                                </a>
+                                <field name="opportunities_overdue_amount" widget="monetary"
+                                       class="ft_team_stat_amount"
+                                       options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-baseline"
+                                 t-if="record.quotations_count.raw_value">
+                                <a class="ft_team_stat_label text-truncate me-2" type="action"
+                                   name="%(sale.action_quotations_salesteams)d"
+                                   context="{'search_default_draft': True}">
+                                    <field name="quotations_count" class="me-1"/>
+                                    <t t-if="record.quotations_count.raw_value == 1">Quotation</t>
+                                    <t t-else="">Quotations</t>
+                                </a>
+                                <field name="quotations_amount" widget="monetary"
+                                       class="ft_team_stat_amount"
+                                       options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-baseline"
+                                 name="orders_to_invoice"
+                                 t-if="record.sales_to_invoice_count.raw_value">
+                                <a class="ft_team_stat_label text-truncate me-2" type="action"
+                                   name="%(sale.action_orders_to_invoice_salesteams)d">
+                                    <field name="sales_to_invoice_count" class="me-1"/>
+                                    <t t-if="record.sales_to_invoice_count.raw_value == 1">Order to Invoice</t>
+                                    <t t-else="">Orders to Invoice</t>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+
+                <xpath expr="//div[hasclass('crm_team_kanban_bottom')]" position="before">
+                    <div class="row px-2 mt-2">
+                        <div name="o_kanban_primary_bottom" class="col-12">
+                            <field t-if="record.dashboard_graph_data.raw_value"
+                                   name="dashboard_graph_data" widget="dashboard_graph"
+                                   t-att-graph_type="'bar'"/>
+                        </div>
+                    </div>
+                    <t groups="sales_team.group_sale_manager">
+                        <div class="row px-2">
+                            <div class="col-12 o_dashboard_bottom_block mt-2">
+                                <field name="invoiced" widget="sales_team_progressbar" title="Invoicing"
+                                       options="{'current_value': 'invoiced', 'max_value': 'invoiced_target', 'editable': true, 'edit_max_value': true, 'on_change': 'update_invoiced_target'}"/>
+                            </div>
+                        </div>
+                    </t>
+                </xpath>
+            </data>
+        </field>
+    </record>
+</odoo>
