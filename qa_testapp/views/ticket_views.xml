@@ -198,7 +198,7 @@
                 <field name="reporter_id"/>
                 <field name="project_id"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div class="oe_kanban_global_click">
                             <strong>[<field name="bug_id"/>] <field name="title"/></strong>
                             <div><field name="severity"/> | <field name="priority"/></div>

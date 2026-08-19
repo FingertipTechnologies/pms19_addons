@@ -31,7 +31,7 @@
                 <field name="number_of_openings"/>
                 <field name="candidate_count"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div class="oe_kanban_card oe_kanban_global_click">
                             <strong><field name="job_title"/></strong>
                             <div><field name="department"/></div>

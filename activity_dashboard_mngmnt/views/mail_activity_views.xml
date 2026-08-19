@@ -93,6 +93,16 @@
                     >
             </button>
             </xpath>
+
+            <!-- Swap "Summary" and "Linked to". Two moves are needed because
+                 `position="move"` relocates one field at a time: pull res_name
+                 to the front, then push summary into the slot it vacated. -->
+            <xpath expr="//field[@name='summary']" position="before">
+                <field name="res_name" position="move"/>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="summary" position="move"/>
+            </xpath>
         </field>
     </record>
     <!--    Activity Dashboard menu-->

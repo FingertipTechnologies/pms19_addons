@@ -181,4 +181,23 @@
 
         </field>
     </record>
+
+    <!-- CRM > Customers opens on Kanban instead of List.
+
+         The action's default view is the FIRST entry of its `view_ids`
+         (ordered by `sequence`), not the first mode in the `view_mode`
+         string - see ir.actions.act_window._compute_views, which builds
+         `views` from view_ids and only appends modes that view_ids does not
+         already cover. base.action_partner_form declares list/kanban/form as
+         view_ids, so editing view_mode would have no effect; the sequences
+         are what has to change.
+
+         Only crm.res_partner_menu_customer points at this action, so the
+         Contacts app is unaffected. -->
+    <record id="base.action_partner_form_view1" model="ir.actions.act_window.view">
+        <field name="sequence" eval="0"/>
+    </record>
+    <record id="base.action_partner_tree_view1" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+    </record>
 </odoo>
