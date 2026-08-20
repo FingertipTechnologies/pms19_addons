@@ -355,7 +355,7 @@ class HelpdeskTicket(models.Model):
                         ticket.message_post(
                             body=Markup(body_html),
                             subject='Ticket %s - Confirmation' % ticket.ticket_no,
-                            email_from='admin@fingertipplus.com',
+                            email_from='support@fingertipplus.com',
                             partner_ids=ticket.customer_id.ids,
                             subtype_xmlid='ft_helpdesk_core.mt_ticket_new',
                             message_type='comment',
@@ -552,7 +552,7 @@ class HelpdeskTicket(models.Model):
                 'default_res_ids': self.ids,
                 'default_partner_ids': self.customer_id.ids if self.customer_id else [],
                 'default_subtype_xmlid': 'ft_helpdesk_core.mt_ticket_public_reply',
-                'default_email_from': 'admin@fingertipplus.com',
+                'default_email_from': 'support@fingertipplus.com',
                 'default_composition_mode': 'comment',
             },
         }
@@ -569,7 +569,7 @@ class HelpdeskTicket(models.Model):
 
     def message_post(self, **kwargs):
         """Override to track first response and customer replies."""
-        kwargs['email_from'] = 'admin@fingertipplus.com'
+        kwargs['email_from'] = 'support@fingertipplus.com'
         message = super().message_post(**kwargs)
         # Determine if this is a public reply by an agent
         subtype_id = kwargs.get('subtype_id')
@@ -600,8 +600,8 @@ class HelpdeskTicket(models.Model):
 
     def message_notify(self, **kwargs):
         """Force all helpdesk notifications (incl. activity-assigned emails)
-        to be sent from admin@fingertipplus.com instead of the default."""
-        kwargs['email_from'] = 'admin@fingertipplus.com'
+        to be sent from support@fingertipplus.com instead of the default."""
+        kwargs['email_from'] = 'support@fingertipplus.com'
         return super().message_notify(**kwargs)
 
     def _notify_assignee(self):

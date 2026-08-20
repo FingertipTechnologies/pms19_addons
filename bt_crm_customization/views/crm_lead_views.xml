@@ -103,6 +103,16 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
 
+            <!-- Mobile on the LEAD layout, directly under Phone. Odoo 19 dropped
+                 crm.lead.mobile from core; this module re-declares it, so the
+                 field and its stored numbers are available again. It is added
+                 to the `lead_info` group only - the opportunity layout above
+                 deliberately carries no Email/Phone, because an opportunity has
+                 a mandatory Contact and the numbers are read from there. -->
+            <xpath expr="//group[@name='lead_info']/div[field[@name='phone']]" position="after">
+                <field name="mobile" widget="phone"/>
+            </xpath>
+
             <!-- Source + Campaign on the Lead layout (the right column group
                  above is opportunity-only, so leads need their own copy). -->
             <xpath expr="//group[@name='lead_priority']/field[@name='tag_ids']" position="after">
@@ -133,6 +143,13 @@
                 <field name="bdr_id" optional="show"/>
                 <field name="lead_source" optional="hide"/>
                 <field name="cus_campaign_id" optional="hide"/>
+            </xpath>
+
+            <!-- Mobile beside the stock Phone column. Shown by default: on most
+                 of these records Mobile is the only number on file, so a hidden
+                 column would read as "no contact number". -->
+            <xpath expr="//field[@name='phone']" position="after">
+                <field name="mobile" optional="show" class="o_force_ltr"/>
             </xpath>
         </field>
     </record>

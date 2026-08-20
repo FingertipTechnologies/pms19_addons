@@ -37,8 +37,12 @@
                 <field name="write_date" string="Last Modified On" readonly="1"/>
             </xpath>
 
-            <!-- Salesperson moved above the Phone field -->
-            <xpath expr="//field[@name='phone']" position="before">
+            <!-- Salesperson moved up from the Sales & Purchase tab.
+                 Anchored on `vat` (the only occurrence in the form) rather
+                 than on `phone`: in Odoo 19 the first `phone` sits in the
+                 label-less header <div>, so a field moved there renders as a
+                 bare avatar with no caption and reads as missing. -->
+            <xpath expr="//field[@name='vat']" position="before">
                 <field name="user_id" position="move"/>
             </xpath>
 
@@ -75,10 +79,59 @@
                 <attribute name="required">is_company == True</attribute>
             </xpath>
 
-            <!-- Odoo 19 removed res.partner.mobile (merged into phone), so the
-                 secondary number is anchored after Phone instead. -->
-            <xpath expr="//field[@name='phone']" position="after">
-                <field name="mobile_1" widget="phone"/>
+            <!-- Mobile and Mobile 1, each on its own row under Phone in the
+                 header block, matching how Email and Phone are laid out there.
+
+                 Anchored on the row DIV, not on the `phone` field: a field
+                 inserted after `phone` lands inside that same flex row, so the
+                 numbers end up squeezed side by side sharing Phone's icon and
+                 with no caption of their own - which reads as the field being
+                 missing rather than merely unlabelled. `w-md-50` narrows the
+                 match to the two header rows (Email and Phone), so this cannot
+                 drift onto the `phone` fields in the child-contact subviews
+                 further down the same form. -->
+            <xpath expr="//div[hasclass('w-md-50')][field[@name='phone']]" position="after">
+                <div class="d-flex align-items-baseline w-md-50">
+                    <i class="fa fa-fw me-1 fa-mobile text-primary" title="Mobile"/>
+                    <field name="mobile" class="w-100" widget="phone" placeholder="Mobile"/>
+                </div>
+                <div class="d-flex align-items-baseline w-md-50">
+                    <i class="fa fa-fw me-1 fa-mobile text-primary" title="Mobile 1"/>
+                    <field name="mobile_1" class="w-100" widget="phone" placeholder="Mobile 1"/>
+                </div>
+            </xpath>
+
+            <!-- Same two numbers on the CHILD CONTACT card in the Contacts tab.
+                 That card is a separate kanban template that only ever rendered
+                 `phone`, so a contact whose number lives in Mobile showed a card
+                 with no number at all - the parent form above being fixed does
+                 not reach it. Each row is `t-if`'d like the stock Email/Phone
+                 rows, so nothing is drawn for a contact that has no such number. -->
+            <xpath expr="//kanban//div[field[@name='phone']]" position="after">
+                <div t-if="record.mobile.raw_value" class="text-truncate">
+                    <i class="fa fa-fw me-1 fa-mobile text-primary" title="Mobile"/>
+                    <field name="mobile"/>
+                </div>
+                <div t-if="record.mobile_1.raw_value" class="text-truncate">
+                    <i class="fa fa-fw me-1 fa-mobile text-primary" title="Mobile 1"/>
+                    <field name="mobile_1"/>
+                </div>
+            </xpath>
+
+            <!-- And on the popup form opened by clicking one of those cards,
+                 so the numbers can actually be read and edited there too.
+                 Anchored through `child_ids`/form rather than the form's
+                 `string` attribute: Odoo rejects `string` as an inheritance
+                 selector because it is translatable. -->
+            <xpath expr="//field[@name='child_ids']/form//div[field[@name='phone']]" position="after">
+                <div class="d-flex align-items-baseline">
+                    <i class="fa fa-fw me-1 fa-mobile text-primary" title="Mobile"/>
+                    <field name="mobile" widget="phone" class="w-100" placeholder="Mobile"/>
+                </div>
+                <div class="d-flex align-items-baseline">
+                    <i class="fa fa-fw me-1 fa-mobile text-primary" title="Mobile 1"/>
+                    <field name="mobile_1" widget="phone" class="w-100" placeholder="Mobile 1"/>
+                </div>
             </xpath>
 
             <xpath expr="//group[@name='misc']//field[@name='industry_id']" position="attributes">
@@ -98,8 +151,9 @@
     </record>
 
     <!-- Contacts list view: enforce column order
-         Name, Email, Phone, Annual Revenue, Activities, Employees, Website,
-         Industry, State, Salesperson, Account Status, Company LinkedIn. -->
+         Name, Email, Phone, Mobile, Annual Revenue, Activities, Employees,
+         Website, Industry, State, Salesperson, Account Status,
+         Company LinkedIn. -->
     <record id="view_partner_tree_inherit_custom_order" model="ir.ui.view">
         <field name="name">res.partner.list.custom.order</field>
         <field name="model">res.partner</field>
@@ -120,11 +174,17 @@
                 <field name="phone" position="move"/>
             </xpath>
 
-            <!-- Odoo 19 removed res.partner.mobile (merged into phone), so
-                 there is no longer a Mobile column to position here. -->
-
-            <!-- Annual Revenue (monetary needs its currency field available) -->
+            <!-- Mobile, back in its pre-migration slot right after Phone.
+                 Odoo 19 dropped res.partner.mobile from core; this module
+                 re-declares it, so the column exists again. -->
             <xpath expr="//field[@name='phone']" position="after">
+                <field name="mobile" optional="show" class="o_force_ltr"/>
+            </xpath>
+
+            <!-- Annual Revenue (monetary needs its currency field available).
+                 Anchored on `mobile`, not `phone`, so it lands after the Mobile
+                 column added just above rather than in front of it. -->
+            <xpath expr="//field[@name='mobile']" position="after">
                 <field name="annual_revenue_currency_id" column_invisible="1"/>
                 <field name="annual_revenue_amount" optional="show"/>
             </xpath>

@@ -5,7 +5,7 @@
         <record id="mt_ticket_new_email_template" model="mail.template">
             <field name="name">Helpdesk Ticket: New Ticket Confirmation</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
-            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_from">support@fingertipplus.com</field>
             <field name="subject">Ticket {{ object.ticket_no }} - Confirmation</field>
             <field name="partner_to">{{ object.customer_id.id }}</field>
             <field name="body_html"><![CDATA[
@@ -37,7 +37,7 @@
         <record id="mt_ticket_assigned_email_template" model="mail.template">
             <field name="name">Helpdesk Ticket: Assigned to You</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
-            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_from">support@fingertipplus.com</field>
             <field name="subject">[{{ object.ticket_no }}] Ticket assigned to you: {{ object.name }}</field>
             <field name="email_to">{{ object.assigned_user_id.email }}</field>
             <field name="body_html"><![CDATA[

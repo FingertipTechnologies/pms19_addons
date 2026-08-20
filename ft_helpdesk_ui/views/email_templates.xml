@@ -6,7 +6,7 @@
             <field name="name">Helpdesk: Ticket Created</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
             <field name="subject">Your support ticket {{ object.ticket_no }} has been created</field>
-            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_from">support@fingertipplus.com</field>
             <field name="email_to">{{ object.customer_id.email }}</field>
             <field name="body_html"><![CDATA[
 <div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -59,7 +59,7 @@
             <field name="name">Helpdesk: Ticket Resolved</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
             <field name="subject">Ticket {{ object.ticket_no }} has been resolved</field>
-            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_from">support@fingertipplus.com</field>
             <field name="email_to">{{ object.customer_id.email }}</field>
             <field name="body_html"><![CDATA[
 <div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -102,7 +102,7 @@
             <field name="name">Helpdesk: New Reply on Your Ticket</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
             <field name="subject">New reply on ticket {{ object.ticket_no }}</field>
-            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_from">support@fingertipplus.com</field>
             <field name="email_to">{{ object.customer_id.email }}</field>
             <field name="body_html"><![CDATA[
 <div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -139,7 +139,7 @@
             <field name="name">Helpdesk: SLA Breach Alert</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
             <field name="subject">[SLA BREACH] Ticket {{ object.ticket_no }} - {{ object.name }}</field>
-            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="email_from">support@fingertipplus.com</field>
             <field name="body_html"><![CDATA[
 <div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
     <div style="background: #ef4444; padding: 24px 32px; border-radius: 8px 8px 0 0;">

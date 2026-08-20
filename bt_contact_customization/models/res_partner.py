@@ -213,6 +213,14 @@ class InheritResPartner(models.Model):
     working_date = fields.Date(string="Working Date")
     email_1 = fields.Char(string="Email 1")
     email_2 = fields.Char(string="Email 2")
+    # Odoo 19 dropped res.partner.mobile from core (upstream merged it into
+    # phone), but the migration left the `mobile` column and every value in it
+    # untouched - only the field registration went away. Re-declaring it here
+    # with the same name and a matching type makes Odoo adopt the existing
+    # column, so the stored numbers come back with no data migration at all.
+    # Keep the name exactly `mobile`: any other name creates a new empty column
+    # and leaves the real one orphaned.
+    mobile = fields.Char(string="Mobile")
     mobile_1 = fields.Char(string="Mobile 1")
     contact_eid = fields.Char(string="EID")
     contact_linkedin = fields.Char(string="LinkedIn")
@@ -220,6 +228,27 @@ class InheritResPartner(models.Model):
     company_domain = fields.Char(string="Company Domain")
     # department = fields.Many2one('res.partner.industry',string="Department")
     department = fields.Char(string="Department")
+
+    def _phone_get_number_fields(self):
+        """Search and sanitize over Phone FIRST, then Mobile.
+
+        The base implementation returns ``['mobile', 'phone']`` - mobile first -
+        so simply re-declaring `mobile` above would make `phone_sanitized`
+        recompute from the mobile number on the next write of every record that
+        has both. `phone_sanitized` is the key SMS blacklist matching runs on,
+        and the migration already recomputed it from `phone`, so letting it flip
+        would silently re-point the blacklist for the records where the two
+        numbers differ. Putting `phone` first keeps those untouched, while
+        records with a mobile and no phone - the bulk of what this field brings
+        back - still get a sanitized number instead of none.
+
+        Returning both fields (rather than dropping mobile) is also what lets the
+        stock "Phone Number" search box match on mobile again, and what makes
+        the supporting index in ``init()`` cover the mobile column.
+        """
+        return [
+            fname for fname in ('phone', 'mobile') if fname in self._fields
+        ]
 
     # Stored, indexed match key derived from the website. Lets website matching
     # and the uniqueness check use a single indexed query instead of loading and
