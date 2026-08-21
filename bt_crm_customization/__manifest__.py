@@ -22,6 +22,7 @@
         'views/technology_views.xml',
         'views/campaign_views.xml',
         'views/crm_menu_overrides.xml',
+        'views/marketing_lead_menu.xml',
     ],
     'installable': True,
     'application': False,

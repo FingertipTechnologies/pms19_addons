@@ -154,6 +154,60 @@
         </field>
     </record>
 
+    <!-- Source + Campaign columns in the Leads list (the CRM > Leads menu,
+         restored in crm_menu_overrides.xml, and the new Marketing > Lead
+         menu both open this same view). Mirrors what view_crm_lead_list_bdr
+         above already does for the Pipeline list. -->
+    <record id="view_crm_lead_list_source_campaign" model="ir.ui.view">
+        <field name="name">crm.lead.list.source.campaign</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="lead_source" optional="show"/>
+                <field name="cus_campaign_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Source + Campaign search field + Group By in the Leads search view -->
+    <record id="view_crm_lead_search_source_campaign" model="ir.ui.view">
+        <field name="name">crm.lead.search.source.campaign</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
+        <field name="arch" type="xml">
+            <!-- Searchable fields -->
+            <xpath expr="//search" position="inside">
+                <field name="cus_campaign_id"/>
+                <field name="lead_source"/>
+            </xpath>
+
+            <!-- Hide the stock UTM group-bys, same reasoning as the Pipeline
+                 search view: this business fills in cus_campaign_id and
+                 lead_source, not the stock campaign_id/medium_id/source_id,
+                 so the un-hidden stock entries would just group everything
+                 into "None". ('compaign' is spelt that way in core CRM.) -->
+            <xpath expr="//filter[@name='compaign']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='medium']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='source']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- The working Source / Campaign group-bys, placed next to
+                 Company rather than trailing at the end of the menu. -->
+            <xpath expr="//filter[@name='company']" position="after">
+                <filter name="group_lead_source" string="Source"
+                        context="{'group_by': 'lead_source'}"/>
+                <filter name="group_cus_campaign" string="Campaign"
+                        context="{'group_by': 'cus_campaign_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
     <!-- BDR search field + Group By in the opportunity search view -->
     <record id="view_crm_lead_search_bdr" model="ir.ui.view">
         <field name="name">crm.lead.search.bdr</field>

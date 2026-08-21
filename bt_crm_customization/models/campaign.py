@@ -8,6 +8,7 @@ SOURCE_SELECTION = [
     ('linkedin', 'LinkedIn'),
     ('meta', 'Meta'),
     ('whatsapp', 'WhatsApp'),
+    ('email', 'Email'),
     ('odoo', 'Odoo'),
     ('salesforce', 'Salesforce'),
     ('website', 'Website'),

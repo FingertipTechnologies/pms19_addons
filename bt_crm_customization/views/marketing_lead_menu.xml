@@ -1,0 +1,14 @@
+<odoo>
+    <!-- "Lead" in the Marketing app, between Dashboard (seq -1, set in
+         ft_dashboard_menu_reorg) and Articles (seq 10, marketing_content).
+         Reuses the stock Leads action/views (crm.crm_lead_all_leads) rather
+         than duplicating them - same records the CRM > Leads menu opens,
+         just parented here too so the Marketing team doesn't need the CRM
+         app to see where their leads stand. -->
+    <menuitem id="menu_marketing_lead"
+        action="crm.crm_lead_all_leads"
+        name="Lead"
+        parent="marketing_content.menu_marketing_root"
+        groups="Project_Scorecards.group_scorecard_marketing"
+        sequence="5"/>
+</odoo>

@@ -26,8 +26,12 @@
         <field name="sequence">1</field>
     </record>
 
-    <!-- End: My Quotations (21), Teams (22), Reporting (23), Upload (24),
-         then Configuration (25). Upload is set to 24 in bt_contact_customization. -->
+    <!-- End: My Quotations (21), Teams (22), Leads (23), Reporting (24),
+         Upload (25), then Configuration (26). Upload lives in
+         bt_contact_customization and Configuration is core CRM (default
+         sequence 25 there) - both are re-sequenced here, alongside
+         Reporting, purely to keep a single gap-free ordering with Leads
+         slotted in just before Reporting. -->
     <record id="sale_crm.sale_order_menu_quotations_crm" model="ir.ui.menu">
         <field name="name">My Quotations</field>
         <field name="parent_id" ref="crm.crm_menu_root"/>
@@ -38,18 +42,37 @@
         <field name="parent_id" ref="crm.crm_menu_root"/>
         <field name="sequence">22</field>
     </record>
+
+    <!-- Restore the top-level "Leads" menu (core action crm.crm_lead_all_leads,
+         still gated behind the core "Leads" feature group crm.group_use_lead
+         so it only shows for users the CRM Settings > Leads toggle already
+         covers). Re-parented and re-sequenced here rather than left where
+         core puts it, so it lands right after Teams and before Reporting. -->
+    <record id="crm.crm_menu_leads" model="ir.ui.menu">
+        <field name="active" eval="True"/>
+        <field name="parent_id" ref="crm.crm_menu_root"/>
+        <field name="sequence">23</field>
+    </record>
+
     <!-- Reporting just before Upload/Configuration -->
     <record id="crm.crm_menu_report" model="ir.ui.menu">
-        <field name="sequence">23</field>
+        <field name="sequence">24</field>
+    </record>
+
+    <!-- Upload, pushed one step down to stay right after Reporting now that
+         Leads sits above it. -->
+    <record id="bt_contact_customization.menu_contact_upload_wizard" model="ir.ui.menu">
+        <field name="sequence">25</field>
+    </record>
+
+    <!-- Configuration, pushed one step down so it still trails everything
+         else (core default sequence is 25, now level with Upload above). -->
+    <record id="crm.crm_menu_config" model="ir.ui.menu">
+        <field name="sequence">26</field>
     </record>
 
     <!-- Hide the now-empty "Sales" grouping menu -->
     <record id="crm.crm_menu_sales" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-
-    <!-- Hide the top-level "Leads" menu (permanent, upgrade-safe) -->
-    <record id="crm.crm_menu_leads" model="ir.ui.menu">
         <field name="active" eval="False"/>
     </record>
 
