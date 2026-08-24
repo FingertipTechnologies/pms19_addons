@@ -3,12 +3,12 @@ from odoo import api, fields, models
 
 class FtTarget(models.Model):
     _name = "ft.target"
-    _description = "Target"
+    _description = "KPI"
     _order = "id desc"
     _rec_name = "name"
 
     name = fields.Char(compute="_compute_name", store=True)
-    target_type_id = fields.Many2one("ft.target.type", string="Target Type", required=True)
+    target_type_id = fields.Many2one("ft.target.type", string="KRA", required=True)
     period_id = fields.Many2one("ft.target.period", string="Period", required=True)
     target_value = fields.Float(string="Target Value")
     actual_value = fields.Float(string="Actual Value")
@@ -22,7 +22,7 @@ class FtTarget(models.Model):
     @api.depends("target_type_id", "assigned_to", "period_id")
     def _compute_name(self):
         for rec in self:
-            parts = [rec.target_type_id.name or "Target"]
+            parts = [rec.target_type_id.name or "KPI"]
             if rec.assigned_to:
                 parts.append(rec.assigned_to.name)
             if rec.period_id:

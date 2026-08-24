@@ -4,7 +4,7 @@ from odoo.exceptions import ValidationError
 
 class FtTargetPeriod(models.Model):
     _name = "ft.target.period"
-    _description = "Target Period"
+    _description = "KPI Period"
     _order = "start_date desc"
 
     name = fields.Char(required=True)

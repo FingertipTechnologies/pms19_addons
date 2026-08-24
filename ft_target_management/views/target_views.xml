@@ -5,7 +5,7 @@
         <field name="name">ft.target.list</field>
         <field name="model">ft.target</field>
         <field name="arch" type="xml">
-            <list string="Targets"
+            <list string="KPIs"
                   decoration-success="achievement &gt;= 1"
                   decoration-warning="achievement &gt;= 0.5 and achievement &lt; 1"
                   decoration-danger="achievement &lt; 0.5">
@@ -23,7 +23,7 @@
         <field name="name">ft.target.form</field>
         <field name="model">ft.target</field>
         <field name="arch" type="xml">
-            <form string="Target">
+            <form string="KPI">
                 <sheet>
                     <group>
                         <group>
@@ -38,7 +38,7 @@
                         </group>
                     </group>
                     <separator string="Description"/>
-                    <field name="description" placeholder="Add notes about this target..."/>
+                    <field name="description" placeholder="Add notes about this KPI..."/>
                     <field name="active" invisible="1"/>
                 </sheet>
             </form>
@@ -49,12 +49,12 @@
         <field name="name">ft.target.search</field>
         <field name="model">ft.target</field>
         <field name="arch" type="xml">
-            <search string="Targets">
+            <search string="KPIs">
                 <field name="target_type_id"/>
                 <field name="period_id"/>
                 <field name="assigned_to"/>
                 <group name="group_by">
-                    <filter name="group_type" string="Target Type"
+                    <filter name="group_type" string="KRA"
                             context="{'group_by': 'target_type_id'}"/>
                     <filter name="group_period" string="Period"
                             context="{'group_by': 'period_id'}"/>
@@ -66,7 +66,7 @@
     </record>
 
     <record id="action_ft_target" model="ir.actions.act_window">
-        <field name="name">Targets</field>
+        <field name="name">KPI</field>
         <field name="res_model">ft.target</field>
         <field name="view_mode">list,form</field>
     </record>

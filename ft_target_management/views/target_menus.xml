@@ -2,12 +2,13 @@
 <odoo>
 
     <menuitem id="menu_ft_target_root"
-              name="Targets"
+              name="KPI"
               web_icon="ft_target_management,static/description/icon.png"
+              groups="ft_target_management.group_ft_target_user"
               sequence="80"/>
 
     <menuitem id="menu_ft_target_main"
-              name="Targets"
+              name="KPI"
               parent="menu_ft_target_root"
               action="action_ft_target"
               sequence="10"/>
@@ -15,16 +16,17 @@
     <menuitem id="menu_ft_target_config"
               name="Configuration"
               parent="menu_ft_target_root"
+              groups="ft_target_management.group_ft_target_manager"
               sequence="90"/>
 
     <menuitem id="menu_ft_target_type"
-              name="Target Types"
+              name="KRA"
               parent="menu_ft_target_config"
               action="action_ft_target_type"
               sequence="10"/>
 
     <menuitem id="menu_ft_target_period"
-              name="Target Periods"
+              name="KPI Periods"
               parent="menu_ft_target_config"
               action="action_ft_target_period"
               sequence="20"/>

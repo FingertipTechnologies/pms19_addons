@@ -76,9 +76,13 @@ _OPTIONAL_MENU_ACCESS = [
         'groups': ['base.group_system'],
     }),
 
-    # Target — Admin only.
+    # KPI (module ft_target_management, labels renamed from Target) — whoever
+    # holds a KPI role. The module ships its own "KPI / User" and
+    # "KPI / Manager" groups, assigned per user from Settings > Users; Manager
+    # implies User, and base.group_system implies Manager, so listing User
+    # alone covers managers and admins too.
     ('ft_target_management.menu_ft_target_root', {
-        'groups': ['base.group_system'],
+        'groups': ['ft_target_management.group_ft_target_user'],
     }),
 
     # QA Techstar Test App — hide for everyone (already covered inside

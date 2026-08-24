@@ -5,7 +5,7 @@
         <field name="name">ft.target.type.list</field>
         <field name="model">ft.target.type</field>
         <field name="arch" type="xml">
-            <list string="Target Types" editable="bottom">
+            <list string="KRAs" editable="bottom">
                 <field name="name"/>
                 <field name="department_id"/>
                 <field name="job_role_id"/>
@@ -17,7 +17,7 @@
         <field name="name">ft.target.type.form</field>
         <field name="model">ft.target.type</field>
         <field name="arch" type="xml">
-            <form string="Target Type">
+            <form string="KRA">
                 <sheet>
                     <group>
                         <field name="name"/>
@@ -31,7 +31,7 @@
     </record>
 
     <record id="action_ft_target_type" model="ir.actions.act_window">
-        <field name="name">Target Types</field>
+        <field name="name">KRA</field>
         <field name="res_model">ft.target.type</field>
         <field name="view_mode">list,form</field>
     </record>

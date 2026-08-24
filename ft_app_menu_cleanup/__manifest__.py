@@ -10,7 +10,7 @@ Restricts the Odoo App Switcher / Homepage to only the approved set of
 apps for this instance:
 
 CRM, PMS, General, Training, Suggestions, To-do, Marketing,
-Performance Reviews, Scorecard, Targets, AI Insights, Invoicing,
+Performance Reviews, Scorecard, KPI, AI Insights, Invoicing,
 Contacts, Dashboards
 
 Everything else that ships with the base install but isn't part of that

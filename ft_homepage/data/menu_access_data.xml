@@ -16,7 +16,7 @@
          there, taking an unrelated deployment down with it.
 
          The optional apps — Training, both Helpdesks, Scorecard, Dashboard,
-         AI Insights, Target and the QA test app — are therefore configured
+         AI Insights, KPI and the QA test app — are therefore configured
          from models/ir_ui_menu.py instead, which skips whatever a given
          database does not have. See the <function> call at the end of this
          file; the matrix is documented entry by entry there. -->
@@ -52,7 +52,7 @@
     <!-- Sales and Email Marketing are fully removed for everyone —
          see the deactivation block at the end of this file. -->
 
-    <!-- Scorecard, Dashboard, AI Insights and Target are set from
+    <!-- Scorecard, Dashboard, AI Insights and KPI are set from
          models/ir_ui_menu.py — none of the four is a dependency of
          ft_homepage, and AI Insights in particular is absent from staging. -->
 

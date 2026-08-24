@@ -1,4 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_ft_target_type_user,ft.target.type user,model_ft_target_type,base.group_user,1,1,1,1
-access_ft_target_period_user,ft.target.period user,model_ft_target_period,base.group_user,1,1,1,1
-access_ft_target_user,ft.target user,model_ft_target,base.group_user,1,1,1,1
+access_ft_target_type_user,ft.target.type user,model_ft_target_type,ft_target_management.group_ft_target_user,1,0,0,0
+access_ft_target_type_manager,ft.target.type manager,model_ft_target_type,ft_target_management.group_ft_target_manager,1,1,1,1
+access_ft_target_period_user,ft.target.period user,model_ft_target_period,ft_target_management.group_ft_target_user,1,0,0,0
+access_ft_target_period_manager,ft.target.period manager,model_ft_target_period,ft_target_management.group_ft_target_manager,1,1,1,1
+access_ft_target_user,ft.target user,model_ft_target,ft_target_management.group_ft_target_user,1,1,0,0
+access_ft_target_manager,ft.target manager,model_ft_target,ft_target_management.group_ft_target_manager,1,1,1,1
