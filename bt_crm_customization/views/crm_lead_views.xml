@@ -130,6 +130,82 @@
                 <field name="linkedin_url" widget="url" placeholder="e.g. https://www.linkedin.com/company/..."/>
             </xpath>
 
+            <!-- Company Size + Location on the Lead layout, in the company
+                 group next to the address they describe. Both are free text:
+                 on a lead they hold what the prospect said, before an account
+                 (with its Employee Count) or a structured address exists. -->
+            <xpath expr="//group[@name='lead_partner']//field[@name='linkedin_url']" position="after">
+                <field name="company_size" placeholder="e.g. 50-100 employees"/>
+                <field name="lead_location" placeholder="e.g. Chennai, India"/>
+            </xpath>
+
+            <!-- Qualification block at the top of the Lead's right-hand group:
+                 Created Date, Stage, Status, Timeline, Current System.
+                 Stage is the stock `stage_id` - the same pipeline stage the
+                 opportunity statusbar drives - shown here as a dropdown
+                 because core hides that statusbar on leads
+                 (invisible="type == 'lead'"). No new stage list is
+                 introduced: the values, the team domain and the readonly rule
+                 are the pipeline's own, so a change here is a real pipeline
+                 stage change and survives the conversion to an opportunity. -->
+            <xpath expr="//group[@name='lead_priority']/field[@name='priority']" position="before">
+                <field name="lead_created_date"/>
+                <field name="stage_id" id="stage_id_lead"
+                       domain="['|', ('team_ids', 'in', team_id), ('team_ids', '=', False)]"
+                       options="{'no_create': True, 'no_open': True}"
+                       readonly="won_status == 'lost' or not active"/>
+                <field name="lead_status"/>
+                <field name="acquisition_timeline"/>
+                <field name="current_system"/>
+            </xpath>
+
+            <!-- LEAD layout: two continuous columns.
+                 Core builds the lead form from four inner groups, which the
+                 form grid lays out 2x2 - so the right-hand column started
+                 level with the BOTTOM of the (much taller) company group.
+                 That left Salesperson stranded at the foot of the left column
+                 and an empty gap above Created Date. Consolidating into one
+                 group per column fixes both: everything about the person and
+                 the company on the left, everything about how the lead is
+                 being worked on the right, Salesperson first.
+
+                 Nodes are MOVED, never deleted, so any xpath another module
+                 aims at them still resolves. `lead_info` keeps its invisible
+                 blacklist / partner-update flags - the email and phone widgets
+                 read those from anywhere in the view - and both emptied groups
+                 stay in the arch as empty cells underneath the two real
+                 columns. Opportunities are untouched: all four groups involved
+                 here are the lead-only ones. -->
+
+            <!-- LEFT column: contact details, between Company Name and the
+                 address they belong with. -->
+            <xpath expr="//group[@name='lead_partner']/field[@name='partner_name']" position="after">
+                <xpath expr="//group[@name='lead_info']/label[@for='contact_name']" position="move"/>
+                <xpath expr="//group[@name='lead_info']/div[field[@name='contact_name']]" position="move"/>
+                <xpath expr="//group[@name='lead_info']/label[@for='email_from_group_lead_info']" position="move"/>
+                <xpath expr="//group[@name='lead_info']/div[field[@name='email_from']]" position="move"/>
+                <xpath expr="//group[@name='lead_info']/field[@name='email_cc']" position="move"/>
+                <xpath expr="//group[@name='lead_info']/field[@name='function']" position="move"/>
+                <xpath expr="//group[@name='lead_info']/label[@for='phone_group_lead_info']" position="move"/>
+                <xpath expr="//group[@name='lead_info']/div[field[@name='phone']]" position="move"/>
+                <!-- Mobile travels with Phone: it was added to `lead_info`
+                     above, and moving a div does not carry its siblings. -->
+                <xpath expr="//group[@name='lead_info']/field[@name='mobile']" position="move"/>
+            </xpath>
+
+            <!-- RIGHT column: Salesperson and Sales Team at the top, above the
+                 qualification fields. -->
+            <xpath expr="//group[@name='lead_priority']/field[@name='lead_created_date']" position="before">
+                <xpath expr="//group[not(@name)][field[@name='team_id']]/field[@name='user_id']" position="move"/>
+                <xpath expr="//group[not(@name)][field[@name='team_id']]/field[@name='team_id']" position="move"/>
+            </xpath>
+
+            <!-- ...and that block becomes the second column, level with the
+                 first, instead of the second row of the grid. -->
+            <xpath expr="//group[@name='lead_partner']" position="after">
+                <xpath expr="//group[@name='lead_priority']" position="move"/>
+            </xpath>
+
         </field>
     </record>
 
@@ -166,6 +242,17 @@
             <xpath expr="//list" position="inside">
                 <field name="lead_source" optional="show"/>
                 <field name="cus_campaign_id" optional="show"/>
+                <!-- Qualification columns. Stage / Status / Timeline are the
+                     ones the team works the list by, so they show by default;
+                     the rest are available from the optional-columns menu. -->
+                <field name="lead_created_date" optional="hide"/>
+                <field name="stage_id" optional="show"
+                       options="{'no_create': True, 'no_open': True}"/>
+                <field name="lead_status" optional="show"/>
+                <field name="acquisition_timeline" optional="show"/>
+                <field name="current_system" optional="hide"/>
+                <field name="company_size" optional="hide"/>
+                <field name="lead_location" optional="hide"/>
             </xpath>
         </field>
     </record>
@@ -180,6 +267,8 @@
             <xpath expr="//search" position="inside">
                 <field name="cus_campaign_id"/>
                 <field name="lead_source"/>
+                <field name="lead_status"/>
+                <field name="lead_location"/>
             </xpath>
 
             <!-- Hide the stock UTM group-bys, same reasoning as the Pipeline
@@ -204,6 +293,14 @@
                         context="{'group_by': 'lead_source'}"/>
                 <filter name="group_cus_campaign" string="Campaign"
                         context="{'group_by': 'cus_campaign_id'}"/>
+                <filter name="group_lead_status" string="Status"
+                        context="{'group_by': 'lead_status'}"/>
+                <filter name="group_acquisition_timeline" string="Timeline"
+                        context="{'group_by': 'acquisition_timeline'}"/>
+                <filter name="group_current_system" string="Current System"
+                        context="{'group_by': 'current_system'}"/>
+                <filter name="group_lead_stage" string="Stage"
+                        context="{'group_by': 'stage_id'}"/>
             </xpath>
         </field>
     </record>

@@ -170,6 +170,60 @@ class InheritCrmLead(models.Model):
 
     linkedin_url = fields.Char(string="LinkedIn URL")
 
+    # ------------------------------------------------------------------
+    # Lead qualification fields (Lead page)
+    # ------------------------------------------------------------------
+    # The date the lead came in. Deliberately a separate stored Date rather
+    # than a related field on the technical `create_date`: leads are also
+    # entered days after the first contact and imported from spreadsheets, so
+    # the business date has to stay editable. It defaults to the day the record
+    # is created, which is the value `create_date` would have given anyway.
+    lead_created_date = fields.Date(
+        string="Created Date", default=fields.Date.context_today,
+        tracking=True,
+        help="Date the lead was created / first received.",
+    )
+    # The CRM (if any) the prospect runs today. Kept to exactly the four values
+    # the business asked for - no free text, so it stays groupable.
+    current_system = fields.Selection([
+        ('zoho', 'Zoho'),
+        ('none_spreadsheet', 'None - Spreadsheet'),
+        ('other', 'Other'),
+        ('hubspot', 'HubSpot'),
+    ], string="Current System", tracking=True,
+        help="System the prospect is using today.")
+    # Text, not the Integer employee count read from the account: on a lead the
+    # size is whatever the caller was told ("about 40", "50-100 across 3
+    # branches"), and the account does not exist yet.
+    company_size = fields.Char(
+        string="Company Size",
+        help="Company size as reported by the prospect (e.g. 50-100 employees).",
+    )
+    acquisition_timeline = fields.Selection([
+        ('just_exploring', 'Just Exploring'),
+        ('1_3_months', '1-3 Months'),
+        ('this_month', 'This Month'),
+    ], string="Timeline", tracking=True,
+        help="When the prospect is ready to acquire.")
+    # Outcome of the call / first touch. Distinct from `stage_id` (the pipeline
+    # position) and from the stock `won_status`: a lead can sit in the first
+    # stage with a status of RNP for several attempts.
+    lead_status = fields.Selection([
+        ('call_taken', 'Call Taken'),
+        ('rnp', 'RNP'),
+        ('busy', 'Busy'),
+        ('not_interested', 'Not Interested'),
+        ('by_mistake', 'By Mistake'),
+        ('junk', 'Junk'),
+    ], string="Status", tracking=True,
+        help="Outcome of the last contact attempt. RNP = Ring No Pick.")
+    # Free text: on a lead this is what the prospect said ("Chennai",
+    # "Dubai - HQ in London"), captured before the address fields are filled.
+    lead_location = fields.Char(
+        string="Location",
+        help="Lead / company location.",
+    )
+
     # Snapshot of `next_action` as it was at the last stage change. Used to make
     # sure the user actually updates Next Action between two stage changes.
     last_stage_next_action = fields.Text(
