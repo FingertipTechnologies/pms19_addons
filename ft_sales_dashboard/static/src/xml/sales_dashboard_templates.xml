@@ -141,37 +141,72 @@
             <div class="btsd_chart_head">
                 <h3 class="btsd_chart_title"><t t-esc="props.title"/></h3>
                 <small class="btsd_chart_note">
-                    <t t-esc="totalCount"/> opportunities in the selected period
+                    <t t-esc="totalCount"/> opportunities in the selected period —
+                    band width is proportional to Expected Revenue
                 </small>
             </div>
-            <div class="btsd_funnel">
-                <t t-foreach="view.stages" t-as="s" t-key="s_index">
-                    <div class="btsd_funnel_row">
-                        <div class="btsd_funnel_num" t-attf-style="color: {{ s.color }};">
-                            <t t-esc="s.num"/>
-                        </div>
-                        <div class="btsd_funnel_bandwrap">
-                            <div class="btsd_funnel_band"
-                                 t-on-click="() => this.onStageClick(s)"
-                                 t-attf-style="clip-path: {{ s.clip }}; -webkit-clip-path: {{ s.clip }}; background: {{ s.color }}; cursor: pointer;">
-                                <span class="btsd_funnel_label">
-                                    <t t-esc="s.label"/>
-                                    <small class="btsd_funnel_count"> (<t t-esc="s.count"/>)</small>
-                                </span>
-                                <span class="btsd_funnel_value"><t t-esc="s.value"/></span>
-                            </div>
-                        </div>
-                    </div>
-                </t>
-                <div class="btsd_funnel_row btsd_funnel_row--tip" t-if="view.tip">
-                    <div class="btsd_funnel_num"/>
-                    <div class="btsd_funnel_bandwrap">
-                        <div class="btsd_funnel_tip"
-                             t-attf-style="clip-path: {{ view.tip.clip }}; -webkit-clip-path: {{ view.tip.clip }}; background: {{ view.tip.color }};"/>
-                    </div>
-                </div>
-                <div t-if="!view.stages.length" class="btsd_funnel_empty">No opportunities found.</div>
+            <!-- 3D funnel. Every band is an SVG frustum bounded by half-
+                 ellipses, so consecutive bands share an exact curve and the
+                 stack reads as one solid object. Width carries value; the
+                 light-to-navy ramp carries depth down the pipeline. -->
+            <div class="btsd_funnel3d" t-if="view.segments.length">
+                <svg class="btsd_funnel3d_svg"
+                     t-attf-viewBox="0 0 {{ view.width }} {{ view.height }}"
+                     preserveAspectRatio="xMidYMin meet">
+                    <defs>
+                        <!-- One horizontal ramp per band, light edge to dark
+                             edge, which is what gives each frustum volume
+                             rather than reading as a flat stripe. -->
+                        <t t-foreach="view.segments" t-as="s" t-key="s_index">
+                            <linearGradient t-att-id="s.gradId" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" t-att-stop-color="s.light"/>
+                                <stop offset="45%" t-att-stop-color="s.base"/>
+                                <stop offset="100%" t-att-stop-color="s.dark"/>
+                            </linearGradient>
+                        </t>
+                    </defs>
+
+                    <!-- Pass 1 — the bands, bottom-up. SVG paints in document
+                         order, so the last band is emitted first and each band
+                         above it overhangs it with its own elliptical rim. -->
+                    <t t-foreach="view.painted" t-as="s" t-key="s_index">
+                        <path class="btsd_f3d_seg" t-att-d="s.path"
+                              t-att-fill="s.fillRef"
+                              stroke="#ffffff" stroke-width="1"
+                              t-on-click="() => this.onStageClick(s)">
+                            <title><t t-esc="s.hint"/></title>
+                        </path>
+                    </t>
+
+                    <!-- Mouth of the funnel, carrying the total of every band.
+                         Painted over the first band, and its lid over its own
+                         body, so the open top surface reads as a full ellipse. -->
+                    <path t-att-d="view.lid.body" t-att-fill="view.lid.bodyFill"
+                          stroke="#ffffff" stroke-width="1"/>
+                    <ellipse t-att-cx="view.cx" t-att-cy="view.lid.cy"
+                             t-att-rx="view.lid.rx" t-att-ry="view.lid.ry"
+                             t-att-fill="view.lid.fill" stroke="#ffffff" stroke-width="1"/>
+
+                    <!-- Pass 2 — every label, above every shape. Two lines per
+                         band, both centred on the band's visible face: the
+                         stage name over its Expected Revenue. The amount used
+                         to sit in a column to the right of the funnel, which
+                         made the eye travel to pair a figure with its band and
+                         left the funnel itself off-centre in the viewBox. -->
+                    <text class="btsd_f3d_total" t-att-x="view.cx" t-att-y="view.lid.textY"
+                          text-anchor="middle"><t t-esc="view.lid.text"/></text>
+                    <t t-foreach="view.segments" t-as="s" t-key="s_index">
+                        <text class="btsd_f3d_label" t-att-x="view.cx" t-att-y="s.labelY"
+                              t-att-fill="s.textColor" text-anchor="middle"><t t-esc="s.label"/></text>
+                        <!-- Same fill as the stage name — it is on the band
+                             now, so it has to follow the ramp. Kept apart from
+                             the name by size and opacity, in the stylesheet. -->
+                        <text class="btsd_f3d_amount" t-att-x="view.cx" t-att-y="s.amountY"
+                              t-att-fill="s.textColor" text-anchor="middle"><t t-esc="s.amount"/><tspan t-if="s.percent" class="btsd_f3d_pct"> <t t-esc="s.percent"/></tspan></text>
+                    </t>
+                </svg>
             </div>
+            <div t-else="" class="btsd_funnel_empty">No opportunities found.</div>
         </div>
     </t>
 
@@ -180,14 +215,37 @@
             <div class="btsd_header">
                 <h1 class="btsd_header_title"><i class="fa fa-line-chart me-2"/>Sales Dashboard</h1>
                 <div class="btsd_header_tools">
-                    <div class="btsd_periods">
-                        <t t-foreach="periods" t-as="p" t-key="p.id">
-                            <button class="btsd_period_btn"
-                                    t-att-class="{ 'btsd_period_btn--active': state.period === p.id }"
-                                    t-on-click="() => this.onPeriodChange(p.id)">
-                                <t t-esc="p.label"/>
-                            </button>
-                        </t>
+                    <!-- Period filter. One dropdown, two optgroups: the
+                         calendar periods you are inside, then the trailing ones
+                         (calendar Last Month / Last 2 Months, then the rolling
+                         30/60/90-day windows). -->
+                    <div class="btsd_filter">
+                        <i class="fa fa-calendar btsd_filter_icon"/>
+                        <select class="btsd_select" t-on-change="(ev) => this.onPeriodChange(ev.target.value)">
+                            <t t-foreach="periodGroups" t-as="group" t-key="group.label">
+                                <optgroup t-att-label="group.label">
+                                    <t t-foreach="group.items" t-as="p" t-key="p.id">
+                                        <option t-att-value="p.id" t-att-selected="state.period === p.id"><t t-esc="p.label"/></option>
+                                    </t>
+                                </optgroup>
+                            </t>
+                        </select>
+                    </div>
+                    <!-- Salesperson filter. Narrows the whole dashboard, not
+                         just one card: the server applies it to the opportunity
+                         domain every figure is derived from. -->
+                    <div class="btsd_filter">
+                        <i class="fa fa-user btsd_filter_icon"/>
+                        <select class="btsd_select" t-on-change="(ev) => this.onSalespersonChange(ev)">
+                            <option value="" t-att-selected="state.userId === null">All Salespeople</option>
+                            <t t-foreach="salespeople" t-as="sp" t-key="sp.id">
+                                <!-- On one line deliberately: the templates file
+                                     is xml:space="preserve", so indenting the
+                                     option's text would indent it in the
+                                     dropdown too. -->
+                                <option t-att-value="sp.id" t-att-selected="state.userId === sp.id"><t t-esc="sp.name"/> (<t t-esc="sp.count"/>)</option>
+                            </t>
+                        </select>
                     </div>
                     <div class="btsd_custom" t-if="state.period === 'custom'">
                         <input type="date" class="btsd_date" t-att-value="state.dateFrom"

@@ -78,14 +78,37 @@ const EXEC_COLUMNS = [
     { key: "conversion", label: "Conversion Ratio", type: "percent" },
 ];
 
+// Period presets, in two pill groups.
+//
+// "current" spans the whole calendar period the user is standing in — This
+// Month covers the month, future days included (see _applyPeriod).
+// "trailing" looks backwards and always ends today or earlier, and is itself
+// two different things that must not be confused:
+//   * Last Month / Last 2 Months are CALENDAR months — in August that is July,
+//     and June + July. They never include any part of the current month.
+//   * Last 30/60/90 Days are ROLLING windows recomputed from today on every
+//     load, so the dashboard does not have to be reopened to move with the date.
 const PERIODS = [
-    { id: "today", label: "Today" },
-    { id: "week", label: "This Week" },
-    { id: "month", label: "This Month" },
-    { id: "quarter", label: "This Quarter" },
-    { id: "year", label: "This Year" },
-    { id: "custom", label: "Custom" },
+    { id: "today", label: "Today", group: "current" },
+    { id: "week", label: "This Week", group: "current" },
+    { id: "month", label: "This Month", group: "current" },
+    { id: "quarter", label: "This Quarter", group: "current" },
+    { id: "year", label: "This Year", group: "current" },
+    { id: "last_month", label: "Last Month", group: "trailing" },
+    { id: "last_two_months", label: "Last 2 Months", group: "trailing" },
+    { id: "last_30_days", label: "Last 30 Days", group: "trailing" },
+    { id: "last_60_days", label: "Last 60 Days", group: "trailing" },
+    { id: "last_90_days", label: "Last 90 Days", group: "trailing" },
+    { id: "custom", label: "Custom", group: "trailing" },
 ];
+
+// Rolling-window presets and their length in days, so the three share one
+// implementation instead of three near-identical switch arms.
+const ROLLING_DAYS = {
+    last_30_days: 30,
+    last_60_days: 60,
+    last_90_days: 90,
+};
 
 function fmt(date) {
     const y = date.getFullYear();
@@ -129,7 +152,15 @@ export class SalesDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
-        this.periods = PERIODS;
+        // Rendered as one dropdown with two optgroups. Eleven presets laid out
+        // as pills took two rows of the header and pushed the salesperson
+        // filter and the custom-range inputs onto a third; collapsed into a
+        // select they cost one control's width and the grouping survives as
+        // the optgroup headings.
+        this.periodGroups = [
+            { label: "Current period", items: PERIODS.filter((p) => p.group === "current") },
+            { label: "Trailing period", items: PERIODS.filter((p) => p.group === "trailing") },
+        ];
         this.execColumns = EXEC_COLUMNS;
         this.breakdowns = BREAKDOWNS;
         this.monthViews = MONTH_VIEWS;
@@ -142,6 +173,10 @@ export class SalesDashboard extends Component {
             period: restored?.period || "month",
             dateFrom: restored?.dateFrom ?? null,
             dateTo: restored?.dateTo ?? null,
+            // Selected salesperson: null = the whole team, UNASSIGNED_USER (-1)
+            // = opportunities with nobody on them. Restored with the period so
+            // the breadcrumb and the Back button both return to the same view.
+            userId: restored?.userId ?? null,
             // Which axis the breakdown card shows, and which way the pipeline
             // board looks. Restored with the filter so returning via the
             // breadcrumb lands on the same view the user left.
@@ -166,13 +201,19 @@ export class SalesDashboard extends Component {
         });
     }
 
-    // Each preset spans its WHOLE period, not "start of period -> today".
+    // Each CALENDAR preset spans its WHOLE period, not "start of period ->
+    // today".
     //
     // Ending every range at today is what made This Year stop at July and what
     // hid an opportunity dated the 31st from This Month while today was the
     // 31st but the range had already been cut. A period filter answers "how
     // does this month/quarter/year look", so it has to cover the month,
-    // quarter or year — the future part of it included.
+    // quarter or year — the future part of it included. Last Month and Last 2
+    // Months are whole calendar months for the same reason, and being wholly in
+    // the past they are already complete.
+    //
+    // The rolling presets are the deliberate exception: "Last 30 Days" is a
+    // window ending today, so it must NOT run to the end of any calendar unit.
     _applyPeriod(period) {
         const now = new Date();
         const y = now.getFullYear();
@@ -207,6 +248,37 @@ export class SalesDashboard extends Component {
                 from = fmt(new Date(y, 0, 1));
                 to = fmt(new Date(y, 11, 31));
                 break;
+            case "last_month": {
+                // The previous CALENDAR month, whole: in August, 1–31 July.
+                // new Date(y, m - 1, 1) rolls the year back on its own, so
+                // January correctly resolves to the previous December.
+                const start = new Date(y, m - 1, 1);
+                from = fmt(start);
+                to = fmt(endOfMonth(start.getFullYear(), start.getMonth()));
+                break;
+            }
+            case "last_two_months": {
+                // The previous two CALENDAR months, whole: in August, 1 June to
+                // 31 July. The current month is excluded, so this and This
+                // Month never count the same deal twice.
+                const start = new Date(y, m - 2, 1);
+                const last = new Date(y, m - 1, 1);
+                from = fmt(start);
+                to = fmt(endOfMonth(last.getFullYear(), last.getMonth()));
+                break;
+            }
+            case "last_30_days":
+            case "last_60_days":
+            case "last_90_days": {
+                // Rolling window ending TODAY, inclusive of today — so "Last 30
+                // Days" is today and the 29 days before it, 30 days in total,
+                // and it moves forward by itself every day.
+                const start = new Date(now);
+                start.setDate(start.getDate() - (ROLLING_DAYS[period] - 1));
+                from = fmt(start);
+                to = fmt(now);
+                break;
+            }
             case "custom":
                 from = this.state.dateFrom;
                 to = this.state.dateTo;
@@ -233,11 +305,35 @@ export class SalesDashboard extends Component {
         await this.loadData();
     }
 
+    // The salesperson options, straight from the payload. During the very first
+    // load there is no payload yet and the control shows "All Salespeople"
+    // alone; every later reload keeps the previous data in place, so the list
+    // does not blink empty while a filter is being applied.
+    get salespeople() {
+        return this.state.data?.salespeople || [];
+    }
+
+    /** Selected salesperson's name, for the card titles. Null = whole team. */
+    get salespersonName() {
+        const found = this.salespeople.find((p) => p.id === this.state.userId);
+        return found ? found.name : null;
+    }
+
+    async onSalespersonChange(ev) {
+        // Empty string = "All Salespeople". Compared against "" rather than
+        // tested for falsiness, because the Unassigned sentinel is a number and
+        // a plain truthiness check would throw it away along with the blank.
+        const raw = ev.target.value;
+        this.state.userId = raw === "" ? null : Number(raw);
+        await this.loadData();
+    }
+
     _filter() {
         return {
             period: this.state.period,
             dateFrom: this.state.dateFrom,
             dateTo: this.state.dateTo,
+            userId: this.state.userId,
             breakdown: this.state.breakdown,
             monthView: this.state.monthView,
         };
@@ -303,7 +399,7 @@ export class SalesDashboard extends Component {
             this.state.data = await this.orm.call(
                 "ft.sales.dashboard",
                 "get_dashboard_data",
-                [this.state.dateFrom, this.state.dateTo]
+                [this.state.dateFrom, this.state.dateTo, this.state.userId]
             );
         } finally {
             this.state.loading = false;
@@ -321,16 +417,31 @@ export class SalesDashboard extends Component {
     // a list view that quietly re-applies the active filter would open fewer
     // records than the card counted, which is exactly the mismatch being fixed.
     // Domains that pin active=true are unaffected by it.
+    // The salesperson filter is applied HERE, at the single choke point every
+    // drill-down goes through, rather than in each of the seven callers below.
+    // Adding it per-caller is the version that eventually ships a list showing
+    // the whole team from a card that counted one person.
+    //
+    // The leaves come from the payload (the server's own _user_domain), so the
+    // Unassigned option opens `user_id = false` rather than the -1 sentinel the
+    // control carries. Appending them is safe next to a domain that leads with
+    // "|": Odoo ANDs the top-level expressions of a domain list.
     _openLeads(domain, name) {
+        const who = this.salespersonName;
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: name || "Opportunities",
+            name: (name || "Opportunities") + (who ? ` — ${who}` : ""),
             res_model: "crm.lead",
             views: [[false, "list"], [false, "form"]],
-            domain: domain || [],
+            domain: [...(domain || []), ...this._userDomain()],
             context: { active_test: false },
             target: "current",
         });
+    }
+
+    /** The selected salesperson as domain leaves, as the server resolved them. */
+    _userDomain() {
+        return this.state.data?.user_domain || [];
     }
 
     // Drill-downs mirror the server, including WHICH date field each figure is

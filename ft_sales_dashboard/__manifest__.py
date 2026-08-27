@@ -1,6 +1,6 @@
 {
     'name': 'FT Sales Dashboard',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.6.1',
     'category': 'Sales/CRM',
     'summary': 'Executive Sales Dashboard — KPI cards & Chart.js analytics (OWL)',
     'description': """

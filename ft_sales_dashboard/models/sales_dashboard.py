@@ -69,6 +69,22 @@ Every drill-down in static/src/js/sales_dashboard.js passes
 ``active_test: False`` and then repeats the same explicit condition, so a card
 and the list it opens can never disagree.
 
+SALESPERSON FILTER
+==================
+``get_dashboard_data(user_id=...)`` narrows every figure on the page to one
+salesperson. It is applied ONCE, in ``_user_domain()``, onto the opportunity
+domain that the KPIs, the funnel, the executive table and all three month
+boards are each derived from — so a new card added later inherits the filter
+instead of having to remember it. The resolved leaves ride along in the payload
+(``user_domain``) and the drill-downs append them at the single choke point in
+static/src/js/sales_dashboard.js, for the same reason the period bounds are
+sent rather than recomputed.
+
+Unassigned opportunities are selectable as ``UNASSIGNED_USER`` (-1), which
+resolves to ``user_id = False``. It is not 0, because the argument arrives from
+JSON and ``0 == False`` in Python, so a 0 sentinel could not be distinguished
+from "no filter" by any falsiness test.
+
 A lost opportunity keeps whatever stage it was in when it was lost, so grouping
 by stage would report it under Discussion / Demo / Negotiation.
 ft_sales_dashboard/models/crm_lead.py therefore moves it into the Lost stage on
@@ -149,6 +165,13 @@ FETCH_CAP = 400
 # keep their old stage, so they are pulled out of the stage bands entirely.
 LOST_BAND = 'lost'
 
+# Sentinel user id for the "Unassigned" entry of the salesperson filter.
+# Deliberately -1 rather than 0 or False: the filter argument arrives from JSON,
+# and in Python ``0 == False``, so a 0 sentinel could not be told apart from
+# "no filter applied" by any falsiness test. A negative id can never collide
+# with a real res.users id either.
+UNASSIGNED_USER = -1
+
 
 class FtSalesDashboard(models.TransientModel):
     _name = 'ft.sales.dashboard'
@@ -209,6 +232,72 @@ class FtSalesDashboard(models.TransientModel):
 
     def _opp_domain(self):
         return [('type', '=', 'opportunity')]
+
+    def _user_domain(self, user_id):
+        """The salesperson half of every domain, or [] for "all salespeople".
+
+        ANDed onto ``_opp_domain()`` once in ``get_dashboard_data``, so every
+        KPI, the funnel, the executive table and all three month boards narrow
+        together — there is no figure that can quietly keep showing the whole
+        team while the rest of the dashboard is filtered.
+
+        The resolved leaves are handed back to the client in the payload
+        (``user_domain``) for the same reason the period bounds are: a
+        drill-down repeats the server's own filter instead of rebuilding it.
+        """
+        if not user_id:
+            return []
+        user_id = int(user_id)
+        if user_id == UNASSIGNED_USER:
+            return [('user_id', '=', False)]
+        return [('user_id', '=', user_id)]
+
+    def _salespeople(self, selected=None):
+        """Options for the salesperson filter: everyone who owns an opportunity.
+
+        Built from the opportunities themselves rather than from a res.users
+        search, so every option in the list is guaranteed to have records behind
+        it and a user who has never touched the CRM does not pad the dropdown.
+
+        Deliberately NOT restricted to the selected period: the list would then
+        shrink as the filter narrows and the chosen salesperson could vanish
+        from the control that selects them.
+        """
+        people = []
+        unassigned = 0
+        for group in self._leads().read_group(
+                self._opp_domain(), [], ['user_id'], lazy=False):
+            if group.get('user_id'):
+                people.append({
+                    'id': group['user_id'][0],
+                    'name': group['user_id'][1],
+                    'count': group['__count'],
+                })
+            else:
+                unassigned = group['__count']
+        people.sort(key=lambda p: p['name'].lower())
+        # Unassigned last: it is a bucket, not a person, and it is only offered
+        # when there is actually something in it.
+        if unassigned:
+            people.append({'id': UNASSIGNED_USER, 'name': 'Unassigned',
+                           'count': unassigned})
+
+        # A restored filter can name someone who now owns nothing — their deals
+        # reassigned since, or the Unassigned bucket emptied. The dashboard is
+        # still filtered to them, so they have to stay in the list: dropping
+        # them would leave the control reading "All Salespeople" over figures
+        # that are anything but.
+        if selected and not any(p['id'] == int(selected) for p in people):
+            selected = int(selected)
+            if selected == UNASSIGNED_USER:
+                name = 'Unassigned'
+            else:
+                # exists() first: the user may have been deleted outright, and
+                # reading display_name off a missing record raises MissingError.
+                name = self.env['res.users'].browse(
+                    selected).exists().display_name or 'Unknown'
+            people.append({'id': selected, 'name': name, 'count': 0})
+        return people
 
     def _generated_domain(self):
         """The population the Opportunities and Pipeline Value cards describe.
@@ -303,7 +392,7 @@ class FtSalesDashboard(models.TransientModel):
     # Entry point
     # ------------------------------------------------------------------
     @api.model
-    def get_dashboard_data(self, date_from=None, date_to=None):
+    def get_dashboard_data(self, date_from=None, date_to=None, user_id=None):
         """Every KPI, table and board for the Sales dashboard.
 
         The month boards come in three windows — the trailing six months, the
@@ -311,8 +400,13 @@ class FtSalesDashboard(models.TransientModel):
         fixed by definition; the third is what makes "This Year" show January
         through December (including the months that have no records yet)
         instead of stopping at today.
+
+        ``user_id`` narrows the WHOLE dashboard to one salesperson (None = all,
+        UNASSIGNED_USER = opportunities with no salesperson). It is applied once
+        here, onto the opportunity domain every other figure is derived from, so
+        no card can be left unfiltered by omission.
         """
-        opp = self._opp_domain()
+        opp = self._opp_domain() + self._user_domain(user_id)
         # Three fields, three questions — see GENERATED_FIELD / PERIOD_FIELD /
         # OUTCOME_FIELD. What we opened, what is forecast to close, what did
         # close.
@@ -347,6 +441,14 @@ class FtSalesDashboard(models.TransientModel):
                 field: self._period_bounds(field, date_from, date_to)
                 for field in (GENERATED_FIELD, PERIOD_FIELD, OUTCOME_FIELD)
             },
+            # The salesperson filter: the options to offer, the one in force,
+            # and the domain leaves it resolved to. The leaves are sent rather
+            # than rebuilt in the browser so a drill-down narrows to exactly the
+            # records its card counted — including the Unassigned sentinel,
+            # which is ``user_id = False`` in a domain but -1 in the control.
+            'salespeople': self._salespeople(user_id),
+            'user_id': user_id or None,
+            'user_domain': self._user_domain(user_id),
             # Which stages count as Lost, so the drill-downs can reproduce
             # _lost_domain() / _open_domain() exactly rather than hard-coding
             # "active = false" and disagreeing with the cards.
