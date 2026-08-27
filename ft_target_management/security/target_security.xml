@@ -20,17 +20,19 @@
             <field name="name">User</field>
             <field name="privilege_id" ref="res_groups_privilege_ft_target"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-            <field name="comment">See the KPI app and edit existing KPIs.
-                Cannot create or delete KPIs, and cannot configure KRAs or KPI
-                Periods.</field>
+            <field name="comment">Legacy group - grants nothing. The KPI app
+                and read access to one's own KPIs are available to every
+                internal user, so this no longer needs to be assigned. Kept
+                only so existing assignments and references do not break.</field>
         </record>
 
         <record id="group_ft_target_manager" model="res.groups">
             <field name="name">Manager</field>
             <field name="privilege_id" ref="res_groups_privilege_ft_target"/>
             <field name="implied_ids" eval="[(4, ref('group_ft_target_user'))]"/>
-            <field name="comment">Full access: create and delete KPIs, and
-                manage KRAs and KPI Periods under Configuration.</field>
+            <field name="comment">See every KPI regardless of who it is
+                assigned to. Full access: create and delete KPIs, and manage
+                KRAs and KPI Periods under Configuration.</field>
         </record>
 
         <!-- Settings admins get Manager automatically, so the app keeps
@@ -39,6 +41,59 @@
              base.group_system on write. -->
         <record id="base.group_system" model="res.groups">
             <field name="implied_ids" eval="[(4, ref('group_ft_target_manager'))]"/>
+        </record>
+
+
+        <!-- ==========================================================
+             Record rules: who can see which KPI
+             ==========================================================
+             The app itself is open to every internal user - these rules
+             are what stop them seeing each other's numbers, so somebody
+             with no KPI gets an empty list instead of a denied app.
+
+             Rules attached to groups are OR-ed together, and Manager
+             implies base.group_user, so a Manager gets both rules and
+             the permissive one wins - which is why the Manager rule
+             below has to exist at all rather than being left implicit.
+        -->
+
+        <!-- Attached to base.group_user, so it covers every internal
+             user: each sees their own KPIs, plus the KPIs of the people
+             who report directly to them (hr.employee.parent_id, the
+             "Manager" field on the employee form).
+
+             `user` is sudoed inside rule domains (Environment.user
+             returns the record with su=True), so walking
+             employee_ids -> child_ids -> user_id raises no AccessError
+             even though the reader is not an HR Officer. None of those
+             three fields carries a `groups=` restriction either, so this
+             stays clear of the hr.version / version_id delegation that
+             group-restricted employee fields go through in Odoo 19.
+
+             employee_ids (not employee_id) is used deliberately: it is
+             the plain One2many and already filters on the active
+             companies, whereas employee_id is a non-stored compute that
+             resolves to a single company's employee. -->
+        <record id="rule_ft_target_own_and_team" model="ir.rule">
+            <field name="name">KPI: own and direct reports only</field>
+            <field name="model_id" ref="model_ft_target"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">[
+                '|',
+                    ('assigned_to', '=', user.id),
+                    ('assigned_to', 'in', user.employee_ids.child_ids.user_id.ids),
+            ]</field>
+        </record>
+
+        <!-- KPI Managers (and, through base.group_system above, Settings
+             admins) keep full visibility - including KPIs with nobody
+             assigned yet, which the rule above deliberately hides from
+             plain users. -->
+        <record id="rule_ft_target_manager_all" model="ir.rule">
+            <field name="name">KPI: managers see all</field>
+            <field name="model_id" ref="model_ft_target"/>
+            <field name="groups" eval="[(4, ref('group_ft_target_manager'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
         </record>
 
     </data>

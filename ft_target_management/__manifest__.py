@@ -1,6 +1,6 @@
 {
     'name': 'FT KPI Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.2.0.0',
     'category': 'Human Resources',
     'summary': 'Define KRAs, periods and per-person KPIs with actual vs target tracking.',
     'description': """
@@ -13,6 +13,21 @@ A small standalone app to set and track KPIs.
 * **KPI Period** — a date range (Start / End) KPIs are measured over.
 * **KPI** — links a KRA + Period, holds Target Value, Actual Value, the person
   it is Assigned To, and a computed achievement %.
+
+Visibility
+----------
+The KPI app is open to **every internal user** — no group assignment needed.
+What differs is what each person finds inside it:
+
+* a user sees only the KPIs assigned to them, plus the KPIs of their direct
+  reports (the *Manager* set on the employee record);
+* somebody with no KPI of their own simply gets an empty list, not an access
+  error and not a missing app;
+* a KPI *Manager* sees every KPI, including unassigned ones.
+
+Everyone except a *Manager* is strictly read-only: creating, editing and
+deleting KPIs — and configuring KRAs and KPI Periods — is reserved for
+Managers, so nobody can revise their own target or actual figure.
 
 The technical names (models ``ft.target``, ``ft.target.type``,
 ``ft.target.period``, and this module's directory) are deliberately left

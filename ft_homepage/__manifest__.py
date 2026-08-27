@@ -9,7 +9,9 @@
     # 18.0.1.2.2 stops the upgrade aborting on a database that does not have
     # every optional app: the menu access matrix now skips what is not
     # installed instead of asserting on it.
-    "version": "19.0.1.2.2",
+    # 19.0.1.2.3 stops the previous view painting over the Homepage when
+    # switching to it from a module on wide screens.
+    "version": "19.0.1.2.4",
     "category": "Productivity",
     "summary": "Role-based app icon visibility, default Homepage landing page, "
                 "and Quote of the Day / Announcement widget on the Homepage.",
@@ -64,6 +66,7 @@ Implements 3 requirements on top of the Homepage (web_responsive Apps Menu grid)
     ],
     "assets": {
         "web.assets_backend": [
+            "ft_homepage/static/src/homepage/apps_menu_overlay.scss",
             "ft_homepage/static/src/homepage/quote_widget.scss",
             "ft_homepage/static/src/homepage/quote_widget.js",
             "ft_homepage/static/src/homepage/quote_widget.xml",

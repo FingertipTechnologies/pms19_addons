@@ -76,14 +76,18 @@ _OPTIONAL_MENU_ACCESS = [
         'groups': ['base.group_system'],
     }),
 
-    # KPI (module ft_target_management, labels renamed from Target) — whoever
-    # holds a KPI role. The module ships its own "KPI / User" and
-    # "KPI / Manager" groups, assigned per user from Settings > Users; Manager
-    # implies User, and base.group_system implies Manager, so listing User
-    # alone covers managers and admins too.
-    ('ft_target_management.menu_ft_target_root', {
-        'groups': ['ft_target_management.group_ft_target_user'],
-    }),
+    # KPI (module ft_target_management, labels renamed from Target) — All
+    # users. The app is deliberately open to everybody: ft_target_management
+    # carries record rules that show each person only their own KPIs plus
+    # those of their direct reports, so somebody with no KPI of their own
+    # opens an empty list rather than being denied the app.
+    #
+    # This entry used to restrict the menu to "KPI / User". It must stay an
+    # empty list rather than be deleted: this runs on every ft_homepage
+    # upgrade and writes group_ids outright, so dropping the entry would
+    # leave the old restriction in place on databases that already have it,
+    # and the app would quietly vanish for most users again.
+    ('ft_target_management.menu_ft_target_root', {'groups': []}),
 
     # QA Techstar Test App — hide for everyone (already covered inside
     # PMS/Project; kept installed but removed from the Homepage entirely).

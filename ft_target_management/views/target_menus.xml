@@ -1,10 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- The KPI app is visible to every internal user. What each person can
+         actually see inside it is decided by the record rules in
+         security/target_security.xml, so somebody with no KPI of their own
+         opens an empty list rather than being denied the app. Configuration
+         below stays Manager-only.
+
+         The leading "-" is not decoration: it means "unlink this group from
+         the menu". convert.py only writes group_ids when the `groups`
+         attribute is present at all (`if groups:` — see _tag_menuitem), so
+         simply deleting the old groups="ft_target_management.group_ft_target_user"
+         would leave the restriction sitting on every database that already
+         has it, and the app would stay hidden. Unlinking states it. It is
+         idempotent: on a fresh install the group was never linked and this
+         is a no-op. -->
     <menuitem id="menu_ft_target_root"
               name="KPI"
               web_icon="ft_target_management,static/description/icon.png"
-              groups="ft_target_management.group_ft_target_user"
+              groups="-ft_target_management.group_ft_target_user"
               sequence="80"/>
 
     <menuitem id="menu_ft_target_main"

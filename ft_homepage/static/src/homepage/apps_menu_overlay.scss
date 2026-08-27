@@ -1,0 +1,43 @@
+// ---------------------------------------------------------------------------
+// Apps menu (Homepage) overlay isolation
+//
+// Symptom: switching from a module straight to the Homepage leaves pieces of
+// the view you came from painted on top of the Homepage — most visibly a form
+// view's status bar ("Planned / Working / Testing / Completed") and a white
+// band where its sheet was.
+//
+// Why it happens on wide screens only, which is why it shows on live and not
+// on a smaller local window:
+//
+//   web_chatter_position/static/src/scss/form_statusbar.scss removes the form
+//   sheet's clipping at the XXL breakpoint:
+//
+//       .o_xxl_form_view .o_form_sheet_bg .o_form_sheet { overflow: unset !important; }
+//
+//   That is deliberate — it is what lets the sticky status bar stick. But an
+//   unclipped, positioned status bar is no longer bounded by its sheet, and
+//   `.app-menu-container` (position: fixed, z-index: 1000) is not a high
+//   enough stacking position to reliably cover it. Below the XXL breakpoint
+//   the sheet still clips, so nothing escapes and the bug does not appear.
+//
+// The fix does not try to out-guess which element escapes. It makes the
+// overlay authoritative: while the Apps menu is open the action view beneath
+// it is not painted at all.
+//
+// `visibility: hidden` rather than `display: none` on purpose — it removes the
+// view from the paint tree without removing it from layout, so the underlying
+// view keeps its scroll position and does not reflow when the menu closes.
+// ---------------------------------------------------------------------------
+
+.o_apps_menu_opened {
+    .o_action_manager {
+        visibility: hidden;
+    }
+}
+
+// Second line of defence: keep the overlay above anything that escapes its
+// container. 1000 is below Bootstrap's modal/offcanvas layer (1055+), so this
+// stays out of the way of dialogs, which never coexist with the Apps menu.
+.app-menu-container {
+    z-index: 1045;
+}

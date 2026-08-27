@@ -3,18 +3,66 @@
     License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 */
 
+// ---------------------------------------------------------------------------
+// Sided chatter: a fixed 70 / 30 split between the form sheet and the chatter.
+//
+// These rules apply to EVERY user, not only those whose Chatter Position
+// preference is "Sided". The preference only decides whether THIS module adds
+// `.o-aside`; Odoo core adds it on its own at the XXL breakpoint (see
+// mail/static/src/chatter/web/form_compiler.js), which is how the 270-odd
+// users on "auto" end up with a sided chatter too. Styling the class rather
+// than the preference is therefore what makes the split consistent.
+//
+// Two core rules have to be overridden for the split to hold, both in
+// mail/static/src/chatter/web/form_renderer.scss:
+//
+//   flex-grow: 1  — lets the chatter absorb ALL leftover width, so on a wide
+//                   screen it grows far past its share and the form sheet is
+//                   left in a narrow column. This is the "screen is not fit"
+//                   symptom.
+//   width: 530px  — a fixed pixel width ($o-mail-Chatter-minWidth) that does
+//                   not scale with the viewport.
+//
+// Change the two percentages together — they must add up to 100.
+// ---------------------------------------------------------------------------
+
+$ft-chatter-aside-width: 30%;
+$ft-form-sheet-width: 70%;
+
 .o-mail-Form-chatter {
     &:not(.o-aside):not(.o-full-width) .o-mail-Chatter {
         max-width: $o-form-view-sheet-max-width;
     }
 
-    // When the chatter is docked to the side (sided position), default it to
-    // 35% of the screen so the form sheet keeps the remaining 65%.
-    // Percentage based, so it stays 35% of the viewport at any browser zoom
-    // (Ctrl+ / Ctrl-). Adjust this single value to change the default width.
     &.o-aside {
-        flex: 0 0 35%;
-        width: 35%;
-        max-width: 35%;
+        // flex-grow MUST be 0. Core sets it to 1; leaving it there lets the
+        // chatter eat every spare pixel and the percentage below becomes a
+        // floor rather than the actual width.
+        flex: 0 0 $ft-chatter-aside-width;
+        width: $ft-chatter-aside-width;
+        max-width: $ft-chatter-aside-width;
+        // Core sizes the chatter with a 530px `width`. Without this floor
+        // removed, the flex basis above cannot shrink under it on screens
+        // just past the XXL breakpoint.
+        min-width: 0;
+    }
+}
+
+// The form sheet takes the remaining 70%.
+//
+// `:has(+ ...)` matches the sheet background only when an aside chatter is its
+// next sibling, so a form with the chatter at the bottom — or no chatter at
+// all — keeps core's full-width behaviour untouched.
+.o_form_sheet_bg:has(+ .o-mail-Form-chatter.o-aside) {
+    flex: 1 1 $ft-form-sheet-width;
+    width: $ft-form-sheet-width;
+    max-width: $ft-form-sheet-width;
+    min-width: 0;
+
+    // Let the sheet fill the 70% column instead of being capped and centred
+    // inside it, which is what leaves the empty gutters on a wide screen.
+    .o_form_sheet {
+        max-width: none;
+        width: 100%;
     }
 }
