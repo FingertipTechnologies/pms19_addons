@@ -42,6 +42,8 @@
                     <field name="ft_reopen_count" invisible="ft_reopen_count == 0"/>
                     <field name="ft_rework_hours" widget="float_time"
                            invisible="ft_reopen_count == 0"/>
+                    <field name="date_end" string="Completed Date" readonly="1"/>
+                    <field name="ft_reopened_date" readonly="1"/>
                 </group>
             </field>
             <!-- Deadline is a core field, so it is marked required here rather

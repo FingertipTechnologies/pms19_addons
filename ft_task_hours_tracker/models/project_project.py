@@ -4,6 +4,13 @@ from odoo import models, fields, api
 class ProjectProject(models.Model):
     _inherit = 'project.project'
 
+    ft_can_edit_project_dates = fields.Boolean(
+        string='Can Edit Project Dates',
+        compute='_compute_ft_can_edit_project_dates',
+        help='Technical field used to keep project dates read-only for '
+             'non-administrators.',
+    )
+
     ft_has_exceeded_tasks = fields.Boolean(
         string='Has Tasks Exceeding Time Limit',
         compute='_compute_ft_has_exceeded_tasks',
@@ -46,6 +53,11 @@ class ProjectProject(models.Model):
         readonly=True,
         help='Total hours logged on this project by any Trainee job position.',
     )
+
+    def _compute_ft_can_edit_project_dates(self):
+        can_edit = self.env.user.has_group('base.group_system')
+        for project in self:
+            project.ft_can_edit_project_dates = can_edit
 
     @api.depends('task_ids.ft_hours_exceeded')
     def _compute_ft_has_exceeded_tasks(self):

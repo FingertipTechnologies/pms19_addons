@@ -261,7 +261,7 @@
                              icon="'fa-refresh'" color="'#14B8A6'"
                              onClick="() => this.openKpi('amc_projects')"
                              tooltip="'Active projects in the AMC stage (annual maintenance contract).'"/>
-                    <KpiCard title="'Hours Spent'" value="kpis.hours_spent" suffix="'h'"
+                    <KpiCard title="'All hours spent'" value="kpis.hours_spent" suffix="'h'"
                              icon="'fa-clock-o'" color="'#F59E0B'"
                              onClick="() => this.openTimesheets(false)"/>
                     <KpiCard title="'Billable Hours'" value="kpis.billable_hours" suffix="'h'"
@@ -291,12 +291,15 @@
                              tooltip="'Active employees whose Job Position starts with &quot;Trainee&quot;. Counted separately, not included in Developers or Testers. With a project or status selected, only those who booked time on it during the selected period.'"/>
                     <KpiCard title="'Estimated Hours'" value="kpis.hours_estimated" suffix="'h'"
                              icon="'fa-hourglass-half'" color="'#3B82F6'"
+                             onClick="() => this.openKpi('hours_estimated')"
                              tooltip="'Estimated time on tasks created in the selected period. Rolled up from the tasks, which is also what the Estimated field on a project shows.'"/>
                     <KpiCard title="'Remaining Hours'" value="kpis.hours_remaining" suffix="'h'"
                              icon="'fa-hourglass-end'" color="'#F97316'"
+                             onClick="() => this.openKpi('hours_remaining')"
                              tooltip="'Estimated Hours minus Hours Spent, both for the selected period. Negative means the period burned more time than the work created in it was estimated at.'"/>
                     <KpiCard title="'Resource Need'" value="kpis.resource_need"
                              icon="'fa-users'" color="'#EF4444'"
+                             onClick="() => this.openKpi('resource_need')"
                              tooltip="'No capacity/planning model installed yet.'"/>
                     <!-- Delivery cards. Open &amp; Overdue sits beside the
                          percentage on purpose — the percentage only counts work
@@ -317,6 +320,7 @@
                              tooltip="'Tasks still open whose deadline has passed. A snapshot of now, not filtered by the selected period.'"/>
                     <KpiCard title="'Available Resources'" value="kpis.available_resources"
                              icon="'fa-user-plus'" color="'#14B8A6'"
+                             onClick="() => this.openKpi('available_resources')"
                              tooltip="'No capacity/planning model installed yet.'"/>
                     </div>
                 </section>
@@ -428,23 +432,32 @@
                          Five cards, so this row opts into the five-column grid
                          variant rather than the 4-column default, which would
                          strand the fifth card on a row of its own. -->
-                    <h3 class="ftpd_kpi_subhead">Task Hour Totals<small> — tasks created in the selected period</small></h3>
-                    <div class="ftpd_kpi_grid ftpd_kpi_grid--five">
-                        <KpiCard title="'Estimated Hours (Task)'" value="hours.th_estimated_hours" suffix="'h'"
+                    <h3 class="ftpd_kpi_subhead">Hours Summary<small> — due and completed work in the selected period</small></h3>
+                    <div class="ftpd_kpi_grid">
+                        <KpiCard title="'Total Estimated'" value="hours.hs_total_estimated" suffix="'h'"
                                  icon="'fa-hourglass-half'" color="'#3B82F6'"
-                                 tooltip="'Sum of the Estimated field across the selected tasks. The Estimated Hours card in Project Summary sums the same field but over every task, ignoring the selected period.'"/>
-                        <KpiCard title="'Actual Hours'" value="hours.th_actual_hours" suffix="'h'"
+                                 onClick="() => this.openHoursKpi('total_estimated')"
+                                 tooltip="'Estimated hours of tasks whose Deadline falls in the selected period.'"/>
+                        <KpiCard title="'Open Estimated'" value="hours.hs_open_estimated" suffix="'h'"
                                  icon="'fa-clock-o'" color="'#F59E0B'"
-                                 tooltip="'Whole-task Actual Hours summed over the tasks CREATED in this period — including time those tasks accrued outside it. A different question from the By Role cards above, which slice only the hours booked inside the period, so the two agree only when every task in scope was also created in the period.'"/>
-                        <KpiCard title="'Billable Hours (Task)'" value="hours.th_billable_hours" suffix="'h'"
+                                 onClick="() => this.openHoursKpi('open_estimated')"
+                                 tooltip="'Estimated hours of open tasks whose Deadline falls in the selected period.'"/>
+                        <KpiCard title="'Completed Estimated'" value="hours.hs_completed_estimated" suffix="'h'"
+                                 icon="'fa-check-circle-o'" color="'#8B5CF6'"
+                                 onClick="() => this.openHoursKpi('completed_estimated')"
+                                 tooltip="'Estimated hours of tasks moved to Completed in the selected period.'"/>
+                        <KpiCard title="'Completed Actual'" value="hours.hs_completed_actual" suffix="'h'"
+                                 icon="'fa-check-circle'" color="'#10B981'"
+                                 onClick="() => this.openHoursKpi('completed_actual')"
+                                 tooltip="'Actual hours of tasks moved to Completed in the selected period.'"/>
+                        <KpiCard title="'Billable Hours'" value="hours.hs_billable_hours" suffix="'h'"
                                  icon="'fa-money'" color="'#14B8A6'"
-                                 tooltip="'Sum of the Billable Hours field on the selected tasks. Defaults to Actual Hours until overridden. Distinct from the Billable Hours card in Project Summary, which sums timesheet lines on billable projects.'"/>
-                        <KpiCard title="'Non Billable Hours'" value="hours.th_non_billable_hours" suffix="'h'"
+                                 onClick="() => this.openHoursKpi('billable_hours')"
+                                 tooltip="'Actual hours of tasks due in the period when their project is billable.'"/>
+                        <KpiCard title="'Non-Billable Hours'" value="hours.hs_non_billable_hours" suffix="'h'"
                                  icon="'fa-ban'" color="'#EC4899'"
-                                 tooltip="'Sum of Actual Hours minus Billable Hours across the selected tasks.'"/>
-                        <KpiCard title="'Billed Hours'" value="hours.th_billed_hours" suffix="'h'"
-                                 icon="'fa-check-square-o'" color="'#8B5CF6'"
-                                 tooltip="'Billable Hours on tasks whose Billing Status is Billed — hours actually invoiced, not merely invoiceable.'"/>
+                                 onClick="() => this.openHoursKpi('non_billable_hours')"
+                                 tooltip="'Actual hours of tasks due in the period when their project is non-billable.'"/>
                     </div>
                 </section>
 
@@ -630,21 +643,12 @@
                     </DataTable>
                 </div>
 
-                <!-- Charts Row: project hours (full width) -->
+                <!-- Timeline charts: task stage progression by count and hours. -->
                 <div class="ftpd_chart_row">
-                    <ChartCard title="'Project Hours Analysis'" type="'bar'"
-                               data="projectHoursData" fullWidth="true"
-                               scrollMinWidth="projectHoursMinWidth"
-                               onSegmentClick="(i) => this.onProjectHoursSegment(i)">
-                        <t t-set-slot="tools">
-                            <div class="ftpd_search">
-                                <i class="fa fa-search"/>
-                                <input type="text" placeholder="Search project…"
-                                       t-att-value="state.projectHoursSearch"
-                                       t-on-input="onProjectHoursSearch"/>
-                            </div>
-                        </t>
-                    </ChartCard>
+                    <ChartCard title="'Task Progression Count'" type="'line'"
+                               data="charts.task_progression_count"/>
+                    <ChartCard title="'Task Progression Hours'" type="'line'"
+                               data="charts.task_progression_hours"/>
                 </div>
 
                 <!-- Charts Row: billable + team -->

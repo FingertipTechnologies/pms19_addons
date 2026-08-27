@@ -5,7 +5,7 @@
     # 18.0.1.0.4 adds the rework-hours tracking: account.analytic.line.
     # ft_is_rework and project.task.ft_rework_hours are both STORED, so without
     # this bump their columns are never created and every read of them fails.
-    'version': '19.0.1.0.4',
+    'version': '19.0.1.0.5',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',
