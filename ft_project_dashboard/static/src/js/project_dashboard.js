@@ -14,11 +14,6 @@ const PERIODS = [
     { id: "today", label: "Today" },
     { id: "week", label: "This Week" },
     { id: "month", label: "This Month" },
-    { id: "last_month", label: "Last Month" },
-    { id: "last_two_months", label: "Last Two Months" },
-    { id: "last_30_days", label: "Last 30 Days" },
-    { id: "last_60_days", label: "Last 60 Days" },
-    { id: "last_90_days", label: "Last 90 Days" },
     { id: "quarter", label: "This Quarter" },
     { id: "year", label: "This Year" },
     // No date bounds at all — the whole history of every project. The board
@@ -231,23 +226,6 @@ export class ProjectDashboard extends Component {
             case "month":
                 from = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
                 break;
-            case "last_month":
-                from = fmt(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-                to = fmt(new Date(now.getFullYear(), now.getMonth(), 0));
-                break;
-            case "last_two_months":
-                from = fmt(new Date(now.getFullYear(), now.getMonth() - 2, 1));
-                to = fmt(new Date(now.getFullYear(), now.getMonth(), 0));
-                break;
-            case "last_30_days":
-            case "last_60_days":
-            case "last_90_days": {
-                const days = parseInt(period.match(/\d+/)[0], 10);
-                const d = new Date(now);
-                d.setDate(d.getDate() - (days - 1));
-                from = fmt(d);
-                break;
-            }
             case "quarter": {
                 const q = Math.floor(now.getMonth() / 3);
                 from = fmt(new Date(now.getFullYear(), q * 3, 1));
@@ -431,19 +409,6 @@ export class ProjectDashboard extends Component {
         if (!action) {
             return;
         }
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            name: action.name,
-            res_model: action.res_model,
-            views: [[false, "list"], [false, "form"]],
-            domain: action.domain || [],
-            target: "current",
-        });
-    }
-
-    openHoursKpi(key) {
-        const action = this.hours.hours_actions && this.hours.hours_actions[key];
-        if (!action) return;
         this.action.doAction({
             type: "ir.actions.act_window",
             name: action.name,

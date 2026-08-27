@@ -59,15 +59,6 @@ class ProjectTask(models.Model):
              "already been delivered. Zero until the task is reopened at least "
              "once; earlier hours stay first-round work.",
     )
-    ft_reopened_date = fields.Datetime(
-        string='Re-Opened Date',
-        readonly=True,
-        copy=False,
-        index=True,
-        tracking=True,
-        help='The most recent date and time this task was moved from a '
-             'completed stage back to an open stage.',
-    )
     ft_completion_date = fields.Datetime(
         string='Completion Date',
         compute='_compute_ft_completion_date',
@@ -120,25 +111,13 @@ class ProjectTask(models.Model):
         final_ids = set(self._ft_final_stage_ids())
         was_final = {t.id: t.stage_id.id in final_ids for t in self}
         res = super().write(vals)
-        now = fields.Datetime.now()
-        completed = self.filtered(
-            lambda t: not was_final.get(t.id) and t.stage_id.id in final_ids
-        )
         reopened = self.filtered(
             lambda t: was_final.get(t.id) and t.stage_id.id not in final_ids
         )
-        # date_end is Odoo's standard task completion field. Core only stamps
-        # it for folded stages, while this PMS also treats a stage named
-        # "Completed" as final, so fill it for those (unfolded) stages too.
-        if completed:
-            completed.sudo().write({'date_end': now})
         for task in reopened:
             # sudo: the counter is readonly to users, and whoever drags the card
             # back may not have write access to a field they never edit directly.
-            task.sudo().write({
-                'ft_reopen_count': task.ft_reopen_count + 1,
-                'ft_reopened_date': now,
-            })
+            task.sudo().ft_reopen_count = task.ft_reopen_count + 1
         return res
 
     def _check_task_create_permission(self):

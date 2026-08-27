@@ -7,10 +7,6 @@
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="arch" type="xml">
 
-            <xpath expr="//sheet" position="inside">
-                <field name="ft_can_edit_project_dates" invisible="1"/>
-            </xpath>
-
             <xpath expr="//field[@name='brd_approval_date']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
@@ -70,27 +66,18 @@
                              so surface them here for editing. Note: Odoo clears
                              BOTH if only one is set, and End Date must be on or
                              after Start Date. -->
-                        <field name="date_start" string="Start Date"
-                               readonly="not ft_can_edit_project_dates"/>
-                        <field name="date" string="End Date"
-                               readonly="not ft_can_edit_project_dates"/>
-                        <field name="kick_start_meeting_date"
-                               readonly="not ft_can_edit_project_dates"/>
-                        <field name="brd_approval_date"
-                               readonly="not ft_can_edit_project_dates"/>
-                        <field name="sandbox_review_date"
-                               readonly="not ft_can_edit_project_dates"/>
-                        <field name="go_live_date"
-                               readonly="not ft_can_edit_project_dates"/>
+                        <field name="date_start" string="Start Date"/>
+                        <field name="date" string="End Date"/>
+                        <field name="kick_start_meeting_date"/>
+                        <field name="brd_approval_date"/>
+                        <field name="sandbox_review_date"/>
+                        <field name="go_live_date"/>
                     </group>
 
                     <group>
-                        <field name="uat_start_date"
-                               readonly="not ft_can_edit_project_dates"/>
-                        <field name="support_start_date"
-                               readonly="not ft_can_edit_project_dates"/>
-                        <field name="warranty_end_date"
-                               readonly="not ft_can_edit_project_dates"/>
+                        <field name="uat_start_date"/>
+                        <field name="support_start_date"/>
+                        <field name="warranty_end_date"/>
                     </group>
 
                 </group>

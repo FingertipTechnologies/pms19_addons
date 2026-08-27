@@ -25,7 +25,7 @@
     # hr.employee.write called it, so every catch-up stamped zero lines and a
     # trainee's history only appeared if an upgrade happened to sweep it. The
     # sweep is re-run here for anyone mapped while that was broken.
-    'version': '19.0.0.0.8',
+    'version': '19.0.0.0.7',
     'summary': 'project hours tracking',
     'category': 'Project',
     'author': 'Fingertip',
