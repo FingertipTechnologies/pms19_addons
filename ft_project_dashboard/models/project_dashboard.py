@@ -211,7 +211,12 @@ class FtProjectDashboard(models.TransientModel):
             domain.append(('id', 'in', worked_ids))
 
         buckets = {'dev': [], 'qa': [], 'pm': [], 'ba': [], 'trainee': [], 'other': []}
-        for emp in self.env['hr.employee'].search_read(domain, ['job_id']):
+        # sudo: same 19.0 reason as the Role columns below — job_id is
+        # delegated to hr.version, which only HR officers may read, so this
+        # headcount read raises for an ordinary project user without it. The
+        # sibling reads in _role_hours and _filter_options are already sudo'd;
+        # this was the last one that was not.
+        for emp in self.env['hr.employee'].sudo().search_read(domain, ['job_id']):
             job = emp.get('job_id')
             name = (job[1] if job else '').strip().lower()
             if name.startswith('trainee'):
@@ -662,56 +667,45 @@ class FtProjectDashboard(models.TransientModel):
         return self._tasks_summary_values(filters)
 
     def _task_hours_summary_values(self, filters=None):
-        """Billing-side hour totals read off the task records themselves.
-
-        Every figure here is a stored column on project.task, so each is one
-        SQL sum. This is deliberately task-centric: it answers "what do these
-        tasks add up to", which is why it can report Billable, Non Billable and
-        Billed — none of which exist on a timesheet line.
-
-        These four cards render in the Hours Utilisation section, on their own
-        row, because they are the only hour figures on the board that carry a
-        billing dimension. They are NOT interchangeable with the role and
-        activity cards above them: those count time BOOKED in the window, while
-        these total tasks CREATED in it (the same scope as Tasks Summary). The
-        row carries its own sub-heading for exactly that reason — the two halves
-        will not tally when a date filter is on, and that is correct.
-
-        Meeting / Internal Meeting / External Meeting used to be reported here
-        too, duplicating the three identically-named cards that the Hours
-        Utilisation role split already provides from the timesheet lines. The
-        timesheet-based ones are kept because they answer the same date range as
-        the rest of that section; these were dropped rather than shown twice
-        with two different numbers under one label.
-
-        ``th_estimated_hours`` IS kept, even though Project Summary also carries
-        an Estimated Hours card, because estimation is tracked at both levels in
-        this PMS and both are wanted on the board. The card here is titled
-        "Estimated Hours (Task)" so the two are not read as one figure. Note the
-        Project Summary card is currently NOT the project-level estimate — it
-        sums this same task field with no date bound at all.
-        """
+        """Hours Summary using deadline and completion-date semantics."""
         filters = filters or {}
         Task = self.env['project.task']
-        base = self._task_scope_domain(filters) + self._date_leaves(
-            'create_date', filters.get('date_from'), filters.get('date_to'))
+        scope = self._task_scope_domain(filters)
+        date_from, date_to = filters.get('date_from'), filters.get('date_to')
+        due = scope + [('date_deadline', '!=', False)] + self._date_leaves(
+            'date_deadline', date_from, date_to)
+        open_due = Task._ft_open_domain(due)
+        completed = Task._ft_delivery_domain(scope, date_from, date_to)
 
-        def total(field, extra=None):
+        def total(domain, field):
             return sum(
                 group[field]
-                for group in Task.read_group(base + (extra or []), [field + ':sum'], [])
+                for group in Task.read_group(domain, [field + ':sum'], [])
                 if group.get(field)
             )
 
+        billable_due = due + [('project_id.allow_billable', '=', True)]
+        non_billable_due = due + [('project_id.allow_billable', '=', False)]
+
+        def action(name, domain):
+            return {'res_model': 'project.task', 'name': name,
+                    'domain': self._jsonify_domain(domain)}
+
         return {
-            'th_estimated_hours': round(total('estimated'), 2),
-            'th_actual_hours': round(total('ft_total_hours_taken'), 2),
-            'th_billable_hours': round(total('ft_billable_hours'), 2),
-            'th_non_billable_hours': round(total('ft_non_billable_hours'), 2),
-            # Billable hours on tasks marked Billed — the hours actually
-            # invoiced, not merely invoiceable.
-            'th_billed_hours': round(
-                total('ft_billable_hours', [('ft_billing_status', '=', 'billed')]), 2),
+            'hs_total_estimated': round(total(due, 'estimated'), 2),
+            'hs_open_estimated': round(total(open_due, 'estimated'), 2),
+            'hs_completed_estimated': round(total(completed, 'estimated'), 2),
+            'hs_completed_actual': round(total(completed, 'ft_total_hours_taken'), 2),
+            'hs_billable_hours': round(total(billable_due, 'ft_total_hours_taken'), 2),
+            'hs_non_billable_hours': round(total(non_billable_due, 'ft_total_hours_taken'), 2),
+            'hours_actions': {
+                'total_estimated': action('Tasks Due in Selected Period', due),
+                'open_estimated': action('Open Tasks Due in Selected Period', open_due),
+                'completed_estimated': action('Tasks Completed in Selected Period', completed),
+                'completed_actual': action('Tasks Completed in Selected Period', completed),
+                'billable_hours': action('Billable Project Tasks Due in Selected Period', billable_due),
+                'non_billable_hours': action('Non-Billable Project Tasks Due in Selected Period', non_billable_due),
+            },
         }
 
     @api.model
@@ -847,7 +841,10 @@ class FtProjectDashboard(models.TransientModel):
                 'delivery': self._table_delivery(date_from, date_to, filters),
             },
             'charts': {
-                'project_hours': self._chart_project_hours(date_from, date_to, filters),
+                'task_progression_count': self._chart_task_progression(
+                    date_from, date_to, filters, metric='count'),
+                'task_progression_hours': self._chart_task_progression(
+                    date_from, date_to, filters, metric='hours'),
                 'billable': self._chart_billable(date_from, date_to, filters),
                 'team_composition': self._chart_team_composition(
                     filters, date_from, date_to),
@@ -917,6 +914,7 @@ class FtProjectDashboard(models.TransientModel):
         # the Tasks Summary cards would open nothing on first paint.
         task_actions = tasks_summary.pop('actions', {})
         task_hours_summary = self._task_hours_summary_values(section_filters)
+        hours_actions = task_hours_summary.pop('hours_actions', {})
 
         # On-time delivery for the selected period. The maths lives on
         # project.task so this and the project.project fields can never disagree
@@ -969,6 +967,18 @@ class FtProjectDashboard(models.TransientModel):
                 'domain': self._jsonify_domain(
                     Task._ft_overdue_open_domain(task_scope)),
             },
+            'hours_estimated': {
+                'res_model': 'project.task', 'name': 'Estimated Tasks',
+                'domain': [('project_id', '!=', False)] + task_scope
+                          + self._date_leaves('create_date', date_from, date_to),
+            },
+            'hours_remaining': {
+                'res_model': 'project.task', 'name': 'Tasks Behind Remaining Hours',
+                'domain': [('project_id', '!=', False)] + task_scope
+                          + self._date_leaves('create_date', date_from, date_to),
+            },
+            'resource_need': emp_action([], 'Resource Need'),
+            'available_resources': emp_action([], 'Available Resources'),
             # Tasks Summary drill-downs, built by _tasks_summary_values.
             **task_actions,
         }
@@ -984,6 +994,7 @@ class FtProjectDashboard(models.TransientModel):
             **hours_utilisation,
             **task_hours_summary,
             **tasks_summary,
+            'hours_actions': hours_actions,
             'billable_hours': round(billable, 2),
             'developers': roles['dev'],
             'testers': roles['qa'],
@@ -1239,7 +1250,15 @@ class FtProjectDashboard(models.TransientModel):
                 delivered_by_emp.get(emp_id, Task.browse()))
             rows.append({
                 'employee': emp.name or '',
-                'role': emp.job_id.name if emp.job_id else '',
+                # sudo: the Role column is part of a board every project user
+                # opens, but reading it as the user made the whole dashboard
+                # raise an AccessError for anyone outside the HR groups.
+                # Since 19.0 the employee is sudo'd rather than the job: job_id
+                # is delegated to hr.version (hr.employee._inherits), which is
+                # readable only by group_hr_user, so `emp.job_id` raises on the
+                # traversal itself — before a .sudo() on the hr.job record could
+                # ever apply. Same reasoning as _role_hours below.
+                'role': emp.sudo().job_id.name if emp.sudo().job_id else '',
                 'delivered': stats['completed'],
                 'on_time': stats['on_time'],
                 'late': stats['late'],
@@ -1351,7 +1370,10 @@ class FtProjectDashboard(models.TransientModel):
             days_left = (proj.date - today).days if proj.date else None
             rows.append({
                 'employee': emp.name or '',
-                'role': emp.job_id.name if emp.job_id else '',
+                # sudo: same as the Role column in _table_delivery — job_id
+                # is delegated to the HR-officer-only hr.version, so the
+                # employee is sudo'd, not the job.
+                'role': emp.sudo().job_id.name if emp.sudo().job_id else '',
                 'project': proj.name or '',
                 'status': proj.stage_id.name or '',
                 # Project start date, exposed so the client can date-filter the
@@ -1560,6 +1582,84 @@ class FtProjectDashboard(models.TransientModel):
         if bucket == 'month':
             return key.strftime('%b %Y')
         return key.strftime('%d %b %Y')
+
+    def _chart_task_progression(self, date_from, date_to, filters=None,
+                                metric='count'):
+        """Timeline of current task-stage movements and task completions.
+
+        Planned/Working/Testing use the latest stage-change timestamp. Completed
+        uses the dedicated completion timestamp, so its count and actual hours
+        agree with the completed-period cards.
+        """
+        Task = self.env['project.task']
+        scope = self._task_scope_domain(filters)
+        stage_ids = self._open_stage_bucket_ids()
+        series = ('planned', 'working', 'testing', 'completed')
+        values = {name: {} for name in series}
+        observed = []
+
+        def as_day(value):
+            dt = fields.Datetime.to_datetime(value) if value else None
+            return dt.date() if dt else None
+
+        movement_range = self._date_leaves(
+            'date_last_stage_update', date_from, date_to)
+        for name in ('planned', 'working', 'testing'):
+            domain = scope + [('stage_id', 'in', stage_ids[name])] + movement_range
+            for row in Task.search_read(domain, [
+                    'date_last_stage_update', 'estimated']):
+                day = as_day(row.get('date_last_stage_update'))
+                if not day:
+                    continue
+                observed.append(day)
+                amount = 1 if metric == 'count' else (row.get('estimated') or 0.0)
+                values[name][day] = values[name].get(day, 0.0) + amount
+
+        completed_domain = Task._ft_delivery_domain(scope, date_from, date_to)
+        for row in Task.search_read(completed_domain, [
+                'ft_completion_date', 'ft_total_hours_taken']):
+            day = as_day(row.get('ft_completion_date'))
+            if not day:
+                continue
+            observed.append(day)
+            amount = 1 if metric == 'count' else (row.get('ft_total_hours_taken') or 0.0)
+            values['completed'][day] = values['completed'].get(day, 0.0) + amount
+
+        start = fields.Date.to_date(date_from) if date_from else (
+            min(observed) if observed else None)
+        end = fields.Date.to_date(date_to) if date_to else (
+            max(observed) if observed else None)
+        if not start or not end or end < start:
+            return {'labels': [], 'datasets': []}
+
+        bucket = self._trend_bucket([start, end])
+        keys = self._trend_bucket_span(start, end, bucket)
+        bucketed = {name: {} for name in series}
+        for name in series:
+            for day, amount in values[name].items():
+                key = self._trend_bucket_key(day, bucket)
+                bucketed[name][key] = bucketed[name].get(key, 0.0) + amount
+
+        colors = {
+            'planned': '#64748B', 'working': '#4F46E5',
+            'testing': '#8B5CF6', 'completed': '#10B981',
+        }
+        names = series if metric == 'count' else (
+            'planned', 'working', 'completed')
+        return {
+            'labels': [self._trend_bucket_label(k, bucket) for k in keys],
+            'datasets': [{
+                'label': name.title(),
+                'data': [round(bucketed[name].get(k, 0.0), 2) for k in keys],
+                'borderColor': colors[name],
+                'backgroundColor': colors[name],
+                'borderWidth': 2,
+                'pointRadius': 3,
+                'tension': 0.25,
+                'fill': False,
+            } for name in names],
+            'meta': {'bucket': bucket},
+        }
 
     def _chart_progress_trend(self, date_from, date_to, filters=None):
         """Bar: hours logged and tasks completed per bucket within the range.
