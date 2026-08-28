@@ -4,9 +4,103 @@ from odoo.exceptions import UserError, ValidationError
 # Job positions (hr.job names, lower-cased) allowed to change the project status.
 PM_JOB_NAMES = ('project manager', 'project coordinator', 'project cordinator')
 
+# The two project stages that divide the Task Source bands, matched on the
+# lower-cased English stage name. Everything up to and including Discovery is
+# Planned work, everything from UAT onwards is a Change Request, and what lies
+# between the two is Unplanned.
+#
+# Named rather than hard-coded by id or sequence number because sequences get
+# renumbered whenever somebody drags a column in the project pipeline, and ids
+# differ between databases. Aliases are listed for UAT because the stage is
+# spelled out in full on this database ("User Acceptance") while the rule that
+# drives it is always spoken as UAT.
+DISCOVERY_STAGE_NAMES = ('discovery',)
+UAT_STAGE_NAMES = ('user acceptance', 'user acceptance testing', 'uat')
+
+
+class ProjectProjectStage(models.Model):
+    _inherit = 'project.project.stage'
+
+    @api.model
+    def _ft_stage_sort_key(self, stage):
+        """Where a stage sits in the pipeline, as a comparable key.
+
+        (sequence, id), which is the model's own ``_order``. The id is part of
+        the key and not a tiebreak of convenience: this database has two stages
+        on sequence 10 (Closed and To Do), so comparing on sequence alone makes
+        their order undefined and the Task Source of anything sitting in them
+        flip about depending on which row Postgres returned first.
+        """
+        return (stage.sequence, stage.id)
+
+    @api.model
+    def _ft_source_boundaries(self):
+        """The Discovery and UAT stage records, or empty recordsets.
+
+        Resolved by reading the stages and comparing in Python under a forced
+        ``lang='en_US'`` rather than with a ``('name', '=', ...)`` domain. The
+        stage name is a translated jsonb column, so a domain answers differently
+        per user language — a French-speaking PM would silently get no match and
+        every task they created would come out with no source at all.
+        """
+        stages = self.with_context(active_test=False, lang='en_US').search([])
+        discovery = uat = self.browse()
+        for stage in stages:
+            name = (stage.name or '').strip().lower()
+            if name in DISCOVERY_STAGE_NAMES and not discovery:
+                discovery = stage
+            elif name in UAT_STAGE_NAMES and not uat:
+                uat = stage
+        return discovery, uat
+
 
 class InheritProjectProject(models.Model):
     _inherit = 'project.project'
+
+    # The other side of cus.module.project_ids — the modules this project
+    # offers. Editing it from either end writes the same rows, so a module can
+    # be attached to a project from whichever form the user happens to be on.
+    module_ids = fields.Many2many(
+        'cus.module',
+        relation='cus_module_project_project_rel',
+        column1='project_project_id',
+        column2='cus_module_id',
+        string='Modules',
+        help='Modules available to tasks in this project. The Module field on '
+             'a task offers only what is listed here.',
+    )
+
+    def _ft_task_source(self):
+        """The Task Source a task created in this project should carry.
+
+        Discovery (and anything before it) is work that was Planned when the
+        project was scoped; the build stages that follow are Unplanned; from UAT
+        onwards the client has seen the product, so new work is a Change
+        Request.
+
+        Returns False rather than guessing when the pipeline cannot be read —
+        no stage on the project, or no UAT stage configured at all. An empty
+        Task Source is visibly missing and gets filled in; a wrongly confident
+        one is never questioned, and this field is what change-request billing
+        is argued from.
+        """
+        self.ensure_one()
+        if not self.stage_id:
+            return False
+        Stage = self.env['project.project.stage']
+        discovery, uat = Stage._ft_source_boundaries()
+        if not uat:
+            return False
+        here = Stage._ft_stage_sort_key(self.stage_id)
+        if here >= Stage._ft_stage_sort_key(uat):
+            return 'change_request'
+        # Without a Discovery stage there is no boundary between planned and
+        # unplanned work, so everything short of UAT is treated as unplanned —
+        # the weaker claim of the two, and the one that does not assert work was
+        # scoped up front when nothing says it was.
+        if discovery and here <= Stage._ft_stage_sort_key(discovery):
+            return 'planned'
+        return 'unplanned'
 
     # The project-level counterpart of the task's `estimated` field: the sum of
     # every task's Estimated hours, the way Actual Hours (effective_hours) is the
@@ -194,17 +288,15 @@ class InheritProjectProject(models.Model):
         compute='_compute_ft_delivery_stats',
         store=False,
         readonly=True,
-        help="Delivered tasks that were moved back out of a Completed stage at "
-             "least once.",
+        help="Delivered tasks that were sent back for rework at least once.",
     )
     ft_rework_hours = fields.Float(
         string='Rework Hours',
         compute='_compute_ft_delivery_stats',
         store=False,
         readonly=True,
-        help="Time logged on delivered tasks after they were moved back out of "
-             "a completed stage — the cost of redoing work that had already "
-             "been called finished.",
+        help="Time logged on delivered tasks after they were sent back for "
+             "rework — the cost of the additional correction round.",
     )
     ft_rework_hours_rate = fields.Float(
         string='Rework Hours (%)',
@@ -271,9 +363,10 @@ class InheritProjectProject(models.Model):
         # may change the project status/stage (the status bar = stage_id).
         if ('status' in vals or 'stage_id' in vals) and not self.env.su:
             user = self.env.user
-            # sudo: since 19.0 job_id is delegated to hr.version, so reading it
-            # traverses the HR-officer-only hr.employee.version_id field.
-            job = (user.employee_id.sudo().job_id.name or '').strip().lower() if user.employee_id else ''
+            job = (
+                (user.employee_id.sudo().job_id.name or '').strip().lower()
+                if user.employee_id else ''
+            )
             if job not in PM_JOB_NAMES and not user.has_group('base.group_system'):
                 raise UserError(_("Only a Project Manager can change the project status."))
         if 'timesheet_ids' in vals:
@@ -444,4 +537,3 @@ class AccountAnalyticLine(models.Model):
     #     """
     #     self.ensure_one()
     #     return self.employee_id and self.jobposition_id != self.employee_id.job_id
-

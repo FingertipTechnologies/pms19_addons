@@ -5,11 +5,18 @@
     # 18.0.1.0.4 adds the rework-hours tracking: account.analytic.line.
     # ft_is_rework and project.task.ft_rework_hours are both STORED, so without
     # this bump their columns are never created and every read of them fails.
-    'version': '19.0.1.0.5',
+    # 19.0.1.1.0 turns cus.module.project_ids into the per-project module
+    # configuration (was computed from tasks), filters the task's Module field
+    # against it, adds project.task.task_source defaulted from the project
+    # stage, scopes the Estimated requirement to tasks that have a project, and
+    # limits a User Story to one assignee.
+    # 19.0.1.2.0 combines that work with task workflow controls, source
+    # evidence, deadline auditing and work/completion tracking.
+    'version': '19.0.1.2.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',
-    'depends': ['project','hr_timesheet','sale_timesheet'],
+    'depends': ['project', 'hr_timesheet', 'sale_timesheet', 'ft_helpdesk_core'],
     'data': [
         'security/ir.model.access.csv',
         'security/project_timesheet_group.xml',

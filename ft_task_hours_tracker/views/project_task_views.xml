@@ -201,6 +201,8 @@
                        widget="float_time" sum="Total Estimated" optional="show"/>
                 <field name="ft_total_hours_taken" string="Actual Hours"
                        widget="float_time" sum="Total Actual" optional="show"/>
+                <field name="ft_billing_status" string="Billing Status"
+                       optional="show"/>
             </field>
 
             <!-- Project Stage, Created On and Created By. optional="show" so

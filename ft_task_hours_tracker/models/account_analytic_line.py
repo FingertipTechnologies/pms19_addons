@@ -259,14 +259,9 @@ class AccountAnalyticLine(models.Model):
     }
 
     def _ft_line_bucket(self, employee):
-        """Return the dev/qa/pm/ba/trainee bucket for a line's employee, or False.
-
-        sudo on the employee: since 19.0 hr.employee delegates job_id to
-        hr.version (_inherits), so reading it traverses hr.employee.version_id,
-        which carries groups="hr.group_hr_user". A regular user logging their
-        own time is not an HR officer, so the bare read raised AccessError.
-        """
-        return self.env['project.task']._ft_job_bucket(employee.sudo().job_id)
+        """Return the dev/qa/pm/ba/trainee bucket for a line's employee, or False."""
+        return self.env['project.task']._ft_job_bucket(
+            employee.sudo().job_id)
 
     def _ft_existing_bucket_hours(self, task, bucket, exclude_line=None):
         """Sum the hours already logged on `task` for the given job-position
@@ -278,7 +273,8 @@ class AccountAnalyticLine(models.Model):
                 continue
             # Classify by the employee's current job position, consistent with
             # the task/project hour computes.
-            if ProjectTask._ft_job_bucket(line.employee_id.sudo().job_id) == bucket:
+            if ProjectTask._ft_job_bucket(
+                    line.employee_id.sudo().job_id) == bucket:
                 total += line.unit_amount
         return total
 
