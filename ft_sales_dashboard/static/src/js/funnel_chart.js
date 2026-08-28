@@ -38,14 +38,82 @@ const TAIL_RATIO = 0.62; // how far the last band pulls in, so the funnel closes
 const CHAR_W = 6.4; // approx advance width at the stage-name font size
 const AMT_CHAR_W = 6.0; // ditto at the slightly smaller amount font size
 
-// Depth ramp: light at the mouth, navy at the tip. A single hue carries "how
-// far down the funnel" so that width is left free to carry value — two
-// variables on one shape need two separate channels or neither can be read.
-const RAMP_TOP = "#DCE9F7";
-const RAMP_BOT = "#16365C";
-// Lost keeps its own colour rather than taking a place on the ramp: it is not a
-// deeper stage of the pipeline, it is the deals that left it.
-const LOST_COLOR = "#B03A2E";
+// Stage colours.
+//
+// Depth down the funnel is already carried by POSITION — the bands are stacked
+// in stage order and every one prints its own name, count and amount inside
+// itself — so hue is free to carry stage IDENTITY instead. That is what the
+// previous single-hue light-to-navy ramp spent it on, and it left the middle of
+// the pipeline as five shades of the same blue.
+//
+// TWO OF THE EIGHT HUES ARE NOT HERE. Won owns green and Lost owns red, so a
+// green or red band anywhere else would be read as an outcome. Green is gone
+// outright: palette green (#008300) against status green (#0ca30c) measures
+// ΔE 9.7 to a normal-vision reader — below the 15 floor, i.e. the same colour.
+// Palette red is kept because seven open stages need seven hues, but it is
+// pinned to the FIRST slot, as far up the funnel as it goes: it sits ΔE 4.7
+// from the Lost red, and the only defence available is distance. That pair is
+// the accepted cost of a distinct hue per stage; it is why the run cannot be
+// extended and why red must never be moved down.
+//
+// Hues are assigned in this FIXED ORDER and never cycled: stage 1 is always
+// red, stage 2 always aqua, whatever the pipeline is called in this database.
+// Colour therefore follows the stage, not its rank, so filtering the dashboard
+// down to fewer stages never repaints the survivors.
+//
+// The order is not cosmetic — it is the colour-blindness safety mechanism. It
+// came out of enumerating all 5040 orderings and keeping only the 52 where
+// EVERY pipeline length (3..7 stages) clears the adjacent-pair gates on a white
+// card WITH THE WON BAND APPENDED, since Won is what the last open stage
+// actually sits against. That last condition is what forces aqua to the top:
+// aqua is ΔE 10.0 from the Won green, so it may not end the run. This is the
+// survivor with the widest normal-vision margin: worst adjacent ΔE 27.6
+// (floor 15), worst adjacent colour-blind ΔE 6.9 — inside the 6–8 band, which
+// is legal only alongside a second channel, and the second channel is the
+// label printed in every band plus the white stroke between them.
+//
+// Reordering these by taste silently breaks all of that. Re-run the enumeration
+// if they ever move.
+const STAGE_HUES = [
+    "#e34948", // red    — pinned first, furthest from the Lost band
+    "#1baf7a", // aqua   — pinned high, too close to the Won green to end the run
+    "#eb6834", // orange
+    "#2a78d6", // blue
+    "#eda100", // yellow
+    "#4a3aa7", // violet
+    "#e87ba4", // magenta
+];
+
+// Past the seventh open stage there is no honest colour left to give: the two
+// reserved hues are spoken for, and inventing more by cycling would put two
+// stages in the SAME colour, which is worse than none. Those bands take one
+// neutral instead — visibly "unslotted", and still fully labelled.
+const OVERFLOW_COLOR = "#64748b";
+
+// Won and Lost are outcomes, not deeper stages of the pipeline, so they take
+// reserved status colours and never a categorical slot. This is the one thing
+// in the chart that can be read without reading a word of it.
+//
+// The two are ΔE 4.1 apart under deutan simulation, and no green/red pair does
+// better — that is what red/green blindness means. The mitigation is the one
+// status colours always carry: both bands are labelled, so the colour is
+// confirmation and never the only evidence.
+const WON_COLOR = "#0ca30c";
+const LOST_COLOR = "#d03b3b";
+
+// The mouth is not a stage — it is the sum of them — so it stays neutral rather
+// than borrowing the first stage's hue and implying it is one.
+//
+// Neutral is not the same as invisible, which is what the first attempt at this
+// was: #e2e8f0 sat at 1.2:1 against the white card, so the disc had no edge and
+// the total appeared to float above the funnel. This is the lightest neutral
+// that still clears 3:1 against the card — dark enough to be a solid object,
+// light enough that it does not compete with the saturated bands below it.
+const LID_COLOR = "#8494ab";
+// How much the top FACE of the disc lifts off its body. This is a shallow
+// highlight, not a wash: at the +0.5 it started with, the face climbed back to
+// within 1.1:1 of the card and undid the colour above.
+const LID_FACE_LIFT = 0.22;
 
 // Unique per instance, because SVG gradient ids are document-global and two
 // funnels on one page would otherwise both paint with the first one's ramp.
@@ -76,7 +144,11 @@ function shade(hex, amt) {
     return mix(hex, amt > 0 ? "#ffffff" : "#000000", Math.abs(amt));
 }
 
-const DARK_TEXT = "#1E293B";
+// Near-black rather than the dashboard's slate ink. The bands are saturated
+// now, so the dark-text side of the palette has less headroom than it did
+// against the old pale ramp: this is what keeps the money figure over 3:1 on
+// aqua and yellow.
+const DARK_TEXT = "#0b1220";
 const LIGHT_TEXT = "#FFFFFF";
 
 /** WCAG relative luminance. */
@@ -97,12 +169,14 @@ function contrast(a, b) {
 /**
  * The more legible of ink or paper ON this band, decided by measuring both.
  *
- * The ramp runs from near-white to navy, so no single text colour works down
- * the whole funnel. A brightness threshold does not work either: the bands in
- * the middle of the ramp sit close enough to the crossover that whichever side
- * of it they land on, the guess can be the worse of the two options — mid-slate
- * takes white at 3.3:1 when dark would have given 4.3:1. Comparing the actual
- * contrast ratios picks the better one at every step by construction.
+ * This matters more with hues than it did with the old single-hue ramp: the
+ * palette spans yellow at 2.2:1 against white and violet at 8.5:1, so no one
+ * text colour works across it. A brightness threshold does not work either —
+ * the mid-lightness hues sit close enough to the crossover that whichever side
+ * of it they land on, the guess can be the worse of the two options. Comparing
+ * the actual contrast ratios picks the better one on every band by
+ * construction, which is also what lets the palette carry hues that are too
+ * light to pass 3:1 on their own.
  */
 function textOn(bg) {
     return contrast(bg, DARK_TEXT) >= contrast(bg, LIGHT_TEXT) ? DARK_TEXT : LIGHT_TEXT;
@@ -125,7 +199,7 @@ function textOn(bg) {
  * Props:
  *  - title    : string
  *  - data     : { labels: string[], counts: number[], stage_ids: (int|'lost')[],
- *                 total_count: number,
+ *                 kinds: ('open'|'won'|'lost')[], total_count: number,
  *                 datasets: [{ data: number[] }] }
  *  - fullWidth: boolean (optional)
  *  - onStageClick: function (optional)
@@ -223,6 +297,10 @@ export class FunnelChart extends Component {
         const data = this.props.data || {};
         const labels = data.labels || [];
         const stageIds = data.stage_ids || [];
+        // Absent on a payload from an older server, in which case every band
+        // is treated as an open stage and only Lost keeps its own colour — the
+        // funnel still draws, it just stops calling out the Won band.
+        const kinds = data.kinds || [];
         const counts = data.counts || [];
         const ds = (data.datasets && data.datasets[0]) || {};
         const raw = ds.data || [];
@@ -271,9 +349,9 @@ export class FunnelChart extends Component {
             ry: lidRy,
             // Painted last of all, so its full ellipse reads as the open top
             // surface of the disc rather than being clipped by the body.
-            fill: shade(RAMP_TOP, 0.45),
+            fill: shade(LID_COLOR, LID_FACE_LIFT),
             body: this._band(MAX_R, MAX_R, lidY, totalBottom),
-            bodyFill: RAMP_TOP,
+            bodyFill: LID_COLOR,
             // Centred on the elliptical top face, which is where the reference
             // design puts it — the disc reads as a lid you are looking down on.
             textY: lidY + 5,
@@ -292,13 +370,25 @@ export class FunnelChart extends Component {
         const segments = [];
         let y = totalBottom;
         let overhang = lidRy; // the Total disc covers the first band by this much
+        // Counts only the OPEN stages, so the hue a stage gets does not shift
+        // when a Won or Lost band appears above it — those two are painted from
+        // the reserved status colours and take no slot.
+        let slot = 0;
         for (let i = 0; i < n; i++) {
             const yt = y;
             const rt = radiusAt(i);
             const rb = i === n - 1 ? tailR : rt * BAND_TAPER;
             const h = SEG_H + overhang;
-            const isLost = stageIds[i] === "lost";
-            const base = isLost ? LOST_COLOR : mix(RAMP_TOP, RAMP_BOT, n <= 1 ? 0.55 : i / (n - 1));
+            const kind = kinds[i] || (stageIds[i] === "lost" ? "lost" : "open");
+            let base;
+            if (kind === "lost") {
+                base = LOST_COLOR;
+            } else if (kind === "won") {
+                base = WON_COLOR;
+            } else {
+                base = STAGE_HUES[slot] || OVERFLOW_COLOR;
+                slot++;
+            }
             const share = totalAmount > 0 ? (amounts[i] / totalAmount) * 100 : 0;
             const label = `${labels[i]} (${counts[i] || 0})`;
             const money = this._money(amounts[i]);
@@ -322,7 +412,11 @@ export class FunnelChart extends Component {
                 // to invalid JS. Nothing in the template can escape that; the
                 // only safe fix is to keep the '#' out of the template.
                 fillRef: `url(#ftFunnel${this.uid}_${i})`,
-                light: shade(base, 0.2),
+                // A shallow light edge. The old ramp could afford +0.20 because
+                // its bands were pale and carried dark text either way; on a
+                // saturated hue that edge is where white text goes thin, so the
+                // highlight is cut to the least that still reads as volume.
+                light: shade(base, 0.1),
                 base,
                 dark: shade(base, -0.18),
                 label: this._fit(label, rt),

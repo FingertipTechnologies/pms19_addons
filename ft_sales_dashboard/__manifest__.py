@@ -1,6 +1,8 @@
 {
     'name': 'FT Sales Dashboard',
-    'version': '19.0.1.6.1',
+    # 19.0.1.6.2 gives every funnel stage its own colour, with Won and Lost
+    # on reserved status colours, replacing the single-hue blue ramp.
+    'version': '19.0.1.6.2',
     'category': 'Sales/CRM',
     'summary': 'Executive Sales Dashboard — KPI cards & Chart.js analytics (OWL)',
     'description': """

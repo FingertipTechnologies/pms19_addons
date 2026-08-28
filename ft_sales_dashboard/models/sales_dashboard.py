@@ -102,12 +102,6 @@ from odoo import api, fields, models
 
 from .crm_lead import LOST_STAGE_NAME, WON_PROBABILITY
 
-# Consistent palette shared across the dashboard charts.
-PALETTE = [
-    '#4F46E5', '#06B6D4', '#10B981', '#F59E0B', '#EF4444',
-    '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#3B82F6',
-]
-
 # The "Opportunities" card: dated by Expected Closing, the same field as Pipeline
 # Value beside it. The two cards therefore describe one population from two
 # angles — how many deals are due to close in the period, and what the open ones
@@ -621,18 +615,33 @@ class FtSalesDashboard(models.TransientModel):
             counts.append(lost_count)
             stage_ids.append(LOST_BAND)
 
-        colors = (PALETTE * (len(values) // len(PALETTE) + 1))[:len(values)]
-        if lost_count and colors:
-            colors[-1] = '#EF4444'  # Lost always reads red, wherever it lands.
+        # Which bands are terminal outcomes rather than open pipeline. The
+        # client paints those two with reserved status colours (won green,
+        # lost red) and hands the open stages the categorical hues, so a
+        # manager reads the outcome of the funnel before reading any label.
+        #
+        # Won is taken from the stage's ``is_won`` flag rather than from its
+        # name: 'Won' is translatable and renameable, and this dashboard
+        # already learned that lesson once with the Lost stage.
+        # ``sid`` is an int, False for the Undefined band, or the LOST_BAND
+        # STRING — which is truthy, so it has to be excluded by name and not by
+        # falsiness or the browse() is handed 'lost' as an id.
+        won_ids = set(self.env['crm.stage'].browse(
+            [sid for sid in stage_ids if sid and sid != LOST_BAND]
+        ).filtered('is_won').ids)
+        kinds = [
+            LOST_BAND if sid == LOST_BAND else 'won' if sid in won_ids else 'open'
+            for sid in stage_ids
+        ]
         return {
             'labels': labels,
             'stage_ids': stage_ids,
+            'kinds': kinds,
             'counts': counts,
             'total_count': sum(counts),
             'datasets': [{
                 'label': 'Expected Revenue',
                 'data': values,
-                'backgroundColor': colors or ['#4F46E5'],
             }],
         }
 

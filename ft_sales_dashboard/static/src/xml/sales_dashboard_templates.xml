@@ -147,8 +147,11 @@
             </div>
             <!-- 3D funnel. Every band is an SVG frustum bounded by half-
                  ellipses, so consecutive bands share an exact curve and the
-                 stack reads as one solid object. Width carries value; the
-                 light-to-navy ramp carries depth down the pipeline. -->
+                 stack reads as one solid object. Width carries value, stacking
+                 order carries depth, and hue carries stage identity — Won
+                 green, Lost red, one fixed colour per stage (funnel_chart.js).
+                 No legend: each colour appears exactly once and is labelled
+                 inside its own band, so one would only repeat the chart. -->
             <div class="btsd_funnel3d" t-if="view.segments.length">
                 <svg class="btsd_funnel3d_svg"
                      t-attf-viewBox="0 0 {{ view.width }} {{ view.height }}"
