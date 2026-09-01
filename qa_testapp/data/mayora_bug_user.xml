@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- noupdate="1": the user is created once. A module upgrade must not
+         reset its password, its groups, or re-trigger an invitation mail. -->
+    <data noupdate="1">
+
+        <!-- External Mayora tester.
+             Internal user (group_qa_bug_only implies base.group_user) so the
+             login is a normal backend login, not a portal one - but the only
+             menu it can reach is PMS > Bugs, and the only records it can
+             reach are those of its mapped projects.
+
+             No password is set here on purpose: credentials do not belong in
+             git. Set one after deploying with
+                 Settings > Users & Companies > Users > mayoraexternal
+                 > Action > Change Password
+             or, where outgoing mail is configured, Action > Send Password
+             Reset Instructions.
+
+             no_reset_password stops Odoo firing an invitation mail at
+             mayoraext@gmail.com the moment the module installs. -->
+        <record id="user_mayora_external" model="res.users" context="{'no_reset_password': True}">
+            <field name="name">mayoraexternal</field>
+            <field name="login">mayoraext@gmail.com</field>
+            <field name="email">mayoraext@gmail.com</field>
+            <!-- Deliberately created with NO groups, so this is a share user at
+                 create() time and project/project_todo skip the "Welcome"
+                 project.task onboarding. That insert crashes during a module
+                 upgrade - see _qa_setup_bug_only_user for the full reason. The
+                 real group is granted by the <function> below, which makes the
+                 user internal without re-triggering onboarding. -->
+            <field name="group_ids" eval="[(6, 0, [])]"/>
+        </record>
+
+    </data>
+
+    <!-- noupdate="0": re-applied on every upgrade, so the mapping is repaired
+         if the project is created later or the database is restored elsewhere.
+         Projects are database rows with no XML ID, hence the lookup by name
+         instead of a <record> with a ref. The match is case-insensitive. -->
+    <data noupdate="0">
+
+        <function model="res.users" name="_qa_setup_bug_only_user">
+            <value>qa_testapp.user_mayora_external</value>
+            <value eval="['MAYORA India']"/>
+        </function>
+
+    </data>
+
+</odoo>

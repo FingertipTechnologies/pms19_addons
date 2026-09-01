@@ -31,13 +31,26 @@
             <field name="comment">Senior QA users. Bugs and test cases they create do NOT need approval - they are created in an editable-by-creator (read-only for others) state. Only the creator can edit; others are read-only.</field>
         </record>
 
+        <!-- Bug-only external tester group.
+             Members see nothing but the PMS > Bugs menu (enforced in
+             models/ir_ui_menu.py) and, through the rules below, only the
+             records belonging to the projects listed in their
+             "Bug Visibility Projects" (res.users.qa_bug_project_ids).
+             An empty list means they see nothing - the rules fail closed. -->
+        <record id="group_qa_bug_only" model="res.groups">
+            <field name="name">Bug Only (External Tester)</field>
+            <field name="privilege_id" ref="res_groups_privilege_qa_testapp"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Internal user restricted to the Bugs menu, scoped to the projects listed in Bug Visibility Projects on the user form. Intended for external testers who need a normal (non-portal) login.</field>
+        </record>
+
         <!-- Record rule: everyone can READ all bugs (visibility open to all users).
              Global rule (no groups) so it applies to every user. The per-group
              rules below now only restrict WRITE / CREATE / UNLINK. -->
         <record id="rule_qa_ticket_read_all" model="ir.rule">
             <field name="name">QA Ticket: read all bugs</field>
             <field name="model_id" ref="model_qa_testapp_ticket"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">[('project_id.qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -122,6 +135,96 @@
             <field name="model_id" ref="model_qa_testapp_test_case"/>
             <field name="domain_force">[('project_id.user_id', '=', user.id)]</field>
             <field name="groups" eval="[(4, ref('project.group_project_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- ============================================================
+             Bug-only external testers
+             ============================================================
+             All of the rules below are GLOBAL (no groups), so they are AND-ed
+             with everything else. For a normal user the domain collapses to
+             [(1, '=', 1)] and nothing changes; only a member of
+             group_qa_bug_only gets narrowed to their mapped projects.
+
+             A group rule could not do this: rules sharing a group are OR-ed,
+             so a second portal/QA group rule would WIDEN access, not narrow
+             it.
+
+             Every domain below matches on the inverse relation
+             (project.qa_bug_only_user_ids) rather than reading
+             user.qa_bug_project_ids.ids. Two reasons, both load-bearing:
+
+             * ir.rule._compute_domain is ormcached per user, and
+               res.users._get_invalidation_fields() does not list
+               qa_bug_project_ids - only group_ids, active, lang, tz and the
+               company fields. Baking the ids into the domain freezes them in
+               that cache, so adding a project to a user who already has the
+               group has NO effect until the registry cache is cleared. A leaf
+               is compiled to SQL at query time and always reads the current
+               mapping.
+             * Reading that m2m from inside a project.project rule would
+               re-enter the very domain being computed and recurse. -->
+
+        <!-- Bugs: the read side is handled by rule_qa_ticket_read_all above.
+             Write/create/unlink are otherwise ungoverned for a user who is in
+             none of the Junior QA / Senior QA / PM groups, so scope them too,
+             or a bug-only tester could edit any bug in the database. -->
+        <record id="rule_qa_ticket_bug_only_write" model="ir.rule">
+            <field name="name">QA Ticket: bug-only testers - mapped projects (write)</field>
+            <field name="model_id" ref="model_qa_testapp_ticket"/>
+            <field name="domain_force">[('project_id.qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Test cases are scoped rather than blocked outright: a bug carries
+             test_case_id, and a blocked read there would raise an AccessError
+             when the bug form renders it. -->
+        <record id="rule_qa_test_case_bug_only" model="ir.rule">
+            <field name="name">QA Test Case: bug-only testers - mapped projects</field>
+            <field name="model_id" ref="model_qa_testapp_test_case"/>
+            <field name="domain_force">[('project_id.qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_qa_test_plan_bug_only" model="ir.rule">
+            <field name="name">QA Test Plan: bug-only testers - mapped projects</field>
+            <field name="model_id" ref="model_qa_testapp_test_plan"/>
+            <field name="domain_force">[('project_id.qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_qa_test_scenario_bug_only" model="ir.rule">
+            <field name="name">QA Test Scenario: bug-only testers - mapped projects</field>
+            <field name="model_id" ref="model_qa_testapp_test_scenario"/>
+            <field name="domain_force">[('project_id.qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Every internal user can read project.project (access_project_user
+             in the stock project module), so without this a bug-only tester
+             would still get the full project list in the Project dropdown on
+             the bug form.
+
+             Like the rules above it matches on the inverse relation. -->
+        <record id="rule_project_project_bug_only" model="ir.rule">
+            <field name="name">Project: bug-only testers - mapped projects</field>
+            <field name="model_id" ref="project.model_project_project"/>
+            <field name="domain_force">[('qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>

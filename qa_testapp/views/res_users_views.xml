@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Lets an admin change which projects a bug-only tester can see without
+         touching a record rule. Only rendered for members of the group, so
+         the field never clutters an ordinary user's form. -->
+    <record id="view_users_form_qa_bug_only" model="ir.ui.view">
+        <field name="name">res.users.form.qa.bug.only</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']" position="inside">
+                <field name="qa_bug_only" invisible="1"/>
+                <group string="Bug-Only Access" invisible="not qa_bug_only">
+                    <field name="qa_bug_project_ids"
+                           widget="many2many_tags"
+                           options="{'no_create': True}"
+                           nolabel="1" colspan="2"/>
+                    <div class="text-muted" colspan="2">
+                        This user can only see bugs, test cases, test plans and
+                        test scenarios belonging to the projects above. Leaving
+                        it empty hides everything.
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
