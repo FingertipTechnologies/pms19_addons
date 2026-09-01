@@ -514,22 +514,7 @@ export class ProjectDashboard extends Component {
             { key: "status", label: "Project Status" },
             { key: "days_left", label: "Days Left", numeric: true },
             { key: "hours_spent", label: "Hours Spent", numeric: true },
-            { key: "task_count", label: "#T", numeric: true,
-              help: "Number of Tasks — tasks assigned to this resource with a Deadline in the selected period." },
-            { key: "done_task_count", label: "#D", numeric: true,
-              help: "Number of Done Tasks — assigned tasks currently completed, excluding cancelled tasks." },
-            { key: "working_task_count", label: "#W", numeric: true,
-              help: "Number of Working Tasks — assigned open tasks currently in the Working stage." },
-            { key: "planned_task_count", label: "#P", numeric: true,
-              help: "Number of Planned Tasks — assigned open tasks currently in the Planned stage." },
-            { key: "total_estimated_hours", label: "TOE", numeric: true,
-              help: "Total Estimated Hours — estimated effort for assigned tasks due in the selected period." },
-            { key: "open_estimated_hours", label: "OPE", numeric: true,
-              help: "Open Estimated Hours — estimated effort remaining on open or incomplete assigned tasks." },
-            { key: "completed_estimated_hours", label: "COE", numeric: true,
-              help: "Completed Estimated Hours — estimated effort for completed assigned tasks." },
-            { key: "completed_actual_hours", label: "COA", numeric: true,
-              help: "Completed Actual Hours — actual hours recorded against completed assigned tasks." },
+            { key: "estimated", label: "Estimated Hrs", numeric: true },
         ];
     }
 

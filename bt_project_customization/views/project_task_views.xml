@@ -1,26 +1,50 @@
 <odoo>
+    <!-- Keep this record before every other inheritance of view_task_form2.
+         On an upgraded database, the stored Odoo 18 version of this view
+         targets a second o_state_container which no longer exists in Odoo 19.
+         Updating another child view first makes Odoo validate that stale arch
+         and abort the module upgrade before it can reach this correction. -->
+    <record id="view_task_form_hide_state" model="ir.ui.view">
+        <field name="name">project.task.form.hide.state.widget</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <!-- Odoo 19 uses o_state_container for active tasks and a separate
+                 priority/state container for archived tasks. -->
+            <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[field[@name='priority']]/field[@name='state'][@widget='project_task_state_selection']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_task_form_inherit" model="ir.ui.view">
         <field name="name">project.task.form.inherit.custom.fields</field>
         <field name="model">project.task</field>
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
             <field name="partner_id" position="after">
-                <field name="task_type"/>
-                <field name="source_ticket_id"
-                       invisible="task_source != 'change_request'"
-                       required="task_source == 'change_request'"
-                       domain="[('project_id', '=', project_id), ('channel', '=', 'portal')]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
-                <!-- Required: a task with no estimate cannot be measured by
-                     Delivery Efficiency and lands in Not Estimated. -->
-                <field name="estimated" widget="float_time" required="project_id"/>
-                <field name="actual"/>
-                <field name="ft_allowed_module_ids" invisible="1"/>
-                <field name="module_id" required="True"
-                       domain="[('id', 'in', ft_allowed_module_ids)]"/>
-                <field name="ft_work_end_date"/>
-                <field name="ft_completed_by_id" widget="many2one_avatar_user"/>
-                <field name="date_end" string="Completed Date" readonly="1"/>
+                <group>
+                    <field name="task_type"/>
+                    <!-- Required: a task with no estimate cannot be measured by
+                         Delivery Efficiency and lands in Not Estimated. The
+                         server constraint is the real enforcement; this is so
+                         the field is marked before the save rather than after. -->
+                    <field name="estimated" widget="float_time" required="1"/>
+                    <field name="actual"/>
+                    <field name="module_id" required="True"/>
+                    <!-- Both hidden until this task has actually been reopened,
+                         so a task that went straight through carries no rework
+                         clutter. Shown together because the count alone does not
+                         say what the second round cost. -->
+                    <field name="ft_reopen_count" invisible="ft_reopen_count == 0"/>
+                    <field name="ft_rework_hours" widget="float_time"
+                           invisible="ft_reopen_count == 0"/>
+                    <field name="date_end" string="Completed Date" readonly="1"/>
+                    <field name="ft_reopened_date" readonly="1"/>
+                </group>
             </field>
             <!-- Deadline is a core field, so it is marked required here rather
                  than redeclared. Without one a task can never be judged on time
@@ -28,26 +52,6 @@
                  Delivered Without Deadline. -->
             <xpath expr="//field[@name='date_deadline']" position="attributes">
                 <attribute name="required">1</attribute>
-            </xpath>
-            <!-- Keep the long Text field in the wider left-hand details group;
-                 the nested custom group on the right compresses Text widgets. -->
-            <xpath expr="//field[@name='user_ids']" position="after">
-                <field name="task_source"
-                       required="task_type == 'user_story'"/>
-                <field name="unplanned_reason"
-                       invisible="task_source != 'unplanned'"
-                       required="task_source == 'unplanned'"
-                       placeholder="Explain why this task was unplanned (minimum 20 characters)…"/>
-                <field name="ft_timeline_status"/>
-                <field name="ft_worked_by_id" widget="many2one_avatar_user"/>
-                <field name="ft_work_start_date"/>
-                <field name="ft_deadline_change_count"/>
-                <!-- Rework audit stays on the left with the work-start audit. -->
-                <field name="ft_reopen_count" invisible="ft_reopen_count == 0"/>
-                <field name="ft_rework_hours" widget="float_time"
-                       invisible="ft_reopen_count == 0"/>
-                <field name="ft_reopened_date" readonly="1"
-                       invisible="ft_reopen_count == 0"/>
             </xpath>
         </field>
     </record>
@@ -59,25 +63,10 @@
         <field name="inherit_id" ref="project.quick_create_task_form"/>
         <field name="arch" type="xml">
             <field name="user_ids" position="before">
-                <field name="ft_allowed_module_ids" invisible="1"/>
-                <field name="module_id" required="True"
-                       domain="[('id', 'in', ft_allowed_module_ids)]"/>
-                <field name="task_source" required="1"/>
-                <field name="source_ticket_id"
-                       invisible="task_source != 'change_request'"
-                       required="task_source == 'change_request'"
-                       domain="[('project_id', '=', project_id), ('channel', '=', 'portal')]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
-                <field name="unplanned_reason"
-                       invisible="task_source != 'unplanned'"
-                       required="task_source == 'unplanned'"
-                       colspan="2" class="w-100"
-                       placeholder="Minimum 20 characters…"/>
+                <field name="module_id" required="True"/>
                 <!-- Both are required by a server constraint, so quick-create
                      has to offer them or every quick-created task would be
-                     rejected on save with no way to satisfy it from here.
-                     Quick create always runs inside a project, so the estimate
-                     is unconditionally required here. -->
+                     rejected on save with no way to satisfy it from here. -->
                 <field name="estimated" widget="float_time" required="1"/>
                 <field name="date_deadline" required="1"/>
             </field>
@@ -115,31 +104,6 @@
             <xpath expr="//field[@name='progress'][@widget='project_task_progressbar']"
                    position="attributes">
                 <attribute name="column_invisible">1</attribute>
-            </xpath>
-        </field>
-    </record>
-
-    <!-- Hide the task state selection (In Progress / Changes Requested /
-         Approved / Cancelled / Done) on the task form. The stage bar
-         (Planned / Working / Testing / ...) is what we track tasks by.
-
-         The containers are hidden rather than the field removed: the field
-         stays loaded, so state keeps computing and every other view and module
-         that reads it is untouched. Kanban and list still show the widget, so
-         tasks can still be closed — stages do not set state in Odoo 18, and
-         reporting on '1_done' would break if nothing could. -->
-    <record id="view_task_form_hide_state" model="ir.ui.view">
-        <field name="name">project.task.form.hide.state.widget</field>
-        <field name="model">project.task</field>
-        <field name="inherit_id" ref="project.view_task_form2"/>
-        <field name="arch" type="xml">
-            <!-- Stock renders the widget twice: [1] for active tasks,
-                 [2] for archived ones. -->
-            <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//div[field[@name='priority']]/field[@name='state'][@widget='project_task_state_selection']" position="attributes">
-                <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>
