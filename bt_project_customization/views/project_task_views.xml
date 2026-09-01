@@ -1,25 +1,4 @@
 <odoo>
-    <!-- Keep this record before every other inheritance of view_task_form2.
-         On an upgraded database, the stored Odoo 18 version of this view
-         targets a second o_state_container which no longer exists in Odoo 19.
-         Updating another child view first makes Odoo validate that stale arch
-         and abort the module upgrade before it can reach this correction. -->
-    <record id="view_task_form_hide_state" model="ir.ui.view">
-        <field name="name">project.task.form.hide.state.widget</field>
-        <field name="model">project.task</field>
-        <field name="inherit_id" ref="project.view_task_form2"/>
-        <field name="arch" type="xml">
-            <!-- Odoo 19 uses o_state_container for active tasks and a separate
-                 priority/state container for archived tasks. -->
-            <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//div[field[@name='priority']]/field[@name='state'][@widget='project_task_state_selection']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-        </field>
-    </record>
-
     <record id="view_task_form_inherit" model="ir.ui.view">
         <field name="name">project.task.form.inherit.custom.fields</field>
         <field name="model">project.task</field>
@@ -104,6 +83,26 @@
             <xpath expr="//field[@name='progress'][@widget='project_task_progressbar']"
                    position="attributes">
                 <attribute name="column_invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Update this view after view_task_form_inherit. During rollback, the
+         database still contains the newer form architecture and it references
+         fields that the reverted Python model no longer defines. Replacing
+         that stale architecture first lets Odoo validate this view safely. -->
+    <record id="view_task_form_hide_state" model="ir.ui.view">
+        <field name="name">project.task.form.hide.state.widget</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <!-- Odoo 19 uses o_state_container for active tasks and a separate
+                 priority/state container for archived tasks. -->
+            <xpath expr="//div[hasclass('o_state_container')]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[field[@name='priority']]/field[@name='state'][@widget='project_task_state_selection']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>
