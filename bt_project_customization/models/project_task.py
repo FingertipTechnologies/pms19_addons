@@ -412,6 +412,13 @@ class ProjectTask(models.Model):
     )
     def _check_task_source_rules(self):
         """Validate Task Source and its conditional supporting evidence."""
+        # Stored-field recomputations run as superuser during module upgrades.
+        # Legacy tasks may not yet have the evidence required by the new rules;
+        # normal create/write calls explicitly invoke this method in the real
+        # user's environment, so interactive validation remains enforced.
+        if self.env.su:
+            return
+
         for task in self:
             if task.task_type == 'user_story' and not task.task_source:
                 raise ValidationError(_(
