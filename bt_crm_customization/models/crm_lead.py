@@ -304,11 +304,29 @@ class InheritCrmLead(models.Model):
         ft_sales_dashboard is exempt for the same reason — a deal that has been
         won has no next action either, and the record is already won whether or
         not its stage is allowed to say so.
+
+        The stage name is read straight off ``stage_id`` rather than through the
+        ``is_cold_stage`` / ``is_lost_stage`` computes, because those two are
+        unreliable in the one place it matters most - converting a lead.
+
+        ``crm.lead.stage_id`` is a computed *stored* field that depends on
+        ``type``, so writing ``type = 'opportunity'`` queues it for recompute.
+        ``_check_closed_amount`` then reads ``is_won_stage``, which enters
+        ``_compute_stage_flags``, which reads ``stage_id``, which fires that
+        pending recompute, which re-validates ``stage_id`` and re-enters this
+        constraint - all while ``_compute_stage_flags`` is still on the stack.
+        The flags are therefore mid-compute and read falsy, the Cold exemption
+        is skipped, and a Cold lead cannot be converted at all. Every lead in
+        the database sits in Cold, so this blocked every conversion.
+
+        Reading ``stage_id.name`` here has no such problem: by the time this
+        runs, ``stage_id`` itself has been computed.
         """
         if self.env.context.get(STAGE_SYNC_CONTEXT):
             return
         for lead in self:
-            if lead.type != 'opportunity' or lead.is_cold_stage or lead.is_lost_stage:
+            stage_name = (lead.stage_id.name or '').strip().lower()
+            if lead.type != 'opportunity' or stage_name in (COLD_STAGE, LOST_STAGE):
                 continue
             text = (lead.next_action or '').strip()
             if not text:
