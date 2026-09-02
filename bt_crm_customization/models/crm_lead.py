@@ -199,6 +199,15 @@ class InheritCrmLead(models.Model):
         string="Company Size",
         help="Company size as reported by the prospect (e.g. 50-100 employees).",
     )
+    employee_count = fields.Integer(
+        string="Employee Count",
+        help="Number of employees to copy to the account when the lead is converted.",
+    )
+    annual_revenue_amount = fields.Monetary(
+        string="Annual Revenue",
+        currency_field='company_currency',
+        help="Annual revenue to copy to the account when the lead is converted.",
+    )
     acquisition_timeline = fields.Selection([
         ('just_exploring', 'Just Exploring'),
         ('1_3_months', '1-3 Months'),
@@ -388,6 +397,25 @@ class InheritCrmLead(models.Model):
                 raise ValidationError(
                     "Closed Amount is required (and must be greater than 0) on the Won stage."
                 )
+
+    def _prepare_customer_values(self, partner_name, is_company=False, parent_id=False):
+        """Carry lead qualification data into a customer created on conversion.
+
+        Core CRM calls this method once for the company and, when the lead also
+        has a contact name, once more for the child contact. The mandatory
+        values belong to the account, so put them on the company (or on the
+        standalone customer when no company is created), not on a child.
+        """
+        values = super()._prepare_customer_values(
+            partner_name, is_company=is_company, parent_id=parent_id,
+        )
+        if not parent_id:
+            values.update({
+                EMPLOYEE_COUNT_FIELD: self.employee_count,
+                'annual_revenue_amount': self.annual_revenue_amount,
+                'annual_revenue_currency_id': self.company_currency.id,
+            })
+        return values
 
     def write(self, vals):
         """Force the user to update 'Next Action' before any stage change.

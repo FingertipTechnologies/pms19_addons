@@ -136,6 +136,9 @@
                  (with its Employee Count) or a structured address exists. -->
             <xpath expr="//group[@name='lead_partner']//field[@name='linkedin_url']" position="after">
                 <field name="company_size" placeholder="e.g. 50-100 employees"/>
+                <field name="employee_count"/>
+                <field name="company_currency" invisible="1"/>
+                <field name="annual_revenue_amount"/>
                 <field name="lead_location" placeholder="e.g. Chennai, India"/>
             </xpath>
 
