@@ -9,6 +9,11 @@ _logger = logging.getLogger(__name__)
 # to ``qa_bug_project_ids``.
 BUG_ONLY_GROUP_XMLID = 'qa_testapp.group_qa_bug_only'
 
+# Job position given to an employee created for a bug-only tester. They are
+# not on the payroll, so no existing position fits; the name keeps them
+# recognisable in the HR reports the position feeds.
+TESTER_JOB_NAME = 'External Tester'
+
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
@@ -38,6 +43,89 @@ class ResUsers(models.Model):
         group = self.env.ref(BUG_ONLY_GROUP_XMLID, raise_if_not_found=False)
         for user in self:
             user.qa_bug_only = bool(group) and group in user.all_group_ids
+
+    def _qa_tester_job(self):
+        """The job position for an auto-created tester employee, created on
+        first use.
+
+        Scoped to the user's company, because hr.job is. A position shared
+        across companies (company_id unset) is reused rather than duplicated.
+        """
+        self.ensure_one()
+        Job = self.env['hr.job'].sudo()
+        existing = Job.search([
+            ('name', '=ilike', TESTER_JOB_NAME),
+            ('company_id', 'in', [self.company_id.id, False]),
+        ], limit=1)
+        return existing or Job.create({
+            'name': TESTER_JOB_NAME,
+            'company_id': self.company_id.id,
+        })
+
+    def _qa_ensure_employee(self):
+        """Give every user in ``self`` an hr.employee record if they lack one.
+
+        hr_timesheet resolves an employee for the user on every timesheet line
+        and raises a ValidationError when it cannot find one, so a tester with
+        no employee record hits an error on their first save rather than
+        anything an administrator would notice first. Creating it alongside
+        the group is what makes the timesheet menu actually usable.
+
+        ``job_id`` is mandatory - bt_project_customization redeclares it
+        required on hr.version, which hr.employee reaches by delegation - so a
+        position is looked up (or created) here instead of relying on a
+        default that does not exist.
+
+        An archived employee is reactivated rather than duplicated: two
+        employees for one user breaks the lookup hr_timesheet does.
+
+        Never fatal. This runs from a data-load ``<function>`` during module
+        upgrades, and an HR-side constraint failing there must not abort the
+        upgrade - it logs what to do by hand instead.
+        """
+        Employee = self.env['hr.employee'].sudo().with_context(active_test=False)
+        for user in self:
+            existing = Employee.search([
+                ('user_id', '=', user.id),
+                ('company_id', '=', user.company_id.id),
+            ], limit=1)
+            if existing:
+                if not existing.active:
+                    existing.active = True
+                continue
+            try:
+                Employee.create({
+                    'name': user.name,
+                    'user_id': user.id,
+                    'company_id': user.company_id.id,
+                    'job_id': user._qa_tester_job().id,
+                })
+            except Exception:
+                _logger.warning(
+                    "Could not create an employee for bug-only tester %s. "
+                    "Create one by hand under Employees, or their timesheet "
+                    "lines will refuse to save.",
+                    user.login, exc_info=True,
+                )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Provision the employee for a tester created with the group already
+        set - the path an administrator takes in the Users form."""
+        users = super().create(vals_list)
+        users.filtered('qa_bug_only')._qa_ensure_employee()
+        return users
+
+    def write(self, vals):
+        """Provision the employee for a tester who is granted the group later.
+
+        Guarded on the group fields because this runs on every write to every
+        user, and nothing else can turn somebody into a bug-only tester.
+        """
+        res = super().write(vals)
+        if 'group_ids' in vals or 'all_group_ids' in vals:
+            self.filtered('qa_bug_only')._qa_ensure_employee()
+        return res
 
     @api.model
     def _qa_setup_bug_only_user(self, user_xmlid, project_names):
@@ -96,4 +184,7 @@ class ResUsers(models.Model):
             return False
 
         user.sudo().qa_bug_project_ids = [Command.set(projects.ids)]
+        # Belt and braces: the group write above already triggers this, but the
+        # group may have been granted by hand before this ever ran.
+        user.sudo()._qa_ensure_employee()
         return True

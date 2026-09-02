@@ -40,8 +40,17 @@
         <record id="group_qa_bug_only" model="res.groups">
             <field name="name">Bug Only (External Tester)</field>
             <field name="privilege_id" ref="res_groups_privilege_qa_testapp"/>
-            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-            <field name="comment">Internal user restricted to the Bugs menu, scoped to the projects listed in Bug Visibility Projects on the user form. Intended for external testers who need a normal (non-portal) login.</field>
+            <!-- hr_timesheet.group_hr_timesheet_user ("User: own timesheets
+                 only") is implied rather than granted per user, so every
+                 bug-only tester can log time without an administrator
+                 remembering to tick a second box. It reaches only members of
+                 this group - no other user's access changes - and the stock
+                 timesheet_line_rule_user still limits them to their own
+                 lines. The menu itself is opened up in models/ir_ui_menu.py;
+                 this group alone would leave it filtered out. -->
+            <field name="implied_ids" eval="[(4, ref('base.group_user')),
+                                             (4, ref('hr_timesheet.group_hr_timesheet_user'))]"/>
+            <field name="comment">Internal user restricted to the Bugs and Timesheets menus, scoped to the projects listed in Bug Visibility Projects on the user form. Intended for external testers who need a normal (non-portal) login.</field>
         </record>
 
         <!-- Record rule: everyone can READ all bugs (visibility open to all users).
@@ -225,6 +234,25 @@
             <field name="name">Project: bug-only testers - mapped projects</field>
             <field name="model_id" ref="project.model_project_project"/>
             <field name="domain_force">[('qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Tasks, for the same reason as the projects above: every internal
+             user can read project.task, so the Task field on a timesheet line
+             would otherwise let a bug-only tester browse - and pick - tasks
+             from projects they are not mapped to.
+
+             Matches on the project's inverse relation, exactly like the rule
+             above it. Tasks with no project (personal to-dos) fall outside the
+             domain, which is correct here: a bug-only tester has no menu that
+             reaches them. -->
+        <record id="rule_project_task_bug_only" model="ir.rule">
+            <field name="name">Task: bug-only testers - mapped projects</field>
+            <field name="model_id" ref="project.model_project_task"/>
+            <field name="domain_force">[('project_id.qa_bug_only_user_ids', 'in', [user.id])] if user.qa_bug_only else [(1, '=', 1)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
