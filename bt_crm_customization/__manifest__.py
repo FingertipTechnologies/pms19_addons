@@ -1,6 +1,6 @@
 {
     'name': 'CRM Customization',
-    'version': '19.0.1.3.1',
+    'version': '19.0.1.3.3',
     'category': 'Contacts',
     'summary': 'Contact Customization',
     'author': 'Broadtech',

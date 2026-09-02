@@ -422,6 +422,32 @@ class InheritCrmLead(models.Model):
             })
         return values
 
+    def _create_customer(self, with_parent=None):
+        """Reject conversion before core CRM invents fallback customer names.
+
+        Core CRM can create a standalone customer from the lead title when the
+        company/contact names are missing, then synchronize generated values
+        back onto the lead. A later constraint therefore cannot reliably tell
+        which source fields were originally empty.
+        """
+        self.ensure_one()
+        missing = []
+        if not (self.partner_name or '').strip():
+            missing.append("Company Name")
+        if not (self.contact_name or '').strip():
+            missing.append("Contact Name")
+        if missing:
+            raise ValidationError(
+                "%s required to create an opportunity. Please complete the "
+                "lead before converting it." % (
+                    "%s %s" % (
+                        " and ".join(missing),
+                        "is" if len(missing) == 1 else "are",
+                    )
+                )
+            )
+        return super()._create_customer(with_parent=with_parent)
+
     def write(self, vals):
         """Force the user to update 'Next Action' before any stage change.
 
