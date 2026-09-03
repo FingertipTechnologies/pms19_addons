@@ -296,11 +296,6 @@ class InheritCrmLead(models.Model):
         for lead in self:
             if lead.type != 'opportunity':
                 continue
-            if not (lead.contact_name or '').strip():
-                raise ValidationError(
-                    "Contact Name is required to create an opportunity. "
-                    "Please enter the contact name on the lead before converting it."
-                )
             if not lead.partner_id:
                 raise ValidationError(
                     "Contact is required to create an opportunity. "
