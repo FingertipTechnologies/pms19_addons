@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Turn on the "Project Stages" feature permanently by having every project
+         user imply it, so stage_id (and the project-level Kanban grouped by
+         stage) is visible and used across Projects. -->
+    <record id="project.group_project_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('project.group_project_stages'))]"/>
+    </record>
+
+</odoo>

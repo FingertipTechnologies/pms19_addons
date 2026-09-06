@@ -25,7 +25,17 @@
     # hr.employee.write called it, so every catch-up stamped zero lines and a
     # trainee's history only appeared if an upgrade happened to sweep it. The
     # sweep is re-run here for anyone mapped while that was broken.
-    'version': '19.0.0.0.8',
+    # 19.0.0.0.11 reduces the project Dates group to Start Date and End Date
+    # for AMC and General projects, which have no delivery milestones. Fields
+    # are hidden, never cleared.
+    # 19.0.0.0.12 refuses timesheet entry on a task whose Deadline has already
+    # passed, alongside the existing completed-task and task-required guards.
+    # 19.0.0.0.14 reverses 19.0.0.0.12: the past-deadline guard is removed and
+    # time can be logged on an overdue task again. Only that rule goes — the
+    # completed-task and task-required guards are untouched, and Deadline
+    # Changes is still counted on the task, so a slipped deadline stays visible
+    # without blocking the hours.
+    'version': '19.0.0.0.14',
     'summary': 'project hours tracking',
     'category': 'Project',
     'author': 'Fingertip',

@@ -259,14 +259,9 @@ class AccountAnalyticLine(models.Model):
     }
 
     def _ft_line_bucket(self, employee):
-        """Return the dev/qa/pm/ba/trainee bucket for a line's employee, or False.
-
-        sudo on the employee: since 19.0 hr.employee delegates job_id to
-        hr.version (_inherits), so reading it traverses hr.employee.version_id,
-        which carries groups="hr.group_hr_user". A regular user logging their
-        own time is not an HR officer, so the bare read raised AccessError.
-        """
-        return self.env['project.task']._ft_job_bucket(employee.sudo().job_id)
+        """Return the dev/qa/pm/ba/trainee bucket for a line's employee, or False."""
+        return self.env['project.task']._ft_job_bucket(
+            employee.sudo().job_id)
 
     def _ft_existing_bucket_hours(self, task, bucket, exclude_line=None):
         """Sum the hours already logged on `task` for the given job-position
@@ -278,7 +273,8 @@ class AccountAnalyticLine(models.Model):
                 continue
             # Classify by the employee's current job position, consistent with
             # the task/project hour computes.
-            if ProjectTask._ft_job_bucket(line.employee_id.sudo().job_id) == bucket:
+            if ProjectTask._ft_job_bucket(
+                    line.employee_id.sudo().job_id) == bucket:
                 total += line.unit_amount
         return total
 
@@ -312,8 +308,8 @@ class AccountAnalyticLine(models.Model):
             # Runs before the billable-project guard below: a completed task
             # takes no more time whether or not its project is billable.
             if vals.get('task_id'):
-                self._ft_check_task_not_completed(
-                    self.env['project.task'].browse(vals['task_id']))
+                task = self.env['project.task'].browse(vals['task_id'])
+                self._ft_check_task_not_completed(task)
             project_id = vals.get('project_id')
             if not project_id:
                 continue
@@ -348,9 +344,11 @@ class AccountAnalyticLine(models.Model):
             # Editing the hours on a completed task, or moving a line onto one,
             # would get round the create-time guard.
             if 'unit_amount' in vals or 'task_id' in vals:
-                self._ft_check_task_not_completed(
+                target_task = (
                     self.env['project.task'].browse(vals['task_id'])
-                    if 'task_id' in vals else line.task_id)
+                    if 'task_id' in vals else line.task_id
+                )
+                self._ft_check_task_not_completed(target_task)
             project = (
                 self.env['project.project'].browse(vals['project_id'])
                 if 'project_id' in vals

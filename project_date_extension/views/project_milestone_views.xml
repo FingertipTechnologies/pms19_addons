@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Point 9: on the custom milestone list view, only Date
+             Extension Approvers can edit the due date inline. Everyone
+             else sees it read-only and must go through a Date Extension
+             Request (the model-level write() guard on
+             project.custom.milestone enforces this regardless of which
+             UI path is used to reach the field). -->
+        <record id="view_project_custom_milestone_list_date_extension" model="ir.ui.view">
+            <field name="name">project.custom.milestone.list.date.extension</field>
+            <field name="model">project.custom.milestone</field>
+            <field name="inherit_id" ref="project_custom_milestone.view_project_custom_milestone_list"/>
+            <field name="arch" type="xml">
+                <field name="due_date" position="before">
+                    <field name="is_date_extension_approver" column_invisible="1"/>
+                </field>
+                <field name="due_date" position="attributes">
+                    <attribute name="readonly">not is_date_extension_approver</attribute>
+                </field>
+                <field name="due_date" position="after">
+                    <field name="extension_request_count" string="Extensions" optional="show"/>
+                    <field name="is_overdue" string="Overdue" optional="show"
+                           widget="boolean_toggle" readonly="1"/>
+                    <field name="days_overdue" string="Days Overdue" optional="hide"/>
+                </field>
+            </field>
+        </record>
+
+        <!-- Same restriction, plus a smart button, on the milestone form -->
+        <record id="view_project_custom_milestone_form_date_extension" model="ir.ui.view">
+            <field name="name">project.custom.milestone.form.date.extension</field>
+            <field name="model">project.custom.milestone</field>
+            <field name="inherit_id" ref="project_custom_milestone.view_project_custom_milestone_form"/>
+            <field name="arch" type="xml">
+                <field name="due_date" position="before">
+                    <field name="is_date_extension_approver" invisible="1"/>
+                </field>
+                <field name="due_date" position="attributes">
+                    <attribute name="readonly">not is_date_extension_approver</attribute>
+                </field>
+                <field name="due_date" position="after">
+                    <field name="days_overdue" invisible="1"/>
+                    <field name="is_overdue" invisible="1"/>
+                    <div class="text-danger" invisible="not is_overdue">
+                        <i class="fa fa-exclamation-triangle" title="Overdue"/>
+                        Overdue by <field name="days_overdue" class="oe_inline" readonly="1"/> day(s)
+                    </div>
+                </field>
+                <xpath expr="//sheet/group[1]" position="before">
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_extension_requests" type="object"
+                                class="oe_stat_button" icon="fa-calendar-plus-o">
+                            <field name="extension_request_count" widget="statinfo"
+                                   string="Date Extensions"/>
+                        </button>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

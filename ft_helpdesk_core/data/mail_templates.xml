@@ -5,7 +5,7 @@
         <record id="mt_ticket_new_email_template" model="mail.template">
             <field name="name">Helpdesk Ticket: New Ticket Confirmation</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
-            <field name="email_from">support@fingertipplus.com</field>
+            <field name="email_from">admin@fingertipplus.com</field>
             <field name="subject">Ticket {{ object.ticket_no }} - Confirmation</field>
             <field name="partner_to">{{ object.customer_id.id }}</field>
             <field name="body_html"><![CDATA[
@@ -37,7 +37,7 @@
         <record id="mt_ticket_assigned_email_template" model="mail.template">
             <field name="name">Helpdesk Ticket: Assigned to You</field>
             <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
-            <field name="email_from">support@fingertipplus.com</field>
+            <field name="email_from">admin@fingertipplus.com</field>
             <field name="subject">[{{ object.ticket_no }}] Ticket assigned to you: {{ object.name }}</field>
             <field name="email_to">{{ object.assigned_user_id.email }}</field>
             <field name="body_html"><![CDATA[
@@ -65,6 +65,58 @@
     </tr>
 </table>
 <p>Please review this ticket at your earliest convenience.</p>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Email sent to the project manager when a ticket is raised on
+             (or moved onto) a project they manage -->
+        <record id="mt_ticket_pm_email_template" model="mail.template">
+            <field name="name">Helpdesk Ticket: New Ticket on Your Project</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="subject">[{{ object.ticket_no }}] New ticket on {{ object.project_id.name }}: {{ object.name }}</field>
+            <field name="email_to">{{ object.project_id.user_id.email }}</field>
+            <field name="body_html"><![CDATA[
+<p>Hello <t t-out="object.project_id.user_id.name or ''"/>,</p>
+<p>A new ticket has been raised on a project you manage. Please review it from
+   <strong>PMS &gt; Tickets</strong> (or the <strong>Tickets</strong> tab of the project).</p>
+<table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+    <tr>
+        <td style="padding: 8px; font-weight: bold; width: 150px;">Ticket:</td>
+        <td style="padding: 8px;"><t t-out="object.ticket_no"/> &#8211; <t t-out="object.name or ''"/></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Project:</td>
+        <td style="padding: 8px;"><t t-out="object.project_id.name or ''"/></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Customer:</td>
+        <td style="padding: 8px;"><t t-out="object.customer_id.name or ''"/></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Priority:</td>
+        <td style="padding: 8px;">
+            <t t-set="priority_label" t-value="dict(object._fields['priority'].selection).get(object.priority, '')"/>
+            <t t-out="priority_label"/>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Channel:</td>
+        <td style="padding: 8px;">
+            <t t-set="channel_label" t-value="dict(object._fields['channel'].selection).get(object.channel, '')"/>
+            <t t-out="channel_label"/>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold;">Assignee:</td>
+        <td style="padding: 8px;"><t t-out="object.assigned_user_id.name or 'Unassigned'"/></td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; font-weight: bold; vertical-align: top;">Description:</td>
+        <td style="padding: 8px;"><t t-out="object.description or 'N/A'"/></td>
+    </tr>
+</table>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>

@@ -50,13 +50,17 @@ class ProjectTask(models.Model):
         store=False,
     )
     ft_billing_status = fields.Selection(
-        [('non_billed', 'Non Billed'), ('billed', 'Billed')],
+        [
+            ('non_billed', 'Non Billed'),
+            ('billed', 'Billed'),
+            ('rejected', 'Rejected'),
+        ],
         string='Billing Status',
         default='non_billed',
         required=True,
         tracking=True,
-        help='Whether the work on this task has been billed to the customer. '
-             'New tasks start as Non Billed.',
+        help='Whether the work on this task is Non Billed, Billed, or was '
+             'Rejected for billing. New tasks start as Non Billed.',
     )
     # Billable Hours follows Actual Hours until somebody edits it, and then
     # stops. Without that stickiness the override would be pointless: the next
@@ -191,6 +195,10 @@ class ProjectTask(models.Model):
         for task in self:
             totals = dict.fromkeys(FT_BUCKETS, 0.0)
             for line in task.timesheet_ids:
+                # hr.employee.job_id is delegated through the HR-restricted
+                # version_id field in Odoo 19. Normal project users may read
+                # timesheets but not that HR version, so elevate only the job
+                # lookup used for classification.
                 bucket = self._ft_job_bucket(line.employee_id.sudo().job_id)
                 if bucket:
                     totals[bucket] += line.unit_amount

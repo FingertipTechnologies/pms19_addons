@@ -22,8 +22,12 @@
                     <group>
                         <field name="name"/>
                         <field name="description"/>
-                        <field name="project_ids" widget="many2many_tags" readonly="1"
-                               help="Projects where this module is used via tasks."/>
+                        <!-- Editable: this is the configuration the task's
+                             Module dropdown is filtered against, not a report
+                             of where the module happens to have been used. -->
+                        <field name="project_ids" widget="many2many_tags"
+                               options="{'no_quick_create': True}"
+                               help="Projects that offer this module."/>
                     </group>
                 </sheet>
             </form>

@@ -44,6 +44,31 @@ function getFinalStageIds(orm) {
  * — the server-side timesheet block is what holds in every case.
  */
 patch(StatusBarField.prototype, {
+    getAllItems() {
+        const items = super.getAllItems(...arguments);
+        const record = this.props.record;
+        if (record?.resModel !== "project.task" || !record.resId) {
+            return items;
+        }
+
+        // Planned remains visible while it is the task's current stage, and on
+        // a not-yet-saved task where it is a valid creation choice. Once a
+        // saved task has left Planned, remove it from inline buttons, overflow
+        // dropdowns and the command palette. Kanban must retain its Planned
+        // column to display tasks that are still there; the model write guard
+        // rejects any attempted drag back into it.
+        const currentStage = record.data.stage_id;
+        const currentName = String(currentStage?.display_name || "")
+            .trim()
+            .toLowerCase();
+        if (currentName === "planned") {
+            return items;
+        }
+        return items.filter(
+            (item) => String(item.label || "").trim().toLowerCase() !== "planned"
+        );
+    },
+
     async selectItem(item) {
         const record = this.props.record;
         if (record?.resModel !== "project.task" || item.isSelected) {

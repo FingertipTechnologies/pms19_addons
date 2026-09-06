@@ -80,7 +80,10 @@ class MailThread(models.AbstractModel):
             # and serialize them; res.partner already exposes `gateway_channels`
             # via _to_store_defaults. This also removes the message_get_followers()
             # round-trip that previously required a recursion guard.
-            partners = record.message_follower_ids.partner_id.filtered(
+            # sudo(): message_follower_ids is restricted to base.group_user,
+            # so reading it as-is raises AccessError for portal users and kills
+            # the whole page (e.g. the helpdesk portal ticket pages).
+            partners = record.sudo().message_follower_ids.partner_id.filtered(
                 lambda p: p.sudo().gateway_channel_ids
             )
             if partners:

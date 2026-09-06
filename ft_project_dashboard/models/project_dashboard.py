@@ -719,6 +719,47 @@ class FtProjectDashboard(models.TransientModel):
         """
         return self._task_hours_summary_values(filters)
 
+    # ------------------------------------------------------------------
+    # Project Analysis tab
+    #
+    # The Analysis page on the project form reuses the three section methods
+    # above verbatim, passing the project it is sitting on as ``project_id``.
+    # The two methods below are the only things that page needs and the board
+    # does not: a picker narrowed to one project's own people, and the New
+    # Tasks table, which has no counterpart among the dashboard's cards.
+    # ------------------------------------------------------------------
+    @api.model
+    def get_project_resources(self, filters=None):
+        """The people who booked time on the scoped project, for its picker.
+
+        The board offers every active employee, which is right for a board that
+        can be scoped to any project or none. On one project's Analysis tab that
+        same list is 300 names of whom a handful ever touched this project, and
+        every other pick returns a page of zeroes with nothing on screen to say
+        the person was never on the team.
+
+        Whole history, deliberately not the selected range: a picker whose
+        contents changed each time the period changed would make somebody who
+        worked on the project last year look like they never existed.
+
+        Falls back to nothing rather than to everybody when no time has been
+        booked yet — an empty picker reads as "no one has worked on this",
+        which is true, where a full one would read as a broken filter.
+        """
+        filters = filters or {}
+        if not filters.get('project_id'):
+            return []
+        emp_ids = self._worked_employee_ids(filters) or []
+        # sudo: same reason as _role_hours — job_id is delegated to hr.version,
+        # which only HR officers may read, and the job title is what tells two
+        # similar names apart.
+        return [
+            {'id': e.id,
+             'name': '%s — %s' % (e.name, e.job_id.name) if e.job_id else e.name}
+            for e in self.env['hr.employee'].sudo().with_context(
+                active_test=False).search([('id', 'in', emp_ids)], order='name')
+        ]
+
     @api.model
     def get_hours_filter_options(self):
         """Contents for every dropdown on the board.
@@ -1286,8 +1327,9 @@ class FtProjectDashboard(models.TransientModel):
 
         Hours Spent    = timesheet hours the employee logged on the project
                          *within the selected period*.
-        Estimated      = sum of task.estimated for the project's tasks assigned
-                         to that employee (via task assignees -> employee).
+        Task figures   = tasks assigned to the employee whose Deadline falls
+                         within the selected period. A task with multiple
+                         assignees counts in full for each assignee.
         Days Left      = project End Date (project.date) - today.
         Role           = employee's Job Position.
         """
@@ -1314,28 +1356,75 @@ class FtProjectDashboard(models.TransientModel):
                 hours[(g['employee_id'][0], g['project_id'][0])] = \
                     g.get('unit_amount') or 0.0
 
-        # One pass over assigned tasks yields both facts: the estimate per
-        # (employee, project) and the full set of pairs the person is actually
-        # on. ``assigned`` is what puts a resource on the table even with no
-        # logged hours and no estimate — keying the rows off hours/estimates
-        # alone hid anyone who had simply not booked time yet, which reads as
-        # "not on the project" rather than "nothing logged".
-        est = {}
+        # Keep the existing all-time assignment pairs for the unbounded view,
+        # while calculating every new task metric over deadlines in the chosen
+        # period. This makes the table agree with the Task Hours Summary and,
+        # importantly, keeps a resource visible when work is due but they have
+        # not submitted a timesheet yet.
         assigned = set()
-        for t in Task.search_read(
-                [('project_id', '!=', False), ('user_ids', '!=', False)]
-                + self._scope_leaves_via_project(filters),
-                ['project_id', 'user_ids', 'estimated']):
-            proj_id = t['project_id'][0]
-            estimated = t.get('estimated') or 0.0
-            for uid in t.get('user_ids', []):
-                emp_id = emp_by_user.get(uid)
-                if not emp_id:
+        task_stats = {}
+        due_domain = [
+            ('project_id', '!=', False),
+            ('user_ids', '!=', False),
+            ('date_deadline', '!=', False),
+        ] + self._scope_leaves_via_project(filters) + self._date_leaves(
+            'date_deadline', date_from, date_to)
+        due_tasks = Task.search(due_domain)
+        final_stage_ids = set(Task._ft_final_stage_ids())
+
+        def stats_for(key):
+            return task_stats.setdefault(key, {
+                'task_count': 0,
+                'done_task_count': 0,
+                'working_task_count': 0,
+                'planned_task_count': 0,
+                'total_estimated_hours': 0.0,
+                'open_estimated_hours': 0.0,
+                'completed_estimated_hours': 0.0,
+                'completed_actual_hours': 0.0,
+            })
+
+        for task in due_tasks:
+            project_id = task.project_id.id
+            estimate = task.estimated or 0.0
+            is_done = (task.stage_id.id in final_stage_ids
+                       and task.state != '1_canceled')
+            stage_name = (task.stage_id.name or '').strip().lower()
+            for user in task.user_ids:
+                employee_id = emp_by_user.get(user.id)
+                if not employee_id:
                     continue
-                key = (emp_id, proj_id)
+                key = (employee_id, project_id)
                 assigned.add(key)
-                if estimated:
-                    est[key] = est.get(key, 0.0) + estimated
+                values = stats_for(key)
+                values['task_count'] += 1
+                values['total_estimated_hours'] += estimate
+                if is_done:
+                    values['done_task_count'] += 1
+                    values['completed_estimated_hours'] += estimate
+                    values['completed_actual_hours'] += \
+                        task.ft_total_hours_taken or 0.0
+                else:
+                    values['open_estimated_hours'] += estimate
+                    if stage_name == 'working':
+                        values['working_task_count'] += 1
+                    elif stage_name == 'planned':
+                        values['planned_task_count'] += 1
+
+        # With no date bound, also retain assignments to undated tasks (and
+        # historical assignments outside any deadline window) as zero-metric
+        # rows, preserving the Resource Status table's prior all-time behaviour.
+        if not date_from and not date_to:
+            for t in Task.search_read(
+                    [('project_id', '!=', False), ('user_ids', '!=', False)]
+                    + self._scope_leaves_via_project(filters),
+                    ['project_id', 'user_ids']):
+                proj_id = t['project_id'][0]
+                for uid in t.get('user_ids', []):
+                    emp_id = emp_by_user.get(uid)
+                    if not emp_id:
+                        continue
+                    assigned.add((emp_id, proj_id))
 
         today = fields.Date.context_today(self)
         rows = []
@@ -1350,7 +1439,8 @@ class FtProjectDashboard(models.TransientModel):
             # and silently dropping it made Hours Spent disagree with the
             # timesheets. The project window only decides pairs with nothing
             # booked, where an estimate carries no date of its own to judge by.
-            if not hours.get((emp_id, proj_id)):
+            if (not hours.get((emp_id, proj_id))
+                    and not task_stats.get((emp_id, proj_id))):
                 # A date range was asked for, so nothing logged in it means the
                 # person was not on this project then — drop the row rather than
                 # print a line of zeros. Someone who had not joined yet, or was
@@ -1368,6 +1458,7 @@ class FtProjectDashboard(models.TransientModel):
                         proj.date_start, proj.date, date_from, date_to):
                     continue
             days_left = (proj.date - today).days if proj.date else None
+            metrics = stats_for((emp_id, proj_id))
             rows.append({
                 'employee': emp.name or '',
                 # sudo: same as the Role column in _table_delivery — job_id
@@ -1381,7 +1472,10 @@ class FtProjectDashboard(models.TransientModel):
                 'start_date': self._iso_date(proj.date_start),
                 'days_left': days_left,
                 'hours_spent': round(hours.get((emp_id, proj_id), 0.0), 2),
-                'estimated': round(est.get((emp_id, proj_id), 0.0), 2),
+                **{
+                    key: round(value, 2) if isinstance(value, float) else value
+                    for key, value in metrics.items()
+                },
             })
         rows.sort(key=lambda r: (r['employee'].lower(), r['project'].lower()))
         return rows

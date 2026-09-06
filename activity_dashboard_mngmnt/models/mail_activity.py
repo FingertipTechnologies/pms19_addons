@@ -33,7 +33,7 @@ class MailActivity(models.Model):
                                         help='Select activity tags.')
     state = fields.Selection(selection_add=[
         ('done', 'Done'),
-    ], string='State', help='State of the activity', search='_search_state')
+    ], string='State', help='State of the activity')
     rnr = fields.Boolean()
     parent_partner_id = fields.Many2one(
         'res.partner',
@@ -57,40 +57,6 @@ class MailActivity(models.Model):
 
     child_first_activity_datetime = fields.Datetime(index=True,related='child_partner_id.first_activity_datetime',string='Child First Activity Datetime')
     child_last_activity_datetime = fields.Datetime(index=True,related='child_partner_id.last_activity_datetime',string='Child Last Activity Datetime')
-
-    # ---------------------------------------------------------
-    # Make the computed `state` searchable
-    # ---------------------------------------------------------
-    def _search_state(self, operator, value):
-        """Translate a domain on `state` into stored-field leaves.
-
-        Core computes state from `active` + `date_deadline`
-        (see mail.activity._compute_state), and the field is not stored, so
-        Odoo 19 raises "Cannot convert mail.activity.state to SQL because it
-        is not stored" for any domain on it. The dashboard actions filter on
-        state, so rewrite those leaves here.
-        """
-        today = fields.Date.context_today(self)
-        # Each entry is a self-contained domain, so they can be OR'ed together.
-        leaf_by_state = {
-            'done': [('active', '=', False)],
-            'overdue': ['&', ('active', '=', True), ('date_deadline', '<', today)],
-            'today': ['&', ('active', '=', True), ('date_deadline', '=', today)],
-            'planned': ['&', ('active', '=', True), ('date_deadline', '>', today)],
-        }
-        # The domain engine may pass a single value or an iterable of values.
-        values = [value] if isinstance(value, str) else list(value)
-        positive = operator in ('=', 'in', 'like', 'ilike', '=like', '=ilike')
-
-        leaves = [leaf_by_state[val] for val in values if val in leaf_by_state]
-        if not leaves:
-            # Unknown value: match nothing when positive, everything otherwise.
-            return [('id', '=', False)] if positive else []
-
-        combined = leaves[0]
-        for leaf in leaves[1:]:
-            combined = ['|'] + combined + leaf
-        return combined if positive else ['!'] + combined
 
     # ---------------------------------------------------------
     # Defaults when activity created from partner
@@ -246,12 +212,22 @@ class MailActivity(models.Model):
         self._recompute_partner_activity_dates()
         return res
 
-    # NOTE: the old `_action_done` override (a copy of the Odoo 17
-    # implementation with the unlink removed) was dropped. Odoo 19 core
-    # already archives done activities instead of deleting them, so the
-    # override no longer added anything - and it crashed on
-    # `activity_type_id.keep_done`, a field removed from
-    # mail.activity.type in Odoo 19.
+    # `_action_done` used to be overridden here, as a copy of the Odoo 17
+    # implementation with its `unlink()` taken out, so that a completed
+    # activity stayed on the record for the dashboard to report on.
+    #
+    # Odoo 19 does exactly that itself: core `_action_done` archives the
+    # activity (`action_archive()`) instead of deleting it, and `state` is
+    # computed as 'done' for any archived activity. The copy had therefore
+    # become a stale fork that also crashed - it read
+    # `activity_type_id.keep_done`, a field upstream dropped from
+    # mail.activity.type, so every 'Mark as Done' raised AttributeError -
+    # and it missed everything core gained since: the sudo access for users
+    # who may not read the record, the handling of cascade-deleted records,
+    # the cleanup of orphaned attachments and the storing of `feedback`.
+    # Removed rather than patched: core's own method is now the behaviour
+    # this module wanted.
+
     def get_activity(self, activity_id):
         """Method for returning model and id of activity"""
         activity = self.env['mail.activity'].browse(activity_id)

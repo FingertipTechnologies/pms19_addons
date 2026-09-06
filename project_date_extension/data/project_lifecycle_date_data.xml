@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="ld_start" model="project.lifecycle.date">
+            <field name="name">Start Date</field>
+            <field name="field_name">date_start</field>
+            <field name="sequence">10</field>
+        </record>
+        <record id="ld_kickoff" model="project.lifecycle.date">
+            <field name="name">Kick-off Date</field>
+            <field name="field_name">kick_start_meeting_date</field>
+            <field name="sequence">20</field>
+        </record>
+        <record id="ld_brd" model="project.lifecycle.date">
+            <field name="name">BRD Approval Date</field>
+            <field name="field_name">brd_approval_date</field>
+            <field name="sequence">30</field>
+        </record>
+        <record id="ld_regression" model="project.lifecycle.date">
+            <field name="name">Regression Date</field>
+            <field name="field_name">ft_regression_date</field>
+            <field name="sequence">40</field>
+        </record>
+        <record id="ld_sandbox" model="project.lifecycle.date">
+            <field name="name">Sandbox Review Date</field>
+            <field name="field_name">sandbox_review_date</field>
+            <field name="sequence">50</field>
+        </record>
+        <record id="ld_uat" model="project.lifecycle.date">
+            <field name="name">UAT Start Date</field>
+            <field name="field_name">uat_start_date</field>
+            <field name="sequence">60</field>
+        </record>
+        <record id="ld_data_upload" model="project.lifecycle.date">
+            <field name="name">Data Upload Date</field>
+            <field name="field_name">pl_data_upload_date</field>
+            <field name="sequence">70</field>
+        </record>
+        <record id="ld_training" model="project.lifecycle.date">
+            <field name="name">Training Date</field>
+            <field name="field_name">ft_training_date</field>
+            <field name="sequence">80</field>
+        </record>
+        <record id="ld_go_live" model="project.lifecycle.date">
+            <field name="name">Go Live Date</field>
+            <field name="field_name">go_live_date</field>
+            <field name="sequence">85</field>
+        </record>
+        <record id="ld_support_start" model="project.lifecycle.date">
+            <field name="name">Support Start Date</field>
+            <field name="field_name">support_start_date</field>
+            <field name="sequence">90</field>
+        </record>
+        <record id="ld_support_end" model="project.lifecycle.date">
+            <field name="name">Support End Date</field>
+            <field name="field_name">pl_support_end_date</field>
+            <field name="sequence">100</field>
+        </record>
+        <record id="ld_closed" model="project.lifecycle.date">
+            <field name="name">Closed Date</field>
+            <field name="field_name">date</field>
+            <field name="sequence">110</field>
+        </record>
+
+    </data>
+</odoo>

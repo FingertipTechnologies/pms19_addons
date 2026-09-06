@@ -10,10 +10,9 @@ class AccountAnalyticLine(models.Model):
         readonly=True,
         copy=False,
         index=True,
-        help="Set when this time was logged on a task that had already been "
-             "delivered and moved back out of a completed stage. It is the "
-             "second (or later) round of effort on work that was once called "
-             "finished, and is what the Rework Hours figures count.",
+        help="Set when this time was logged after a task was sent back for "
+             "rework. It is the second (or later) round of effort and is what "
+             "the Rework Hours figures count.",
     )
 
     @api.model_create_multi

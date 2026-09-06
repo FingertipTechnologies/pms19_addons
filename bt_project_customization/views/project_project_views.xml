@@ -12,6 +12,21 @@
                 <xpath expr="//filter[@name='date_today']" position="attributes">
                     <attribute name="domain">[('date', '=', datetime.date.today().strftime('%Y-%m-%d'))]</attribute>
                 </xpath>
+                <!-- Business weeks are fixed at Sunday through Saturday.
+                     Odoo's client domain evaluator supports relativedelta but
+                     its date object does not expose Python's weekday method. -->
+                <xpath expr="//filter[@name='date_this_week']" position="attributes">
+                    <attribute name="domain">[
+                        ('date', '&gt;=', (context_today() + relativedelta(days=-6, weekday=6)).strftime('%Y-%m-%d')),
+                        ('date', '&lt;', (context_today() + relativedelta(days=1, weekday=6)).strftime('%Y-%m-%d')),
+                    ]</attribute>
+                </xpath>
+                <xpath expr="//filter[@name='date_last_week']" position="attributes">
+                    <attribute name="domain">[
+                        ('date', '&gt;=', (context_today() + relativedelta(days=-13, weekday=6)).strftime('%Y-%m-%d')),
+                        ('date', '&lt;', (context_today() + relativedelta(days=-6, weekday=6)).strftime('%Y-%m-%d')),
+                    ]</attribute>
+                </xpath>
             </field>
         </record>
 
@@ -59,7 +74,7 @@
                      "Invalid aggregate/groupby specification". -->
                 <list string="Timesheets" default_group_by="task_id">
                     <field name="project_id" invisible="1"/>
-                    <field name="project_status" optional="show"/>
+                    <field name="project_status" optional="show" string="Project Stage"/>
                     <field name="task_id" options="{'no_create': True, 'no_create_edit': True}"/>
                     <field name="module_id"/>
                     <field name="used_ai" column_invisible="1"/>
@@ -82,7 +97,7 @@
             <field name="inherit_id" ref="hr_timesheet.hr_timesheet_line_tree"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='project_id']" position="after">
-                    <field name="project_status" optional="show"/>
+                    <field name="project_status" optional="show" string="Project Stage"/>
                 </xpath>
                 <xpath expr="//field[@name='task_id']" position="after">
                     <field name="module_id"/>
@@ -113,7 +128,7 @@
         <field name="inherit_id" ref="hr_timesheet.hr_timesheet_line_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='project_id']" position="after">
-                    <field name="project_status" readonly="1"/>
+                    <field name="project_status" readonly="1" string="Project Stage"/>
                 </xpath>
             <xpath expr="//field[@name='task_id']" position="after">
                     <field name="module_id"/>
@@ -167,6 +182,80 @@
 <!--        </record>-->
 
 
+        <!-- Project Type on the Projects search: one filter per type and a
+             Group By, so the three kinds of engagement can be told apart in
+             every list, kanban and pivot without falling back on reading the
+             project name. Placed on the core search view rather than a new
+             action, because all four project actions share it. -->
+        <record id="view_project_project_filter_inherit_type" model="ir.ui.view">
+            <field name="name">project.project.select.inherit.project.type</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.view_project_project_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='stage_id']" position="after">
+                    <field name="ft_project_type"/>
+                </xpath>
+                <xpath expr="//filter[@name='unassigned_projects']" position="after">
+                    <separator/>
+                    <filter string="Implementation" name="type_implementation"
+                            domain="[('ft_project_type', '=', 'implementation')]"/>
+                    <filter string="AMC" name="type_amc"
+                            domain="[('ft_project_type', '=', 'amc')]"/>
+                    <filter string="General" name="type_general"
+                            domain="[('ft_project_type', '=', 'general')]"/>
+                    <separator/>
+                    <!-- Task point 12: surface behind-schedule projects. Backed
+                         by project.project._search_ft_is_overdue. -->
+                    <filter string="Overdue" name="filter_overdue"
+                            domain="[('ft_is_overdue', '=', True)]"/>
+                </xpath>
+                <xpath expr="//filter[@name='groupby_stage']" position="before">
+                    <filter string="Project Type" name="groupby_project_type"
+                            context="{'group_by': 'ft_project_type'}"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Project Type on the two creation dialogs.
+
+             The Projects kanban does not open the full project form to create:
+             its "New" button runs project.open_create_project, which pops
+             project_project_view_form_simplified (Name + email alias only), and
+             creating inside a kanban column uses quick_create_project_form
+             (Name only). Neither carries Project Type, so with the field's
+             default removed both dialogs would fail the save on a required
+             field the user cannot see. Adding it here is what makes "choose the
+             type when you create the project" true on every path, not just on
+             the full form.
+
+             Inheriting the simplified view covers the footer variant too:
+             project_project_view_form_simplified_footer is a primary view built
+             on this one, so the field arrives there with the Create/Discard
+             buttons already attached. -->
+        <record id="project_project_view_form_simplified_inherit_type" model="ir.ui.view">
+            <field name="name">project.project.view.form.simplified.inherit.project.type</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.project_project_view_form_simplified"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='alias_def']" position="before">
+                    <group>
+                        <field name="ft_project_type"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="quick_create_project_form_inherit_type" model="ir.ui.view">
+            <field name="name">project.form.quick_create.inherit.project.type</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.quick_create_project_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="ft_project_type"/>
+                </xpath>
+            </field>
+        </record>
+
         <record id="view_project_form_inherit_timesheet_button" model="ir.ui.view">
             <field name="name">project.project.form.inherit.timesheet.button</field>
             <field name="model">project.project</field>
@@ -199,10 +288,16 @@
 
                 <xpath expr="//field[@name='tag_ids']" position="after">
 
+                    <field name="ft_project_type"/>
                     <!--                    <field name="account_id"/>-->
                     <field name="architect_id"/>
                     <field name="ba_id"/>
                     <field name="pm_id"/>
+                    <!-- What the Module field on this project's tasks may
+                         offer. Editing it here writes the same rows as the
+                         Projects field on the module itself. -->
+                    <field name="module_ids" widget="many2many_tags"
+                           options="{'no_quick_create': True}" invisible="1"/>
 <!--                    <field name="status"/>-->
                     <!--                    <field name="finance_description"/>-->
 
@@ -215,14 +310,24 @@
                     <field name="partner_id" invisible="not allow_billable" widget="res_partner_many2one" context="{'res_partner_search_mode': 'customer'}"/>
                     <field name="brd_approval_date"/>
                     <field name="brd_submission_date"/>
-                    <field name="go_live_date"/>
-                    <!--                    <field name="end_date"/>-->
+                    <!-- go_live_date / ft_regression_date / ft_training_date are
+                         shown in the DATES block (ft_dates group) via
+                         ft_project_lifecycle; removed here to avoid duplicate
+                         fields on the form. -->
                     <field name="kick_start_meeting_date"/>
                     <field name="sandbox_review_date"/>
+
                     <!--                    <field name="start_date"/>-->
                     <field name="support_start_date"/>
                     <field name="uat_start_date"/>
+
                     <field name="warranty_end_date"/>
+                    <!-- Overdue indicator (task point 12): the boolean drives the
+                         danger styling, the reason spells out which milestone is
+                         behind. Both stay hidden until the project is overdue. -->
+                    <field name="ft_is_overdue" invisible="1"/>
+                    <field name="ft_overdue_reason" invisible="not ft_is_overdue"
+                           readonly="1" class="text-danger fw-bold"/>
 
 
                 </xpath>
@@ -353,6 +458,64 @@
         <!--                </field>-->
         <!--            </field>-->
         <!--        </record>-->
+        <record id="view_project_form_modules_tab" model="ir.ui.view">
+        <field name="name">project.project.form.modules</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Modules" name="project_modules">
+                    <field name="module_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="name" string="Module Name" width="50%"/>
+                            <field name="complete_date" string="Completion Date" width="50%" class="text-start"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+        <!-- Task point 12: Overdue status on the Project Kanban card. A red
+             badge under the title, its tooltip carrying the exact milestone(s)
+             the project is behind. -->
+        <record id="view_project_kanban_inherit_overdue" model="ir.ui.view">
+            <field name="name">project.project.kanban.inherit.overdue</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.view_project_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='privacy_visibility']" position="after">
+                    <field name="ft_is_overdue"/>
+                    <field name="ft_overdue_reason"/>
+                </xpath>
+                <xpath expr="//div[hasclass('o_project_kanban_body')]" position="before">
+                    <div t-if="record.ft_is_overdue.raw_value" class="mt-1">
+                        <span class="badge text-bg-danger"
+                              t-att-title="record.ft_overdue_reason.value">
+                            <i class="fa fa-exclamation-triangle me-1" role="img"
+                               aria-label="Overdue"/>Overdue
+                        </span>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Task point 12: Overdue in the Projects list. The row turns red and
+             a hidden-by-default column exposes the reason. -->
+        <record id="view_project_list_inherit_overdue" model="ir.ui.view">
+            <field name="name">project.project.list.inherit.overdue</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.view_project"/>
+            <field name="arch" type="xml">
+                <xpath expr="//list" position="attributes">
+                    <attribute name="decoration-danger">ft_is_overdue</attribute>
+                </xpath>
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="ft_is_overdue" column_invisible="1"/>
+                    <field name="ft_overdue_reason" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
 
     </data>
 </odoo>

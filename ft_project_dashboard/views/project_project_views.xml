@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- The Analysis page: the Project Dashboard's Hours Utilisation and
+             Tasks Summary sections, plus a New Tasks table, scoped to the one
+             project the form is showing.
+
+             A <widget/> rather than a set of computed fields. The figures are
+             sliced by a date range the reader picks, and a stored field can only
+             ever hold one range; the same three server methods the board calls
+             already answer for any range, so the tab asks them the same
+             questions with project_id pinned to this record.
+
+             Placed before Description, which lands it after the Delivery and
+             Extra Information pages bt_project_customization inserts there —
+             next to Delivery, which is the other page about how this project is
+             going. Anchored on a core page rather than on those two, so a rename
+             in another module cannot break this view.
+
+             Restricted to Project Administrators: the cards carry billable and
+             non-billable hours and per-role time, which the Project Dashboard
+             itself is limited to Settings users for. Widen the groups here and
+             the matching ACL row in security/ir.model.access.csv together —
+             hiding the page alone would leave the RPCs reachable, and granting
+             the ACL alone would leave the page invisible. -->
+        <record id="view_project_form_inherit_analysis" model="ir.ui.view">
+            <field name="name">project.project.form.inherit.analysis</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.edit_project"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='description']" position="before">
+                    <page name="ft_analysis" string="Analysis"
+                          groups="project.group_project_manager">
+                        <widget name="ft_project_analysis"/>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

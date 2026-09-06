@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_stagewise_time,ft_stagewise_time,model_ft_stagewise_time,project.group_project_user,1,1,1,1
+access_ft_project_module,ft_project_module,model_ft_project_module,project.group_project_user,1,1,1,1
+access_ft_project_module_manager,ft_project_module_manager,model_ft_project_module,project.group_project_manager,1,1,1,1

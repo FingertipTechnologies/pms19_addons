@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FT Portal Root Redirect",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "category": "Website",
     "summary": "Send the website root (/) to the login page instead of the "
                "unused website homepage.",
@@ -12,7 +12,7 @@ The portal domain (portal.fingertipplus.com) serves the `website` module's
 homepage on `/`. That homepage was never built out - it still holds the default
 "Embed Code" placeholder snippet - so visitors land on a blank white page.
 
-This module overrides the website root controller so that:
+This module overrides only the website root controller (`/`) so that:
 
 * anonymous visitors are redirected to `/web/login`
 * already authenticated users are sent to their normal landing page
@@ -21,7 +21,7 @@ This module overrides the website root controller so that:
 
 The website editor is unaffected: it is reachable through `/@/` as usual, so
 the homepage can still be designed later. Uninstall this module to restore the
-stock behaviour.
+stock behaviour. The standard `/web` and `/odoo` routes are not overridden.
 """,
     "author": "Fingertip",
     "license": "LGPL-3",

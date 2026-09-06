@@ -43,9 +43,8 @@
             <xpath expr="//field[@name='date_start']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
-            <xpath expr="//field[@name='go_live_date']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
+            <!-- go_live_date is now shown in the DATES order (after Training)
+                 by ft_project_lifecycle, so it is no longer force-hidden. -->
 
             <!-- Billable sits above Actual Hours; Dev/QA/PM hours follow below it.
                  Anchor on the allow_billable that sits next to user_id (added by
@@ -61,36 +60,77 @@
             
             <xpath expr="//group[group/field[@name='date_start']]" position="after">
 
-                <group string="Dates">
+                <!-- Named, and the name matters: ft_project_lifecycle slots
+                     its four milestone dates into the middle of this list and
+                     relabels two of these, and it needs to hit the copies in
+                     THIS group rather than the originals bt_project_customization
+                     puts next to Project Manager. Those originals share every
+                     field name with the ones below, so a pin on field names or
+                     sibling order is ambiguous; @name is not. (Odoo 19 rejects
+                     an xpath that selects on @string, so the group's title
+                     cannot do the job.) -->
+                <group string="Dates" name="ft_dates">
 
-                    <group>
+                    <!-- The delivery milestones below belong to the
+                         Implementation lifecycle. AMC and General projects run
+                         Started -> Working -> Completed and have no BRD, UAT or
+                         support step, so for those two types the group is
+                         reduced to Start Date and End Date.
+
+                         Hidden, NOT cleared: 28 AMC projects carry a Go Live
+                         and a UAT Start date, and a handful more carry Kick-off,
+                         BRD Approval, Sandbox Review or Support Start. Those
+                         values are history and stay in the database; setting the
+                         type back to Implementation shows them again unchanged.
+
+                         None of these dates is required, on the model or here.
+
+                         One column, not two. The order below is the delivery
+                         order a project actually runs in, Start through Closed,
+                         and a two-column layout would read that sequence down
+                         one side and then down the other. -->
+                    <group name="ft_dates_col">
                         <!-- Start / End Date: the core project.date_start /
                              project.date pair the Project Dashboard reads. The
                              core "Planned Date" range control is hidden above,
                              so surface them here for editing. Note: Odoo clears
                              BOTH if only one is set, and End Date must be on or
-                             after Start Date. -->
+                             after Start Date. End Date is last because
+                             ft_project_lifecycle relabels it Closed Date, and
+                             closing is the last thing that happens. -->
                         <field name="date_start" string="Start Date"
                                readonly="not ft_can_edit_project_dates"/>
-                        <field name="date" string="End Date"
-                               readonly="not ft_can_edit_project_dates"/>
                         <field name="kick_start_meeting_date"
+                               invisible="ft_project_type in ('amc', 'general')"
                                readonly="not ft_can_edit_project_dates"/>
                         <field name="brd_approval_date"
+                               invisible="ft_project_type in ('amc', 'general')"
                                readonly="not ft_can_edit_project_dates"/>
+                        <!-- ft_project_lifecycle inserts Regression Date here. -->
                         <field name="sandbox_review_date"
+                               invisible="ft_project_type in ('amc', 'general')"
                                readonly="not ft_can_edit_project_dates"/>
-                        <field name="go_live_date"
-                               readonly="not ft_can_edit_project_dates"/>
-                    </group>
-
-                    <group>
                         <field name="uat_start_date"
+                               invisible="ft_project_type in ('amc', 'general')"
                                readonly="not ft_can_edit_project_dates"/>
+                        <!-- ft_project_lifecycle inserts Data Upload and
+                             Training Date here. -->
                         <field name="support_start_date"
+                               invisible="ft_project_type in ('amc', 'general')"
                                readonly="not ft_can_edit_project_dates"/>
-                        <field name="warranty_end_date"
+                        <!-- ft_project_lifecycle inserts Support End Date here. -->
+                        <field name="date" string="End Date"
                                readonly="not ft_can_edit_project_dates"/>
+                        <!-- ft_project_lifecycle inserts Hold Date here. -->
+
+                        <!-- Off the form but still in the arch. warranty_end_date
+                             carries real data; dropping the node would take the
+                             values out of reach of anything reading this view
+                             rather than merely out of sight. go_live_date is now
+                             shown in the DATES order (after Training) by
+                             ft_project_lifecycle, so it is no longer duplicated
+                             here. -->
+                        <field name="warranty_end_date" invisible="1"/>
                     </group>
 
                 </group>

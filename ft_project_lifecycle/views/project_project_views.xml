@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Project form: Project Type, milestone dates, allowed-stage domain and
+         the Closed Date (renamed End Date). -->
+    <record id="view_project_form_lifecycle" model="ir.ui.view">
+        <field name="name">project.project.form.lifecycle</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <!-- Declared rather than left to default, and the reason is not
+             cosmetic: this view had been switched off on the live database, and
+             with it off the status bar silently falls back to core's domain and
+             offers a General project the whole Implementation pipeline. The
+             stage rules still hold — the constraint rejects the save — but the
+             user is shown eleven stages and told "no" only afterwards, which
+             reads as the feature not working at all.
+
+             Odoo only writes the fields a record declares, so an `active` left
+             unstated stays False forever, through every upgrade. Stating it puts
+             the view back on at each install and upgrade, on staging and live as
+             much as here. It does mean the view cannot be turned off from the
+             UI for longer than one upgrade, which is the intended trade: the
+             Project Type stage rules are not optional. -->
+        <field name="active" eval="True"/>
+        <field name="arch" type="xml">
+
+            <!-- Restrict the status bar to the stages of the current type. -->
+            <xpath expr="//field[@name='stage_id']" position="attributes">
+                <attribute name="domain">[('company_id', 'in', (company_id, False)), ('id', 'in', pl_allowed_stage_ids)]</attribute>
+            </xpath>
+
+            <!-- Project Type itself is placed on the form by
+                 bt_project_customization (after Tags); this module only needs
+                 the allowed-stage list the status bar's domain reads. -->
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="pl_allowed_stage_ids" invisible="1"/>
+            </xpath>
+
+            <!-- On Hold, next to the Project Type it sits beside conceptually:
+                 both say what KIND of situation the project is in, as against
+                 the status bar's how-far-along. The form only — the list,
+                 kanban and search views are left alone. -->
+            <xpath expr="//field[@name='ft_project_type']" position="after">
+                <field name="pl_on_hold"/>
+            </xpath>
+
+            <!-- Fold the milestone dates into the existing PMS "Dates" group
+                 (rendered by ft_task_hours_tracker). Everything below is pinned
+                 on that group's @name: the same field names appear a second
+                 time next to Project Manager, where bt_project_customization
+                 puts the originals, and those copies must not be touched.
+                 (Odoo 19 rejects an xpath that selects on @string, so the
+                 group's "Dates" title cannot be used to find it.)
+
+                 The result is the Implementation delivery order, top to bottom:
+                 Start, Kick-off, BRD Approval, Regression, Sandbox Review,
+                 UAT Start, Data Upload, Training, Support Start, Support End,
+                 Closed. Hold Date trails it, and only while On Hold is ticked. -->
+
+            <!-- Kick Start Meeting Date -> Kick-off Date. -->
+            <xpath expr="//group[@name='ft_dates']//field[@name='kick_start_meeting_date']" position="attributes">
+                <attribute name="string">Kick-off Date</attribute>
+            </xpath>
+
+            <!-- Core End Date, surfaced as Closed Date (see #10). -->
+            <xpath expr="//group[@name='ft_dates']//field[@name='date']" position="attributes">
+                <attribute name="string">Closed Date</attribute>
+            </xpath>
+
+            <!-- Regression and Training reuse bt_project_customization's
+                 ft_regression_date/ft_training_date (added there after this
+                 group was written) rather than a second field under the same
+                 label; Data Upload and Support End are the two dates the
+                 existing Dates group still doesn't carry. All four are slotted
+                 at their own point in the delivery order rather than appended
+                 in a block, and hidden for the other two Project Types,
+                 matching the fields they sit between. -->
+            <xpath expr="//group[@name='ft_dates']//field[@name='brd_approval_date']" position="after">
+                <field name="ft_regression_date"
+                       invisible="ft_project_type in ('amc', 'general')"/>
+            </xpath>
+            <xpath expr="//group[@name='ft_dates']//field[@name='uat_start_date']" position="after">
+                <field name="pl_data_upload_date"
+                       invisible="ft_project_type in ('amc', 'general')"/>
+                <field name="ft_training_date"
+                       invisible="ft_project_type in ('amc', 'general')"/>
+                <field name="go_live_date"
+                       invisible="ft_project_type in ('amc', 'general')"/>
+            </xpath>
+            <xpath expr="//group[@name='ft_dates']//field[@name='support_start_date']" position="after">
+                <field name="pl_support_end_date"
+                       invisible="ft_project_type in ('amc', 'general')"/>
+            </xpath>
+
+            <!-- Hold Date is the exception to the Implementation-only rule: any
+                 type can be put on hold. Shown only while the On Hold box is
+                 ticked, since coming off hold clears it. -->
+            <xpath expr="//group[@name='ft_dates']//field[@name='date']" position="after">
+                <field name="pl_hold_date" invisible="not pl_on_hold"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Project Kanban: arrow on each card that opens the project form. -->
+    <record id="view_project_kanban_lifecycle" model="ir.ui.view">
+        <field name="name">project.project.kanban.lifecycle</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//templates//field[@name='user_id']" position="before">
+                <a role="button" type="open"
+                   class="o_pl_open_project btn btn-link p-0 me-2"
+                   title="Open Project">
+                    <i class="fa fa-arrow-circle-right fa-lg" aria-label="Open Project"/>
+                </a>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

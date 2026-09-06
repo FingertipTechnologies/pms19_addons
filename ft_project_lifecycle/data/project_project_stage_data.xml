@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Project-level Kanban stages. The pl_for_* flags decide which Project
+         Type may use each stage, so the three workflows stay separate while
+         sharing one global stage list:
+
+           Implementation : DISC -> DEV -> REG -> SRV -> UAT -> DATA -> TRA -> SUPPORT
+           AMC            : Started -> Working -> Completed
+           General        : Started -> Working -> Completed
+
+         CLOSED is a shared terminal stage available to every type. It is not
+         part of any of the three workflows above — a project is archived FROM
+         whatever stage it was in — which is why it carries all three flags
+         rather than belonging to one flow. HOLD used to sit beside it and no
+         longer does; see the archived record at the bottom of this file.
+
+         DISC, DEV and SUPPORT are Implementation-only. They used to be shared
+         with General, back when General ran a cut-down DISC -> DEV -> SUPPORT
+         flow; General now has its own three stages and no longer touches the
+         Implementation lifecycle. -->
+
+    <record id="stage_disc" model="project.project.stage">
+        <field name="name">DISC</field>
+        <field name="sequence">10</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <record id="stage_dev" model="project.project.stage">
+        <field name="name">DEV</field>
+        <field name="sequence">20</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <record id="stage_reg" model="project.project.stage">
+        <field name="name">REG</field>
+        <field name="sequence">30</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <record id="stage_srv" model="project.project.stage">
+        <field name="name">SRV</field>
+        <field name="sequence">40</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <record id="stage_uat" model="project.project.stage">
+        <field name="name">UAT</field>
+        <field name="sequence">50</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <record id="stage_data" model="project.project.stage">
+        <field name="name">DATA</field>
+        <field name="sequence">60</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <record id="stage_tra" model="project.project.stage">
+        <field name="name">TRA</field>
+        <field name="sequence">70</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <record id="stage_support" model="project.project.stage">
+        <field name="name">SUPPORT</field>
+        <field name="sequence">80</field>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+    <!-- The AMC and General workflow. One set of three records shared by both
+         types rather than two parallel sets: the Projects Kanban is a single
+         board, so duplicating them would put two "Started" columns side by
+         side with no way to tell them apart. The Project Type filter is what
+         separates AMC from General. -->
+
+    <record id="stage_started" model="project.project.stage">
+        <field name="name">Started</field>
+        <field name="sequence">90</field>
+        <field name="pl_for_general" eval="True"/>
+        <field name="pl_for_amc" eval="True"/>
+    </record>
+
+    <record id="stage_working" model="project.project.stage">
+        <field name="name">Working</field>
+        <field name="sequence">95</field>
+        <field name="pl_for_general" eval="True"/>
+        <field name="pl_for_amc" eval="True"/>
+    </record>
+
+    <record id="stage_completed" model="project.project.stage">
+        <field name="name">Completed</field>
+        <field name="sequence">100</field>
+        <field name="pl_for_general" eval="True"/>
+        <field name="pl_for_amc" eval="True"/>
+    </record>
+
+    <!-- Shared terminal stage. -->
+
+    <!-- HOLD is retired: being parked is now the pl_on_hold checkbox on the
+         project form, not a stage. As a stage it overwrote the stage a project
+         was parked FROM, which is the one fact needed to resume it; the flag
+         sits alongside stage_id so both survive.
+
+         Kept as an archived record rather than deleted. Seven tables carry a
+         foreign key to project.project.stage — account_analytic_line holds a
+         frozen project_status on ~20,000 timesheet lines — so deleting it would
+         either fail or destroy history. Archived and stripped of all three type
+         flags, it can no longer be selected or reached, which is what "removed"
+         has to mean here. The migration empties it before this takes effect.
+
+         Note the noupdate="1" on this file: these values reach an existing
+         database through migrations/19.0.1.3.0, not through this record. -->
+    <record id="stage_hold" model="project.project.stage">
+        <field name="name">HOLD</field>
+        <field name="sequence">105</field>
+        <field name="fold" eval="True"/>
+        <field name="active" eval="False"/>
+        <field name="pl_for_implementation" eval="False"/>
+        <field name="pl_for_general" eval="False"/>
+        <field name="pl_for_amc" eval="False"/>
+    </record>
+
+    <record id="stage_closed" model="project.project.stage">
+        <field name="name">CLOSED</field>
+        <field name="sequence">110</field>
+        <field name="fold" eval="True"/>
+        <field name="pl_for_implementation" eval="True"/>
+        <field name="pl_for_general" eval="True"/>
+        <field name="pl_for_amc" eval="True"/>
+    </record>
+
+</odoo>

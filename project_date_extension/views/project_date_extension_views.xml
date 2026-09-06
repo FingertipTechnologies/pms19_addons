@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Form view -->
+        <record id="view_project_date_extension_request_form" model="ir.ui.view">
+            <field name="name">project.date.extension.request.form</field>
+            <field name="model">project.date.extension.request</field>
+            <field name="arch" type="xml">
+                <form string="Date Extension Request">
+                    <header>
+                        <button name="action_submit_request" type="object"
+                                string="Request" class="btn-primary"
+                                invisible="not can_submit"/>
+                        <button name="action_approve" type="object"
+                                string="Approve" class="btn-primary"
+                                invisible="state != 'request'"
+                                groups="project_date_extension.group_project_date_extension_approver"
+                                confirm="Approve this Date Extension Request? The milestone/stage date on the Project will be updated immediately."/>
+                        <button name="action_reject" type="object"
+                                string="Reject" class="btn-secondary"
+                                invisible="state != 'request'"
+                                groups="project_date_extension.group_project_date_extension_approver"/>
+                        <button name="action_reset_to_draft" type="object"
+                                string="Reset to Draft"
+                                invisible="state != 'rejected'"
+                                groups="project_date_extension.group_project_date_extension_approver"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,request,approved,rejected"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="project_id" options="{'no_create': True}"
+                                       readonly="state != 'draft'"/>
+                                <field name="stage_id"/>
+                                <field name="allowed_date_ids" invisible="1"/>
+                                <field name="date_to_extend_id" options="{'no_create': True}"
+                                       context="{'ld_project_id': project_id}"
+                                       readonly="state != 'draft'" required="1"/>
+                                <field name="is_approver" invisible="1"/>
+                                <field name="can_submit" invisible="1"/>
+                                <field name="requester_id"
+                                       options="{'no_create': True}"
+                                       readonly="not is_approver or state != 'draft'"/>
+                            </group>
+                            <group>
+                                <field name="current_date" readonly="1"/>
+                                <field name="requested_date" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+                        <group string="Reason">
+                            <field name="reason" nolabel="1" placeholder="Explain why this date extension is requested..."
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Extension History" invisible="state == 'draft'">
+                            <field name="approver_id" readonly="1"/>
+                            <field name="decision_date" readonly="1"/>
+                            <field name="rejection_reason" readonly="state != 'draft'" invisible="state != 'rejected'"/>
+                        </group>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- List / tree view -->
+        <record id="view_project_date_extension_request_list" model="ir.ui.view">
+            <field name="name">project.date.extension.request.list</field>
+            <field name="model">project.date.extension.request</field>
+            <field name="arch" type="xml">
+                <list string="Date Extension Requests" decoration-success="state == 'approved'"
+                      decoration-danger="state == 'rejected'" decoration-muted="state == 'draft'">
+                    <field name="name"/>
+                    <field name="project_id"/>
+                    <field name="stage_id"/>
+                    <field name="date_to_extend_id"/>
+                    <field name="current_date"/>
+                    <field name="requested_date"/>
+                    <field name="requester_id"/>
+                    <field name="approver_id" optional="hide"/>
+                    <field name="decision_date" optional="hide"/>
+                    <field name="state" widget="badge"
+                           decoration-success="state == 'approved'"
+                           decoration-danger="state == 'rejected'"
+                           decoration-muted="state == 'draft'"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Search view -->
+        <record id="view_project_date_extension_request_search" model="ir.ui.view">
+            <field name="name">project.date.extension.request.search</field>
+            <field name="model">project.date.extension.request</field>
+            <field name="arch" type="xml">
+                <search string="Search Date Extension Requests">
+                    <field name="name"/>
+                    <field name="project_id"/>
+                    <field name="date_to_extend_id"/>
+                    <field name="requester_id"/>
+                    <separator/>
+                    <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                    <filter string="Approved" name="filter_approved" domain="[('state', '=', 'approved')]"/>
+                    <filter string="Rejected" name="filter_rejected" domain="[('state', '=', 'rejected')]"/>
+                    <separator/>
+                    <filter string="My Requests" name="filter_my_requests" domain="[('requester_id', '=', uid)]"/>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_project_date_extension_request" model="ir.actions.act_window">
+            <field name="name">Date Extension Requests</field>
+            <field name="res_model">project.date.extension.request</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_project_date_extension_request_search"/>
+            <field name="context">{'search_default_filter_draft': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smart_action">
+                    Create a Date Extension Request
+                </p>
+                <p>
+                    Request an extension of a Project milestone date. Once
+                    approved by an authorized Admin, the milestone date on
+                    the Project is updated automatically.
+                </p>
+            </field>
+        </record>
+
+        <!-- Menu -->
+        <menuitem id="menu_project_date_extension_request"
+                  name="Date Extensions"
+                  parent="project.menu_main_pm"
+                  action="action_project_date_extension_request"
+                  sequence="60"/>
+
+    </data>
+</odoo>

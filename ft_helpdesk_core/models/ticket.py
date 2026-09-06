@@ -111,6 +111,12 @@ class HelpdeskTicket(models.Model):
     project_id = fields.Many2one(
         'project.project', string='Project', tracking=True,
     )
+    project_manager_id = fields.Many2one(
+        'res.users', string='Project Manager',
+        related='project_id.user_id', store=True, index=True,
+        help="Manager of the ticket's project. Stored so PMS menus, filters "
+             "and the project-manager record rule can use it directly.",
+    )
     product_id = fields.Many2one(
         'product.product', string='Related Product',
     )
@@ -355,7 +361,7 @@ class HelpdeskTicket(models.Model):
                         ticket.message_post(
                             body=Markup(body_html),
                             subject='Ticket %s - Confirmation' % ticket.ticket_no,
-                            email_from='support@fingertipplus.com',
+                            email_from='admin@fingertipplus.com',
                             partner_ids=ticket.customer_id.ids,
                             subtype_xmlid='ft_helpdesk_core.mt_ticket_new',
                             message_type='comment',
@@ -368,6 +374,10 @@ class HelpdeskTicket(models.Model):
             # Notify the assigned internal user (covers both vals-set and
             # round-robin-set assignees). Skips self-assignment internally.
             ticket._notify_assignee()
+            # Tickets filed from the customer portal land on a project; the PM
+            # of that project is followed in and emailed so nothing sits
+            # unnoticed in the helpdesk queue.
+            ticket._notify_project_manager()
         return tickets
 
     def write(self, vals):
@@ -380,6 +390,11 @@ class HelpdeskTicket(models.Model):
         old_assignee_ids = (
             {t.id: t.assigned_user_id.id for t in self}
             if assignee_changed else {}
+        )
+        project_changed = 'project_id' in vals
+        old_project_ids = (
+            {t.id: t.project_id.id for t in self}
+            if project_changed else {}
         )
         result = super().write(vals)
         # Track state-change timestamps
@@ -426,6 +441,13 @@ class HelpdeskTicket(models.Model):
             for ticket in self:
                 if ticket.assigned_user_id.id != old_assignee_ids.get(ticket.id):
                     ticket._notify_assignee()
+        # A ticket moved onto (or between) projects reaches a different PM.
+        # Portal tickets are often filed without a project and triaged later,
+        # so this is the only moment their PM learns about them.
+        if project_changed:
+            for ticket in self:
+                if ticket.project_id.id != old_project_ids.get(ticket.id):
+                    ticket._notify_project_manager()
         return result
 
     # =====================
@@ -552,7 +574,7 @@ class HelpdeskTicket(models.Model):
                 'default_res_ids': self.ids,
                 'default_partner_ids': self.customer_id.ids if self.customer_id else [],
                 'default_subtype_xmlid': 'ft_helpdesk_core.mt_ticket_public_reply',
-                'default_email_from': 'support@fingertipplus.com',
+                'default_email_from': 'admin@fingertipplus.com',
                 'default_composition_mode': 'comment',
             },
         }
@@ -569,7 +591,7 @@ class HelpdeskTicket(models.Model):
 
     def message_post(self, **kwargs):
         """Override to track first response and customer replies."""
-        kwargs['email_from'] = 'support@fingertipplus.com'
+        kwargs['email_from'] = 'admin@fingertipplus.com'
         message = super().message_post(**kwargs)
         # Determine if this is a public reply by an agent
         subtype_id = kwargs.get('subtype_id')
@@ -600,8 +622,8 @@ class HelpdeskTicket(models.Model):
 
     def message_notify(self, **kwargs):
         """Force all helpdesk notifications (incl. activity-assigned emails)
-        to be sent from support@fingertipplus.com instead of the default."""
-        kwargs['email_from'] = 'support@fingertipplus.com'
+        to be sent from admin@fingertipplus.com instead of the default."""
+        kwargs['email_from'] = 'admin@fingertipplus.com'
         return super().message_notify(**kwargs)
 
     def _notify_assignee(self):
@@ -635,6 +657,45 @@ class HelpdeskTicket(models.Model):
         except Exception:
             _logger.warning(
                 'Failed to send assignee notification for ticket %s',
+                self.ticket_no, exc_info=True,
+            )
+
+    def _notify_project_manager(self):
+        """Subscribe the project's manager to the ticket and email them.
+
+        Keeps the PM in the loop for every ticket raised against a project they
+        manage - both the initial alert and, through the follower, each later
+        reply. No-op when the ticket has no project, when the PM is the one who
+        just created/moved it, or when they have no email.
+        """
+        self.ensure_one()
+        manager = self.project_id.user_id
+        if not manager or manager.id == self.env.uid:
+            return
+        partner = manager.partner_id
+        if not partner or not partner.email:
+            return
+        if partner not in self.message_partner_ids:
+            self.message_subscribe(partner_ids=partner.ids)
+        template = self.env.ref(
+            'ft_helpdesk_core.mt_ticket_pm_email_template',
+            raise_if_not_found=False,
+        )
+        if not template:
+            return
+        try:
+            rendered = template.sudo()._render_field('body_html', self.ids)
+            subjects = template.sudo()._render_field('subject', self.ids)
+            self.message_notify(
+                partner_ids=partner.ids,
+                body=Markup(rendered[self.id]),
+                subject=subjects[self.id],
+                email_layout_xmlid='mail.mail_notification_light',
+                subtype_xmlid='mail.mt_note',
+            )
+        except Exception:
+            _logger.warning(
+                'Failed to send project-manager notification for ticket %s',
                 self.ticket_no, exc_info=True,
             )
 

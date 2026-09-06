@@ -17,6 +17,7 @@
                 <field name="category_id" optional="show"/>
                 <field name="type_id" optional="hide"/>
                 <field name="project_id" optional="show"/>
+                <field name="project_manager_id" widget="many2one_avatar_user" optional="hide"/>
                 <field name="priority" widget="priority" optional="show"/>
                 <field name="state" widget="badge"
                        decoration-info="state == 'open'"
@@ -109,9 +110,13 @@
                 <field name="type_id"/>
                 <field name="tag_ids"/>
                 <field name="project_id"/>
+                <field name="project_manager_id"/>
                 <separator/>
                 <!-- Quick Filters -->
                 <filter string="My Tickets" name="my_tickets" domain="[('assigned_user_id', '=', uid)]"/>
+                <filter string="My Project Tickets" name="my_project_tickets"
+                        domain="[('project_manager_id', '=', uid)]"/>
+                <filter string="Without Project" name="no_project" domain="[('project_id', '=', False)]"/>
                 <filter string="Unassigned" name="unassigned" domain="[('assigned_user_id', '=', False)]"/>
                 <filter string="Escalated" name="escalated" domain="[('is_escalated', '=', True)]"/>
                 <separator/>
@@ -145,6 +150,7 @@
                     <filter string="Category" name="group_category" context="{'group_by': 'category_id'}"/>
                     <filter string="Type" name="group_type" context="{'group_by': 'type_id'}"/>
                     <filter string="Project" name="group_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="Project Manager" name="group_project_manager" context="{'group_by': 'project_manager_id'}"/>
                     <filter string="Channel" name="group_channel" context="{'group_by': 'channel'}"/>
                     <filter string="Create Date" name="group_create_date" context="{'group_by': 'create_date:month'}"/>
                     <filter string="Customer" name="group_customer" context="{'group_by': 'customer_id'}"/>

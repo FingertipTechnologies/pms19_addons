@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_project_date_extension_request_base_user,project.date.extension.request.base.user,model_project_date_extension_request,base.group_user,1,0,0,0
+access_project_date_extension_request_user,project.date.extension.request.user,model_project_date_extension_request,group_project_date_extension_user,1,0,0,0
+access_project_date_extension_request_approver,project.date.extension.request.approver,model_project_date_extension_request,group_project_date_extension_approver,1,1,1,1
+access_project_date_extension_request_admin,project.date.extension.request.admin,model_project_date_extension_request,base.group_system,1,1,1,1
+access_project_lifecycle_date_all,project.lifecycle.date.all,model_project_lifecycle_date,base.group_user,1,0,0,0
+access_project_lifecycle_date_approver,project.lifecycle.date.approver,model_project_lifecycle_date,group_project_date_extension_approver,1,1,1,1
+access_project_lifecycle_date_admin,project.lifecycle.date.admin,model_project_lifecycle_date,base.group_system,1,1,1,1

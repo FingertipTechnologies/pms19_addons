@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_ft_project_dashboard_admin,ft.project.dashboard admin,model_ft_project_dashboard,base.group_system,1,1,1,1
+access_ft_project_dashboard_project_manager,ft.project.dashboard project manager,model_ft_project_dashboard,project.group_project_manager,1,0,0,0

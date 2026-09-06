@@ -47,6 +47,49 @@
     </record>
 
     <!-- ============================= -->
+    <!-- Support tickets under PMS      -->
+    <!-- ============================= -->
+    <!-- Customer-portal tickets live on ft.helpdesk.ticket and used to be
+         reachable only from the Helpdesk app. They are surfaced here so PMs
+         work them from PMS. The Helpdesk app is left untouched for agents. -->
+    <!-- "My Project Tickets" (and the action behind it) used to open this
+         menu. It is gone: All Tickets covers the same records, and the
+         "My Project Tickets" filter is still on the search view for anyone who
+         wants that cut of them without a menu of its own. -->
+
+    <record id="action_pms_tickets_no_project" model="ir.actions.act_window">
+        <field name="name">Tickets Without Project</field>
+        <field name="res_model">ft.helpdesk.ticket</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="ft_helpdesk_core.view_ticket_search"/>
+        <field name="context">{'search_default_no_project': 1, 'search_default_active_tickets': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Every open ticket is linked to a project</p>
+            <p>Tickets filed without a project reach no PM. Set the project on
+               each one so it lands in the right PMS queue.</p>
+        </field>
+    </record>
+
+    <!-- Tickets: sequence 30 (between Timesheets and Bugs) -->
+    <menuitem id="menu_pms_tickets"
+              name="Tickets"
+              parent="project.menu_main_pm"
+              sequence="30"/>
+
+    <menuitem id="menu_pms_all_tickets"
+              name="All Tickets"
+              parent="menu_pms_tickets"
+              action="ft_helpdesk_core.action_ticket_list"
+              sequence="20"/>
+
+    <menuitem id="menu_pms_tickets_no_project"
+              name="Without Project"
+              parent="menu_pms_tickets"
+              action="action_pms_tickets_no_project"
+              groups="ft_helpdesk_core.group_ft_helpdesk_agent"
+              sequence="30"/>
+
+    <!-- ============================= -->
     <!-- Add QA TestApp menus           -->
     <!-- ============================= -->
     <!-- Bug: sequence 40 -->

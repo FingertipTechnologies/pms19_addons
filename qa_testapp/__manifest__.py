@@ -1,6 +1,6 @@
 {
     'name': 'QA TestApp – Test & Bug Tracker',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.2.1',
     'category': 'Quality Assurance',
     'summary': 'Test Plans, Scenarios, Test Cases & Bug Tickets — all-in-one QA suite',
     'description': """

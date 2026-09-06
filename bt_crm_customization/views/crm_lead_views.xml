@@ -6,6 +6,39 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
 
+            <!-- The pipeline statusbar on a LEAD: the whole bar, shown but
+                 not clickable. Core hides it on a lead outright
+                 (invisible="type == 'lead'"); its node below is left exactly as
+                 core wrote it, so on an opportunity the bar stays core's own -
+                 fully clickable, team-restricted, read-only once lost or
+                 archived. This second node is the lead's: same stages, same
+                 team domain, same widget, only read-only, so it reports where
+                 the record sits without letting anyone move it.
+
+                 A lead may not be walked up the pipeline because the
+                 mandatory-field rules are all guarded by
+                 `type == 'opportunity'`: a lead moved to Won would arrive with
+                 none of Next Action, Business Challenge, Technology, Expected
+                 Closing or Closed Amount ever asked for, and the guards would
+                 only start firing afterwards, on a record that had already
+                 skipped past them. The stages belong to the opportunity;
+                 Convert to Opportunity is the way in, and the stage carries
+                 across.
+
+                 The dropdown this module used to add to the lead's right-hand
+                 column is gone: it was a stand-in for this bar, and two stage
+                 controls on one form is one too many.
+
+                 Enforced server-side as well, in `crm.lead.write` - the form is
+                 not the only way to write `stage_id`, and a Kanban drag is
+                 exactly the way round it. -->
+            <xpath expr="//header/field[@name='stage_id']" position="after">
+                <field name="stage_id" widget="rotting_statusbar_duration"
+                       options="{'clickable': '0', 'fold_field': 'fold'}"
+                       domain="['|', ('team_ids', 'in', team_id), ('team_ids', '=', False)]"
+                       invisible="type != 'lead'" readonly="1"/>
+            </xpath>
+
             <!-- Stage helper flags + remaining RIGHT column fields (after Tags) -->
             <xpath expr="//field[@name='tag_ids']" position="after">
                 <field name="is_cold_stage" invisible="1"/>
@@ -143,20 +176,15 @@
             </xpath>
 
             <!-- Qualification block at the top of the Lead's right-hand group:
-                 Created Date, Stage, Status, Timeline, Current System.
-                 Stage is the stock `stage_id` - the same pipeline stage the
-                 opportunity statusbar drives - shown here as a dropdown
-                 because core hides that statusbar on leads
-                 (invisible="type == 'lead'"). No new stage list is
-                 introduced: the values, the team domain and the readonly rule
-                 are the pipeline's own, so a change here is a real pipeline
-                 stage change and survives the conversion to an opportunity. -->
+                 Created Date, Age, Status, Timeline, Current System.
+                 Stage is not among them any more - it is shown by the
+                 statusbar in the header, added for leads at the top of this
+                 view, and on a lead that bar is read-only. -->
             <xpath expr="//group[@name='lead_priority']/field[@name='priority']" position="before">
                 <field name="lead_created_date"/>
-                <field name="stage_id" id="stage_id_lead"
-                       domain="['|', ('team_ids', 'in', team_id), ('team_ids', '=', False)]"
-                       options="{'no_create': True, 'no_open': True}"
-                       readonly="won_status == 'lost' or not active"/>
+                <!-- Days open, computed from Created Date. Read-only by
+                     nature: it has no column behind it. -->
+                <field name="lead_age_days"/>
                 <field name="lead_status"/>
                 <field name="acquisition_timeline"/>
                 <field name="current_system"/>
@@ -249,6 +277,9 @@
                      ones the team works the list by, so they show by default;
                      the rest are available from the optional-columns menu. -->
                 <field name="lead_created_date" optional="hide"/>
+                <!-- Shown by default: spotting ageing leads at a glance is the
+                     whole point of the column. -->
+                <field name="lead_age_days" optional="show"/>
                 <field name="stage_id" optional="show"
                        options="{'no_create': True, 'no_open': True}"/>
                 <field name="lead_status" optional="show"/>
@@ -272,6 +303,22 @@
                 <field name="lead_source"/>
                 <field name="lead_status"/>
                 <field name="lead_location"/>
+            </xpath>
+
+            <!-- The stock Group By reads "Salesperson" as a hard-coded label,
+                 so the field-level rename to Owner does not reach it. -->
+            <xpath expr="//filter[@name='salesperson']" position="attributes">
+                <attribute name="string">Owner</attribute>
+            </xpath>
+
+            <!-- Ageing-lead filters. `lead_age_days` is computed, not stored;
+                 its search method turns these into a range on Created Date. -->
+            <xpath expr="//filter[@name='unassigned_leads']" position="after">
+                <separator/>
+                <filter name="lead_age_over_30" string="Ageing (30+ Days)"
+                        domain="[('lead_age_days', '&gt;=', 30)]"/>
+                <filter name="lead_age_over_60" string="Ageing (60+ Days)"
+                        domain="[('lead_age_days', '&gt;=', 60)]"/>
             </xpath>
 
             <!-- Hide the stock UTM group-bys, same reasoning as the Pipeline
@@ -319,6 +366,12 @@
                 <field name="bdr_id"/>
                 <field name="cus_campaign_id"/>
                 <field name="lead_source"/>
+            </xpath>
+
+            <!-- Same hard-coded "Salesperson" label as in the Leads search
+                 view above; the field-level rename does not reach it. -->
+            <xpath expr="//filter[@name='salesperson']" position="attributes">
+                <attribute name="string">Owner</attribute>
             </xpath>
 
             <!-- Hide the stock UTM group-bys.

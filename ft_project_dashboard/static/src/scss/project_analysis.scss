@@ -1,0 +1,92 @@
+// The Analysis page on the project form.
+//
+// It reuses every rule in dashboard.scss by carrying the .ftpd_dashboard class,
+// so the cards are the same cards. This file is only what has to change for a
+// board built to fill a window to sit inside a form notebook instead: the root
+// stops being a scroll container, the header stops being sticky, and the
+// padding that separated the board from the browser chrome comes off, since the
+// notebook supplies its own.
+//
+// Everything here is scoped to the modifier, so nothing in it can reach the
+// dashboard itself.
+.ftpd_dashboard.ftpd_dashboard--embedded {
+    // A form notebook page is already scrolled by the form. A second scroll
+    // container inside it traps the wheel and gives the page two scrollbars.
+    height: auto;
+    overflow: visible;
+    // The board paints its own grey ground because it owns the whole window;
+    // inside a white form sheet that reads as a misplaced panel.
+    background: transparent;
+    padding-bottom: 0;
+    // The form sheet sets its own font; inheriting it keeps the tab from
+    // announcing itself as a different application.
+    font-family: inherit;
+
+    .ftpd_content {
+        padding: 0;
+        gap: 24px;
+    }
+
+    // Not sticky: the form scrolls as one document, and a header pinned to the
+    // top of a notebook page would float over the fields above it.
+    .ftpd_header {
+        position: static;
+        background: transparent;
+        backdrop-filter: none;
+        padding: 0 0 12px;
+        margin-bottom: 16px;
+        gap: 8px;
+    }
+
+    // Two periods fewer than the board and a narrower container, so the row is
+    // allowed to wrap rather than squeezing the buttons.
+    .ftpd_periods {
+        flex-wrap: wrap;
+    }
+
+    // A form notebook is materially narrower than the dashboard window,
+    // especially beside the chatter. Four cards across at that width leaves
+    // each one too narrow to read its own title, so the whole tab steps down a
+    // column earlier than the board does. The 5- and 6-card variants inherit
+    // these breakpoints too, since they are more specific than the base grid.
+    .ftpd_kpi_grid,
+    .ftpd_kpi_grid--five,
+    .ftpd_kpi_grid--six {
+        gap: 12px;
+
+        @media (max-width: 1600px) { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 1200px) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 700px)  { grid-template-columns: 1fr; }
+    }
+
+    // A tab is a small surface; a 60vh spinner would push the sections off
+    // screen every time the period changes.
+    .ftpd_embedded_loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 0;
+        color: #4f46e5;
+    }
+
+    // Unsaved record, and a failed load. Both say why the tab is empty instead
+    // of leaving it blank — the one thing that reads as a broken feature.
+    .ftpd_embedded_notice,
+    .ftpd_embedded_error {
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+    }
+    .ftpd_embedded_notice {
+        background: #f1f5f9;
+        color: var(--ftpd-muted);
+    }
+    .ftpd_embedded_error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #b91c1c;
+        margin-bottom: 16px;
+    }
+}

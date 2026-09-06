@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Point: any internal Project user can submit / view Date
+             Extension Requests. Automatically granted to every user that
+             already has Project access. -->
+        <record id="group_project_date_extension_user" model="res.groups">
+            <field name="name">Date Extension User</field>
+            <field name="implied_ids" eval="[(4, ref('project.group_project_user'))]"/>
+            <field name="comment">
+                Users in this group can create Date Extension Requests for
+                their projects and follow their status, but cannot approve
+                or reject them, nor edit a milestone date directly.
+            </field>
+        </record>
+
+        <!-- Point 4: only members of this group can approve/reject
+             requests and directly edit a controlled milestone date.
+             Add trusted Admin users to this group explicitly
+             (Settings > Users > this user > this group). -->
+        <record id="group_project_date_extension_approver" model="res.groups">
+            <field name="name">Date Extension Approver (Admin)</field>
+            <field name="implied_ids" eval="[(4, ref('group_project_date_extension_user'))]"/>
+            <field name="user_ids" eval="[(4, ref('base.user_admin'))]"/>
+            <field name="comment">
+                Users in this group are authorized Admins who can approve
+                or reject Project Date Extension Requests, and who retain
+                the right to edit a project milestone date directly
+                without going through the approval workflow.
+            </field>
+        </record>
+
+    </data>
+</odoo>

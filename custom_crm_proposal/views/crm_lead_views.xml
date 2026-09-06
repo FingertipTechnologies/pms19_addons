@@ -4,17 +4,25 @@
     <field name="model">crm.lead</field>
     <field name="inherit_id" ref="crm.crm_lead_view_form"/>
     <field name="arch" type="xml">
-        <!-- Add the "New Proposal" button to the header -->
+        <!-- Add the "New Proposal" button to the header.
+             Opportunities only: a proposal is written against a deal, so it
+             cannot be raised until the lead has been converted. crm.lead is a
+             single model with a `type` of 'lead' or 'opportunity' and one
+             shared form, so the button has to be hidden per type rather than
+             simply left out of the lead's own view. -->
         <xpath expr="//header" position="inside">
             <button name="action_create_new_proposal" 
                     string="New Proposal" 
                     type="object" 
+                    invisible="type == 'lead'"
                     class="oe_highlight"/>
         </xpath>
 
-        <!-- Add the Proposals Tab and its list view -->
+        <!-- Add the Proposals Tab and its list view. Hidden on leads for the
+             same reason as the button: with no way to create a proposal there,
+             the tab could only ever be empty. -->
         <xpath expr="//notebook" position="inside">
-            <page string="Proposals" name="proposals">
+            <page string="Proposals" name="proposals" invisible="type == 'lead'">
                 <field name="proposal_ids" context="{'form_view_ref': 'custom_crm_proposal.view_crm_proposal_form_popup'}">
                     <!-- open_form_view="0" prevents the automatic popup on click -->
                     <list create="0" edit="0" open_form_view="0">
