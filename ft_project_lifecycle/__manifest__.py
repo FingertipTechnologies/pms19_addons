@@ -43,7 +43,30 @@
     # same as General ones — so the stage never received a project and drew a
     # permanently empty Kanban column. Archived, flags cleared, xmlid dropped;
     # not deleted, because seven tables reference project.project.stage.
-    'version': '19.0.2.1.0',
+    # 19.0.2.2.0 stops a General project being shown the Implementation
+    # pipeline, and retires HOLD as a stage.
+    #
+    # DISC and DEV were appearing on the status bar of every General project.
+    # _apply_stage_flags set a stage's pl_for_* flags to its own workflow PLUS
+    # every Project Type found standing on it, so that a project of the wrong
+    # type could not become unsaveable. The protection was needed; its scope was
+    # not — a flag belongs to the STAGE, so two archived internal projects left
+    # in Development were enough to offer DISC and DEV to all 26 General
+    # projects. The exception now lives on the project instead
+    # (pl_selectable_stage_ids adds a project's own current stage to what its
+    # status bar offers), so those two stay saveable while the flags say only
+    # what each stage is really for.
+    #
+    # HOLD goes back to being the pl_on_hold checkbox. It was reinstated as a
+    # stage in 19.0.2.0.0 because the requirement listed it among the Kanban
+    # stages, which left the form carrying a HOLD stage and an On Hold checkbox
+    # that could disagree; and a stage holds one value, so parking a project
+    # still overwrote the stage it was parked from. unpark_hold_projects moves
+    # whatever is standing on it back to the stage the chatter says it was
+    # parked from — matched on the tracking rows' stage IDS, so adoption's
+    # renames cannot break it — ticks pl_on_hold, and only then is the stage
+    # archived.
+    'version': '19.0.2.2.0',
     'summary': 'Project Type, project-level lifecycle stages and milestone dates.',
     'description': """
 Project Lifecycle

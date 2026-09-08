@@ -91,7 +91,22 @@
     # added it to the search panel only, which is a different menu — the column
     # toggle at the right of the header row does not show search fields, so
     # Module was there but not where it was being looked for.
-    'version': '19.0.1.14.0',
+    # 19.0.1.15.0 confines the Task Source rules to Implementation projects,
+    # for the same reason 19.0.1.12.0 confined the stage date gates. Task
+    # Source is a position in the Implementation delivery timeline — Planned,
+    # Unplanned, Change Request, Enhancement — and AMC and General run
+    # Started -> Working -> Completed, where no stage answers it. Enforced on
+    # all three the rules were unsatisfiable, not just irrelevant: a General
+    # project's tasks are stamped 'planned' and the Planned rule demands a
+    # Discovery stage that General does not have, so no task in a General
+    # project could be saved; AMC is stamped nothing, which the User Story rule
+    # rejects. The field stays on the form for every type, so the
+    # classification can still be made by hand — only the enforcement is
+    # Implementation's. The task form and quick create carry the project's type
+    # (a new related field, project.task.ft_project_type) so their `required`
+    # attributes agree with the server. No migration: the change only relaxes
+    # checks, and no stored value depends on it.
+    'version': '19.0.1.15.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',

@@ -24,16 +24,21 @@
         <field name="active" eval="True"/>
         <field name="arch" type="xml">
 
-            <!-- Restrict the status bar to the stages of the current type. -->
+            <!-- Restrict the status bar to the stages of the current type,
+                 plus wherever this project actually stands. The second half is
+                 pl_selectable_stage_ids rather than pl_allowed_stage_ids: a
+                 project on a stage outside its type's workflow must go on
+                 showing that stage, or the status bar would render with no
+                 segment highlighted. See the field comments. -->
             <xpath expr="//field[@name='stage_id']" position="attributes">
-                <attribute name="domain">[('company_id', 'in', (company_id, False)), ('id', 'in', pl_allowed_stage_ids)]</attribute>
+                <attribute name="domain">[('company_id', 'in', (company_id, False)), ('id', 'in', pl_selectable_stage_ids)]</attribute>
             </xpath>
 
             <!-- Project Type itself is placed on the form by
                  bt_project_customization (after Tags); this module only needs
                  the allowed-stage list the status bar's domain reads. -->
             <xpath expr="//field[@name='user_id']" position="after">
-                <field name="pl_allowed_stage_ids" invisible="1"/>
+                <field name="pl_selectable_stage_ids" invisible="1"/>
             </xpath>
 
             <!-- On Hold, next to the Project Type it sits beside conceptually:

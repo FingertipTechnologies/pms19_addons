@@ -97,32 +97,36 @@
 
     <!-- Shared terminal stage. -->
 
-    <!-- HOLD is retired: being parked is now the pl_on_hold checkbox on the
-         project form, not a stage. As a stage it overwrote the stage a project
-         was parked FROM, which is the one fact needed to resume it; the flag
-         sits alongside stage_id so both survive.
+    <!-- HOLD is retired: being parked is the pl_on_hold checkbox on the
+         project form, not a stage. It was briefly reinstated as a stage
+         because the requirement listed it among the Project-level Kanban
+         stages, and that put it back on every status bar next to an On Hold
+         checkbox saying the same thing — two controls that could disagree.
+
+         As a stage it also overwrote the stage a project was parked FROM,
+         which is the one fact needed to resume it. The flag sits alongside
+         stage_id, so a project is "in DEV and parked" and comes back to DEV on
+         its own.
 
          Kept as an archived record rather than deleted. Seven tables carry a
          foreign key to project.project.stage — account_analytic_line holds a
          frozen project_status on ~20,000 timesheet lines — so deleting it would
          either fail or destroy history. Archived and stripped of all three type
          flags, it can no longer be selected or reached, which is what "removed"
-         has to mean here. The migration empties it before this takes effect.
+         has to mean here.
 
-         Note the noupdate="1" on this file: these values reach an existing
-         database through migrations/19.0.1.3.0, not through this record. -->
-    <!-- HOLD is a stage again. It was briefly retired in favour of the
-         pl_on_hold checkbox, but the requirement lists it among the
-         Project-level Kanban stages, so the stage is what is used. The
-         pl_on_hold field stays on the model and is simply not driven by a
-         migration any more. Every type may park, so all three flags are set. -->
+         Note the noupdate="1" on this file: on an existing database these
+         values arrive through hooks._RETIRED_STAGES, which archives the stage
+         after unpark_hold_projects has moved everything off it, not through
+         this record. -->
     <record id="stage_hold" model="project.project.stage">
         <field name="name">HOLD</field>
         <field name="sequence">105</field>
         <field name="fold" eval="True"/>
-        <field name="pl_for_implementation" eval="True"/>
-        <field name="pl_for_general" eval="True"/>
-        <field name="pl_for_amc" eval="True"/>
+        <field name="active" eval="False"/>
+        <field name="pl_for_implementation" eval="False"/>
+        <field name="pl_for_general" eval="False"/>
+        <field name="pl_for_amc" eval="False"/>
     </record>
 
     <!-- No AMC stage. AMC is a PROJECT TYPE, not a step in a workflow: AMC

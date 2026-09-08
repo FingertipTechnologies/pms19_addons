@@ -65,15 +65,42 @@ class ProjectProject(models.Model):
              "paused.",
     )
 
-    # Stages the current Project Type is allowed to use. Feeds the stage_id domain
-    # in the form and the constraint below.
+    # Stages the current Project Type is allowed to MOVE TO. Feeds the
+    # constraint below, and nothing else — the form reads the field under it.
     pl_allowed_stage_ids = fields.Many2many(
         'project.project.stage',
         string='Allowed Stages',
         compute='_compute_pl_allowed_stage_ids',
     )
 
-    @api.depends('ft_project_type')
+    # The same list plus the project's OWN current stage, which is what the
+    # status bar offers.
+    #
+    # The two differ for one reason, and it is the reason DISC and DEV used to
+    # appear on every General project's status bar. A handful of projects stand
+    # on a stage their type's workflow does not contain — archived internal
+    # work left in Development, a project whose type was corrected after the
+    # fact — and they have to stay saveable. That used to be arranged by giving
+    # the STAGE the extra type flag (see _apply_stage_flags in hooks.py), which
+    # is a per-stage answer to a per-project problem: two archived projects in
+    # Development put the whole Implementation pipeline on the status bar of all
+    # 26 General projects.
+    #
+    # Adding the exception to the PROJECT instead keeps it to the project that
+    # needs it. A General project in DEV goes on showing DEV, because that is
+    # where it is; every other General project sees the General workflow only.
+    #
+    # The constraint deliberately does NOT read this field. If it did, stage_id
+    # would always be in its own allowed list and the check could never fail.
+    # Its job is to validate a stage being moved TO; showing where a project
+    # already is is the form's.
+    pl_selectable_stage_ids = fields.Many2many(
+        'project.project.stage',
+        string='Selectable Stages',
+        compute='_compute_pl_allowed_stage_ids',
+    )
+
+    @api.depends('ft_project_type', 'stage_id')
     def _compute_pl_allowed_stage_ids(self):
         Stage = self.env['project.project.stage'].sudo()
         # One search per type for the whole recordset; the compute runs for every
@@ -84,8 +111,9 @@ class ProjectProject(models.Model):
         }
         all_stages = Stage.search([])
         for project in self:
-            project.pl_allowed_stage_ids = stages_by_type.get(
-                project.ft_project_type, all_stages)
+            allowed = stages_by_type.get(project.ft_project_type, all_stages)
+            project.pl_allowed_stage_ids = allowed
+            project.pl_selectable_stage_ids = allowed | project.stage_id
 
     @api.model
     def _pl_allowed_stages_for_type(self, ptype):

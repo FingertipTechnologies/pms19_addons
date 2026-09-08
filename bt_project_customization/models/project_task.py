@@ -206,6 +206,16 @@ class ProjectTask(models.Model):
         ('internal_call', 'Internal Call'),
         ('external_call', 'External Call'),
     ], string='Task Type', default='user_story', required=True)
+    # The project's type, on the task, so the form can tell whether the Task
+    # Source rules apply to it. Related and unstored: it is read for `required`
+    # attributes and for _check_task_source_rules below, never searched or
+    # grouped, and storing it would need a migration and would go stale the
+    # moment a project was reclassified.
+    ft_project_type = fields.Selection(
+        related='project_id.ft_project_type',
+        string='Project Type',
+        readonly=True,
+    )
     task_source = fields.Selection([
         ('planned', 'Planned'),
         ('unplanned', 'Unplanned'),
@@ -475,8 +485,39 @@ class ProjectTask(models.Model):
         'source_ticket_id', 'unplanned_reason',
     )
     def _check_task_source_rules(self):
-        """Validate Task Source and its conditional supporting evidence."""
+        """Validate Task Source and its conditional supporting evidence.
+
+        IMPLEMENTATION PROJECTS ONLY. Task Source describes a position in the
+        Implementation delivery timeline — scoped up front (Planned), came up
+        during the build (Unplanned), or asked for after the client had signed
+        the delivery off (Change Request / Enhancement). AMC and General run
+        Started -> Working -> Completed, where no stage answers "was this
+        scoped up front" and there is no signed-off delivery for a change to
+        be a change TO.
+
+        Applied to all three types the rules were not merely irrelevant, they
+        were unsatisfiable. _ft_task_source stamps a General project's tasks
+        'planned', and the Planned rule below demands the project be in
+        Discovery — a stage General does not have — so no task in a General
+        project could be saved at all. AMC is stamped False, which the User
+        Story rule rejects as a missing Task Source, with nothing in the
+        project to fill it in from.
+
+        The field itself stays on the form for every type: a person may still
+        classify AMC or General work by hand, and Change Request or
+        Enhancement chosen deliberately is worth recording. It is only the
+        enforcement that is Implementation's.
+        """
         for task in self:
+            # Tested per task rather than once for the recordset: a single
+            # write may span tasks in projects of different types. A task with
+            # no project at all keeps the rules — it has no type to exempt it,
+            # and Task Source is still the only record of where the work came
+            # from.
+            if (task.project_id
+                    and task.project_id.ft_project_type != 'implementation'):
+                continue
+
             if task.task_type == 'user_story' and not task.task_source:
                 raise ValidationError(_(
                     "Task Source is required for User Story tasks."

@@ -393,11 +393,8 @@ _ADOPTIONS = (
     ('data upload',     'stage_data',    'DATA',    60, ('implementation',)),
     ('training',        'stage_tra',     'TRA',     70, ('implementation',)),
     ('support',         'stage_support', 'SUPPORT', 80, ('implementation',)),
-    # HOLD is a stage again. The previous design turned it into the pl_on_hold
-    # flag; the requirement lists it among the Kanban stages, so the flag stays
-    # on the model but the stage is what is used. Every type may park.
-    ('hold',            'stage_hold',    'HOLD',   105,
-     ('implementation', 'amc', 'general')),
+    # No HOLD. It is retired below, in _RETIRED_STAGES: being parked is the
+    # pl_on_hold checkbox on the project form, not a stage.
     ('closed',          'stage_closed',  'CLOSED', 110,
      ('implementation', 'amc', 'general')),
 )
@@ -406,9 +403,16 @@ _ADOPTIONS = (
 # sit in the right place in the pipeline and a flag so the projects on them stay
 # saveable. Production Testing sits where REG would put it and Deployment after
 # DATA, which is the phase each of them actually represents.
+#
+# The flags are stated here rather than inferred from the projects standing on
+# them, for the reason set out on _apply_stage_flags. Both are Implementation
+# phases: testing a build and deploying it are steps in a delivery, and neither
+# has a place in the AMC/General Started -> Working -> Completed flow.
+#
+# (old stage name, sequence, type flags)
 _KEPT_STAGES = (
-    ('production testing', 35),
-    ('deployment', 65),
+    ('production testing', 35, ('implementation',)),
+    ('deployment', 65, ('implementation',)),
 )
 
 # Stages retired outright: archived, flags cleared, xmlid dropped.
@@ -422,8 +426,17 @@ _KEPT_STAGES = (
 #
 # Archived rather than deleted, in the manner of every other stage here: seven
 # tables carry a foreign key to project.project.stage.
+# "HOLD" is retired for a different reason: it is not that nothing routes to it,
+# but that pl_on_hold already says the same thing better. A stage can hold only
+# one answer, so parking a project overwrote the stage it was parked FROM — the
+# one fact needed to resume it — and left the form showing an On Hold checkbox
+# and a HOLD stage that could disagree with each other. The checkbox sits
+# alongside stage_id, so a project is "in DEV and parked" and comes back to DEV
+# on its own. unpark_hold_projects moves whatever is standing on the stage
+# before this archives it.
 _RETIRED_STAGES = (
     ('amc', 'stage_amc'),
+    ('hold', 'stage_hold'),
 )
 
 # Old stages merged into an adopted one: their projects move (the only projects
@@ -447,33 +460,155 @@ def _stage_by_name(cr, name):
     return row[0] if row else None
 
 
-def _types_on_stage(cr, stage_id):
-    """Project Types actually present on a stage, archived projects included."""
-    cr.execute(
-        "SELECT DISTINCT ft_project_type FROM project_project "
-        " WHERE stage_id = %s AND ft_project_type IS NOT NULL",
-        (stage_id,))
-    return {r[0] for r in cr.fetchall()}
-
-
 def _apply_stage_flags(cr, stage_id, base_flags):
-    """Set pl_for_* to the intended workflow PLUS whatever types are really there.
+    """Set pl_for_* to the workflow the stage belongs to, and nothing else.
 
-    The union is the safety property. A stage flagged only for its intended type
-    while a project of another type still sits on it makes that project
-    unsaveable — _check_stage_for_type raises on the next write, and the user
-    sees "Stage 'DEV' is not part of the General workflow" with no way forward.
-    Two archived internal projects sit in Development for exactly this reason,
-    so DEV carries the General flag even though the Implementation pipeline is
-    what it is for.
+    This used to add in every Project Type found STANDING on the stage, so that
+    a project of the wrong type could not become unsaveable — _check_stage_for_type
+    rejects a stage its type has no flag for, and the user saw "Stage 'DEV' is
+    not part of the General workflow" with no way forward.
+
+    The protection was real; its scope was wrong. A flag is a property of the
+    STAGE and applies to every project of that type, so two archived internal
+    projects left standing in Development were enough to put DISC and DEV in the
+    status bar of all 26 General projects — the whole Implementation pipeline
+    offered to projects that run Started -> Working -> Completed. The exception
+    was per-project but the mechanism was per-stage.
+
+    So the protection moved to where the exception is: _compute_pl_allowed_stage_ids
+    adds a project's OWN current stage to its allowed list. The archived project
+    in DEV can still be saved, because DEV is allowed to it in particular, while
+    every other General project sees only the General workflow.
     """
-    flags = set(base_flags) | _types_on_stage(cr, stage_id)
+    flags = set(base_flags)
     cr.execute(
         "UPDATE project_project_stage "
         "   SET pl_for_implementation = %s, pl_for_amc = %s, pl_for_general = %s "
         " WHERE id = %s",
         ('implementation' in flags, 'amc' in flags, 'general' in flags, stage_id))
     return flags
+
+
+def _pre_hold_stage_ids(cr, hold_id, project_ids):
+    """{project_id: (stage id it was parked FROM, the date it was parked)}.
+
+    Read out of the chatter, because a stage holds one value and moving a
+    project onto HOLD overwrote the stage it came from — which is the loss this
+    retirement is undoing.
+
+    Matched on the tracking row's INTEGER columns, not the char ones the earlier
+    version used. Adoption renames the stage records in place, so the name
+    stored in a tracking row is whatever the stage was called on the day it was
+    written ("Development" before the upgrade, "DEV" after) while the id is the
+    same row throughout.
+
+    DISTINCT ON with a descending date takes the most recent parking: a project
+    can have been parked, resumed and parked again.
+    """
+    if not project_ids:
+        return {}
+    cr.execute(
+        """
+        SELECT DISTINCT ON (m.res_id) m.res_id, t.old_value_integer, m.date::date
+          FROM mail_tracking_value t
+          JOIN mail_message m ON m.id = t.mail_message_id
+          JOIN ir_model_fields f ON f.id = t.field_id
+         WHERE m.model = 'project.project'
+           AND f.model = 'project.project'
+           AND f.name = 'stage_id'
+           AND m.res_id IN %s
+           AND t.new_value_integer = %s
+           AND t.old_value_integer IS NOT NULL
+         ORDER BY m.res_id, m.date DESC
+        """,
+        (tuple(project_ids), hold_id))
+    return {r[0]: (r[1], r[2]) for r in cr.fetchall()}
+
+
+def unpark_hold_projects(cr, hold_id):
+    """Move everything off the HOLD stage and tick pl_on_hold instead.
+
+    Runs before the stage is archived, because _RETIRED_STAGES deliberately
+    refuses to archive a stage somebody is still standing on — archiving it
+    under them would leave projects on a stage no workflow offers, unable to be
+    saved from the form and invisible on the Kanban.
+
+    Each parked project needs somewhere to land, best-effort in this order:
+
+    1. The stage the chatter says it was parked FROM, if that stage is still
+       part of its Project Type's workflow. This is the answer that keeps the
+       project's real position in the flow.
+    2. Its Project Type's first stage. This loses where the project had got to,
+       so every project that falls back to it is named in the log for somebody
+       to correct.
+
+    Raw SQL, like the rest of this module's stage work: the ORM would trip
+    _check_stage_for_type mid-move (HOLD is being taken out of every workflow,
+    which is the state being repaired) and would post a chatter message and a
+    tracking row on every project besides.
+
+    Idempotent — once the stage is empty there is nothing to find.
+    """
+    cr.execute(
+        "SELECT id, ft_project_type, name->>'en_US' "
+        "  FROM project_project WHERE stage_id = %s ORDER BY id", (hold_id,))
+    parked = cr.fetchall()
+    if not parked:
+        return 0
+
+    # The workflow stages each type may land on, in pipeline order, HOLD itself
+    # excluded so it cannot be offered back to the projects leaving it.
+    landing = {}
+    for ptype, flag in TYPE_STAGE_FLAG.items():
+        cr.execute(
+            "SELECT id FROM project_project_stage "
+            " WHERE active AND %s AND id <> %%s ORDER BY sequence, id" % flag,
+            (hold_id,))
+        landing[ptype] = [r[0] for r in cr.fetchall()]
+
+    pre_hold = _pre_hold_stage_ids(cr, hold_id, [p[0] for p in parked])
+    tracked, fallback, stranded = [], [], []
+
+    for project_id, ptype, name in parked:
+        allowed = landing.get(ptype) or []
+        if not allowed:
+            # No workflow to land in at all: an untyped project, or a type whose
+            # stages are all archived. Left where it is, which keeps it saveable
+            # (its own stage is always allowed to it) and keeps HOLD active.
+            stranded.append((project_id, name))
+            continue
+        previous, parked_on = pre_hold.get(project_id, (None, None))
+        if previous in allowed:
+            target, bucket = previous, tracked
+        else:
+            target, bucket = allowed[0], fallback
+        cr.execute(
+            "UPDATE project_project "
+            "   SET stage_id = %s, pl_on_hold = true, "
+            "       pl_hold_date = COALESCE(pl_hold_date, %s, CURRENT_DATE) "
+            " WHERE id = %s", (target, parked_on, project_id))
+        bucket.append((project_id, name))
+
+    if tracked:
+        _logger.info(
+            "ft_project_lifecycle: %s project(s) came off the HOLD stage onto "
+            "the stage the chatter says they were parked from, now flagged On "
+            "Hold: %s", len(tracked),
+            ', '.join("%s '%s'" % p for p in tracked))
+    if fallback:
+        _logger.warning(
+            "ft_project_lifecycle: %s project(s) were parked before the stage "
+            "change was tracked, so where they had got to is not recorded. "
+            "They are flagged On Hold on their Project Type's FIRST stage and "
+            "need their real stage set by hand: %s", len(fallback),
+            ', '.join("%s '%s'" % p for p in fallback))
+    if stranded:
+        _logger.error(
+            "ft_project_lifecycle: %s project(s) on HOLD have no workflow to "
+            "return to (no Project Type, or none of its stages are active). "
+            "They are left on HOLD and the stage stays active for them: %s",
+            len(stranded), ', '.join("%s '%s'" % p for p in stranded))
+    return len(tracked) + len(fallback)
 
 
 def _retire_duplicate(cr, stage_id):
@@ -625,19 +760,26 @@ def adopt_legacy_stages(env):
             _apply_stage_flags(cr, sid, ('amc', 'general'))
 
     # --- 5. Stages kept exactly as they are, placed and flagged. -------------
-    for name, sequence in _KEPT_STAGES:
+    for name, sequence, flags in _KEPT_STAGES:
         sid = _stage_by_name(cr, name)
         if sid:
             cr.execute(
                 "UPDATE project_project_stage SET sequence = %s WHERE id = %s",
                 (sequence, sid))
-            _apply_stage_flags(cr, sid, ())
+            _apply_stage_flags(cr, sid, flags)
 
     # --- 6. Flags on every adopted stage, last, once all moves are done. -----
     for _old_name, xmlid, _new_name, _sequence, flags in _ADOPTIONS:
         sid = xmlid_target(xmlid)
         if sid:
             _apply_stage_flags(cr, sid, flags)
+
+    # --- 6a. Empty the HOLD stage before 6b tries to archive it. -------------
+    # After the flags above, so a landing stage is chosen against the workflow
+    # as it finally stands rather than as it stood mid-adoption.
+    hold_id = xmlid_target('stage_hold') or _stage_by_name(cr, 'hold')
+    if hold_id:
+        moved += unpark_hold_projects(cr, hold_id)
 
     # --- 6b. Retire stages that have no role in any workflow. ----------------
     for name, xmlid in _RETIRED_STAGES:
