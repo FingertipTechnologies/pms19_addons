@@ -315,6 +315,24 @@ class InheritProjectProject(models.Model):
     def _ft_check_stage_entry_dates(self, target_stage, vals):
         """Block a move into ``target_stage`` when its required date is missing.
 
+        IMPLEMENTATION PROJECTS ONLY. Every date in
+        FT_STAGE_DATE_REQUIREMENTS is a milestone of the Implementation
+        delivery lifecycle — Kick-off, BRD Approval, Regression, Sandbox
+        Review, UAT Start, Training, Support Start, Go Live. AMC and General
+        run the three-stage Started -> Working -> Completed flow, where none of
+        those milestones exists and nobody is asked to fill them in.
+
+        Applying the gates to all three types made the shared terminal stage
+        unreachable for two of them: 'closed' requires a Go Live Date, so a
+        General project — an internal demo, a training project, pre-sales work
+        that never goes live for a client — could not be moved to CLOSED at
+        all. The error named a date the form does not meaningfully offer,
+        leaving no way forward but to invent one.
+
+        The gates are a property of the target stage AND of the project's type,
+        so the type is tested per project rather than once for the recordset: a
+        single write may span a mix of types.
+
         The date may be supplied in the very same write (a person filling the
         date and dragging the card together), so the incoming ``vals`` is
         consulted before the stored value. A project already sitting in the
@@ -326,6 +344,8 @@ class InheritProjectProject(models.Model):
             return
         field_name, label = requirement
         for project in self:
+            if project.ft_project_type != 'implementation':
+                continue
             if project.stage_id.id == target_stage.id:
                 continue
             value = vals[field_name] if field_name in vals else project[field_name]

@@ -14,7 +14,36 @@
     # pairs shared a label ("Regression Date" / "Training Date") on the
     # project form, so a project could show a date under one and still get
     # blocked by Stage Validation checking the other.
-    'version': '19.0.1.5.0',
+    # 19.0.1.6.0 finishes the stage migration on databases that installed this
+    # module while bt_project_customization was leaving Project Types NULL.
+    # An untyped project matched no arm of the stage mapping, so it stayed on
+    # the old pipeline, and the move then refused to archive any old
+    # stage while one was still occupied — leaving both pipelines on the Kanban
+    # with drained stages (General, AMC) as empty columns nobody could clear.
+    # The 0.0.0 post-migrate now re-runs the move once bt's 19.0.1.11.0 has
+    # filled the types, so each project keeps its place in the flow, and the old
+    # stages retire themselves. The Kanban's stage columns are expanded by
+    # _pl_read_group_stage_ids rather than core's "every active stage", so a
+    # drained stage stops drawing a column while an occupied one always draws
+    # one.
+    # 19.0.2.0.0 replaces "create new stages and move every project onto them"
+    # with adoption: the lifecycle xmlids are re-pointed at the stages that
+    # already exist, which are then renamed to their abbreviations (Discovery ->
+    # DISC, Development -> DEV, ...) and given the sequence and type flags. A
+    # project's stage_id is not touched, so nothing changes phase and the stage
+    # history stays intact. The previous approach moved 76 projects that had not
+    # actually progressed. Only two kinds of project move now: those on a stage
+    # merged into another (Sandbox Testing into SRV), and active
+    # non-Implementation projects sitting on an Implementation-only stage, which
+    # go to the shared Working (AMC/General) column. HOLD and AMC are Kanban
+    # stages again, per the requirement; REG is created empty after DEV, and
+    # Production Testing and Deployment are kept exactly as they are.
+    # 19.0.2.1.0 retires the AMC stage. AMC is a Project Type, not a workflow
+    # step — AMC projects run Started -> Working (AMC/General) -> Completed, the
+    # same as General ones — so the stage never received a project and drew a
+    # permanently empty Kanban column. Archived, flags cleared, xmlid dropped;
+    # not deleted, because seven tables reference project.project.stage.
+    'version': '19.0.2.1.0',
     'summary': 'Project Type, project-level lifecycle stages and milestone dates.',
     'description': """
 Project Lifecycle

@@ -35,7 +35,12 @@
     # completed-task and task-required guards are untouched, and Deadline
     # Changes is still counted on the task, so a slipped deadline stays visible
     # without blocking the hours.
-    'version': '19.0.0.0.14',
+    # 19.0.0.0.15 stops the task list rendering "Created On" twice. The
+    # inherited project.project_task_view_tree_main_base already declares
+    # create_date, so adding a second <field name="create_date"> appended a
+    # duplicate column instead of replacing it; it is moved and re-attributed
+    # now, leaving one column.
+    'version': '19.0.0.0.15',
     'summary': 'project hours tracking',
     'category': 'Project',
     'author': 'Fingertip',

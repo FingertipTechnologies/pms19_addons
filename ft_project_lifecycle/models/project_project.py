@@ -1,5 +1,9 @@
+import logging
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 # Project Type -> the stage-applicability flag on project.project.stage.
 #
@@ -91,6 +95,52 @@ class ProjectProject(models.Model):
         domain = [(flag, '=', True)] if flag else []
         return Stage.search(domain, order='sequence, id')
 
+    # Which stage columns the Projects Kanban draws.
+    #
+    # Core expands them with _read_group_expand_full, which returns every ACTIVE
+    # stage regardless of whether anything is in it. That is the right default
+    # for a pipeline whose stages are all live, and the wrong one here, because
+    # this module retires the stages it replaces rather than deleting them, and
+    # a stage that has been drained but not yet archived would otherwise keep an
+    # empty column on the board forever — with no way to clear it from the UI,
+    # since archiving a stage by hand strands whatever is still on it.
+    #
+    # So: expand a stage if it belongs to a lifecycle (any pl_for_* flag) or if
+    # it still holds at least one project. The first half keeps the real
+    # pipeline visible even where a stage is legitimately empty — an empty DEV
+    # column is information. The second half is the safety property: a stage is
+    # never dropped from the board while anything is on it, so no project can
+    # be hidden by this, including projects on a stage that has already been
+    # archived. A legacy stage disappears by itself the moment it is drained,
+    # and comes back on its own if a project ever lands on it again.
+    stage_id = fields.Many2one(group_expand='_pl_read_group_stage_ids')
+
+    @api.model
+    def _pl_read_group_stage_ids(self, stages, domain):
+        """Stages to show as Kanban columns: the lifecycle's, plus any occupied one.
+
+        `domain` is ignored, as it is in core's _read_group_expand_full: the
+        columns describe the pipeline, not the filter currently applied to it,
+        so narrowing the search must not make stages vanish from the board.
+        """
+        lifecycle = stages.search([
+            '|', '|',
+            ('pl_for_implementation', '=', True),
+            ('pl_for_general', '=', True),
+            ('pl_for_amc', '=', True),
+        ])
+        # active_test=False so an archived project cannot be the reason its
+        # stage silently loses its column, and sudo() so a user whose record
+        # rules hide a project still sees a board with the same shape as
+        # everyone else's.
+        occupied = stages.browse([
+            group[0].id
+            for group in self.with_context(active_test=False).sudo()._read_group(
+                [('stage_id', '!=', False)], groupby=['stage_id'])
+            if group[0]
+        ])
+        return (lifecycle | occupied).sorted(lambda s: (s.sequence or 0, s.id))
+
     # NB: no @api.onchange on ft_project_type. Assigning a tracked field (stage_id)
     # on an unsaved record trips Odoo's duration-tracking mixin (it builds a Json
     # keyed by the record's NewId and crashes). The stage is kept valid for the
@@ -126,6 +176,48 @@ class ProjectProject(models.Model):
         """
         from ..hooks import repair_type_stage_mismatches
         return repair_type_stage_mismatches(self.env)
+
+    @api.model
+    def _pl_finish_stage_migration(self):
+        """Ops entry point for the old-pipeline stage move, alongside the two below.
+
+        Needed because the automatic paths both have a gate that a real database
+        can fall between:
+
+        * ``post_init_hook`` runs the move at INSTALL, which is too early if the
+          Project Types are not all filled in yet — an untyped project matches no
+          stage mapping, so it stays on the old pipeline and the old stages
+          are all kept active rather than retired.
+        * ``migrations/0.0.0`` runs it again on a version CHANGE, which does not
+          happen if the module was installed fresh at the current version. That
+          is exactly the case after installing this module and upgrading
+          bt_project_customization in the same run, or in either order: the types
+          get fixed, the stages do not, and no later ``-u`` will retry it because
+          the installed version already matches the manifest.
+
+        So, from ``odoo shell``, once the types are right::
+
+            env['project.project']._pl_finish_stage_migration()
+            env.cr.commit()
+
+        Idempotent, and it reports what it found either way. Imported inside the
+        method for the same circular-import reason as the two below.
+        """
+        from ..hooks import (
+            adopt_legacy_stages,
+            legacy_pipeline_debris,
+            repair_type_stage_mismatches,
+        )
+        stages, projects = legacy_pipeline_debris(self.env.cr)
+        _logger.info(
+            "ft_project_lifecycle: %s project(s) on %s unadopted stage(s); "
+            "adopting the existing stages into the lifecycle.", projects, stages)
+        # Same order as post_init_hook and the 0.0.0 migration. Adoption renames
+        # the stages in place, so this is safe to run on a database whose
+        # projects must not move.
+        moved = adopt_legacy_stages(self.env)
+        repair_type_stage_mismatches(self.env)
+        return moved
 
     @api.model
     def _pl_backfill_start_dates(self):

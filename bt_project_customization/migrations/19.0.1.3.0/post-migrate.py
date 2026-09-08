@@ -1,8 +1,12 @@
 """Classify every existing project as Implementation, AMC or General.
 
-``ft_project_type`` is required with a default of 'implementation', so by the
-time this runs the ORM has already stamped that value on all 299 rows. This
-corrects the two types the default cannot know about.
+The rules themselves live in ``project_type_classification`` because a later
+migration (19.0.1.11.0) has to run the identical ones over the databases this
+version left half-done; that module's docstring carries the full account of
+what went wrong and what changed. In short: this script was written against a
+field that still had ``default='implementation'``, so it assumed no row could
+be NULL, and its two name-based passes stopped matching anything the moment the
+default was removed.
 
 There is nothing to read the type FROM. The obvious candidate, the legacy
 ``status`` Selection, is NULL on every single project — it was never wired into
@@ -31,8 +35,8 @@ here rather than in General, but a handful of product and internal projects
 that dodged the name rules will be sitting in it and need correcting by hand.
 
 Known miss: "JRCAMC need to remove need to be deleted" lands in implementation
-because the word-boundary rule below will not see AMC inside "JRCAMC". It is
-junk flagged for deletion, so it is not worth loosening the rule for.
+because the word-boundary rule will not see AMC inside "JRCAMC". It is junk
+flagged for deletion, so it is not worth loosening the rule for.
 
 Raw SQL on purpose, in the manner of the earlier migrations in this module:
 ``ft_project_type`` is tracked, so writing these through the ORM would post a
@@ -40,96 +44,14 @@ mail.tracking row and a chatter message on every project in the database, and
 would retrigger the stored computes hanging off project.project besides.
 """
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
-# Names that mark internal, non-delivery work. Anchored where the fragment is
-# short enough to appear inside a client name ('^test ', '^abc$'), loose where
-# it is not ('fingertip', 'standup'). Verified against all 299 projects: 20
-# matches, every one of them genuinely internal, no client project caught.
-INTERNAL_NAME_RE = r'(fingertip|^ftp |internal|bench|^test |test purpose|standup|^abc$)'
-
-# '\yamc' is a word boundary before AMC only, NOT '\yamc\y' on both sides.
-# A trailing boundary would drop "ORONO-AMC2024", where the year runs straight
-# into the acronym. A leading one is what keeps an innocent "Ramco" or "Camco"
-# out of the AMC bucket, which a plain LIKE '%amc%' would happily sweep in.
-AMC_NAME_RE = r'\yamc'
+from odoo.addons.bt_project_customization.project_type_classification import (
+    classify_untyped_projects,
+)
 
 
 def migrate(cr, version):
-    # Nothing to backfill on a fresh install: the default has already put every
-    # (non-existent) row where it belongs.
+    # Nothing to backfill on a fresh install: there are no rows to classify.
     if not version:
         return
 
-    # Stage names are a translated jsonb column, so they are read at the
-    # 'en_US' key rather than matched with a plain equality on `name`, for the
-    # same reason _ft_source_boundaries forces lang='en_US' in the model: a
-    # database whose stages have been translated would otherwise match nothing
-    # and leave every project on the default.
-    #
-    # Order matters. General is applied first and AMC second, so that a project
-    # carrying both signals resolves to AMC — the contract is the fact worth
-    # keeping. Archived projects are included: 7 of the 8 are internal work,
-    # and leaving them defaulted would misreport them the moment anyone
-    # searches with the Archived filter on.
-    cr.execute(
-        """
-        UPDATE project_project p
-           SET ft_project_type = 'general'
-          FROM project_project_stage s
-         WHERE p.stage_id = s.id
-           AND lower(trim(s.name->>'en_US')) = 'general'
-        """
-    )
-    by_stage_general = cr.rowcount
-
-    cr.execute(
-        """
-        UPDATE project_project p
-           SET ft_project_type = 'general'
-         WHERE p.ft_project_type != 'general'
-           AND p.name->>'en_US' ~* %s
-        """,
-        (INTERNAL_NAME_RE,),
-    )
-    by_name_general = cr.rowcount
-
-    cr.execute(
-        """
-        UPDATE project_project p
-           SET ft_project_type = 'amc'
-          FROM project_project_stage s
-         WHERE p.stage_id = s.id
-           AND lower(trim(s.name->>'en_US')) = 'amc'
-        """
-    )
-    by_stage_amc = cr.rowcount
-
-    cr.execute(
-        """
-        UPDATE project_project p
-           SET ft_project_type = 'amc'
-         WHERE p.ft_project_type != 'amc'
-           AND p.name->>'en_US' ~* %s
-        """,
-        (AMC_NAME_RE,),
-    )
-    by_name_amc = cr.rowcount
-
-    cr.execute(
-        "SELECT ft_project_type, count(*) FROM project_project GROUP BY 1 ORDER BY 1"
-    )
-    totals = dict(cr.fetchall())
-
-    _logger.info(
-        "bt_project_customization: classified projects by type — "
-        "general %s (%s by stage, %s by name), amc %s (%s by stage, %s by name); "
-        "final split implementation=%s amc=%s general=%s",
-        by_stage_general + by_name_general, by_stage_general, by_name_general,
-        by_stage_amc + by_name_amc, by_stage_amc, by_name_amc,
-        totals.get('implementation', 0),
-        totals.get('amc', 0),
-        totals.get('general', 0),
-    )
+    classify_untyped_projects(cr)

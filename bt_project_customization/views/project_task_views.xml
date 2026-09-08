@@ -144,4 +144,51 @@
         </field>
     </record>
 
+    <!-- Module as a column in the Tasks list.
+         Separate from the search entry below, because the two appear in
+         different menus and people look for "Module" in both: this one puts it
+         in the column picker (the toggle at the right of the header row),
+         while the search view below puts it in the Filters / Group By dropdown
+         next to the search box. optional="show" so it is visible straight away;
+         it can be switched off per user from the same picker. -->
+    <record id="view_task_list_module_column" model="ir.ui.view">
+        <field name="name">project.task.list.module.column</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_main_base"/>
+        <field name="arch" type="xml">
+            <field name="project_id" position="after">
+                <field name="module_id" string="Module" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Module in the Tasks search panel.
+         project.task.module_id is declared by this module (models/project_task.py),
+         so its search entry belongs here rather than in whichever module happens
+         to render the list.
+
+         project.view_task_search_form is the search view the All Tasks action
+         actually loads (action_view_all_task -> search_view_id), so extending it
+         is what puts Module in front of the user on that page.
+
+         Two additions, because "filter" means both things in the UI: the <field>
+         makes a typed module name match tasks from the search box, and the
+         Group By entry lets the list be broken down by module the way it already
+         can be by Stage. Anchored on the Stage entries, which come from
+         view_task_search_form_base and are present in the resolved arch. -->
+    <record id="view_task_search_module" model="ir.ui.view">
+        <field name="name">project.task.search.module</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form"/>
+        <field name="arch" type="xml">
+            <field name="stage_id" position="after">
+                <field name="module_id" string="Module"/>
+            </field>
+            <filter name="stage" position="after">
+                <filter string="Module" name="groupby_module"
+                        context="{'group_by': 'module_id'}"/>
+            </filter>
+        </field>
+    </record>
+
 </odoo>

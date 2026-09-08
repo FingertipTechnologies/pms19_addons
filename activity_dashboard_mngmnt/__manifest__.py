@@ -21,7 +21,13 @@
 ################################################################################
 {
     'name': 'Activity Management',
-    'version': '19.0.1.0.0',
+    # 19.0.1.1.0 makes mail.activity.state searchable. Core declares it
+    # compute-only with no store and no search, so every domain the Activity
+    # Dashboard builds on it ("state = planned/today/overdue/done") raised
+    # "Cannot convert mail.activity.state to SQL because it is not stored" and
+    # the dashboard returned a 500. _search_state translates those domains onto
+    # date_deadline and active, mirroring core's _compute_state.
+    'version': '19.0.1.1.0',
     'category': 'Extra Tools',
     'summary': """Dashboard for streamlined management of all activities.""",
     'description': """Simplify activity management with a comprehensive 

@@ -1,98 +1,9 @@
 import logging
 
-from odoo import fields
-
 from .models.project_project import TYPE_STAGE_FLAG
 
 _logger = logging.getLogger(__name__)
 
-# Where each project already sitting in the OLD pipeline lands in the new one,
-# keyed by (Project Type, old stage name lower-cased) -> new stage xmlid.
-#
-# Keyed by TYPE as well as by stage, which the previous version of this hook was
-# not: it mapped "To Do" to DISC for everybody. DISC is Implementation-only, so
-# that would have dropped General and AMC projects into a stage their own type
-# is not allowed to use, and the very next save of one would have raised
-# "Stage 'DISC' is not part of the General workflow".
-#
-# Old stage names are matched lower-cased at the 'en_US' key because the stage
-# name is a translated jsonb column.
-_STAGE_MAP = {
-    'implementation': {
-        # The old pipeline maps one-for-one onto the new lifecycle, except
-        # where two old stages collapse into one new one.
-        'discovery': 'stage_disc',
-        'to do': 'stage_disc',
-        'development': 'stage_dev',
-        'in progress': 'stage_dev',
-        'production testing': 'stage_reg',
-        # Sandbox Review and Sandbox Testing were two names for the same step.
-        'sandbox review': 'stage_srv',
-        'sandbox testing': 'stage_srv',
-        'user acceptance': 'stage_uat',
-        'data upload': 'stage_data',
-        # Deployment has no counterpart in the new lifecycle. It sat directly
-        # after User Acceptance in the old sequence, and DATA is what directly
-        # follows UAT in the new one, so that is where it goes. One project.
-        'deployment': 'stage_data',
-        'training': 'stage_tra',
-        'support': 'stage_support',
-        'hold': 'stage_hold',
-        'closed': 'stage_closed',
-        'done': 'stage_closed',
-        'cancelled': 'stage_closed',
-        'canceled': 'stage_closed',
-    },
-    # AMC and General share one three-stage workflow, so they share one mapping
-    # shape: anything mid-flight becomes Working, anything not yet begun
-    # becomes Started, anything finished becomes Completed.
-    #
-    # 'hold' still routes to stage_hold in all three maps, and that is on
-    # purpose even though HOLD is no longer a stage anyone can select: it is a
-    # waypoint. move_hold_stage_to_flag runs straight after this and collects
-    # everything sitting on stage_hold, so routing here keeps parked projects
-    # identifiable for exactly as long as it takes to convert them to the
-    # pl_on_hold flag. Flattening them into Working here instead would lose the
-    # parked/working distinction before anything could record it.
-    'amc': {
-        'discovery': 'stage_started',
-        'to do': 'stage_started',
-        'general': 'stage_started',
-        'amc': 'stage_working',
-        'development': 'stage_working',
-        'in progress': 'stage_working',
-        'support': 'stage_working',
-        'closed': 'stage_completed',
-        'done': 'stage_completed',
-        'cancelled': 'stage_completed',
-        'canceled': 'stage_completed',
-        'hold': 'stage_hold',
-    },
-    'general': {
-        'discovery': 'stage_started',
-        'to do': 'stage_started',
-        'general': 'stage_working',
-        'development': 'stage_working',
-        'in progress': 'stage_working',
-        'support': 'stage_working',
-        'amc': 'stage_working',
-        'closed': 'stage_completed',
-        'done': 'stage_completed',
-        'cancelled': 'stage_completed',
-        'canceled': 'stage_completed',
-        'hold': 'stage_hold',
-    },
-}
-
-# Used only if a stage turns up that _STAGE_MAP has never heard of. Every stage
-# on the database at the time of writing is mapped explicitly above, so landing
-# here means somebody added a stage since; it is logged as a warning naming the
-# projects, never applied silently.
-_FALLBACK = {
-    'implementation': 'stage_dev',
-    'amc': 'stage_working',
-    'general': 'stage_working',
-}
 
 _BACKUP_TABLE = 'ft_pl_stage_backup'
 _REPAIR_TABLE = 'ft_pl_repair_log'
@@ -190,276 +101,44 @@ def _snapshot_stages(env):
     return env.cr.rowcount
 
 
-def migrate_existing_stages(env):
-    """Move every existing project from the old pipeline onto the new stages.
+def legacy_pipeline_debris(cr):
+    """(active legacy stages, projects still on one) — what is left of the old pipeline.
 
-    Raw SQL throughout, for three separate reasons:
+    An unadopted stage is one carrying none of the three pl_for_* flags:
+    adoption sets at least one on every stage it touches, so the flags are what
+    separate a stage that is part of the lifecycle from one that predates it.
+    That definition is read off the module's own flags rather than a hard-coded
+    name list, so a stage somebody added by hand is judged the same way as the
+    ones shipped here.
 
-    1. ``_check_stage_for_type`` would fire on an ORM write. Mid-migration, a
-       project's stage and its type's allowed stages disagree by definition —
-       that is the state being repaired — so the constraint would abort the very
-       write that fixes it.
-    2. ``stage_id`` is tracked, so an ORM write would post a chatter message and
-       a mail.tracking row on all 299 projects.
-    3. Archiving a project stage through the ORM cascades: core's write pulls
-       the projects sitting in it down with it. The stages are emptied first and
-       archived in SQL second, so nothing can be dragged along even in
-       principle.
-
-    Nothing is deleted. The old stages are archived, never dropped: 20,595
-    timesheet lines hold a frozen `project_status` pointing at them, and
-    deleting the stages would destroy that history.
+    Reported rather than acted on. adopt_legacy_stages runs regardless and is
+    idempotent; this only supplies the one log line that says how much there was
+    to do, which is the difference between "the upgrade did nothing because
+    there was nothing to do" and "the upgrade did nothing because it never ran".
     """
-    snapshotted = _snapshot_stages(env)
-
-    # Resolve the new stages once. A missing xmlid means the data file did not
-    # load, in which case migrating would move projects onto nothing.
-    def stage_id(xmlid):
-        rec = env.ref('ft_project_lifecycle.%s' % xmlid, raise_if_not_found=False)
-        return rec.id if rec else None
-
-    new_ids = {name: stage_id(name) for name in set(
-        list(_FALLBACK.values())
-        + [x for m in _STAGE_MAP.values() for x in m.values()]
-    )}
-    missing = [k for k, v in new_ids.items() if not v]
-    if missing:
-        _logger.error(
-            "ft_project_lifecycle: stage records missing (%s); "
-            "stage migration skipped, projects left where they are.",
-            ', '.join(sorted(missing)))
-        return
-
-    # The old stages, i.e. everything that is not one of the new ones.
-    env.cr.execute(
-        "SELECT id, lower(trim(name->>'en_US')) FROM project_project_stage "
-        "WHERE id NOT IN %s",
-        (tuple(new_ids.values()),))
-    old_stages = dict(env.cr.fetchall())
-
-    moved = 0
-    for ptype, mapping in _STAGE_MAP.items():
-        for old_id, old_name in old_stages.items():
-            target = mapping.get(old_name)
-            if not target:
-                env.cr.execute(
-                    "SELECT name->>'en_US' FROM project_project "
-                    "WHERE stage_id = %s AND ft_project_type = %s",
-                    (old_id, ptype))
-                stranded = [r[0] for r in env.cr.fetchall()]
-                if not stranded:
-                    continue
-                target = _FALLBACK[ptype]
-                _logger.warning(
-                    "ft_project_lifecycle: stage '%s' is not in the %s mapping; "
-                    "falling back to %s for %s project(s): %s",
-                    old_name, ptype, target, len(stranded),
-                    ', '.join(stranded))
-            env.cr.execute(
-                "UPDATE project_project SET stage_id = %s "
-                " WHERE stage_id = %s AND ft_project_type = %s",
-                (new_ids[target], old_id, ptype))
-            moved += env.cr.rowcount
-
-    env.cr.execute("""
-        UPDATE %s b SET new_stage_id = p.stage_id
-          FROM project_project p WHERE p.id = b.project_id
-    """ % _BACKUP_TABLE)
-
-    # Only now, with the old stages provably empty, retire them.
-    env.cr.execute(
-        "SELECT count(*) FROM project_project WHERE stage_id IN %s",
-        (tuple(old_stages) or (0,),))
-    left_behind = env.cr.fetchone()[0]
-    if left_behind:
-        _logger.error(
-            "ft_project_lifecycle: %s project(s) still on old stages; "
-            "leaving the old stages active so nothing is stranded.",
-            left_behind)
-    else:
-        env.cr.execute(
-            "UPDATE project_project_stage SET active = false WHERE id IN %s",
-            (tuple(old_stages) or (0,),))
-
-    # The rows were changed underneath the ORM; drop what it thinks it knows.
-    env.invalidate_all()
-    _logger.info(
-        "ft_project_lifecycle: snapshotted %s project(s), moved %s onto the "
-        "new stages, archived %s old stage(s).",
-        snapshotted, moved, 0 if left_behind else len(old_stages))
-
-
-def _pre_hold_stages(cr, project_ids):
-    """{project_id: (stage name it was parked FROM, date it was parked)}.
-
-    Read out of the chatter. When HOLD was a stage, moving a project onto it
-    overwrote the stage it came from — that is precisely the loss this whole
-    change is undoing — so the only surviving record of where a parked project
-    belongs is the tracking row written at the time. DISTINCT ON with a
-    descending date takes the most recent parking, since a project can have been
-    parked, resumed and parked again.
-
-    Names come back lower-cased and are OLD pipeline names ('deployment',
-    'user acceptance'); the caller maps them through _STAGE_MAP.
-    """
-    if not project_ids:
-        return {}
-    cr.execute(
-        """
-        SELECT DISTINCT ON (m.res_id)
-               m.res_id, lower(trim(t.old_value_char)), m.date::date
-          FROM mail_tracking_value t
-          JOIN mail_message m ON m.id = t.mail_message_id
-          JOIN ir_model_fields f ON f.id = t.field_id
-         WHERE m.model = 'project.project'
-           AND f.model = 'project.project'
-           AND f.name = 'stage_id'
-           AND m.res_id IN %s
-           AND lower(trim(t.new_value_char)) = 'hold'
-         ORDER BY m.res_id, m.date DESC
-        """,
-        (tuple(project_ids),))
-    return {r[0]: (r[1], r[2]) for r in cr.fetchall()}
-
-
-def move_hold_stage_to_flag(env):
-    """Retire the HOLD stage in favour of the pl_on_hold flag.
-
-    Being parked stopped being a stage and became a checkbox, because a stage
-    could only ever hold one answer: putting a project on HOLD overwrote the
-    stage it was working in, so resuming it meant somebody reconstructing that
-    from chatter by hand. The flag sits beside stage_id, so a project is "in DEV
-    and parked" and comes back to DEV on its own.
-
-    Each parked project therefore needs a stage to land on, best-effort in this
-    order:
-
-    1. The stage the chatter says it was parked FROM, either named directly (a
-       project parked after the lifecycle stages went live) or mapped through
-       _STAGE_MAP from an old pipeline name. Right for 11 of the 19 parked
-       projects on the database this was written against.
-    2. Its Project Type's first stage, for the rest — the ones parked before
-       tracking, or by an earlier SQL migration that wrote no chatter. It loses
-       their place in the flow, which is why it is the fallback and why every
-       one of them is named in the log.
-
-    The stage record itself is archived and stripped of its three type flags,
-    never deleted: seven tables carry a foreign key to project.project.stage,
-    including the frozen project_status on ~20,000 timesheet lines.
-
-    Idempotent. Once the stage is empty and archived there is nothing to find,
-    and it logs one line saying so.
-    """
-    cr = env.cr
-    hold = env.ref('ft_project_lifecycle.stage_hold', raise_if_not_found=False)
-    if not hold:
-        _logger.info(
-            "ft_project_lifecycle: no HOLD stage record; nothing to retire.")
-        return 0
-
-    # Raw SQL so archived projects are included, and so nothing trips
-    # _check_stage_for_type mid-move — HOLD is invalid for every type by the
-    # time the projects are shifted, which is the state being repaired.
-    cr.execute(
-        "SELECT id, ft_project_type, name->>'en_US' "
-        "  FROM project_project WHERE stage_id = %s ORDER BY id",
-        (hold.id,))
-    parked = cr.fetchall()
-
-    pre_hold = _pre_hold_stages(cr, [r[0] for r in parked])
-
-    # Flags off and archived FIRST, so the allowed-stage lookup below cannot
-    # offer HOLD back as a landing place for the very projects leaving it.
-    cr.execute(
-        "UPDATE project_project_stage "
-        "   SET active = false, pl_for_implementation = false, "
-        "       pl_for_general = false, pl_for_amc = false "
-        " WHERE id = %s",
-        (hold.id,))
-    env.invalidate_all()
-
-    if not parked:
-        _logger.info(
-            "ft_project_lifecycle: HOLD stage already empty; archived, "
-            "nothing to move.")
-        return 0
-
-    Project = env['project.project']
-    Stage = env['project.project.stage'].sudo()
-
-    # The live lifecycle stages by lower-cased name, for a tracked value that
-    # already names one of them. Keyed off the type flags rather than off
-    # `active`, so the archived OLD pipeline stages cannot be landed on.
-    lifecycle_by_name = {}
-    for st in Stage.search([
-            '|', '|',
-            ('pl_for_implementation', '=', True),
-            ('pl_for_general', '=', True),
-            ('pl_for_amc', '=', True)]):
-        lifecycle_by_name.setdefault((st.name or '').strip().lower(), st)
-
-    allowed_by_type = {
-        ptype: Project._pl_allowed_stages_for_type(ptype)
-        for ptype in TYPE_STAGE_FLAG
-    }
-
-    def _target(ptype, old_name):
-        """(stage id, how it was chosen) for a project parked from `old_name`."""
-        allowed = allowed_by_type.get(ptype) or Stage.browse()
-        if old_name and old_name != 'hold':
-            direct = lifecycle_by_name.get(old_name)
-            if direct and direct in allowed:
-                return direct.id, 'tracked'
-            xmlid = _STAGE_MAP.get(ptype, {}).get(old_name)
-            mapped = env.ref('ft_project_lifecycle.%s' % xmlid,
-                             raise_if_not_found=False) if xmlid else None
-            if mapped and mapped in allowed:
-                return mapped.id, 'mapped'
-        return (allowed[0].id if allowed else None), 'fallback'
-
-    today = fields.Date.context_today(Project)
-    moved, guessed = 0, []
-    for pid, ptype, pname in parked:
-        old_name, hold_date = pre_hold.get(pid, (None, None))
-        target, how = _target(ptype, old_name)
-        if not target:
-            _logger.error(
-                "ft_project_lifecycle: Project Type '%s' has no stage to move "
-                "parked project %s '%s' onto; left on HOLD.", ptype, pid, pname)
-            continue
-        cr.execute(
-            "UPDATE project_project "
-            "   SET stage_id = %s, pl_on_hold = TRUE, "
-            "       pl_hold_date = COALESCE(pl_hold_date, %s) "
-            " WHERE id = %s",
-            (target, hold_date or today, pid))
-        moved += 1
-        if how == 'fallback':
-            guessed.append('%s %r' % (pid, pname))
-
-    env.invalidate_all()
-
-    if guessed:
-        _logger.warning(
-            "ft_project_lifecycle: %s parked project(s) had no record of the "
-            "stage they were parked from and were put on their Project Type's "
-            "first stage: %s.", len(guessed), ', '.join(guessed))
-
-    cr.execute(
-        "SELECT count(*) FROM project_project WHERE stage_id = %s", (hold.id,))
-    left = cr.fetchone()[0]
-    if left:
-        _logger.error(
-            "ft_project_lifecycle: %s project(s) still on the HOLD stage after "
-            "the move; it has been archived and they cannot be saved until "
-            "they are re-staged by hand.", left)
-    else:
-        _logger.info(
-            "ft_project_lifecycle: retired the HOLD stage — %s project(s) "
-            "marked On Hold and moved back onto their workflow (%s recovered "
-            "from chatter, %s defaulted); stage archived.",
-            moved, moved - len(guessed), len(guessed))
-    return moved
+    cr.execute("""
+        SELECT count(*) FROM project_project_stage
+         WHERE active
+           AND NOT COALESCE(pl_for_implementation, FALSE)
+           AND NOT COALESCE(pl_for_general, FALSE)
+           AND NOT COALESCE(pl_for_amc, FALSE)
+    """)
+    stages = cr.fetchone()[0]
+    # `s.active` matters: stages deliberately left archived with projects still
+    # on them (the retired "To Do", holding two archived internal projects) are
+    # not debris to be cleaned up, and counting them would make the guard report
+    # work to do on every upgrade forever.
+    cr.execute("""
+        SELECT count(*)
+          FROM project_project p
+          JOIN project_project_stage s ON s.id = p.stage_id
+         WHERE s.active
+           AND NOT COALESCE(s.pl_for_implementation, FALSE)
+           AND NOT COALESCE(s.pl_for_general, FALSE)
+           AND NOT COALESCE(s.pl_for_amc, FALSE)
+    """)
+    projects = cr.fetchone()[0]
+    return stages, projects
 
 
 def _stage_allows_type_sql(type_expr, stage_alias='s'):
@@ -486,14 +165,27 @@ def _stage_allows_type_sql(type_expr, stage_alias='s'):
 
 
 def _broken_project_ids(cr):
-    """Projects sitting on a stage their own Project Type is not allowed to use."""
+    """Active projects sitting on a stage their own Project Type may not use.
+
+    ARCHIVED projects are deliberately excluded. The constraint this repairs
+    fires on write, and nobody writes to an archived project — so the only thing
+    "repairing" one achieves is to destroy the record of where it was parked
+    when it was archived. Two archived internal projects sit on the retired
+    "To Do" stage for exactly this reason: the stage is kept, archived, with
+    them on it, and the reconciler used to drag them onto DISC every upgrade.
+
+    If such a project is ever unarchived the constraint will raise on its next
+    save, which is the right moment for a person to decide where it belongs —
+    far better than a migration having guessed months earlier.
+    """
     allows, params = _stage_allows_type_sql('p.ft_project_type')
     cr.execute(
         """
         SELECT p.id
           FROM project_project p
           JOIN project_project_stage s ON s.id = p.stage_id
-         WHERE p.ft_project_type IS NOT NULL
+         WHERE p.active
+           AND p.ft_project_type IS NOT NULL
            AND NOT %s
          ORDER BY p.id
         """ % allows,
@@ -657,16 +349,347 @@ def repair_type_stage_mismatches(env):
 
 
 def post_init_hook(env):
-    # Stages first: it puts every project on a stage its own type allows, so
-    # any ORM write that follows cannot trip _check_stage_for_type.
-    migrate_existing_stages(env)
+    # Stages first, so any ORM write that follows cannot trip
+    # _check_stage_for_type.
+    #
+    # Adoption, not migration. An earlier design created the lifecycle stages
+    # fresh, moved every project onto them and converted the HOLD stage into the
+    # pl_on_hold flag. Both are gone: the stages are adopted in place, so
+    # projects keep the stage they are on, and HOLD is a Kanban stage again.
+    adopt_legacy_stages(env)
     backfill_start_dates(env)
-    # Before the reconciler, not after: it empties and archives the HOLD stage,
-    # and a project still sitting on HOLD is exactly the kind of type/stage
-    # mismatch the reconciler would otherwise try to "fix" by guessing.
-    move_hold_stage_to_flag(env)
-    # Last word on the type/stage pairing. migrate_existing_stages only places
-    # projects it recognises as being on an old stage; this catches anything it
-    # left, and anything a re-run classification elsewhere has since knocked out
-    # of step.
+    # Last word on the type/stage pairing — catches anything knocked out of step
+    # by a classification re-run elsewhere.
     repair_type_stage_mismatches(env)
+
+
+# ---------------------------------------------------------------------------
+# Stage adoption (replaces the old create-new-stages-and-move-projects path)
+# ---------------------------------------------------------------------------
+# The first design created the lifecycle stages as new records and moved every
+# project onto them. It worked, but it rewrote the stage of 76 projects that had
+# not actually changed phase — an AMC contract in "Closed" became "Completed", a
+# General project in "Discovery" became "Started" — and the audit trail for
+# "when did this project reach DEV" became "when did the migration run".
+#
+# The requirement is the other way round: the new names are ABBREVIATIONS of the
+# stages that already exist. Discovery IS DISC. Development IS DEV. So instead
+# of creating a second record and moving projects between them, this adopts the
+# existing record: it re-points the module's xmlid at the old stage, renames it,
+# gives it the type flags and the pipeline sequence, and deletes the duplicate
+# the data file created. The projects never move because their stage_id never
+# changes — only the row's name does.
+#
+# Re-pointing the xmlid rather than deleting it is what keeps the rest of the
+# module working: _pl_stamp_lifecycle_dates and the allowed-stage lookups all
+# resolve stages through env.ref('ft_project_lifecycle.stage_*').
+#
+# (old stage name, xmlid, new name, sequence, minimum type flags)
+_ADOPTIONS = (
+    ('discovery',       'stage_disc',    'DISC',    10, ('implementation',)),
+    ('development',     'stage_dev',     'DEV',     20, ('implementation',)),
+    ('sandbox review',  'stage_srv',     'SRV',     40, ('implementation',)),
+    ('user acceptance', 'stage_uat',     'UAT',     50, ('implementation',)),
+    ('data upload',     'stage_data',    'DATA',    60, ('implementation',)),
+    ('training',        'stage_tra',     'TRA',     70, ('implementation',)),
+    ('support',         'stage_support', 'SUPPORT', 80, ('implementation',)),
+    # HOLD is a stage again. The previous design turned it into the pl_on_hold
+    # flag; the requirement lists it among the Kanban stages, so the flag stays
+    # on the model but the stage is what is used. Every type may park.
+    ('hold',            'stage_hold',    'HOLD',   105,
+     ('implementation', 'amc', 'general')),
+    ('closed',          'stage_closed',  'CLOSED', 110,
+     ('implementation', 'amc', 'general')),
+)
+
+# Stages kept exactly as they are, name included, but given a sequence so they
+# sit in the right place in the pipeline and a flag so the projects on them stay
+# saveable. Production Testing sits where REG would put it and Deployment after
+# DATA, which is the phase each of them actually represents.
+_KEPT_STAGES = (
+    ('production testing', 35),
+    ('deployment', 65),
+)
+
+# Stages retired outright: archived, flags cleared, xmlid dropped.
+#
+# "AMC" was briefly adopted as a Kanban column because the requirement listed it
+# among the stages. It has no role: AMC is a PROJECT TYPE, and AMC projects run
+# Started -> Working (AMC/General) -> Completed like General ones. Nothing routes
+# to a stage named AMC, so it only ever drew a permanently empty column that
+# invited someone to drag a project onto a dead end. The type is where AMC is
+# expressed; filtering or grouping by Project Type is how you see those projects.
+#
+# Archived rather than deleted, in the manner of every other stage here: seven
+# tables carry a foreign key to project.project.stage.
+_RETIRED_STAGES = (
+    ('amc', 'stage_amc'),
+)
+
+# Old stages merged into an adopted one: their projects move (the only projects
+# that do), then the emptied stage is archived.
+_MERGES = (
+    ('sandbox testing', 'stage_srv'),
+)
+
+# The shared AMC/General "Working" stage, relabelled so the Kanban column says
+# which two types share it.
+_WORKING_LABEL = 'Working (AMC/General)'
+
+
+def _stage_by_name(cr, name):
+    """id of the stage whose en_US name matches (case/space-insensitively)."""
+    cr.execute(
+        "SELECT id FROM project_project_stage "
+        " WHERE lower(trim(name->>'en_US')) = %s ORDER BY id LIMIT 1",
+        (name,))
+    row = cr.fetchone()
+    return row[0] if row else None
+
+
+def _types_on_stage(cr, stage_id):
+    """Project Types actually present on a stage, archived projects included."""
+    cr.execute(
+        "SELECT DISTINCT ft_project_type FROM project_project "
+        " WHERE stage_id = %s AND ft_project_type IS NOT NULL",
+        (stage_id,))
+    return {r[0] for r in cr.fetchall()}
+
+
+def _apply_stage_flags(cr, stage_id, base_flags):
+    """Set pl_for_* to the intended workflow PLUS whatever types are really there.
+
+    The union is the safety property. A stage flagged only for its intended type
+    while a project of another type still sits on it makes that project
+    unsaveable — _check_stage_for_type raises on the next write, and the user
+    sees "Stage 'DEV' is not part of the General workflow" with no way forward.
+    Two archived internal projects sit in Development for exactly this reason,
+    so DEV carries the General flag even though the Implementation pipeline is
+    what it is for.
+    """
+    flags = set(base_flags) | _types_on_stage(cr, stage_id)
+    cr.execute(
+        "UPDATE project_project_stage "
+        "   SET pl_for_implementation = %s, pl_for_amc = %s, pl_for_general = %s "
+        " WHERE id = %s",
+        ('implementation' in flags, 'amc' in flags, 'general' in flags, stage_id))
+    return flags
+
+
+def _retire_duplicate(cr, stage_id):
+    """Drop the data file's stage once its xmlid has been moved to the old one.
+
+    Deleted rather than archived when nothing references it, so the Kanban is
+    not left with an invisible second "DISC". Falls back to archiving inside a
+    savepoint if any foreign key still holds it — seven tables point at
+    project.project.stage and losing that history is not worth a tidier list.
+    """
+    cr.execute("SELECT count(*) FROM project_project WHERE stage_id = %s", (stage_id,))
+    if cr.fetchone()[0]:
+        return False
+    cr.execute("SAVEPOINT drop_dup")
+    try:
+        cr.execute("DELETE FROM project_project_stage WHERE id = %s", (stage_id,))
+        cr.execute("RELEASE SAVEPOINT drop_dup")
+        return True
+    except Exception:
+        cr.execute("ROLLBACK TO SAVEPOINT drop_dup")
+        cr.execute(
+            "UPDATE project_project_stage SET active = false, "
+            "       pl_for_implementation = false, pl_for_amc = false, "
+            "       pl_for_general = false "
+            " WHERE id = %s", (stage_id,))
+        return False
+
+
+def adopt_legacy_stages(env):
+    """Rename the existing stages into the lifecycle instead of moving projects.
+
+    The design this replaced created the lifecycle stages as new records and
+    moved all 299 projects onto them; this one adopts the records that are
+    already there, so a project's stage_id is untouched and its position in the
+    flow is exactly what it was yesterday.
+
+    Only two kinds of project move, and both were agreed explicitly:
+
+    * the ones on a stage being MERGED into another (Sandbox Testing into SRV) —
+      two rows cannot become one row without the projects on one of them moving;
+    * ACTIVE non-Implementation projects sitting on an Implementation-only
+      stage. They go to the shared Working stage. Archived ones stay where they
+      are and their stage keeps a flag for them, because moving a project nobody
+      can see serves nothing and loses where it was.
+
+    Idempotent: adoption is skipped for any stage whose xmlid already points at a
+    record carrying the target name, so a second run finds nothing to do.
+    """
+    snapshotted = _snapshot_stages(env)
+    cr = env.cr
+
+    def xmlid_target(xmlid):
+        cr.execute(
+            "SELECT res_id FROM ir_model_data "
+            " WHERE module='ft_project_lifecycle' AND model='project.project.stage' "
+            "   AND name=%s", (xmlid,))
+        row = cr.fetchone()
+        return row[0] if row else None
+
+    adopted, renamed_only, moved = 0, 0, 0
+
+    # --- 1. Adopt: point the xmlid at the old record, rename it, place it. ----
+    for old_name, xmlid, new_name, sequence, _flags in _ADOPTIONS:
+        current_id = xmlid_target(xmlid)
+        old_id = _stage_by_name(cr, old_name)
+        if current_id is None:
+            _logger.warning(
+                "ft_project_lifecycle: xmlid %s missing; skipping adoption of "
+                "'%s'.", xmlid, old_name)
+            continue
+        if old_id is None or old_id == current_id:
+            # No legacy counterpart (a fresh database), or already adopted.
+            cr.execute(
+                "UPDATE project_project_stage SET name = jsonb_build_object('en_US', %s::text), sequence = %s, "
+                "       active = true WHERE id = %s",
+                (new_name, sequence, current_id))
+            renamed_only += 1
+            continue
+        cr.execute(
+            "UPDATE ir_model_data SET res_id = %s "
+            " WHERE module='ft_project_lifecycle' AND model='project.project.stage' "
+            "   AND name = %s", (old_id, xmlid))
+        cr.execute(
+            "UPDATE project_project_stage SET name = jsonb_build_object('en_US', %s::text), sequence = %s, "
+            "       active = true WHERE id = %s",
+            (new_name, sequence, old_id))
+        _retire_duplicate(cr, current_id)
+        adopted += 1
+        _logger.info(
+            "ft_project_lifecycle: adopted stage '%s' (id %s) as %s; the "
+            "projects on it did not move.", old_name, old_id, new_name)
+
+    # --- 2. Merge: the only projects that change stage by stage identity. ----
+    for old_name, into_xmlid in _MERGES:
+        old_id = _stage_by_name(cr, old_name)
+        target_id = xmlid_target(into_xmlid)
+        if not old_id or not target_id or old_id == target_id:
+            continue
+        cr.execute(
+            "UPDATE project_project SET stage_id = %s WHERE stage_id = %s",
+            (target_id, old_id))
+        merged = cr.rowcount
+        moved += merged
+        cr.execute(
+            "UPDATE project_project_stage SET active = false, "
+            "       pl_for_implementation = false, pl_for_amc = false, "
+            "       pl_for_general = false WHERE id = %s", (old_id,))
+        _logger.info(
+            "ft_project_lifecycle: merged '%s' into %s (%s project(s) moved); "
+            "the emptied stage is archived, not deleted.",
+            old_name, into_xmlid, merged)
+
+    # --- 3. Active non-Implementation projects off Implementation-only stages.
+    working_id = xmlid_target('stage_working')
+    impl_only = [
+        xmlid_target(x) for _o, x, _n, _s, flags in _ADOPTIONS
+        if tuple(flags) == ('implementation',)
+    ]
+    impl_only = [i for i in impl_only if i]
+    if working_id and impl_only:
+        cr.execute(
+            "SELECT id, name->>'en_US', ft_project_type FROM project_project "
+            " WHERE stage_id IN %s AND active "
+            "   AND ft_project_type IS NOT NULL "
+            "   AND ft_project_type <> 'implementation'",
+            (tuple(impl_only),))
+        strays = cr.fetchall()
+        if strays:
+            cr.execute(
+                "UPDATE project_project SET stage_id = %s WHERE id IN %s",
+                (working_id, tuple(s[0] for s in strays)))
+            moved += len(strays)
+            _logger.info(
+                "ft_project_lifecycle: moved %s active non-Implementation "
+                "project(s) onto %s: %s", len(strays), _WORKING_LABEL,
+                ', '.join("%s '%s' (%s)" % s for s in strays))
+
+    # --- 4. The AMC/General flow, relabelled so the shared column says so. ----
+    for xmlid, label, sequence in (
+            ('stage_started', 'Started', 90),
+            ('stage_working', _WORKING_LABEL, 95),
+            ('stage_completed', 'Completed', 100)):
+        sid = xmlid_target(xmlid)
+        if sid:
+            cr.execute(
+                "UPDATE project_project_stage SET name = jsonb_build_object('en_US', %s::text), sequence = %s, "
+                "       active = true WHERE id = %s",
+                (label, sequence, sid))
+            _apply_stage_flags(cr, sid, ('amc', 'general'))
+
+    # --- 5. Stages kept exactly as they are, placed and flagged. -------------
+    for name, sequence in _KEPT_STAGES:
+        sid = _stage_by_name(cr, name)
+        if sid:
+            cr.execute(
+                "UPDATE project_project_stage SET sequence = %s WHERE id = %s",
+                (sequence, sid))
+            _apply_stage_flags(cr, sid, ())
+
+    # --- 6. Flags on every adopted stage, last, once all moves are done. -----
+    for _old_name, xmlid, _new_name, _sequence, flags in _ADOPTIONS:
+        sid = xmlid_target(xmlid)
+        if sid:
+            _apply_stage_flags(cr, sid, flags)
+
+    # --- 6b. Retire stages that have no role in any workflow. ----------------
+    for name, xmlid in _RETIRED_STAGES:
+        sid = xmlid_target(xmlid) or _stage_by_name(cr, name)
+        if not sid:
+            continue
+        cr.execute(
+            "SELECT count(*) FROM project_project WHERE stage_id = %s", (sid,))
+        held = cr.fetchone()[0]
+        if held:
+            # Never archive a stage somebody is still on: they would be stranded
+            # and unable to save. Loud, and left for a person to move.
+            _logger.error(
+                "ft_project_lifecycle: stage '%s' still holds %s project(s); "
+                "leaving it active rather than stranding them.", name, held)
+            continue
+        cr.execute(
+            "UPDATE project_project_stage "
+            "   SET active = false, pl_for_implementation = false, "
+            "       pl_for_amc = false, pl_for_general = false "
+            " WHERE id = %s", (sid,))
+        # Drop the xmlid too, so ir.model.data's end-of-update sweep does not
+        # see an orphan and try to DELETE the stage row we just archived.
+        cr.execute(
+            "DELETE FROM ir_model_data "
+            " WHERE module='ft_project_lifecycle' "
+            "   AND model='project.project.stage' AND name = %s", (xmlid,))
+        _logger.info(
+            "ft_project_lifecycle: retired the '%s' stage — it held nothing and "
+            "no workflow routes to it; AMC is a Project Type, not a stage.",
+            name)
+
+    # --- 7. Archive legacy stages left holding nothing. ----------------------
+    cr.execute("""
+        UPDATE project_project_stage s SET active = false
+         WHERE s.active
+           AND NOT COALESCE(s.pl_for_implementation, FALSE)
+           AND NOT COALESCE(s.pl_for_general, FALSE)
+           AND NOT COALESCE(s.pl_for_amc, FALSE)
+           AND NOT EXISTS (SELECT 1 FROM project_project p WHERE p.stage_id = s.id)
+    """)
+    emptied = cr.rowcount
+
+    cr.execute("""
+        UPDATE %s b SET new_stage_id = p.stage_id
+          FROM project_project p WHERE p.id = b.project_id
+    """ % _BACKUP_TABLE)
+
+    env.invalidate_all()
+    _logger.info(
+        "ft_project_lifecycle: stage adoption done — snapshotted %s, adopted "
+        "%s stage(s), renamed %s in place, archived %s empty legacy stage(s), "
+        "and moved %s project(s) in total.",
+        snapshotted, adopted, renamed_only, emptied, moved)
+    return moved

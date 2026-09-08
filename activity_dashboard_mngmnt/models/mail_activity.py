@@ -19,8 +19,8 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-from odoo import fields, models,api
-from odoo.exceptions import ValidationError,AccessError
+from odoo import fields, models, api, _
+from odoo.exceptions import ValidationError, AccessError, UserError
 
 
 
@@ -31,9 +31,89 @@ class MailActivity(models.Model):
     activity_tag_ids = fields.Many2many('activity.tag',
                                         string='Activity Tags',
                                         help='Select activity tags.')
-    state = fields.Selection(selection_add=[
-        ('done', 'Done'),
-    ], string='State', help='State of the activity')
+    # `search=` is the point of this override, not `selection_add`: core already
+    # ships a 'done' value, so the addition is a no-op kept only for
+    # compatibility with databases that stored it.
+    #
+    # core's mail.activity.state is compute=..., with no store and no search, so
+    # ANY domain on it raises "Cannot convert mail.activity.state to SQL because
+    # it is not stored". The Activity Dashboard filters on exactly that
+    # (state = planned / today / overdue / done), which is why opening it in the
+    # CRM module returned a 500. Two of the four dashboard queries already OR'd
+    # in a date_deadline condition as a workaround, but the `state` term was
+    # still there and it is the term that raises.
+    state = fields.Selection(
+        selection_add=[('done', 'Done')],
+        string='State',
+        help='State of the activity',
+        search='_search_state',
+    )
+
+    def _search_state(self, operator, value):
+        """Translate a domain on `state` into one on date_deadline / active.
+
+        Mirrors core's _compute_state exactly:
+
+            done      -> the activity is archived
+            overdue   -> deadline is before today
+            today     -> deadline is today
+            planned   -> deadline is after today
+
+        `date_deadline` is `required`, so every activity resolves to exactly one
+        of the four and negation can be expressed as the complement of the set —
+        no activity falls outside it.
+
+        One honest limitation: _compute_state resolves "today" in the ASSIGNED
+        USER's timezone, and a search can only use the current user's. An
+        activity within a day of the boundary can therefore be bucketed here
+        differently from the badge shown on the record itself. Making the two
+        agree would need date_deadline stored per-user-timezone, which it is
+        not; the dashboard's own JavaScript already compares against a plain
+        date, so this is no less accurate than what it replaces.
+        """
+        states = ('overdue', 'today', 'planned', 'done')
+        if operator in ('=', '!='):
+            wanted = {value}
+        elif operator in ('in', 'not in'):
+            wanted = set(value or ())
+        else:
+            raise UserError(_(
+                "Unsupported operator '%s' for the activity State filter. "
+                "Use =, !=, in or not in.", operator))
+        if operator in ('!=', 'not in'):
+            wanted = set(states) - wanted
+        wanted &= set(states)
+        if not wanted:
+            # Matches nothing, rather than silently matching everything.
+            return [('id', '=', False)]
+        if wanted == set(states):
+            return []
+
+        today = fields.Date.context_today(self)
+        # `('active', '=', False)` is deliberate for done and `!= False` for the
+        # rest: Odoo renders a Boolean compared to False as "IS NULL OR = false",
+        # so a row whose `active` was never written still reads as archived —
+        # which is what record.active would give the compute.
+        per_state = {
+            'done': [('active', '=', False)],
+            'overdue': [('active', '!=', False), ('date_deadline', '<', today)],
+            'today': [('active', '!=', False), ('date_deadline', '=', today)],
+            'planned': [('active', '!=', False), ('date_deadline', '>', today)],
+        }
+        # Each per-state domain is TWO conditions, so it needs its own explicit
+        # '&' before it can be OR-ed with another. Without that, Odoo's prefix
+        # notation reads ['|', A1, A2, B1, B2] as "(A1 OR A2) AND B1 AND B2"
+        # rather than "(A1 AND A2) OR (B1 AND B2)" — which silently returned
+        # nothing for `state in ('today', 'overdue')` while each state on its
+        # own worked, because a single sub-domain gets the implicit AND.
+        def _all_of(conditions):
+            return ['&'] * (len(conditions) - 1) + conditions
+
+        subdomains = [_all_of(per_state[state]) for state in sorted(wanted)]
+        domain = subdomains[0]
+        for subdomain in subdomains[1:]:
+            domain = ['|'] + domain + subdomain
+        return domain
     rnr = fields.Boolean()
     parent_partner_id = fields.Many2one(
         'res.partner',

@@ -64,7 +64,34 @@
     # value, and a default only ever affected new records.
     # 19.0.1.10.0 moves project modules and stage-wise time into the optional
     # ft_project_module_tracking addon, with metadata preserved on upgrade.
-    'version': '19.0.1.10.0',
+    # 19.0.1.11.0 backfills the Project Types that 19.0.1.3.0 never assigned.
+    # The claim above — "every existing row already holds a value" — held only
+    # for databases that had passed 19.0.1.3.0 BEFORE the default was dropped.
+    # On any database upgraded through it afterwards the column arrived NULL,
+    # 19.0.1.3.0's name passes compared `!= 'general'` against NULL and matched
+    # nothing, and nothing assigned 'implementation' at all, because that had
+    # been the default's job. A restore of the 2026-08-18 production database
+    # came out of the upgrade with 248 of 299 projects untyped. 19.0.1.3.0 is
+    # fixed for databases old enough to still run it, and the new migration
+    # repairs the ones already past it; both share the rules in
+    # project_type_classification.py.
+    # 19.0.1.12.0 confines the Stage Validation Framework's date gates to
+    # Implementation projects. Every date it demands (Kick-off, BRD Approval,
+    # Regression, Sandbox Review, UAT Start, Training, Support Start, Go Live)
+    # is an Implementation milestone; AMC and General run Started -> Working ->
+    # Completed and carry none of them. Because the terminal CLOSED stage is
+    # shared by all three types and required a Go Live Date, a General project
+    # could not be closed at all. No migration: the change only relaxes a
+    # check, and no stored value depends on it.
+    # 19.0.1.13.0 puts Module in the Tasks search panel — as a search field
+    # and as a Group By — on project.view_task_search_form, the search view the
+    # All Tasks action loads. module_id is this module's field, so the entry
+    # belongs with it.
+    # 19.0.1.14.0 also puts Module in the task list's column picker. 19.0.1.13.0
+    # added it to the search panel only, which is a different menu — the column
+    # toggle at the right of the header row does not show search fields, so
+    # Module was there but not where it was being looked for.
+    'version': '19.0.1.14.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',
