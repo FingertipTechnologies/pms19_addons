@@ -38,13 +38,35 @@ $ft-form-sheet-width: 70%;
         // flex-grow MUST be 0. Core sets it to 1; leaving it there lets the
         // chatter eat every spare pixel and the percentage below becomes a
         // floor rather than the actual width.
-        flex: 0 0 $ft-chatter-aside-width;
-        width: $ft-chatter-aside-width;
-        max-width: $ft-chatter-aside-width;
-        // Core sizes the chatter with a 530px `width`. Without this floor
-        // removed, the flex basis above cannot shrink under it on screens
-        // just past the XXL breakpoint.
-        min-width: 0;
+        //
+        // `!important` because web_responsive used to win this rule with a
+        // `flex: 0 0 35% !important`. That rule is gone, but this module is the
+        // single source of truth for the split and must not lose it again to
+        // another addon's width rule, whatever the asset order turns out to be.
+        flex: 0 0 $ft-chatter-aside-width !important;
+        width: $ft-chatter-aside-width !important;
+        max-width: $ft-chatter-aside-width !important;
+        // Core sizes the chatter with a 530px `width`, and a flex item's default
+        // `min-width: auto` is min-content sizing. Both are floors that let long
+        // content widen the chatter past its 30%; this removes them.
+        min-width: 0 !important;
+        overflow: auto;
+
+        // A long unbreakable run of text (an email address, a URL, a pasted
+        // token) has a min-content width of its own. With the floors above
+        // removed the column no longer grows for it, so it must be allowed to
+        // break instead of overflowing.
+        .o-mail-Chatter {
+            min-width: 0;
+        }
+
+        .o-mail-Message-body,
+        .o-mail-Message-content,
+        .o-mail-Activity,
+        .o-mail-Thread {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
     }
 }
 
@@ -54,10 +76,10 @@ $ft-form-sheet-width: 70%;
 // next sibling, so a form with the chatter at the bottom — or no chatter at
 // all — keeps core's full-width behaviour untouched.
 .o_form_sheet_bg:has(+ .o-mail-Form-chatter.o-aside) {
-    flex: 1 1 $ft-form-sheet-width;
-    width: $ft-form-sheet-width;
-    max-width: $ft-form-sheet-width;
-    min-width: 0;
+    flex: 1 1 $ft-form-sheet-width !important;
+    width: $ft-form-sheet-width !important;
+    max-width: $ft-form-sheet-width !important;
+    min-width: 0 !important;
 
     // Let the sheet fill the 70% column instead of being capped and centred
     // inside it, which is what leaves the empty gutters on a wide screen.

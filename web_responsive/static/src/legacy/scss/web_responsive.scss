@@ -4,8 +4,6 @@
  * Copyright 2023 Taras Shabaranskyi
  * License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl). */
 
-$chatter_zone_width: 35% !important;
-
 // Allow sticky header
 .o_action_manager {
     .o_form_view {
@@ -148,10 +146,20 @@ $chatter_zone_width: 35% !important;
         }
     }
 
+    // The sided chatter's width is owned by
+    // web_chatter_position/static/src/scss/form_renderer.scss (fixed 70 / 30
+    // split). Nothing here may set flex / max-width / min-width on it:
+    //
+    //   flex: 0 0 35% !important  — beat that override (the `!important` was
+    //                               baked into the variable), so the chatter
+    //                               took 35% instead of its 30% share.
+    //   min-width: initial        — resolves to `auto` on a flex item, which is
+    //                               min-content sizing. That is what lets a long
+    //                               chatter entry (a long activity note, a long
+    //                               email address) push the chatter wider than
+    //                               its share and squeeze the form sheet into an
+    //                               unreadable column.
     &.o-aside {
-        flex: 0 0 $chatter_zone_width;
-        max-width: initial;
-        min-width: initial;
         overflow: auto;
     }
 }

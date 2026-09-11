@@ -45,9 +45,22 @@ patch(FormCompiler.prototype, {
                 isInFormSheetBg: `__comp__.uiService.size < ${SIZES.XXL}`,
                 isChatterAside: `__comp__.uiService.size >= ${SIZES.XXL}`,
             });
-            setAttributes(chatterContainerHookXml, {
-                class: "o-aside",
-            });
+            // classList.add, NOT setAttributes({class: ...}).
+            //
+            // `setAttributes` calls `setAttribute("class", ...)`, which REPLACES
+            // the whole attribute. Core built this element with
+            // `classList.add("o-mail-ChatterContainer", "o-mail-Form-chatter")`,
+            // so overwriting it left the chatter with `o-aside` alone — and an
+            // element that is no longer `.o-mail-Form-chatter` matches none of
+            // the width rules, neither core's nor this module's 30% one.
+            //
+            // With no width rule the chatter is a plain flex item sized by its
+            // content: a short activity note looked roughly right, while a long
+            // one grew the chatter to ~73% and squeezed the form sheet to ~27%.
+            // That is the "can't see the form" symptom, and it only ever hit
+            // users whose Chatter Position preference is "Sided" — which is why
+            // it survived the CSS fix.
+            chatterContainerHookXml.classList.add("o-aside");
             // For "bottom", we keep the chatter in the form sheet
             // (the one used for the attachment viewer case)
             // If it's not there, we create it.
@@ -92,10 +105,16 @@ patch(FormCompiler.prototype, {
         const form = super.compileForm(el, params);
         const sheet = form.querySelector(".o_form_sheet_bg");
         if (sheet && odoo.web_chatter_position === "sided") {
-            setAttributes(form, {
-                "t-attf-class": "",
-                class: "d-flex d-print-block flex-nowrap h-100",
-            });
+            // Same trap as above, on the renderer this time: overwriting `class`
+            // dropped `o_form_renderer`, and clearing `t-attf-class` dropped the
+            // state classes core puts there (`o_form_editable` / `o_form_readonly`,
+            // `o_form_dirty` / `o_form_saved`). Add the row classes instead.
+            //
+            // Nothing is lost by keeping core's `t-attf-class`: at XXL it already
+            // resolves to the same `flex-nowrap h-100`, and below XXL this module
+            // puts the chatter inside the sheet, where core's `flex-column` is the
+            // layout we want anyway.
+            form.classList.add("d-flex", "d-print-block", "flex-nowrap", "h-100");
         }
         return form;
     },

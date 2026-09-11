@@ -9,7 +9,7 @@
 {
     "name": "Web Responsive",
     "summary": "Responsive web client, community-supported",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.7",  # local: chatter width left to web_chatter_position
     "category": "Website",
     "website": "https://github.com/OCA/web",
     "author": "LasLabs, Tecnativa, ITerra, Onestein, "
