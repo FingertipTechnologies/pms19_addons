@@ -1,7 +1,10 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 {
     "name": "Project Milestone Date Extension",
-    "version": "19.0.1.3.0",
+    # 19.0.1.4.0 moves the Date Extensions menu from 60 (which is Test Plans'
+    # sequence, dropping it among the QA menus) to 98, beside Change Request
+    # at the end of the PMS bar.
+    "version": "19.0.1.4.0",
     "category": "Project",
     "summary": "Approval workflow to request and control milestone date extensions on Projects",
     "description": """

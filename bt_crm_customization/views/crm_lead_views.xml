@@ -287,6 +287,17 @@
                 <field name="current_system" optional="hide"/>
                 <field name="company_size" optional="hide"/>
                 <field name="lead_location" optional="hide"/>
+                <!-- Notes: crm.lead.description, which core labels "Notes" and
+                     puts in the lead form's Internal Notes tab. Named here
+                     anyway so the header reads the same as the tab it comes
+                     from, whatever a future core release renames the label to.
+
+                     It is an Html field, so the cell renders the note's markup
+                     rather than a line of plain text, and a long note makes a
+                     tall row. The width keeps it from crowding out the columns
+                     the list is actually worked by. -->
+                <field name="description" string="Notes"
+                       optional="show" width="240px"/>
             </xpath>
         </field>
     </record>

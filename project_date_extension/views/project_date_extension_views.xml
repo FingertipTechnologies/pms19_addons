@@ -131,12 +131,14 @@
             </field>
         </record>
 
-        <!-- Menu -->
+        <!-- Menu: 98, immediately before Change Request (99), at the end of
+             the PMS bar. It sat at 60, which is Test Plans' sequence, so it
+             landed in the middle of the QA menus it has nothing to do with. -->
         <menuitem id="menu_project_date_extension_request"
                   name="Date Extensions"
                   parent="project.menu_main_pm"
                   action="action_project_date_extension_request"
-                  sequence="60"/>
+                  sequence="98"/>
 
     </data>
 </odoo>

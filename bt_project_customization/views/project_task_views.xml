@@ -36,14 +36,23 @@
             <!-- Keep the long Text field in the wider left-hand details group;
                  the nested custom group on the right compresses Text widgets. -->
             <xpath expr="//field[@name='user_ids']" position="after">
-                <!-- Required for Implementation projects only, matching
-                     _check_task_source_rules: AMC and General have no stage
-                     that answers "was this scoped up front", so nothing there
-                     can fill this in and nothing enforces it. The field stays
-                     visible for every type — the classification is still worth
-                     recording when somebody makes it by hand. -->
+                <!-- Required on a NEW task only (`not id`), matching
+                     _check_task_source_required, which create() calls and
+                     write() does not. The backlog predates this field, so most
+                     of it has no source; demanding one before an old task
+                     could be edited at all blocked reclassifying, reassigning
+                     or completing it over a rule that did not exist when it
+                     was raised.
+
+                     Every project type. The CONDITIONAL rules below (a
+                     ticket for a Change Request, a reason for Unplanned) stay
+                     Implementation's, because they read a delivery timeline
+                     AMC and General do not have — but being asked to say where
+                     the work came from does not depend on that, and AMC is
+                     precisely the type _ft_task_source cannot fill in
+                     automatically. -->
                 <field name="task_source"
-                       required="task_type == 'user_story' and ft_project_type == 'implementation'"/>
+                       required="not id and task_type == 'user_story'"/>
                 <field name="unplanned_reason"
                        invisible="task_source != 'unplanned'"
                        required="task_source == 'unplanned' and ft_project_type == 'implementation'"
@@ -73,8 +82,9 @@
                 <field name="module_id" required="True"
                        domain="[('id', 'in', ft_allowed_module_ids)]"/>
                 <field name="ft_project_type" invisible="1"/>
-                <field name="task_source"
-                       required="ft_project_type == 'implementation'"/>
+                <!-- Always: this view only ever creates, and a quick-created
+                     task takes the User Story default that the rule keys on. -->
+                <field name="task_source" required="True"/>
                 <field name="source_ticket_id"
                        invisible="task_source not in ['change_request', 'enhancement']"
                        required="task_source in ['change_request', 'enhancement'] and ft_project_type == 'implementation'"

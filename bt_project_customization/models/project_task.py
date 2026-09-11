@@ -305,6 +305,8 @@ class ProjectTask(models.Model):
         tasks = super().create(vals_list)
         tasks._check_planned_creation_permission()
         tasks._check_task_source_rules()
+        # Create-only, unlike the rules above it. See the method's docstring.
+        tasks._check_task_source_required()
         # Run the required-field checks explicitly. @api.constrains alone is not
         # enough on create: Odoo validates only the fields PRESENT in the values,
         # so leaving estimated and date_deadline out entirely skipped both — a
@@ -319,6 +321,17 @@ class ProjectTask(models.Model):
         # mentioning them, but that is a property of today's callers, not of the
         # rule, and the rule is cheap to state outright.
         tasks._check_user_story_single_assignee()
+        # A task raised straight into Completed is finished the moment it
+        # exists. write() stamps this on every later stage move; without it
+        # here, a task that never moves would sit closed by stage and open by
+        # state, which is the split the Open filter reads.
+        final_ids = set(tasks._ft_final_stage_ids())
+        born_done = tasks.filtered(
+            lambda task: task.stage_id.id in final_ids
+            and task.state not in ('1_done', '1_canceled')
+        )
+        if born_done:
+            born_done.sudo().write({'state': '1_done'})
         return tasks
 
     def write(self, vals):
@@ -436,7 +449,36 @@ class ProjectTask(models.Model):
                 'date_end': now,
                 'ft_completed_by_id': self.env.user.id,
                 'ft_work_end_date': now,
+                # Core's `state` is what Odoo means by closed: is_closed, the
+                # Open and Closed filters, the subtask counters and the rotting
+                # rules all search it, and NOTHING in this PMS ever set it.
+                # Worse, _compute_state depends on stage_id and resets an open
+                # task to In Progress, so moving a task INTO Completed actively
+                # re-stamped it as in progress. The Open filter therefore
+                # returned every completed task, and the badge on a finished
+                # task read "In Progress".
+                #
+                # Stamped here, next to date_end, because this is already the
+                # one place that knows a task has just been completed by this
+                # PMS's own definition (_ft_final_stage_ids — a folded stage or
+                # one named Completed), which is the definition core's `fold`
+                # flag cannot supply on a stage set where nobody ticked it.
+                'state': '1_done',
             })
+        # And the way back. _compute_state cannot do this for us: it only
+        # reopens a task whose state is NOT already closed, so once state is
+        # 1_done it would stay 1_done through every later stage move, and a
+        # task dragged out of Completed would stay "closed" for ever.
+        # '1_canceled' is left alone deliberately — a cancelled task that is
+        # moved about is still cancelled, and is not something to quietly
+        # reopen.
+        reopened_state = self.filtered(
+            lambda t: (was_final.get(t.id)
+                       and t.stage_id.id not in final_ids
+                       and t.state == '1_done')
+        )
+        if reopened_state:
+            reopened_state.sudo().write({'state': '01_in_progress'})
         for task in reopened:
             # sudo: the counter is readonly to users, and whoever drags the card
             # back may not have write access to a field they never edit directly.
@@ -472,8 +514,15 @@ class ProjectTask(models.Model):
             self._check_estimated_required()
         if 'user_ids' in vals or 'task_type' in vals:
             self._check_user_story_single_assignee()
-        if any(field in vals for field in (
-                'date_deadline', 'task_source', 'task_type')):
+        # NOT keyed on task_source. _check_deadline_required never reads it —
+        # only date_deadline and task_type — so re-running it because somebody
+        # classified the work validated a field the edit had not touched, and
+        # any task whose deadline had already passed could no longer be saved
+        # at all. Classifying a task and moving it to Completed is exactly that
+        # edit, and it was refused with "Deadline must be a future date and
+        # time" about a deadline nobody was changing. task_type stays: the
+        # User Story minimum below is keyed on it.
+        if any(field in vals for field in ('date_deadline', 'task_type')):
             self._check_deadline_required()
         if any(field in vals for field in (
                 'task_type', 'task_source', 'project_id',
@@ -517,11 +566,6 @@ class ProjectTask(models.Model):
             if (task.project_id
                     and task.project_id.ft_project_type != 'implementation'):
                 continue
-
-            if task.task_type == 'user_story' and not task.task_source:
-                raise ValidationError(_(
-                    "Task Source is required for User Story tasks."
-                ))
 
             if task.task_source == 'planned':
                 project = task.project_id
@@ -582,6 +626,47 @@ class ProjectTask(models.Model):
                         "Unplanned Reason is required and must contain at least "
                         "%s characters."
                     ) % UNPLANNED_REASON_MIN_LEN)
+
+    def _check_task_source_required(self):
+        """Task Source must be chosen on a NEW User Story.
+
+        Called from create() only, and deliberately not from write() or an
+        @api.constrains. The rule is about tasks being raised from here on: it
+        makes whoever opens a task say where the work came from, which is what
+        the Change Request and Unplanned figures are argued from.
+
+        Holding an EXISTING task to it does nothing for those figures and costs
+        real work. The backlog predates the field, so most of it has no source
+        at all, and the check fires on any write that touches task_source,
+        task_type or project_id — which meant an old task could not be
+        classified, reassigned or moved on until somebody first satisfied a
+        rule that did not exist when it was created.
+
+        The conditional rules in _check_task_source_rules still apply on every
+        write: those are about a source somebody has actually CHOSEN — a Change
+        Request still needs its customer ticket, an Unplanned task still needs
+        its reason — and are satisfiable at any point in a task's life.
+
+        EVERY project type, unlike those conditional rules. They are confined
+        to Implementation because they read the delivery timeline — a Change
+        Request means the client signed a delivery off and has now asked for
+        something else, which AMC and General have no equivalent of. Being
+        asked to say where the work came from has no such dependency: the field
+        is on the form for all three types, and a person can always answer it.
+
+        It is also where the gap was. _ft_task_source stamps a source
+        automatically for Implementation and General but returns False for AMC,
+        so an AMC task was the one case that arrived empty — and the
+        Implementation-only guard inherited from _check_task_source_rules meant
+        it was also the one case nobody was asked about.
+        """
+        if self.env.su:
+            return
+        for task in self:
+            if task.task_type == 'user_story' and not task.task_source:
+                raise ValidationError(_(
+                    "Task Source is required for User Story tasks."
+                ))
 
     def _check_planned_creation_permission(self):
         """Planned is an initial status reserved for PM, TL and Admin."""
@@ -741,7 +826,7 @@ class ProjectTask(models.Model):
                     "lands in the Not Estimated figure on the dashboard."
                 ) % (task.name or ''))
 
-    @api.constrains('date_deadline', 'task_source', 'task_type')
+    @api.constrains('date_deadline', 'task_type')
     def _check_deadline_required(self):
         if self.env.su:
             return

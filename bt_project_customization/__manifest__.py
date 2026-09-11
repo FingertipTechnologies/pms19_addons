@@ -106,7 +106,26 @@
     # (a new related field, project.task.ft_project_type) so their `required`
     # attributes agree with the server. No migration: the change only relaxes
     # checks, and no stored value depends on it.
-    'version': '19.0.1.15.0',
+    # 19.0.1.16.0 makes Task Source mandatory on NEW tasks only, and stops a
+    # Task Source edit re-validating a deadline nobody touched. The two were
+    # the same complaint: classifying an old task and moving it to Completed
+    # was refused with "Deadline must be a future date and time", because the
+    # deadline check was keyed on task_source even though it never reads it,
+    # and the requiredness applied to a backlog raised before the field
+    # existed. The conditional rules — a Change Request's customer ticket, an
+    # Unplanned task's reason — still hold on every write.
+    # 19.0.1.17.0 makes core `state` follow the stage: entering a final stage
+    # sets 1_done, leaving one returns 01_in_progress. `state` is what Odoo
+    # means by closed — is_closed is computed from it, and the Open filter, the
+    # subtask counters and the rotting rules all search it — and nothing here
+    # had ever set it, so the Open filter returned the completed work too. The
+    # post-migration brings the existing rows into line.
+    # 19.0.1.19.0 makes the create-time Task Source rule apply to every
+    # project type. It had inherited the Implementation-only scoping of the
+    # conditional rules it was split out of, which exempted exactly the type
+    # _ft_task_source cannot fill in by itself — AMC — so an AMC task was both
+    # the only one that arrived empty and the only one nobody was asked about.
+    'version': '19.0.1.19.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',

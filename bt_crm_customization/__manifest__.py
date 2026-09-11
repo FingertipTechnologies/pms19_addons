@@ -1,6 +1,7 @@
 {
     'name': 'CRM Customization',
-    'version': '19.0.1.3.7',
+    # 19.0.1.3.8 adds Notes as a column in the Leads list.
+    'version': '19.0.1.3.8',
     'category': 'Contacts',
     'summary': 'Contact Customization',
     'author': 'Broadtech',
