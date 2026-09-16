@@ -1,6 +1,7 @@
 from odoo import http
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
+from odoo.addons.web.controllers.utils import is_user_internal
 
 
 class HelpdeskPortal(CustomerPortal):
@@ -13,12 +14,16 @@ class HelpdeskPortal(CustomerPortal):
         return values
 
     @http.route(['/my', '/my/home'], type='http', auth='user', website=True)
-    def portal_my_home_redirect(self, **kw):
-        user = request.env.user
-        if user.has_group('base.group_portal'):
+    def home(self, **kw):
+        # The method name must match CustomerPortal's - Odoo extends a route by
+        # method name. Odoo 19 renamed this endpoint from `portal_my_home` to
+        # `home`, so the old name registered a *second* werkzeug rule on /my
+        # next to the stock one; the stock rule sorts first and won, so this
+        # redirect never ran and portal users were left on the generic /my.
+        if not is_user_internal(request.env.user.id):
             return request.redirect('/my/support/projects')
         # Internal users: show normal home page
-        return super().portal_my_home(**kw)
+        return super().home(**kw)
     # ------------------------------------------------------------------
     # /my/tickets  – ticket list
     # ------------------------------------------------------------------

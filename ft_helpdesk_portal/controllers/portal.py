@@ -6,6 +6,7 @@ from odoo import http, fields, _
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
 from odoo.addons.web.controllers.home import Home
+from odoo.addons.web.controllers.utils import is_user_internal
 from odoo.exceptions import AccessError, MissingError
 from odoo.fields import Domain
 from odoo.addons.ft_helpdesk_core.controllers.portal import HelpdeskPortal as HelpdeskPortalBase
@@ -86,10 +87,13 @@ class HelpdeskPortal(CustomerPortal):
     # =============================
 
     @http.route(['/my', '/my/home'], type='http', auth='user', website=True)
-    def portal_my_home(self, **kw):
-        if request.env.user.has_group('base.group_portal'):
+    def home(self, **kw):
+        # `home`, not `portal_my_home`: Odoo 19 renamed CustomerPortal's /my
+        # endpoint, and only a matching name extends it instead of adding a
+        # competing route. See ft_helpdesk_core.HelpdeskPortal.home.
+        if not is_user_internal(request.env.user.id):
             return request.redirect('/my/support/projects')
-        return super().portal_my_home(**kw)
+        return super().home(**kw)
 
     # =============================
     # Support Home — landing page
@@ -731,9 +735,25 @@ class HelpdeskPortal(CustomerPortal):
 PORTAL_LANDING = '/my/support/projects'
 
 # Default post-login targets we take over for portal users. Odoo sends a
-# non-internal user to /web/login_successful, which lands them on Odoo's stock
-# /my portal home; /my and /my/home are the same page reached directly.
-_GENERIC_LANDINGS = {'/my', '/my/home', '/web/login_successful'}
+# non-internal user to /web/login_successful (and /web, /odoo bounce there
+# too); /my and /my/home are Odoo's stock portal home reached directly.
+_GENERIC_LANDINGS = {
+    '/', '/my', '/my/home', '/web', '/odoo',
+    '/web/login', '/web/login_successful',
+}
+
+
+def _is_generic_landing(redirect):
+    """True when ``redirect`` is one of Odoo's default landings, not a deep link.
+
+    The raw parameter carries a query string and sometimes a trailing slash
+    (``/web/login_successful?...``, ``/my/``), so compare on the path alone -
+    a plain ``in`` test against the set missed every one of those.
+    """
+    if not redirect:
+        return True
+    path = redirect.partition('#')[0].partition('?')[0]
+    return (path.rstrip('/') or '/') in _GENERIC_LANDINGS
 
 
 class HelpdeskLoginRedirect(Home):
@@ -746,6 +766,10 @@ class HelpdeskLoginRedirect(Home):
         ``redirect`` parameter was supplied, so a request carrying
         ?redirect=/my still dropped the user on Odoo's default portal home.
 
+        Membership is tested with ``is_user_internal`` - the same predicate
+        web/portal/website use - rather than has_group('base.group_portal'),
+        so a portal user reaches support even when their group set is unusual.
+
         Only fully-authenticated sessions are touched. During a partial (MFA)
         session request.session.uid is unset and the base implementation must
         run so the user reaches the MFA form instead of the portal.
@@ -753,8 +777,7 @@ class HelpdeskLoginRedirect(Home):
         A genuine deep link - e.g. bouncing through login to reach a specific
         ticket - is preserved; only the generic landings are replaced.
         """
-        if request.session.uid and (not redirect or redirect in _GENERIC_LANDINGS):
-            user = request.env['res.users'].sudo().browse(uid)
-            if user.has_group('base.group_portal'):
+        if request.session.uid and _is_generic_landing(redirect):
+            if not is_user_internal(uid):
                 return PORTAL_LANDING
         return super()._login_redirect(uid, redirect=redirect)
