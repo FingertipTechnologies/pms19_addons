@@ -444,6 +444,146 @@ class InheritProjectProject(models.Model):
     # before: Regression gates entry to Sandbox Review (SRV) and Training gates
     # entry to the Training (TRA) stage. Optional Date columns, created on module
     # update; no migration is needed because nothing reads them until set.
+    def _ft_required_creation_dates(self):
+        """Date fields that must be filled before a project may be CREATED.
+
+        Create-only, like the Task Source rule: the point is that every project
+        raised from here on is scheduled up front. Holding the EXISTING
+        portfolio to it would block every edit to every project that predates
+        the rule until somebody invented the missing dates, and an invented
+        date is worse than a blank one — the Overdue calculation and the stage
+        gates both read these.
+
+        AMC and Implementation only. General is deliberately exempt: it is the
+        catch-all type — internal work, one-off jobs, anything that is not a
+        delivery engagement — and it has no schedule to be held to.
+
+        Scoped further to what the project's own type actually shows. The
+        delivery milestones are Implementation's: ft_task_hours_tracker hides
+        them for AMC and General, which run Started -> Working -> Completed and
+        have no BRD, UAT or support step. Requiring a field that the form does
+        not display would make AMC impossible to create at all — the save would
+        be refused over a date with nowhere to type it. So AMC is held to the
+        two dates it does show, and Implementation to all of them.
+
+        Extended by ft_project_lifecycle, which adds the milestones it
+        contributes to the same group.
+        """
+        self.ensure_one()
+        if self.ft_project_type not in ('implementation', 'amc'):
+            return []
+        dates = [
+            # Shown for both types that carry the rule.
+            ('date_start', _('Start Date')),
+            ('date', _('End Date')),
+        ]
+        if self.ft_project_type == 'implementation':
+            dates += [
+                ('kick_start_meeting_date', _('Kick Start Meeting Date')),
+                ('brd_approval_date', _('BRD Approval Date')),
+                ('ft_regression_date', _('Regression Date')),
+                ('sandbox_review_date', _('Sandbox Review Date')),
+                ('uat_start_date', _('UAT Start Date')),
+                ('ft_training_date', _('Training Date')),
+                ('go_live_date', _('Go Live Date')),
+                ('support_start_date', _('Support Start Date')),
+            ]
+        return dates
+
+    def _ft_check_creation_dates(self):
+        """Refuse a new project that is missing any of its dates."""
+        if self.env.su:
+            return
+        for project in self:
+            missing = [
+                label for field_name, label
+                in project._ft_required_creation_dates()
+                if not project[field_name]
+            ]
+            if missing:
+                raise ValidationError(_(
+                    "Every date in the Dates section is required when "
+                    "creating a project.\n\n"
+                    "Project: %(name)s\n"
+                    "Missing: %(missing)s"
+                ) % {
+                    'name': project.name or '',
+                    'missing': ', '.join(missing),
+                })
+
+    def _ft_check_cleared_dates(self, vals):
+        """Refuse a write that empties a required date which is filled in.
+
+        The create-time rule alone let a project be saved with its dates and
+        then have every one of them deleted on the next save. Once a date in
+        the Dates section has a value it stays required.
+
+        Only a date that currently HAS a value is protected, so the existing
+        portfolio that predates the rule is still editable: a project that was
+        never given a Kick Start Meeting Date is not forced to invent one just
+        to change its description.
+        """
+        if self.env.su:
+            return
+        cleared = {field_name for field_name, value in vals.items() if not value}
+        if not cleared:
+            return
+        for project in self:
+            missing = [
+                label for field_name, label
+                in project._ft_required_creation_dates()
+                if field_name in cleared and project[field_name]
+            ]
+            if missing:
+                raise ValidationError(_(
+                    "Every date in the Dates section is required and cannot "
+                    "be removed once it has been filled in.\n\n"
+                    "Project: %(name)s\n"
+                    "Missing: %(missing)s"
+                ) % {
+                    'name': project.name or '',
+                    'missing': ', '.join(missing),
+                })
+
+    @api.model
+    def action_ft_open_full_create_form(self, name=False):
+        """The full project form, opened as a fresh record with the name and
+        Implementation type carried over.
+
+        Called by the ft_project_type_create widget the moment Implementation
+        is chosen in the Kanban's Create a Project dialog or its column quick
+        create. Neither of those shows a single date, and Implementation is
+        held to every date in the Dates section at creation (see
+        _ft_check_creation_dates), so the only save either could reach was a
+        refusal for dates it had no field to enter. Hand-off to the form the
+        list view's New opens, Dates section included, is the fix — the same
+        outcome as the list view's own New, minus re-typing the name.
+
+        Resolved here rather than as views=[[false, 'form']] in the browser:
+        that resolves to whichever form view wins on priority, and
+        project_project_view_form_simplified — the very dialog being left — is
+        one of the candidates. The context is carried through so the group the
+        Kanban was in (default_stage_id, and whatever else the action set)
+        still applies to the project that gets created.
+        """
+        context = dict(
+            self.env.context,
+            default_name=name or False,
+            default_ft_project_type='implementation',
+        )
+        # The dialog's own context arrives here too; the pieces that only mean
+        # something inside a dialog must not follow the record out of it.
+        context.pop('dialog_size', None)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('New Project'),
+            'res_model': 'project.project',
+            'view_mode': 'form',
+            'views': [(self.env.ref('project.edit_project').id, 'form')],
+            'target': 'current',
+            'context': context,
+        }
+
     ft_regression_date = fields.Date(
         string='Regression Date',
         tracking=True,
@@ -711,7 +851,14 @@ class InheritProjectProject(models.Model):
         if self.env.su:
             for vals in vals_list:
                 vals.setdefault('ft_project_type', self.FT_FALLBACK_PROJECT_TYPE)
-        return super().create(vals_list)
+        projects = super().create(vals_list)
+        # Called outright rather than left to an @api.constrains, for the same
+        # reason the task checks are: _validate_fields runs every constraint
+        # as sudo, and this one opens with `if self.env.su: return` so imports
+        # and migrations are not blocked — which would make it a no-op exactly
+        # when the ORM is the caller.
+        projects._ft_check_creation_dates()
+        return projects
 
     def write(self, vals):
         # #4 - Only a Project Manager (by job position) or an Administrator
@@ -733,6 +880,8 @@ class InheritProjectProject(models.Model):
             target_stage = self.env['project.project.stage'].browse(vals['stage_id']).exists()
             if target_stage:
                 self._ft_check_stage_entry_dates(target_stage, vals)
+        # A required date, once filled in, may not be emptied again.
+        self._ft_check_cleared_dates(vals)
         if 'timesheet_ids' in vals:
             deduped = []
             for cmd in vals['timesheet_ids']:

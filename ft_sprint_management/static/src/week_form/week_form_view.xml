@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- The stock form, minus the Save / Discard status indicator in the
+         control panel. See week_form_view.js for why. -->
+    <t t-name="ft_sprint_management.WeekFormView" t-inherit="web.FormView" t-inherit-mode="primary">
+        <xpath expr="//t[@t-set-slot='control-panel-status-indicator']" position="replace"/>
+    </t>
+
+</templates>

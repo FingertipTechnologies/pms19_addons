@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Weeks stat button on the project -->
+    <record id="view_project_form_week_button" model="ir.ui.view">
+        <field name="name">project.project.form.week.button</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_weeks" type="object"
+                        class="oe_stat_button" icon="fa-calendar">
+                    <field name="week_count" widget="statinfo" string="Weeks"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Project -> Tasks tab, week-based.
+
+         The list is replaced by a board with one column per week, so the
+         spread of work across the weeks is the first thing the tab shows.
+         Dragging a card writes its Week and project.task re-dates it to that
+         week's Sunday.
+
+         The board is a widget rather than an embedded <kanban> because Odoo
+         cannot group an x2many: the StaticList behind the field has no
+         grouping, so a <kanban> here would draw one flat grid of cards with
+         no columns and nothing to drag between.
+         ================================================================ -->
+    <record id="view_project_form_week_tasks" model="ir.ui.view">
+        <field name="name">project.project.form.week.tasks</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="qa_testapp.view_project_form_inherit_qa_tabs"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='qa_tasks']/field[@name='task_ids']" position="replace">
+                <div class="mb-2">
+                    <!-- A widget, not an object button: an object button
+                         saves the project first, and that save stopped on a
+                         missing Closed Date. See open_week_board.js. -->
+                    <widget name="ft_open_week_board"/>
+                    <!-- Hidden, not removed: the weeks a project has work in
+                         are already one click away on the Weeks stat button,
+                         so this second way in only crowded the tab. -->
+                    <button name="action_view_weeks" type="object"
+                            string="Manage Weeks" class="btn-secondary ms-2" icon="fa-calendar"
+                            invisible="1"/>
+                </div>
+                <!-- No inline <list>: without one the field loads ids only,
+                     and the board reads its cards from get_board_data(). -->
+                <field name="task_ids" widget="week_task_board"
+                       class="o_week_board_field"
+                       readonly="1" nolabel="1"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

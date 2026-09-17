@@ -16,9 +16,17 @@
                     <field string="Tickets" name="ticket_count" widget="statinfo" />
                 </button>
             </xpath>
-            <field name="label_tasks" position="after">
+            <!-- Next to "Name of the Tasks", not inside the Tasks stat button.
+                 In Odoo 19 the first label_tasks on the form is the one in
+                 that button, so a plain <field name="label_tasks"> anchor put
+                 "Tickets" into the button as a third line it has no room for,
+                 pushing its text out over the top edge. -->
+            <xpath
+                expr="//field[@name='label_tasks'][not(ancestor::div[@name='button_box'])]"
+                position="after"
+            >
                 <field name="label_tickets" />
-            </field>
+            </xpath>
         </field>
     </record>
     <record id="view_project_kanban" model="ir.ui.view">

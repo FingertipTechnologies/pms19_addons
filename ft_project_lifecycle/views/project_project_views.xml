@@ -82,19 +82,24 @@
                  matching the fields they sit between. -->
             <xpath expr="//group[@name='ft_dates']//field[@name='brd_approval_date']" position="after">
                 <field name="ft_regression_date"
-                       invisible="ft_project_type in ('amc', 'general')"/>
+                       invisible="ft_project_type in ('amc', 'general')"
+                       required="not id and ft_project_type == 'implementation'"/>
             </xpath>
             <xpath expr="//group[@name='ft_dates']//field[@name='uat_start_date']" position="after">
                 <field name="pl_data_upload_date"
-                       invisible="ft_project_type in ('amc', 'general')"/>
+                       invisible="ft_project_type in ('amc', 'general')"
+                       required="not id and ft_project_type == 'implementation'"/>
                 <field name="ft_training_date"
-                       invisible="ft_project_type in ('amc', 'general')"/>
+                       invisible="ft_project_type in ('amc', 'general')"
+                       required="not id and ft_project_type == 'implementation'"/>
                 <field name="go_live_date"
-                       invisible="ft_project_type in ('amc', 'general')"/>
+                       invisible="ft_project_type in ('amc', 'general')"
+                       required="not id and ft_project_type == 'implementation'"/>
             </xpath>
             <xpath expr="//group[@name='ft_dates']//field[@name='support_start_date']" position="after">
                 <field name="pl_support_end_date"
-                       invisible="ft_project_type in ('amc', 'general')"/>
+                       invisible="ft_project_type in ('amc', 'general')"
+                       required="not id and ft_project_type == 'implementation'"/>
             </xpath>
 
             <!-- Hold Date is the exception to the Implementation-only rule: any
@@ -118,6 +123,22 @@
                    title="Open Project">
                     <i class="fa fa-arrow-circle-right fa-lg" aria-label="Open Project"/>
                 </a>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- No "+ Stage" column on the Projects Kanban. The board groups by
+         stage_id, and the column adder there creates a project.project.stage -
+         a lifecycle stage, which this module owns and which is not something
+         to be invented from a board. This hides the button; the stages
+         themselves are still managed from Configuration. -->
+    <record id="view_project_kanban_no_stage_create" model="ir.ui.view">
+        <field name="name">project.project.kanban.no.stage.create</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="attributes">
+                <attribute name="group_create">0</attribute>
             </xpath>
         </field>
     </record>

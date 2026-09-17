@@ -66,7 +66,9 @@
     # parked from — matched on the tracking rows' stage IDS, so adoption's
     # renames cannot break it — ticks pl_on_hold, and only then is the stage
     # archived.
-    'version': '19.0.2.2.0',
+    # 19.0.2.3.0 adds this module's three Dates-group milestones to the
+    # create-time required-date rule, and marks them required on the form.
+    'version': '19.0.2.3.0',
     'summary': 'Project Type, project-level lifecycle stages and milestone dates.',
     'description': """
 Project Lifecycle

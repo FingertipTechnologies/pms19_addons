@@ -83,7 +83,20 @@
                          values are history and stay in the database; setting the
                          type back to Implementation shows them again unchanged.
 
-                         None of these dates is required, on the model or here.
+                         These are required on a NEW project (`not id`),
+                         matching _ft_check_creation_dates, which create()
+                         calls. On an existing project, write() refuses only
+                         the clearing of a date that has a value
+                         (_ft_check_cleared_dates); a date that was never filled
+                         in is left alone, because the existing portfolio
+                         predates the rule and an invented date is worse than a
+                         blank one here — the Overdue calculation and the stage
+                         gates both read these.
+
+                         AMC and Implementation only; General is exempt. And
+                         the milestones carry the Implementation test on top of
+                         `not id`, or AMC would be refused over fields its own
+                         form does not show.
 
                          One column, not two. The order below is the delivery
                          order a project actually runs in, Start through Closed,
@@ -99,27 +112,34 @@
                              ft_project_lifecycle relabels it Closed Date, and
                              closing is the last thing that happens. -->
                         <field name="date_start" string="Start Date"
+                               required="not id and ft_project_type in ('implementation', 'amc')"
                                readonly="not ft_can_edit_project_dates"/>
                         <field name="kick_start_meeting_date"
                                invisible="ft_project_type in ('amc', 'general')"
+                               required="not id and ft_project_type == 'implementation'"
                                readonly="not ft_can_edit_project_dates"/>
                         <field name="brd_approval_date"
                                invisible="ft_project_type in ('amc', 'general')"
+                               required="not id and ft_project_type == 'implementation'"
                                readonly="not ft_can_edit_project_dates"/>
                         <!-- ft_project_lifecycle inserts Regression Date here. -->
                         <field name="sandbox_review_date"
                                invisible="ft_project_type in ('amc', 'general')"
+                               required="not id and ft_project_type == 'implementation'"
                                readonly="not ft_can_edit_project_dates"/>
                         <field name="uat_start_date"
                                invisible="ft_project_type in ('amc', 'general')"
+                               required="not id and ft_project_type == 'implementation'"
                                readonly="not ft_can_edit_project_dates"/>
                         <!-- ft_project_lifecycle inserts Data Upload and
                              Training Date here. -->
                         <field name="support_start_date"
                                invisible="ft_project_type in ('amc', 'general')"
+                               required="not id and ft_project_type == 'implementation'"
                                readonly="not ft_can_edit_project_dates"/>
                         <!-- ft_project_lifecycle inserts Support End Date here. -->
                         <field name="date" string="End Date"
+                               required="not id and ft_project_type in ('implementation', 'amc')"
                                readonly="not ft_can_edit_project_dates"/>
                         <!-- ft_project_lifecycle inserts Hold Date here. -->
 
@@ -156,25 +176,12 @@
         </field>
     </record>
 
-    <record id="view_project_form_inherit_task_fields" model="ir.ui.view">
-    <field name="name">project.project.form.inherit.task.fields</field>
-    <field name="model">project.project</field>
-    <field name="inherit_id" ref="qa_testapp.view_project_form_inherit_qa_tabs"/>
-    <field name="arch" type="xml">
-
-        <xpath expr="//page[@name='qa_tasks']//field[@name='date_deadline']"
-               position="after">
-            <field name="estimated"
-                       string="Estimated"
-                       widget="float_time"/>
-            <field name="ft_total_hours_taken"
-                       string="Actual Hours"
-                       widget="float_time"
-                       readonly="1"/>
-        </xpath>
-
-    </field>
-</record>
+    <!-- The Tasks tab's Estimated and Actual Hours columns used to be added
+         here, by xpath'ing onto the date_deadline column of the list inside
+         page qa_tasks. ft_sprint_management replaced that list with the week
+         board, so the anchor no longer exists and the xpath could only raise
+         at load. Both figures are on every board card, so nothing is lost by
+         dropping the view rather than re-pointing it. -->
 
 <record id="project_form_inherit_estimated_time" model="ir.ui.view">
     <field name="name">project.project.form.estimated.time</field>

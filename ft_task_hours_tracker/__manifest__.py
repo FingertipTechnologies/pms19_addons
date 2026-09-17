@@ -40,7 +40,18 @@
     # create_date, so adding a second <field name="create_date"> appended a
     # duplicate column instead of replacing it; it is moved and re-attributed
     # now, leaving one column.
-    'version': '19.0.0.0.15',
+    # 19.0.0.0.16 keeps the task form tidy after ft_sprint_management turned
+    # Sprints into Weeks: the Week's start and end dates are moved along with
+    # the Week field itself, instead of being left behind next to Assignees.
+    # 19.0.0.0.17 drops view_project_form_inherit_task_fields. It added the
+    # Estimated and Actual Hours columns to the list inside the project's Tasks
+    # tab; ft_sprint_management has replaced that list with the week board, so
+    # its anchor is gone and both figures are on the cards instead.
+    # 19.0.0.1.0 marks the Dates group required on a NEW project, matching
+    # bt_project_customization's _ft_check_creation_dates. The milestones
+    # also carry the Implementation test, or AMC and General would be
+    # refused over fields their own form does not show.
+    'version': '19.0.0.1.0',
     'summary': 'project hours tracking',
     'category': 'Project',
     'author': 'Fingertip',

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_sprint_management.WeekTaskBoard">
+        <div class="o_week_board" t-ref="root">
+            <div t-if="!state.loaded" class="text-muted p-3">Loading…</div>
+            <div t-elif="!state.columns.length" class="text-muted p-3">
+                Save first to see the tasks.
+            </div>
+            <div t-else="" class="o_week_board_columns">
+                <div t-foreach="state.columns" t-as="column"
+                     t-key="columnKey(column.id)"
+                     class="o_week_column"
+                     t-att-class="{ 'o_week_column_current': column.current }"
+                     t-att-data-column-id="columnKey(column.id)">
+                    <div class="o_week_column_header">
+                        <div class="o_week_column_heading">
+                            <span class="o_week_column_title" t-esc="column.name"/>
+                            <span class="o_week_column_hours" title="Estimated hours">
+                                <t t-esc="column.estimated"/>
+                            </span>
+                        </div>
+                        <!-- Says out loud what the colour means, so the week
+                             being worked can be found without knowing the
+                             week numbering. -->
+                        <div t-if="column.current" class="o_week_column_badge">
+                            This week
+                        </div>
+                        <!-- Bar plus count, as the All Tasks board heads its
+                             week columns: the fill is the share of the column
+                             already in a final stage. -->
+                        <div class="o_week_column_progress">
+                            <div class="o_week_progress_track">
+                                <div class="o_week_progress_bar"
+                                     t-att-style="'width: ' + column.progress + '%'"
+                                     t-att-title="column.done_count + ' of ' + column.count + ' completed'"/>
+                            </div>
+                            <span class="o_week_column_count" t-esc="column.count"/>
+                        </div>
+                    </div>
+                    <div class="o_week_column_body">
+                        <div t-foreach="column.cards" t-as="card" t-key="card.id"
+                             class="o_week_card"
+                             t-att-class="{ 'o_week_card_done': card.done }"
+                             t-att-data-task-id="card.id"
+                             t-on-click="() => this.openTask(card.id)">
+
+                            <div class="o_week_card_title" t-esc="card.name"/>
+
+                            <!-- On the project board the column is a week, so the
+                                 stage is the one thing a card cannot be read
+                                 without. On the week board the column IS the
+                                 stage, and the server suppresses this. -->
+                            <!-- Only on an All Projects week, where it is the
+                                 one thing that tells two cards apart. -->
+                            <div t-if="state.showProject and card.project"
+                                 class="o_week_card_line fw-medium"
+                                 t-esc="card.project"/>
+                            <div t-if="card.module" class="o_week_card_line"
+                                 t-esc="card.module"/>
+                            <div t-if="state.showStage and card.stage" class="o_week_card_line">
+                                <t t-esc="card.stage"/>
+                            </div>
+
+                            <div t-if="card.tags.length" class="o_week_card_tags">
+                                <span t-foreach="card.tags" t-as="tag" t-key="tag_index"
+                                      class="o_tag badge rounded-pill"
+                                      t-att-class="'o_tag_color_' + tag.color"
+                                      t-esc="tag.name"/>
+                            </div>
+
+                            <div t-if="card.deadline" class="o_week_card_line"
+                                 t-att-class="{ 'text-danger fw-bold': card.late }">
+                                <i class="fa fa-clock-o me-1"/><t t-esc="card.deadline"/>
+                            </div>
+
+                            <div class="o_week_card_footer">
+                                <span class="o_week_card_hours">
+                                    <span title="Estimated">
+                                        <i class="fa fa-hourglass-half me-1"/><t t-esc="card.estimated"/>
+                                    </span>
+                                    <span title="Time Spent">
+                                        <i class="fa fa-check me-1"/><t t-esc="card.actual"/>
+                                    </span>
+                                    <span class="o_week_card_stars" t-att-title="'Priority ' + card.priority">
+                                        <i t-foreach="[1, 2, 3]" t-as="level" t-key="level"
+                                           class="fa fa-star"
+                                           t-att-class="card.priority >= level ? 'text-warning' : 'o_week_star_empty'"/>
+                                    </span>
+                                </span>
+                                <span t-if="card.assignees.length" class="o_week_card_avatars">
+                                    <img t-foreach="card.assignees" t-as="user" t-key="user.id"
+                                         class="o_week_card_avatar rounded-circle"
+                                         t-att-src="'/web/image/res.users/' + user.id + '/avatar_128'"
+                                         t-att-alt="user.name" t-att-title="user.name"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <button t-if="column.more" type="button"
+                                class="o_week_column_more btn btn-link"
+                                t-on-click.stop="() => this.expandColumn(columnKey(column.id))">
+                            + <t t-esc="column.more"/> more
+                        </button>
+                        <div t-if="!column.cards.length" class="o_week_column_empty">
+                            No tasks
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

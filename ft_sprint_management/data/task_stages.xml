@@ -1,24 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <!-- Project Task Stages: Planned / Working / Testing / Completed -->
+    <!-- Project Task Stages: Planned / Working / Testing / Completed
+
+         user_id is written explicitly on every one of them, and must stay
+         that way. On project.task.type the field is
+
+             user_id = fields.Many2one('res.users', 'Stage Owner',
+                 default=_default_user_id, compute='_compute_user_id', store=True)
+
+         whose default is `not self.env.context.get('default_project_id') and
+         self.env.uid`. These four are deliberately global — no project_ids, so
+         they can be shared by every project — which means no default_project_id
+         is in context when they are created and the default stamps the uid that
+         loaded the module: OdooBot (id 1) on install. `_compute_user_id` only
+         clears the owner for stages that HAVE project_ids, so nothing takes it
+         back off again.
+
+         A project.task.type with an owner is a personal stage — one column in
+         one person's My Tasks kanban — and core guards it with a GLOBAL record
+         rule (project.task_type_visibility_rule, no groups, so it is ANDed for
+         everybody including Administrators and project managers):
+
+             [('user_id', 'in', (False, user.id))]
+
+         So these four stages, owned by OdooBot, were unreadable by every real
+         user. Any task sitting in one made the record unopenable — "Sorry,
+         Administrator (id=2) doesn't have 'read' access to Task Stage,
+         Completed" — and the 19.0.4.3.0 merge, which moves the tasks of every
+         duplicate onto exactly these rows, is what put most of the PMS in them.
+         19.0.4.4.0 clears the owner on databases that already have it. -->
     <record id="task_stage_planned" model="project.task.type">
         <field name="name">Planned</field>
         <field name="sequence">10</field>
         <field name="fold" eval="False"/>
+        <field name="user_id" eval="False"/>
     </record>
     <record id="task_stage_working" model="project.task.type">
         <field name="name">Working</field>
         <field name="sequence">20</field>
         <field name="fold" eval="False"/>
+        <field name="user_id" eval="False"/>
     </record>
     <record id="task_stage_testing" model="project.task.type">
         <field name="name">Testing</field>
         <field name="sequence">30</field>
         <field name="fold" eval="False"/>
+        <field name="user_id" eval="False"/>
     </record>
     <record id="task_stage_completed" model="project.task.type">
         <field name="name">Completed</field>
         <field name="sequence">40</field>
         <field name="fold" eval="True"/>
+        <field name="user_id" eval="False"/>
     </record>
 </odoo>

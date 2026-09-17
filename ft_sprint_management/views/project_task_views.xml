@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Week on the Task form -->
+    <record id="view_task_form_week" model="ir.ui.view">
+        <field name="name">project.task.form.week</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <field name="user_ids" position="after">
+                <!-- Read-only: the Week follows the Deadline (see
+                     _sync_week_from_deadline) and is moved on the week boards
+                     by drag and drop, so the form only displays it. -->
+                <field name="sprint_id" readonly="1"/>
+                <!-- Read-only: both follow the chosen week, they are not a
+                     second place to edit its dates. -->
+                <field name="sprint_start_date" readonly="1" invisible="not sprint_id"/>
+                <field name="sprint_end_date" readonly="1" invisible="not sprint_id"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Week as an optional column on the Task list -->
+    <record id="view_task_list_week" model="ir.ui.view">
+        <field name="name">project.task.list.week</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_base"/>
+        <field name="arch" type="xml">
+            <field name="date_deadline" position="after">
+                <field name="sprint_id" string="Week" optional="hide"/>
+                <field name="sprint_start_date" string="Week Start Date" optional="hide"/>
+                <field name="sprint_end_date" string="Week End Date" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Week in the Task search view: filter and Group By -->
+    <record id="view_task_search_week" model="ir.ui.view">
+        <field name="name">project.task.search.week</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form"/>
+        <field name="arch" type="xml">
+            <!-- Anchored on the Stage entries, which come from
+                 view_task_search_form_base and are present in the resolved
+                 arch. The <field> makes a typed week name match from the
+                 search box; the Group By entry breaks the list down by week. -->
+            <field name="stage_id" position="after">
+                <field name="sprint_id" string="Week"/>
+            </field>
+            <filter name="stage" position="after">
+                <filter name="groupby_week" string="Week" context="{'group_by': 'sprint_id'}"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Week Board — the project's tasks with one column per week.
+
+         A primary view rather than an override: only this board groups by
+         week, every other Kanban of project.task keeps its stage columns.
+         Dragging a card writes sprint_id, and project.task moves the
+         deadline to the target week's Sunday.
+         ================================================================ -->
+    <record id="view_task_kanban_week" model="ir.ui.view">
+        <field name="name">project.task.kanban.week</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_kanban"/>
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="attributes">
+                <attribute name="default_group_by">sprint_id</attribute>
+                <!-- Quick create is dropped deliberately: a task needs an
+                     estimate and a deadline before it can be saved, and the
+                     one-line quick create cannot supply either, so it would
+                     only ever raise at the user. The full form opens instead. -->
+                <attribute name="on_create"/>
+                <attribute name="quick_create">false</attribute>
+            </xpath>
+            <xpath expr="//kanban/field[@name='stage_id']" position="after">
+                <field name="sprint_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         No "Add column" on any task Kanban. The PMS runs on four stages
+         only, and a column added on a grouped-by-stage board creates a new
+         project.task.type. group_create="0" also takes away the "See
+         examples" stage sets. Creation is refused server-side as well
+         (models/project_task_type.py); these only hide the button.
+
+         The extension of project.view_task_kanban reaches its primary
+         copies too — the project board, My Tasks, templates and the Week
+         Board.
+         ================================================================ -->
+    <record id="view_task_kanban_no_stage_create" model="ir.ui.view">
+        <field name="name">project.task.kanban.no.stage.create</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="attributes">
+                <attribute name="group_create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="project_sharing_task_kanban_no_stage_create" model="ir.ui.view">
+        <field name="name">project.sharing.project.task.kanban.no.stage.create</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_sharing_project_task_view_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="attributes">
+                <attribute name="group_create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="todo_task_kanban_no_stage_create" model="ir.ui.view">
+        <field name="name">project.task.todo.kanban.no.stage.create</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project_todo.project_task_view_todo_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="attributes">
+                <attribute name="group_create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- The same on the task LIST. A list grouped by stage offers its own
+         stage-adding row, and view_task_tree2 - the list inside a project -
+         sets default_group_by="stage_id", so it is grouped by stage the moment
+         it opens. Attaching to project_task_view_tree_main_base rather than to
+         that view: main_base is the root <list> every task list descends from,
+         and an extension on it resolves into the primary views below it
+         (project_task_view_tree_base, view_task_tree2, My Tasks, All Tasks),
+         so one record covers them all the way the kanban record above does. -->
+    <record id="view_task_list_no_stage_create" model="ir.ui.view">
+        <field name="name">project.task.list.no.stage.create</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_main_base"/>
+        <field name="arch" type="xml">
+            <list position="attributes">
+                <attribute name="group_create">0</attribute>
+            </list>
+        </field>
+    </record>
+
+    <!-- Project > Configuration > Task Stages: no New button either. -->
+    <record id="task_type_tree_no_create" model="ir.ui.view">
+        <field name="name">project.task.type.list.no.create</field>
+        <field name="model">project.task.type</field>
+        <field name="inherit_id" ref="project.task_type_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="task_type_kanban_no_create" model="ir.ui.view">
+        <field name="name">project.task.type.kanban.no.create</field>
+        <field name="model">project.task.type</field>
+        <field name="inherit_id" ref="project.view_project_task_type_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="attributes">
+                <attribute name="create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="task_type_form_no_create" model="ir.ui.view">
+        <field name="name">project.task.type.form.no.create</field>
+        <field name="model">project.task.type</field>
+        <field name="inherit_id" ref="project.task_type_edit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

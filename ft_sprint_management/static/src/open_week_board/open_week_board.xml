@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_sprint_management.OpenWeekBoard">
+        <button type="button" class="btn btn-primary"
+                t-att-disabled="disabled"
+                t-att-title="disabled ? 'Save the project first to open its board' : ''"
+                t-on-click="onClick">
+            <i class="fa fa-th me-1"/>
+            <span>Open Full Board</span>
+        </button>
+    </t>
+
+</templates>

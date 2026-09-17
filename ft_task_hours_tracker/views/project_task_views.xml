@@ -6,8 +6,9 @@
         <field name="name">project.task.form.ft.hours.tracker</field>
         <field name="model">project.task</field>
         <field name="inherit_id" ref="project.view_task_form2"/>
-        <!-- Apply after ft_sprint_management injects sprint_id (default prio 16),
-             otherwise the sprint_id position="move" below can't find the field. -->
+        <!-- Apply after ft_sprint_management injects sprint_id and the Week
+             dates (default prio 16), otherwise the position="move" calls below
+             can't find those fields. -->
         <field name="priority">99</field>
         <field name="arch" type="xml">
 
@@ -106,13 +107,21 @@
             <!-- Re-arrange columns. Anchor on user_ids (Assignees): the base
                  form has a hidden project_id near the top, so anchoring on
                  project_id would drop the field outside the group.
-                 Module goes above Assignees on the left; Sprint moves to the
+                 Module goes above Assignees on the left; Week moves to the
                  right column after Estimated (where Module used to be). -->
             <xpath expr="//field[@name='user_ids']" position="before">
                 <field name="module_id" position="move"/>
             </xpath>
             <xpath expr="//field[@name='estimated']" position="after">
                 <field name="sprint_id" position="move"/>
+            </xpath>
+            <!-- The Week's dates follow the Week field. ft_sprint_management
+                 adds them straight after it, next to Assignees; without this
+                 the move above would take the Week away and strand its two
+                 dates on the other side of the group. -->
+            <xpath expr="//field[@name='sprint_id']" position="after">
+                <field name="sprint_start_date" position="move"/>
+                <field name="sprint_end_date" position="move"/>
             </xpath>
 
             <!-- Billing Status goes above Estimated in the right-hand column.

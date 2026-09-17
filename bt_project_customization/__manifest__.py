@@ -120,12 +120,44 @@
     # subtask counters and the rotting rules all search it — and nothing here
     # had ever set it, so the Open filter returned the completed work too. The
     # post-migration brings the existing rows into line.
+    # 19.0.1.18.0 requires every date in the project's Dates section when a
+    # project is CREATED, scoped to the dates that project type actually
+    # shows. The existing portfolio is untouched: an invented date is worse
+    # than a blank one, since Overdue and the stage gates both read these.
     # 19.0.1.19.0 makes the create-time Task Source rule apply to every
     # project type. It had inherited the Implementation-only scoping of the
     # conditional rules it was split out of, which exempted exactly the type
     # _ft_task_source cannot fill in by itself — AMC — so an AMC task was both
     # the only one that arrived empty and the only one nobody was asked about.
-    'version': '19.0.1.19.0',
+    # 19.0.1.20.0 lets a project be created from the Kanban again. Its New
+    # button opens core's simplified dialog (Name, Type, alias) and its column
+    # "+" the quick create (Name, Type); neither shows a date, so under
+    # 19.0.1.18.0 an Implementation or AMC project raised there was refused for
+    # dates it had no field to enter. Now choosing Implementation in either
+    # closes it and opens the full form with the name and type carried over —
+    # the same form the list view's New opens, Dates section included — while
+    # AMC gets its Start and End Date in place and General, which has no date
+    # rule, needs nothing more. The same version stops the task quick create
+    # discarding a Task Source picked before the title: the compute that
+    # defaults the source from the project assigned unconditionally on every
+    # pass, so it now fills a blank and leaves a chosen value alone. View,
+    # widget and compute change only, no migration.
+    # 19.0.1.21.0 stops the Dates section being emptied after the first save.
+    # The 19.0.1.18.0 rule ran on create only, so a project saved with every
+    # date could have them all deleted and saved again. A write that clears a
+    # required date which currently has a value is now refused; dates that were
+    # never filled in (the portfolio predating the rule) are still left alone.
+    # Python change only, no migration.
+    # 19.0.1.22.0 pins the project form's tab bar (Delivery, Extra
+    # Information, Tickets, Tasks, ...) to the top while scrolling, so the tab
+    # names stay in view over a long Tasks board; scrolling back up brings the
+    # details above it down again. Stylesheet only, no migration.
+    # 19.0.1.23.0 makes that tab bar actually show. Core pins the status bar
+    # to the top of the same scrolling area, above everything, so the tab bar
+    # stuck at top: 0 was hidden behind it. It now stops underneath the status
+    # bar, whose height a small script measures, since it changes with the
+    # screen width and zoom. Stylesheet and JS only, no migration.
+    'version': '19.0.1.23.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',
@@ -141,6 +173,9 @@
     'assets': {
         'web.assets_backend': [
             'bt_project_customization/static/src/js/task_stage_confirm.js',
+            'bt_project_customization/static/src/js/project_type_create_field.js',
+            'bt_project_customization/static/src/js/project_form_tabs.js',
+            'bt_project_customization/static/src/scss/project_form_tabs.scss',
         ],
     },
     'installable': True,

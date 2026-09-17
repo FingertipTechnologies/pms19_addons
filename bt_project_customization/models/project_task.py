@@ -42,11 +42,35 @@ COMPLETED_STAGE_NAMES = ('Completed',)
 # timesheet classification). Technical/Testing leads belong to the same working
 # role as the people they lead.
 DEVELOPER_JOB_NAMES = ('software developer', 'technical lead')
-TESTER_JOB_NAMES = ('software tester', 'testing lead')
+
+# QA roles: the people who sign a User Story off. Every seniority level tests,
+# so juniors and leads sit in the same bucket as a Software Tester - the grade
+# changes who reviews their work, not whether they may close a story.
+#
+# Both spellings of the lead position are listed. The PMS elsewhere calls it
+# "Testing Lead", but the role is referred to as "Tester Lead" as well, and
+# matching is done on the hr.job name: whichever string the job position
+# actually carries, the holder is a tester. Carrying both is the same defence
+# already used for the 'project cordinator' typo below - cheap, and it fails
+# safe instead of silently locking a lead out of their own sign-off.
+TESTER_JOB_NAMES = (
+    'software tester',
+    'junior software tester',
+    'testing lead',
+    'tester lead',
+)
+
+# Project Coordinators run the User Story workflow and may perform any stage
+# movement, Testing -> Completed included.
+PROJECT_COORDINATOR_JOB_NAMES = (
+    'project coordinator',
+    'project cordinator',   # legacy typo present in source data
+)
+
+# Project Managers keep the same freedom over the workflow EXCEPT the final
+# sign-off - see _check_user_story_stage_move.
 PROJECT_MANAGER_JOB_NAMES = (
     'project manager',
-    'project coordinator',
-    'project cordinator',
 )
 USER_STORY_STAGE_NAMES = ('planned', 'working', 'testing', 'completed')
 PLANNED_CREATE_JOB_NAMES = (
@@ -250,9 +274,22 @@ class ProjectTask(models.Model):
     # store=True with readonly=False is what makes that a DEFAULT rather than a
     # verdict: Odoo runs the compute on create and whenever the project changes,
     # and otherwise leaves whatever a user typed in place.
+    #
+    # "Otherwise" is not quite enough on its own. The compute also runs on a
+    # record that is still being filled in — the Kanban quick create, where the
+    # project is fixed by the column before a single field is touched — and it
+    # used to assign unconditionally, so a source chosen BEFORE the title was
+    # typed was put back to the project's default by the next pass. Whichever
+    # order the fields are filled in, a value somebody picked is theirs: the
+    # project only ever fills a blank. The one thing given up is that changing
+    # the project of a task that already carries a source no longer re-defaults
+    # it, and that is what the stamped-once rule above says should happen
+    # anyway.
     @api.depends('project_id')
     def _compute_task_source(self):
         for task in self:
+            if task.task_source:
+                continue
             task.task_source = (
                 task.project_id._ft_task_source() if task.project_id else False
             )
@@ -722,11 +759,25 @@ class ProjectTask(models.Model):
             if employee else ''
         )
 
-        # Project Managers own the workflow and may perform any stage movement,
-        # including Testing -> Completed. The separate Planned-stage guard runs
-        # before this method, so even master access cannot move an existing task
-        # back to Planned.
-        if job_name in PROJECT_MANAGER_JOB_NAMES:
+        # Project Coordinators own the workflow and may perform any stage
+        # movement, including Testing -> Completed. The separate Planned-stage
+        # guard runs before this method, so even master access cannot move an
+        # existing task back to Planned.
+        if job_name in PROJECT_COORDINATOR_JOB_NAMES:
+            return
+
+        # Project Managers keep that same freedom over every OTHER transition,
+        # but not over the final sign-off. Testing -> Completed is the point at
+        # which work is declared delivered, and it is reserved for QA and the
+        # Project Coordinator so that the person accountable for the schedule
+        # cannot also be the person who declares the work finished.
+        #
+        # Falling through rather than raising here leaves the per-task loop to
+        # decide: it skips tasks that are not User Stories and tasks already in
+        # the target stage, so a PM is only ever stopped on a real User Story
+        # sign-off. `role` stays None for them, and the `not role` test below
+        # short-circuits before allowed_by_role is indexed.
+        if job_name in PROJECT_MANAGER_JOB_NAMES and target_name != 'completed':
             return
 
         allowed_by_role = {
@@ -760,8 +811,9 @@ class ProjectTask(models.Model):
             if not role or transition not in allowed_by_role[role]:
                 if target_name == 'completed':
                     raise UserError(_(
-                        "Only a Tester can move a User Story from Testing to "
-                        "Completed."
+                        "Only a Software Tester, Junior Software Tester, "
+                        "Tester Lead or Project Coordinator can move a User "
+                        "Story from Testing to Completed."
                     ))
                 if role == 'developer':
                     raise UserError(_(
@@ -775,8 +827,8 @@ class ProjectTask(models.Model):
                         "Completed, or back from Testing to Working for rework."
                     ))
                 raise UserError(_(
-                    "Only an assigned Developer or a Tester can change the "
-                    "status of a User Story."
+                    "Only an assigned Developer, a Tester or a Project "
+                    "Coordinator can change the status of a User Story."
                 ))
 
     def _check_task_create_permission(self):

@@ -54,7 +54,7 @@ def backfill_start_dates(env):
          WHERE date_start IS NULL AND create_date IS NOT NULL
     """)
     skipped = [row[0] for row in env.cr.fetchall()]
-    # Written behind the ORM's back, so anything already loaded still holds the
+    # Written behind the ORM's ,, back, so anything already loaded still holds the
     # old NULL.
     env['project.project'].invalidate_model(['date_start'])
     _logger.info(

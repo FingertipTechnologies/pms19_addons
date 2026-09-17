@@ -239,7 +239,30 @@
             <field name="arch" type="xml">
                 <xpath expr="//div[@name='alias_def']" position="before">
                     <group>
-                        <field name="ft_project_type"/>
+                        <!-- ft_project_type_create is the plain selection
+                             widget plus one behaviour: choosing Implementation
+                             closes this dialog and opens the full project form
+                             with the name and type carried over. Implementation
+                             is held to every date in the Dates section at
+                             creation (_ft_check_creation_dates) and this dialog
+                             shows none of them, so letting it try to save could
+                             only ever end in "Every date in the Dates section
+                             is required" against a form with no Dates section.
+                             AMC and General stay here: General has no date
+                             rule, and AMC's two are right below. -->
+                        <field name="ft_project_type" widget="ft_project_type_create"/>
+                        <!-- The two dates AMC must have to be created, shown
+                             only for AMC. Implementation never sees them here
+                             (it has already left for the full form), and
+                             General is exempt from the rule. Same labels as
+                             the full form; End Date must be on or after Start
+                             Date, which core enforces. -->
+                        <field name="date_start" string="Start Date"
+                               invisible="ft_project_type != 'amc'"
+                               required="ft_project_type == 'amc'"/>
+                        <field name="date" string="End Date"
+                               invisible="ft_project_type != 'amc'"
+                               required="ft_project_type == 'amc'"/>
                     </group>
                 </xpath>
             </field>
@@ -251,7 +274,16 @@
             <field name="inherit_id" ref="project.quick_create_project_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='name']" position="after">
-                    <field name="ft_project_type"/>
+                    <!-- Same behaviour as the Create a Project dialog above:
+                         Implementation leaves for the full form, AMC gets its
+                         two dates, General needs nothing more than a name. -->
+                    <field name="ft_project_type" widget="ft_project_type_create"/>
+                    <field name="date_start" string="Start Date"
+                           invisible="ft_project_type != 'amc'"
+                           required="ft_project_type == 'amc'"/>
+                    <field name="date" string="End Date"
+                           invisible="ft_project_type != 'amc'"
+                           required="ft_project_type == 'amc'"/>
                 </xpath>
             </field>
         </record>

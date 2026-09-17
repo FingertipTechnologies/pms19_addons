@@ -1,0 +1,316 @@
+// The task boards embedded in a form's Tasks tab: stage columns on a Week,
+// week columns on a Project.
+//
+// Sized and coloured from the stock Kanban's own metrics so it reads as the
+// same screen. Odoo declares those as CSS custom properties on .o_kanban_view
+// (see web/views/kanban/kanban_controller.scss) — this board is in a form, not
+// a Kanban view, so it is not inside that scope and has to declare them itself.
+// Anything the surrounding theme does define still wins: each one is read
+// through var() with the literal only as the fallback.
+
+// The field wrapper. `min-width: 0` is the whole reason this rule exists: a
+// flex item defaults to `min-width: auto`, which means it refuses to shrink
+// below its own content. The columns are wider than the tab, so without this
+// the field grew to fit them and took the entire FORM with it — the sheet, the
+// status bar and the notebook all scrolled sideways together, instead of the
+// board scrolling inside its own box.
+.o_week_board_field {
+    // Three things at once, because the wrapper can be either a block or a
+    // flex item depending on where the field is dropped in the form, and the
+    // failure looks the same either way — the board sizing to its CONTENT
+    // (the natural width of four columns of cards) and leaving the rest of
+    // the tab empty beside it.
+    //   `width: 100%`  fills a block parent;
+    //   `flex: 1 1 auto` fills a flex one, which a shrink-to-fit item will
+    //                    not do on its own;
+    //   `min-width: 0`  lets it shrink below its content instead of pushing
+    //                   the whole form sideways, which is what it did before.
+    display: block;
+    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.o_week_board {
+    --WeekGroup-padding-h: var(--KanbanGroup-padding-h, 16px);
+    --WeekRecord-margin: var(--KanbanRecord-margin-v, 8px);
+    --WeekGroup-background: var(--KanbanGroup-background, #f9f9f9);
+    // Narrower than the stock 320px record. These cards carry a title, a name,
+    // a date and two figures — not a stock Kanban's worth of content — and the
+    // board has to share the screen with the chatter, so a narrower column is
+    // what lets three or four weeks be visible at once instead of two.
+    --WeekGroup-width: 240px;
+    // Tall enough to work in, short enough that the next row of columns and
+    // the tab below stay reachable: a column capped at 40 cards is thousands
+    // of pixels tall, and letting that push the form open would bury
+    // everything under it.
+    --WeekColumn-max-height: 60vh;
+
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+
+    .o_week_board_columns {
+        // A grid that wraps, not one row that scrolls sideways. A single row of
+        // columns was wider than the tab as soon as a project had work in more
+        // than four weeks, and the rest sat outside the box: the project board
+        // showed W34 to W37 while All Tasks grouped by deadline week also listed
+        // W27 and None, which were there but scrolled out of sight. Every column
+        // is on screen now, in order left to right and then top to bottom.
+        //
+        // `auto-fit` with `minmax(width, 1fr)` shares each row's width equally
+        // and uses all of it. auto-FIT, not auto-fill: auto-fill keeps a track
+        // for every column that WOULD fit, so a Week's four stages took four of
+        // five tracks and stopped short of the right edge. auto-fit collapses
+        // the empty tracks and the four stretch across the tab. Once there are
+        // enough columns to wrap, a short last row still keeps the grid's
+        // column width.
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(var(--WeekGroup-width), 1fr));
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 200px;
+    }
+
+    .o_week_column {
+        min-width: 0;
+        background: var(--WeekGroup-background);
+        border: 1px solid var(--border-color, #dee2e6);
+        padding: 0 var(--WeekGroup-padding-h) var(--WeekGroup-padding-h);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .o_week_column_header {
+        padding: 8px 0;
+    }
+
+    // The week today falls in. A project board runs from its first deadline to
+    // four weeks out, so this column is somewhere in the middle of a grid that
+    // wraps over several rows — the widget scrolls to it on open, and this is
+    // what makes it findable again after the reader has scrolled away.
+    //
+    // A thick primary outline, a heavier ring and a light tint behind the
+    // cards. The first version was a 1px border with a faint ring, which was
+    // too close to its neighbours to read as highlighted. The tint stays light
+    // on purpose: the cards are white and carry their own colours (tags,
+    // overdue dates, the faded look of finished work), and a stronger fill
+    // would fight them. The outline is drawn as an INSET shadow rather than a
+    // wider border so the column keeps its box and the grid does not reflow.
+    .o_week_column_current {
+        border-color: var(--primary, #714b67);
+        background: var(--o-week-current-bg, rgba(113, 75, 103, 0.07));
+        box-shadow:
+            inset 0 0 0 1px var(--primary, #714b67),
+            inset 0 4px 0 0 var(--primary, #714b67),
+            0 0 0 3px var(--o-week-current-ring, rgba(113, 75, 103, 0.35)),
+            0 4px 12px rgba(0, 0, 0, 0.12);
+
+        .o_week_column_title {
+            color: var(--primary, #714b67);
+            font-weight: 800;
+        }
+
+        .o_week_column_badge {
+            font-size: 0.75rem;
+            padding: 2px 10px;
+        }
+    }
+
+    .o_week_column_badge {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 1px 8px;
+        border-radius: 10px;
+        background-color: var(--primary, #714b67);
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .o_week_column_heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .o_week_column_title {
+        // The All Tasks board sets its week headings in the same large,
+        // heavy face; matching it is most of what makes the two read as one
+        // screen rather than two different features.
+        font-size: 1.25rem;
+        font-weight: 700;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_week_column_progress {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .o_week_progress_track {
+        flex: 1 1 auto;
+        height: 6px;
+        border-radius: 3px;
+        background-color: var(--o-gray-300, #d8dadd);
+        overflow: hidden;
+    }
+
+    .o_week_progress_bar {
+        height: 100%;
+        background-color: var(--success, #28a745);
+        transition: width 0.2s ease;
+    }
+
+    .o_week_column_count {
+        font-weight: 500;
+        color: var(--text-muted, #6c757d);
+    }
+
+    .o_week_column_hours {
+        color: var(--text-muted, #6c757d);
+        font-size: 0.85em;
+        white-space: nowrap;
+    }
+
+    .o_week_column_body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        // Each column scrolls on its own, under its heading, so a week with
+        // thirty-odd cards does not push the next row of weeks a screen down.
+        max-height: var(--WeekColumn-max-height);
+        overflow-y: auto;
+        // Still a drop target when it holds no cards.
+        min-height: 60px;
+    }
+
+    // The tail of a column whose cards were capped.
+    .o_week_column_more {
+        // A button, so it can be reached and pressed like one, dressed as the
+        // muted line it used to be. Full width so the whole row is the target.
+        display: block;
+        width: 100%;
+        color: var(--text-muted, #6c757d);
+        font-size: 0.85em;
+        text-align: center;
+        padding: 4px 0 8px;
+        text-decoration: none;
+
+        &:hover,
+        &:focus {
+            color: var(--primary, #714b67);
+            text-decoration: underline;
+        }
+    }
+
+    .o_week_column_empty {
+        color: var(--text-muted, #6c757d);
+        font-size: 0.85em;
+        text-align: center;
+        padding: 16px 0;
+    }
+
+    .o_week_card {
+        width: 100%;
+        margin-bottom: var(--WeekRecord-margin);
+        background-color: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, #dee2e6);
+        border-radius: 3px;
+        padding: 8px 10px;
+        cursor: pointer;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+        &:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+    }
+
+    // Finished work stays legible but stops competing for attention, the way
+    // the stock Kanban fades a closed record.
+    .o_week_card_done {
+        opacity: 0.55;
+    }
+
+    .o_week_card_title {
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .o_week_card_line {
+        color: var(--text-muted, #6c757d);
+        font-size: 0.85em;
+    }
+
+    .o_week_card_tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin: 4px 0 2px;
+    }
+
+    .o_week_card_footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    // Unset stars stay on the card rather than disappearing, so the row keeps
+    // its shape and the priority reads as a scale — the way the priority
+    // widget draws it on a stock Kanban card.
+    .o_week_star_empty {
+        color: var(--o-gray-300, #d8dadd);
+    }
+
+    .o_week_card_stars {
+        display: inline-flex;
+        gap: 1px;
+        margin-left: 2px;
+    }
+
+    .o_week_card_hours {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.85em;
+        color: var(--text-muted, #6c757d);
+    }
+
+    .o_week_card_avatars {
+        display: flex;
+        // Avatars overlap the way the many2many_avatar_user widget stacks them,
+        // so three assignees cost the width of about one and a half.
+        > .o_week_card_avatar + .o_week_card_avatar {
+            margin-left: -6px;
+        }
+    }
+
+    .o_week_card_avatar {
+        width: 20px;
+        height: 20px;
+        object-fit: cover;
+        border: 1px solid var(--o-view-background-color, #fff);
+    }
+
+    // The gap the dragged card will drop into.
+    .o_week_card_placeholder {
+        border: 1px dashed var(--primary, #714b67);
+        border-radius: 3px;
+        min-height: 52px;
+        margin-bottom: var(--WeekRecord-margin);
+    }
+}

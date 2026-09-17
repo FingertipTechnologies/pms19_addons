@@ -1,0 +1,28 @@
+// Project form: keep the tab bar (Delivery, Extra Information, Tickets, Tasks,
+// ...) in view while scrolling.
+//
+// The Tasks tab alone is a board several screens tall, and once the page had
+// scrolled past the tab names there was no way to switch tab without scrolling
+// all the way back up. Sticky rather than fixed: the bar stays where it is in
+// the page until it reaches the top of the scrolling area, holds there while
+// the tab content scrolls under it, and comes back down with the details above
+// it when the page is scrolled back up.
+//
+// It stops UNDER the status bar, not at the very top. Core pins the status bar
+// (Started / Working / Completed / CLOSED) to the top of the same scrolling
+// area at $zindex-sticky, so a tab bar at top: 0 stuck behind it and was never
+// seen. The status bar's height is measured by project_form_tabs.js into
+// --ft-form-statusbar-height; 0 until it has been.
+//
+// No ancestor between the scrolling area and the tab bar clips overflow, which
+// is what sticky needs: web_chatter_position unsets the sheet's own overflow on
+// wide screens, so the form scrolls as one area there, as it does below them.
+.o_form_project_project .o_form_sheet .o_notebook.horizontal > .o_notebook_headers {
+    position: sticky;
+    top: var(--ft-form-statusbar-height, 0px);
+    // Over the tab content scrolling beneath it, the week board's cards
+    // included, but under the status bar so that is never covered.
+    z-index: $zindex-sticky - 1;
+    // Painted, so the content scrolling under it does not show through.
+    background-color: $o-view-background-color;
+}

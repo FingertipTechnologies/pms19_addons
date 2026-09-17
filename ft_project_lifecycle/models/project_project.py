@@ -35,6 +35,23 @@ class ProjectProject(models.Model):
     # Kick-off, BRD Approval, Sandbox Review, UAT Start, Support Start) reuse
     # the bt_project_customization fields shown there, and Closed Date reuses
     # the core `date` (End Date), relabelled in the form.
+    def _ft_required_creation_dates(self):
+        """Add this module's three milestones to the create-time date rule.
+
+        They sit in the same Dates group as the ones bt_project_customization
+        contributes and are hidden for AMC and General in the same way, so they
+        follow the same rule — but they are declared here, because a list in
+        bt_project_customization naming pl_ fields would break the moment this
+        module was not installed.
+        """
+        dates = super()._ft_required_creation_dates()
+        if self.ft_project_type == 'implementation':
+            dates += [
+                ('pl_data_upload_date', _('Data Upload Date')),
+                ('pl_support_end_date', _('Support End Date')),
+            ]
+        return dates
+
     pl_data_upload_date = fields.Date(string='Data Upload Date')
     pl_support_end_date = fields.Date(string='Support End Date')
     # Stamped by _pl_stamp_lifecycle_dates when the project is put on hold, and
