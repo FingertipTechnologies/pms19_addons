@@ -35,7 +35,13 @@
         <field name="inherit_id" ref="qa_testapp.view_project_form_inherit_qa_tabs"/>
         <field name="arch" type="xml">
             <xpath expr="//page[@name='qa_tasks']/field[@name='task_ids']" position="replace">
-                <div class="mb-2">
+                <!-- Pinned as the tab scrolls, stopping directly under the
+                     tab bar — which bt_project_customization already pins
+                     under the status bar — so only the cards move. The board
+                     below runs to several screens, and Open Full Board was off
+                     the top of the window for all but the first of them.
+                     See .o_week_board_toolbar in week_task_board.scss. -->
+                <div class="o_week_board_toolbar mb-2">
                     <!-- A widget, not an object button: an object button
                          saves the project first, and that save stopped on a
                          missing Closed Date. See open_week_board.js. -->

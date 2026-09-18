@@ -65,6 +65,63 @@ class ProjectProject(models.Model):
                 unused.sudo().unlink()
         return res
 
+    def _ft_tasks_by_project(self):
+        """EVERY task of each of these projects, keyed by project id.
+
+        Not ``task_ids``, which is short on both counts a week board cares
+        about:
+
+        * Core gives that one2many the domain ``[('is_closed', '=', False)]``,
+          and bt_project_customization stamps ``state = '1_done'`` on any task
+          that reaches a final stage. So the field leaves out precisely the
+          work that is already delivered — and the weeks behind us are exactly
+          the weeks whose work is done. They came back holding nothing, the tab
+          read "No tasks" across every week that was over, and because
+          _compute_week_ids reads the same field those weeks got no column at
+          all: the board began at the oldest week with something still OPEN in
+          it and the project's history was simply not on it. A card dragged
+          into Completed disappeared on the spot for the same reason.
+
+        * It is read with ``active_test: False`` — not a choice project made,
+          but what ``One2many.read`` does for every one2many in the ORM (see
+          odoo/orm/fields_relational.py). Archived tasks were therefore ON the
+          board already, and a plain search here would have quietly taken them
+          off it. So the context is set explicitly rather than left to a
+          default: it is the behaviour the tab has always had, and "every task"
+          is what the board is for.
+
+        The delivered cards are not loud about it — ``_board_cards`` fades
+        anything in a final stage, the way a stock Kanban fades a closed
+        record.
+
+        One search for the whole recordset rather than one per record: a
+        project's task set is read for the Weeks stat button, for the board in
+        the Tasks tab and for the full-screen board's columns.
+        """
+        Task = self.env['project.task'].with_context(active_test=False)
+        ids_by_project = {}
+        # _origin drops the records that have never been written — the project
+        # being typed into a New form, whose stat button is computed like any
+        # other. A NewId cannot go into a domain, and there are no task rows
+        # pointing at it to find anyway.
+        saved = self._origin
+        if saved:
+            for task in Task.search([('project_id', 'in', saved.ids)]):
+                ids_by_project.setdefault(task.project_id.id, []).append(task.id)
+        return {
+            project.id: Task.browse(ids_by_project.get(project._origin.id, []))
+            for project in self
+        }
+
+    def _ft_tasks(self):
+        """Every task of this one project. @see _ft_tasks_by_project."""
+        self.ensure_one()
+        return self._ft_tasks_by_project()[self.id]
+
+    # task_ids is still the dependency: it is the only x2many the ORM can
+    # watch, and it covers every open task. A closed task's deadline moving
+    # without anything else changing in the same transaction is the one case it
+    # misses, and the field is not stored — the next request reads it afresh.
     @api.depends('task_ids.date_deadline')
     def _compute_week_ids(self):
         """The weeks this project has work in.
@@ -75,12 +132,18 @@ class ProjectProject(models.Model):
         have is a span: the weeks its task deadlines land in, which is exactly
         what the Weeks button counts and what the Week Board lays out as
         columns.
+
+        Counted over every task, finished ones included (_ft_tasks_by_project).
+        A week whose work is all delivered is still a week this project had
+        work in, and leaving it out took the whole of the project's history off
+        both boards.
         """
         Week = self.env['qa_testapp.sprint']
+        tasks_by_project = self._ft_tasks_by_project()
         for project in self:
             mondays = {
                 monday_of(task._ft_local_date(task.date_deadline))
-                for task in project.task_ids if task.date_deadline
+                for task in tasks_by_project[project.id] if task.date_deadline
             }
             weeks = Week.search(
                 [('start_date', 'in', list(mondays))]) if mondays else Week.browse()
@@ -92,20 +155,30 @@ class ProjectProject(models.Model):
 
         A task belongs to the week its DEADLINE falls in — the same test the
         Week form's own summary uses, run by the same code
-        (qa_testapp.sprint._tasks_by_week), so the two can never disagree. It
-        is also what "All Tasks grouped by deadline week" shows, which is the
-        board people already read.
+        (qa_testapp.sprint._tasks_by_week), so the two cannot bucket a task
+        differently. What they hand it differs, and deliberately: the week
+        summarises what a search over every project returns, while this board
+        hands it the project's own tasks, which is a wider set than a search —
+        archived work included. It is also what "All Tasks grouped by deadline
+        week" shows, which is the board people already read.
 
         The weeks themselves are shared with every other project. This board
-        keeps the columns for the ones this project has work in and intersects
-        each with the project's own tasks, so the cards stay this project's
-        even though the calendar behind them is the company's.
+        draws the columns for the span this project has work in and fills them
+        from its own tasks, so the cards stay this project's even though the
+        calendar behind them is the company's.
 
         Membership is therefore not the Week link. That matters most for the
         backlog: every task raised before this module existed has no link, and
         keying the columns on it left the whole project in one "No Week" heap
         until somebody dragged it out card by card. Keyed on the deadline they
         already have, they land in their week on the first page load.
+
+        Nor is it "still open". The board shows every task the project has,
+        delivered ones included, because a week that is over is exactly the
+        week whose work is done — read off ``task_ids`` those weeks came back
+        empty, and a card dragged into Completed disappeared off the board
+        instead of settling at the bottom of its column. See
+        _ft_tasks_by_project.
 
         A drop still writes ``sprint_id`` rather than the deadline directly:
         project.task.write moves the deadline to that week's Sunday in
@@ -126,22 +199,32 @@ class ProjectProject(models.Model):
         self.ensure_one()
         expanded = set(expanded_column_ids or ())
         current_monday = monday_of(fields.Date.context_today(self))
-        tasks = self.task_ids
+        # Every task in the project — delivered and archived work included,
+        # NOT task_ids, which leaves out the first and would have left the
+        # board reading "No tasks" across every week that was over. See
+        # _ft_tasks_by_project.
+        tasks = self._ft_tasks()
         # Legacy data never went through the deadline hook that creates a
         # week, so provision anything still missing before the columns are
         # drawn. Idempotent, and on a project that is already covered it costs
         # one search.
-        self._ensure_task_weeks()
+        self._ensure_task_weeks(tasks)
         # Every week across the project's span, work in it or not: a board is
         # where the next weeks get planned, and a week with no column cannot
         # have a task dropped into it.
         weeks = self._ft_board_weeks().sorted('start_date')
-        by_week = weeks._tasks_by_week()
-        scheduled = self.env['project.task'].browse()
+        # THESE tasks bucketed by their deadline, not a fresh search of the
+        # whole company intersected back down to them. The set above is
+        # deliberately wider than any search this side would make, so anything
+        # it holds that a search cannot return — an archived task — was in the
+        # board's tasks and in none of its weeks, and landed in "No Week".
+        by_week = weeks._tasks_by_week(tasks)
+        empty = self.env['project.task'].browse()
+        scheduled = empty
         final_stage_ids = set(tasks._ft_final_stage_ids())
         columns = []
         for week in weeks:
-            in_week = tasks & by_week.get(week.id, scheduled)
+            in_week = by_week.get(week.id, empty)
             scheduled |= in_week
             columns.append(in_week._board_column(
                 week.id, week.display_name, expanded=week.id in expanded,
@@ -211,11 +294,17 @@ class ProjectProject(models.Model):
             for offset in range((last - first).days // 7 + 1)
         ])
 
-    def _ensure_task_weeks(self):
-        """Provision the weeks this project's task deadlines fall in."""
+    def _ensure_task_weeks(self, tasks=None):
+        """Provision the weeks this project's task deadlines fall in.
+
+        ``tasks`` is the project's tasks where the caller is already holding
+        them, so drawing a board costs one search for them rather than two.
+        """
         self.ensure_one()
+        if tasks is None:
+            tasks = self._ft_tasks()
         days = {task._ft_local_date(task.date_deadline)
-                for task in self.task_ids if task.date_deadline}
+                for task in tasks if task.date_deadline}
         self.env['qa_testapp.sprint']._ensure_weeks(days)
         self.invalidate_recordset(['week_ids', 'week_count'])
 
@@ -245,8 +334,23 @@ class ProjectProject(models.Model):
 
         ``default_project_id`` is what tells ``_read_group_sprint_ids`` which
         project's weeks to lay out as columns, so it must stay in the context.
+
+        ``ft_current_week_id`` is the week today falls in. The columns run
+        oldest first, the way a calendar reads — left is behind us, right is
+        still to come — so on a project with any history the board opened
+        somewhere in its past with the week being worked off the right-hand
+        edge. The id travels in the context rather than being looked up by the
+        client: the action already has a cursor open, and it saves the board a
+        round trip before it can draw. ft_week_kanban colours that column and
+        scrolls it into view (static/src/week_kanban/week_kanban.js).
+
+        The week is created if it does not exist yet, the same way every other
+        week in this module comes into being — so the board always has a column
+        to open on, even on a project with nothing due this week.
         """
         self.ensure_one()
+        current_week = self.env['qa_testapp.sprint']._ensure_weeks(
+            [fields.Date.context_today(self)])
         return {
             'type': 'ir.actions.act_window',
             'name': _('%s — Week Board') % self.name,
@@ -261,5 +365,6 @@ class ProjectProject(models.Model):
             'context': {
                 'default_project_id': self.id,
                 'project_kanban': True,
+                'ft_current_week_id': current_week.id,
             },
         }

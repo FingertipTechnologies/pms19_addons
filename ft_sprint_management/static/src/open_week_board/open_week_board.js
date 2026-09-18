@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component } from "@odoo/owl";
+import { Component, onMounted, onPatched, onWillUnmount, useRef } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
@@ -28,6 +28,47 @@ export class OpenWeekBoard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+
+        // The strip this button sits in is sticky, and it has to come to rest
+        // UNDER the tab bar rather than at the top of the scrolling area —
+        // see .o_week_board_toolbar in week_task_board.scss for the whole
+        // stack. The tab bar's height is not a constant (the names wrap, the
+        // bar carries a scrollbar of its own on a narrow screen, the browser
+        // zooms), so it is measured here and published as a CSS variable, the
+        // way bt_project_customization publishes the status bar's height for
+        // the tab bar itself.
+        this.headersRef = useRef("root");
+        this.observedHeaders = null;
+        this.headersObserver = null;
+        onMounted(() => this.trackTabsHeight());
+        // The notebook's header node is replaced by a re-render — another
+        // project through the pager, a stage change — so the new one has to be
+        // picked up.
+        onPatched(() => this.trackTabsHeight());
+        onWillUnmount(() => this.headersObserver?.disconnect());
+    }
+
+    /** Publish the tab bar's height on the sticky strip that has to clear it. */
+    trackTabsHeight() {
+        const toolbar = this.headersRef.el?.closest(".o_week_board_toolbar");
+        const headers = toolbar
+            ?.closest(".o_notebook")
+            ?.querySelector(":scope > .o_notebook_headers");
+        if (!toolbar || !headers) {
+            return;
+        }
+        if (headers === this.observedHeaders) {
+            return;
+        }
+        this.headersObserver?.disconnect();
+        this.observedHeaders = headers;
+        this.headersObserver = new ResizeObserver(() => {
+            toolbar.style.setProperty(
+                "--ft-week-board-tabs-height",
+                `${headers.getBoundingClientRect().height}px`
+            );
+        });
+        this.headersObserver.observe(headers);
     }
 
     get disabled() {

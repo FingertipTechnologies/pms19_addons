@@ -21,6 +21,24 @@ const NO_COLUMN = "none";
 // garbage collected with it.
 const revealedRecords = new WeakSet();
 
+// Breathing room between the pinned bars and the week brought up under them,
+// so the row reads as the top of the board rather than as clipped by them.
+const REVEAL_GAP = 8;
+
+/** The nearest ancestor that actually scrolls vertically, or the document. */
+function verticalScrollParent(el) {
+    for (let node = el.parentElement; node; node = node.parentElement) {
+        const { overflowY } = getComputedStyle(node);
+        if (
+            (overflowY === "auto" || overflowY === "scroll") &&
+            node.scrollHeight > node.clientHeight
+        ) {
+            return node;
+        }
+    }
+    return document.scrollingElement;
+}
+
 // Board payloads already fetched, by model, record and request.
 //
 // Paging from one week to the next waited on two round trips back to back —
@@ -338,30 +356,105 @@ export class WeekTaskBoard extends Component {
     }
 
     /**
-     * Bring the current week on screen, once per open record.
+     * Bring the current week to the top of the board, once per open record.
      *
-     * `block: "center"` rather than "nearest": the columns wrap onto as many
-     * rows as they need, so the week before this one is the row above and the
-     * week after is the row below, and centring is what puts both within a
-     * scroll of where the reader lands. Anchored on the column HEADING, not on
-     * the column, because a column runs to 60vh — centring the box itself
-     * would put its middle on screen and the week's name off the top of it.
+     * The board is a calendar that runs from the project's first deadline to
+     * four weeks out, wrapped over as many rows as it needs, so on a project
+     * with any history behind it the week being worked is rows below the fold
+     * and the tab opens on weeks that are long over. This puts that row at the
+     * top of the reading area, which is what makes the rest read as a
+     * calendar: scroll up for the weeks behind us, down for the ones still to
+     * come.
+     *
+     * Not `scrollIntoView`. Two things are wrong with it here. It aligns to
+     * the edge of the scrolling box, and the top of that box is covered by
+     * three pinned bars — the status bar, the tab bar and this tab's own
+     * toolbar — so `block: "start"` parks the week underneath them; and it
+     * scrolls every scrollable ancestor on both axes to satisfy the request.
+     * Setting scrollTop on the one element that scrolls moves the one thing
+     * that should move, by exactly the offset those bars occupy.
+     *
+     * Done once per record, not per redraw: dragging a card reloads the board
+     * and a tab switch remounts it, and hauling the reader back to today after
+     * either would take the board away from whoever was using it.
      */
     revealCurrentWeek() {
         const record = this.props.record;
         if (!this.recordId || revealedRecords.has(record)) {
             return;
         }
-        const heading = this.rootRef.el?.querySelector(
-            ".o_week_column_current .o_week_column_header"
-        );
+        const column = this.rootRef.el?.querySelector(".o_week_column_current");
         // No board drawn yet, or a board with no current week on it (a Week's
         // own stage columns). Left unmarked so the next patch can try again.
-        if (!heading) {
+        if (!column) {
             return;
         }
         revealedRecords.add(record);
-        heading.scrollIntoView({ block: "center", inline: "nearest" });
+        // After the paint, not during it. The notebook keeps its tab bar where
+        // it is when a page is switched (notebook_tab_anchor.js), and it does
+        // that from the Notebook's own onPatched — which Owl runs AFTER this
+        // component's, since a child is patched before its parent. Scrolling
+        // here would therefore be measured as drift by the anchor and undone
+        // in the same cycle, which is why opening the Tasks tab left the board
+        // wherever it had been. A frame later the anchor has had its say and
+        // this is the last word, as it should be: somebody who opens the tab
+        // is asking for the board, not for the tab bar to hold still.
+        requestAnimationFrame(() => {
+            if (column.isConnected) {
+                this.scrollWeekToTop(column);
+            }
+        });
+    }
+
+    /** Put a week column's top edge just below the pinned bars. */
+    scrollWeekToTop(column) {
+        const board = this.rootRef.el;
+        const scroller = verticalScrollParent(column);
+        if (!board || !scroller) {
+            return;
+        }
+        const scrollerTop =
+            scroller === document.scrollingElement
+                ? 0
+                : scroller.getBoundingClientRect().top;
+        // Measured with any tail from a previous reveal removed, or it would
+        // be counted as room the board already has.
+        board.style.paddingBottom = "";
+        const offset =
+            column.getBoundingClientRect().top -
+            scrollerTop -
+            this.pinnedHeight() -
+            REVEAL_GAP;
+        // How much further the page can actually scroll down. The board stops
+        // four weeks after this one, and an empty week is a short column — so
+        // on most projects there is not a screenful below the current row and
+        // the browser clamps the scroll, leaving the week somewhere down the
+        // page instead of at the top of it. Padding the tail gives it the room
+        // to go, the way an editor lets the last line scroll to the top.
+        const slack = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
+        if (offset > slack) {
+            board.style.paddingBottom = `${Math.ceil(offset - slack)}px`;
+        }
+        scroller.scrollTop += offset;
+    }
+
+    /**
+     * How much of the top of the scrolling area the pinned bars cover.
+     *
+     * Read off the toolbar rather than added up from the parts. It is the
+     * lowest of the three and it is sticky, so its resolved `top` — the status
+     * bar plus the tab bar, as week_task_board.scss composes it — plus its own
+     * height is exactly where the stack ends, whatever those bars currently
+     * measure. 0 on a board with no toolbar above it.
+     */
+    pinnedHeight() {
+        const toolbar = this.rootRef.el
+            ?.closest(".tab-pane")
+            ?.querySelector(".o_week_board_toolbar");
+        if (!toolbar) {
+            return 0;
+        }
+        return (parseFloat(getComputedStyle(toolbar).top) || 0) + toolbar.offsetHeight;
     }
 
     /**

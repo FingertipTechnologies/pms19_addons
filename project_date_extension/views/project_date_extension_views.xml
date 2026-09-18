@@ -54,7 +54,27 @@
                             </group>
                         </group>
                         <group string="Reason">
-                            <field name="reason" nolabel="1" placeholder="Explain why this date extension is requested..."
+                            <!-- colspan is what makes this box the width of the
+                                 form. An inner group is a two column grid —
+                                 `grid-template-columns: fit-content(150px)
+                                 minmax(0, 1fr)`, the first column being for
+                                 labels — and a field spans ONE of them unless
+                                 it is told otherwise. A labelled field is
+                                 bumped to two by the compiler; `nolabel="1"`
+                                 skips that, so this one sat in the 150px label
+                                 column and wrapped the reason after three
+                                 words. Spanning both columns gives it the
+                                 sheet.
+
+                                 rows, because the stock text widget opens at
+                                 two (TextField.defaultProps.rowCount) — barely
+                                 deeper than a one-line field for what is the
+                                 case FOR the extension, and the only thing an
+                                 approver reads before deciding. The box still
+                                 grows with what is typed; this only sets where
+                                 it starts. -->
+                            <field name="reason" nolabel="1" colspan="2" rows="8"
+                                   placeholder="Explain why this date extension is requested..."
                                    readonly="state != 'draft'"/>
                         </group>
                         <group string="Extension History" invisible="state == 'draft'">

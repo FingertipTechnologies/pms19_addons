@@ -172,7 +172,52 @@
     # (W40's summary over W39's empty columns): the reload on a page turn read
     # the record the form was leaving instead of the one it was opening.
     # Views, assets and Python only, no migration.
-    'version': '19.0.4.13.0',
+    # 19.0.4.14.0 makes a Week's Assigned Tasks tab list the same tasks as its
+    # Tasks tab, and follow the Project selector the same way. It listed every
+    # task whose Week pointed here, including tasks whose deadline had since
+    # moved to another week and so were on no board of this one. The rows stay
+    # editable. Views and Python only, no migration.
+    # 19.0.4.15.0 puts the project's past weeks back on its Tasks tab. Two
+    # things were dropping the work that is behind us, and between them the
+    # weeks that were over read "No tasks" or had no column at all.
+    #   The board's tasks came from project.task_ids. Core gives that one2many
+    # the domain [('is_closed', '=', False)] and bt_project_customization
+    # stamps state 1_done on anything reaching a final stage, so the field left
+    # out precisely the delivered work — and a finished week is nothing BUT
+    # delivered work. _compute_week_ids read the same field, so those weeks
+    # were not even in the project's span: the board began at the oldest week
+    # with something still open in it. A card dragged into Completed
+    # disappeared on the spot for the same reason. It now reads every task of
+    # the project, with active_test off so archived tasks stay on the board as
+    # they were (One2many.read sets it too — that is where they came from).
+    #   Placing those tasks in their weeks then searched the whole company's
+    # span and intersected the answer back down to the project, which could
+    # only ever return what a search can see: an archived task was in the
+    # board's task set and in none of its weeks, and fell through to "No Week".
+    # qa_testapp.sprint._tasks_by_week now takes the caller's own set, so the
+    # project's board buckets exactly the tasks it draws — one query fewer, and
+    # over its own rows rather than every project's.
+    #   With the past weeks back, the current week is a long way down the
+    # board, and it was not being reached: it IS scrolled to on open, but the
+    # notebook keeps its tab bar still on a page switch and does that from the
+    # Notebook's own onPatched — which Owl runs after the board's, a child
+    # being patched before its parent — so the reveal was measured as drift and
+    # undone in the same cycle. It now happens a frame later, and brings the
+    # week to the TOP of the reading area rather than the middle of it: past
+    # weeks are above, the weeks still to come below. The board's tail is
+    # padded where there is not a screenful under the current row, or the
+    # browser clamps the scroll and the week comes to rest down the page.
+    # The same version pins Open Full Board on the project's Tasks tab. The
+    # board runs to several screens and the button scrolled away with the
+    # first of them; it now stops directly under the tab bar, which
+    # bt_project_customization already pins under the status bar, so the three
+    # stack and only the cards move. And it opens the full-screen Week Board
+    # on the week being worked: that column is outlined, badged "This week"
+    # and brought to
+    # the left of the screen, so the earlier weeks are one scroll left and the
+    # coming ones one scroll right. It used to open on the project's oldest
+    # week. Views, assets and Python only, no migration.
+    'version': '19.0.4.15.0',
     'category': 'Project',
     'summary': 'Week-based task planning for projects (list, kanban & form views)',
     'description': """
@@ -224,6 +269,8 @@ nothing the labels do not. Everything a user sees says "Week".
             'ft_sprint_management/static/src/week_form/week_form_view.xml',
             'ft_sprint_management/static/src/week_list/week_list.js',
             'ft_sprint_management/static/src/week_list/week_list.scss',
+            'ft_sprint_management/static/src/week_kanban/week_kanban.js',
+            'ft_sprint_management/static/src/week_kanban/week_kanban.scss',
             'ft_sprint_management/static/src/notebook_tab_anchor/notebook_tab_anchor.js',
             'ft_sprint_management/static/src/open_week_board/open_week_board.js',
             'ft_sprint_management/static/src/open_week_board/open_week_board.xml',

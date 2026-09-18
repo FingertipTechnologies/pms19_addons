@@ -85,6 +85,20 @@ class ProjectWeek(models.Model):
         compute='_compute_week_summary',
         help='Every task, in any project, whose deadline falls inside the week.',
     )
+    # What the Assigned Tasks tab lists: exactly the cards on the Tasks tab,
+    # narrowed by the Project selector the same way. It used to be task_ids,
+    # which is every task whose sprint_id points here — including tasks whose
+    # deadline has since moved out of the week and so are on no board of it.
+    # A separate field rather than week_task_ids a second time in the view:
+    # that one is read-only, and these rows stay editable. The edits reach the
+    # tasks through the x2many's own update commands, so the inverse has
+    # nothing left to do.
+    assigned_task_ids = fields.Many2many(
+        'project.task', string='Assigned Tasks',
+        compute='_compute_assigned_task_ids', inverse='_inverse_assigned_task_ids',
+        readonly=False,
+        help='The tasks shown on the Tasks tab, for the selected project.',
+    )
     task_count = fields.Integer(string='Total Tasks', compute='_compute_week_summary')
     # Where the selected project's week stands, read off its tasks. The week
     # used to carry a Status of its own and lost it in 19.0.3.4.0, rightly: an
@@ -268,6 +282,17 @@ class ProjectWeek(models.Model):
             week.open_estimated_hours = total_estimated - completed_estimated
             week.completed_actual_hours = sum(completed.mapped('effective_hours'))
 
+    @api.depends('start_date', 'end_date', 'board_project_id')
+    def _compute_assigned_task_ids(self):
+        # week_task_ids is already the Tasks tab's set, project filter applied.
+        for week in self:
+            week.assigned_task_ids = week.week_task_ids
+
+    def _inverse_assigned_task_ids(self):
+        # Membership follows from each task's deadline and project, so there is
+        # no link to write; edited rows were saved by their update commands.
+        pass
+
     @staticmethod
     def _board_status(tasks, by_stage):
         """The stage a set of tasks has reached AS A WHOLE.
@@ -329,7 +354,7 @@ class ProjectWeek(models.Model):
             ]).with_env(self.env)
         return existing | created
 
-    def _tasks_by_week(self):
+    def _tasks_by_week(self, tasks=None):
         """The tasks due in each of these weeks, keyed by week id.
 
         ONE query for the whole recordset, not one per week. The week list
@@ -337,20 +362,40 @@ class ProjectWeek(models.Model):
         summary, so a search per record turned opening the list into eighty
         round trips against project_task. The whole span is read once and the
         tasks are bucketed by the local calendar day their deadline falls on.
+
+        ``tasks`` is the set to bucket, for a caller that is already holding
+        one. The project's week board is: its tasks are that project's own and
+        deliberately complete — delivered and archived work included, see
+        project.project._ft_tasks_by_project. Left to search for itself this
+        read the whole COMPANY's span and the board then intersected the answer
+        back down to the project, which cost a second query over far more rows
+        and, worse, quietly lost whatever that search could not return. An
+        archived task never came back from it, so it was in the board's task
+        set but in none of its weeks, and fell through to the "No Week" column
+        with the tasks that have no deadline at all.
+
+        Without it, nothing changes: the week's own summary and the board on
+        the Week form still ask for every project's work in the span, which is
+        what a week reports on.
         """
         Task = self.env['project.task']
         result = {}
         weeks = self.filtered(lambda week: week.start_date and week.end_date)
         if not weeks:
             return result
-        tasks = Task.search(self._project_domain() + [
-            ('date_deadline', '>=', local_day_bounds(
-                self.env, min(weeks.mapped('start_date')))),
-            ('date_deadline', '<=', local_day_bounds(
-                self.env, max(weeks.mapped('end_date')), end_of_day=True)),
-        ])
+        if tasks is None:
+            tasks = Task.search(self._project_domain() + [
+                ('date_deadline', '>=', local_day_bounds(
+                    self.env, min(weeks.mapped('start_date')))),
+                ('date_deadline', '<=', local_day_bounds(
+                    self.env, max(weeks.mapped('end_date')), end_of_day=True)),
+            ])
         by_day = {}
         for task in tasks:
+            # Only a set handed in can hold these: the search above is bounded
+            # by the deadline, so it cannot return a task without one.
+            if not task.date_deadline:
+                continue
             # In the reader's timezone, not UTC: a deadline of 23:00 IST is
             # already the next day in UTC and would land in the wrong week —
             # the one the user can see it is not in.

@@ -158,8 +158,12 @@
                                    readonly="1" nolabel="1"/>
                         </page>
                         <page name="assigned_tasks" string="Assigned Tasks">
-                            <!-- The tasks explicitly linked to this week,
-                                 through sprint_id on the task.
+                            <!-- The same tasks as the Tasks tab — due inside
+                                 the week, narrowed by Project above when one
+                                 is chosen — as an editable list. Not task_ids:
+                                 sprint_id can still point here after a task's
+                                 deadline has left the week, and those tasks
+                                 are on no board of it.
 
                                  create="false" drops the "Add a line" row: a
                                  week is not a place to raise new work. Tasks
@@ -170,7 +174,7 @@
                                  Project is the first column: the week itself
                                  belongs to no project, so each row has to name
                                  the project its work is for. -->
-                            <field name="task_ids"
+                            <field name="assigned_task_ids"
                                    context="{'default_project_id': board_project_id}">
                                 <!-- Estimated and Deadline stay on the line:
                                      bt_project_customization requires both on

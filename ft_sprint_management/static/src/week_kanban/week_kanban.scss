@@ -1,0 +1,59 @@
+// The current week's column on the full-screen Week Board. See week_kanban.js
+// for how it is marked and why the board opens on it.
+//
+// Dressed to match the same week on the boards embedded in the forms (see
+// .o_week_column_current in week_task_board.scss), so the week being worked
+// looks the same wherever it is drawn: a heavy primary edge, a light tint
+// behind the cards and the heading in the theme colour.
+
+.o_kanban_renderer.o_kanban_grouped .o_kanban_group.o_ft_current_week_column {
+    // Higher specificity than the `.o_kanban_group { background: ... }` rule
+    // this sits beside, and deliberately NOT a redefinition of
+    // --KanbanGroup-background: that variable is read by the records inside
+    // the column as well, and only the column itself is being coloured.
+    //
+    // Light on purpose. The cards are white and carry colours of their own —
+    // tags, overdue dates, the faded look of finished work — and a stronger
+    // fill would fight them. A drag still wins: .o_kanban_hover sets its
+    // highlight with !important.
+    background: var(--o-week-current-bg, rgba(113, 75, 103, 0.07));
+
+    // Drawn INSIDE the box rather than as a border, so the column keeps the
+    // width the kanban laid out for it and its neighbours do not shift.
+    box-shadow:
+        inset 0 0 0 1px var(--primary, #714b67),
+        inset 0 4px 0 0 var(--primary, #714b67);
+
+    .o_column_title {
+        color: var(--primary, #714b67);
+
+        // "This week", as a badge after the week number and its count. The
+        // heading is a flex row with a gap, so the pseudo-element falls into
+        // line as another item.
+        //
+        // Written here rather than in the header template because that would
+        // mean overriding KanbanHeader — a whole component and its markup —
+        // for one word. The cost is that this string does not go through
+        // translation, which for a label that only ever appears on an internal
+        // week board is the cheaper of the two.
+        &::after {
+            content: "This week";
+            align-self: center;
+            flex: 0 0 auto;
+            padding: 1px 8px;
+            border-radius: 10px;
+            background-color: var(--primary, #714b67);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+    }
+
+    // A folded column is a narrow vertical strip: the badge would be wider
+    // than the column and push its own heading out of sight.
+    &.o_column_folded .o_column_title::after {
+        content: none;
+    }
+}

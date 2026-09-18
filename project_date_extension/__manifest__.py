@@ -4,7 +4,13 @@
     # 19.0.1.4.0 moves the Date Extensions menu from 60 (which is Test Plans'
     # sequence, dropping it among the QA menus) to 98, beside Change Request
     # at the end of the PMS bar.
-    "version": "19.0.1.4.0",
+    # 19.0.1.5.0 gives the Reason box on a Date Extension Request the width of
+    # the form and eight rows of height. It is the case FOR the extension and
+    # the only thing an approver reads before deciding, and it was rendering in
+    # the 150px LABEL column of its group — an inner group spans two grid
+    # columns and a field marked nolabel is not bumped across both, so the
+    # reason wrapped after three words. View change only, no migration.
+    "version": "19.0.1.5.0",
     "category": "Project",
     "summary": "Approval workflow to request and control milestone date extensions on Projects",
     "description": """

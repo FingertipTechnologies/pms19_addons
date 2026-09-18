@@ -75,6 +75,12 @@
                      only ever raise at the user. The full form opens instead. -->
                 <attribute name="on_create"/>
                 <attribute name="quick_create">false</attribute>
+                <!-- Opens on the week being worked, outlined and badged, with
+                     the earlier weeks to its left and the coming ones to its
+                     right. Built ON TOP of project_task_kanban rather than in
+                     place of it, so everything that view class does for a task
+                     board still happens here — see week_kanban.js. -->
+                <attribute name="js_class">ft_week_kanban</attribute>
             </xpath>
             <xpath expr="//kanban/field[@name='stage_id']" position="after">
                 <field name="sprint_id"/>

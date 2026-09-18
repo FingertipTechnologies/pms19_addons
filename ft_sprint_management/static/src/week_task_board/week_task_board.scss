@@ -33,6 +33,58 @@
     overflow: hidden;
 }
 
+// The strip above the board on the project's Tasks tab, holding Open Full
+// Board. Pinned in place while the board scrolls under it.
+//
+// The board is a calendar running from the project's first deadline to four
+// weeks out, and its columns wrap onto as many rows as they need, so the tab
+// is several screens tall on any project with history. The button sat at the
+// top of the first of them: two screens into the weeks it was gone, and
+// opening the full board meant scrolling all the way back up for it.
+//
+// It comes to rest UNDER the tab bar, which is itself already pinned. Three
+// things stack at the top of the project form as it scrolls, each stopping
+// below the one before it:
+//
+//   .o_form_statusbar     top: 0                    (core, $zindex-sticky)
+//   .o_notebook_headers   top: statusbar height     (bt_project_customization)
+//   .o_week_board_toolbar top: + tab bar height     (here)
+//
+// So the offset is the sum of the two bars above. Neither height is a
+// constant — they depend on the width, the zoom and how much wraps onto a
+// second line — so both are measured and published as CSS variables:
+// --ft-form-statusbar-height by bt_project_customization's project_form_tabs.js
+// and --ft-week-board-tabs-height by open_week_board.js. Each falls back to 0,
+// which simply parks the strip higher up rather than breaking the layout.
+//
+// `position: sticky` and not `fixed`: the strip belongs to the Tasks page, not
+// to the window, and a fixed bar would hang over the other tabs and the
+// chatter too. The form scrolls as one area in `.o_content` — web_responsive
+// hands the scroll to the sheet on XXL screens and web_chatter_position unsets
+// it again — and nothing between here and there clips its overflow, which is
+// what sticky needs.
+//
+// It needs an opaque background of its own, or the cards would be read through
+// it as they scroll past underneath. Given the sheet's own colour and
+// stretched over the sheet's horizontal padding, so the strip spans the tab
+// the way the tab bar above it does.
+.o_week_board_toolbar {
+    position: sticky;
+    top: calc(
+        var(--ft-form-statusbar-height, 0px) + var(--ft-week-board-tabs-height, 0px)
+    );
+    // Above the cards scrolling underneath, below the tab bar — which sits at
+    // $zindex-sticky - 1 — so this can never cover the tab names, and below
+    // the status bar above that. A card being dragged is lifted far higher
+    // than any of them by the sortable hook.
+    z-index: $zindex-sticky - 2;
+    background-color: $o-view-background-color;
+    padding: 8px var(--formView-sheet-padding-x, 16px);
+    margin-left: calc(var(--formView-sheet-padding-x, 16px) * -1);
+    margin-right: calc(var(--formView-sheet-padding-x, 16px) * -1);
+    border-bottom: 1px solid $border-color;
+}
+
 .o_week_board {
     --WeekGroup-padding-h: var(--KanbanGroup-padding-h, 16px);
     --WeekRecord-margin: var(--KanbanRecord-margin-v, 8px);
