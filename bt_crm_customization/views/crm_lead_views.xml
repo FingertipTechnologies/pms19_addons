@@ -188,6 +188,7 @@
                 <field name="lead_status"/>
                 <field name="acquisition_timeline"/>
                 <field name="current_system"/>
+                <field name="improvement_area"/>
             </xpath>
 
             <!-- LEAD layout: two continuous columns.

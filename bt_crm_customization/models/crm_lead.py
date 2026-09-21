@@ -207,6 +207,17 @@ class InheritCrmLead(models.Model):
         ('hubspot', 'HubSpot'),
     ], string="Current System", tracking=True,
         help="System the prospect is using today.")
+
+
+    improvement_area = fields.Selection([
+        ('lead_management', 'Lead Management'),
+        ('sales_automation', 'Sales Automation'),
+        ('management_reporting', 'Management Reporting'),
+        ('crm_implementation', 'CRM Implementation'),
+        ('existing_crm_customization', 'Existing CRM Customization'),
+    ], string="What are you looking to improve?", tracking=True)
+
+    
     # Text, not the Integer employee count read from the account: on a lead the
     # size is whatever the caller was told ("about 40", "50-100 across 3
     # branches"), and the account does not exist yet.
