@@ -149,10 +149,10 @@ class InheritResPartner(models.Model):
         if missing:
             account = self._account_partner()
             raise ValidationError(_(
-                "You cannot create %(document)s for '%(contact)s': the account "
+                "You cannot create %(document)s for '%(contact)s': the contact "
                 "'%(account)s' is missing the following mandatory "
                 "information - %(missing)s.\n\n"
-                "Please complete the account details before proceeding.",
+                "Please complete the contact details before proceeding.",
                 document=document,
                 contact=self.display_name,
                 account=account.display_name,

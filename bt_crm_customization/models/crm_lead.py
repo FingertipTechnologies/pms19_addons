@@ -897,6 +897,44 @@ class CrmLead2opportunityPartner(models.TransientModel):
 
     user_id = fields.Many2one(string="Owner")
 
+    def _convert_handle_partner(self, lead, action, partner_id):
+        """Name the right place to fix missing account details, before any
+        customer is created or linked.
+
+        Creating a new customer copies Annual Revenue, Employee Count and
+        Website from the lead, so the gap is on the lead. Linking an existing
+        customer uses that contact's account as it is, so the gap is there.
+        Without this both cases end in the generic account error raised by
+        `_check_opportunity_contact`.
+        """
+        if action == 'create' and not lead.partner_id:
+            missing = [
+                label for value, label in (
+                    (lead.annual_revenue_amount, "Annual Revenue"),
+                    (lead.employee_count, "Employee Count"),
+                    (lead.website, "Website"),
+                ) if not value
+            ]
+            if missing:
+                raise ValidationError(
+                    "The lead '%s' is missing the following information: %s.\n\n"
+                    "Please fill these fields on the lead before converting it "
+                    "with a new customer." % (lead.name, ', '.join(missing))
+                )
+        elif action == 'exist' and partner_id:
+            partner = self.env['res.partner'].browse(partner_id)
+            missing = partner._missing_account_fields()
+            if missing:
+                raise ValidationError(
+                    "The contact '%s' is missing the following information: "
+                    "%s.\n\nPlease complete these fields on the contact before "
+                    "linking it to this opportunity." % (
+                        partner.commercial_partner_id.display_name,
+                        ', '.join(missing),
+                    )
+                )
+        return super()._convert_handle_partner(lead, action, partner_id)
+
 
 class CrmLead2opportunityPartnerMass(models.TransientModel):
     """Same rename for the mass-convert wizard's own list field.
