@@ -252,15 +252,15 @@
                     <KpiCard title="'Active Projects'" value="kpis.active_projects"
                              icon="'fa-folder-open'" color="'#4F46E5'"
                              onClick="() => this.openKpi('active_projects')"
-                             tooltip="'Projects not in the General, Hold or Closed stage. Equals Implementation Projects plus AMC Projects.'"/>
+                             tooltip="'Implementation and AMC projects that are not Closed or on Hold. General (internal) projects are excluded. Equals Implementation Projects plus AMC Projects.'"/>
                     <KpiCard title="'Implementation Projects'" value="kpis.implementation_projects"
                              icon="'fa-cogs'" color="'#8B5CF6'"
                              onClick="() => this.openKpi('implementation_projects')"
-                             tooltip="'Active projects still being delivered — excludes the AMC stage as well as General, Hold and Closed.'"/>
+                             tooltip="'Projects of type Implementation that are not Closed or on Hold.'"/>
                     <KpiCard title="'AMC Projects'" value="kpis.amc_projects"
                              icon="'fa-refresh'" color="'#14B8A6'"
                              onClick="() => this.openKpi('amc_projects')"
-                             tooltip="'Active projects in the AMC stage (annual maintenance contract).'"/>
+                             tooltip="'Projects of type AMC (annual maintenance contract) that are not Closed or on Hold.'"/>
                     <KpiCard title="'All hours spent'" value="kpis.hours_spent" suffix="'h'"
                              icon="'fa-clock-o'" color="'#F59E0B'"
                              onClick="() => this.openTimesheets(false)"/>
@@ -581,7 +581,7 @@
                             <span class="ftpd_toggle_lead">Show</span>
                             <t t-foreach="projectStageToggles" t-as="tg" t-key="tg.group">
                                 <label class="ftpd_table_toggle"
-                                       t-attf-title="Show projects in the {{ tg.label }} stage, hidden by default">
+                                       t-attf-title="Show {{ tg.label }} projects, hidden by default">
                                     <input type="checkbox"
                                            t-att-checked="state.projectShowStage[tg.group]"
                                            t-on-change="(ev) => this.onProjectShowStage(tg.group, ev)"/>

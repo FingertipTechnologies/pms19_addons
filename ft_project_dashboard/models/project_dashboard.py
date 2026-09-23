@@ -28,30 +28,48 @@ ROLE_BUCKETS = {
 # older `status` selection on bt_project_customization is NOT used here: it is
 # NULL on every project, which made the previous `status not in ('closed',)`
 # filter a no-op that counted closed projects as active.
-INACTIVE_STAGE_NAMES = ('General', 'Hold', 'Closed')
+# Matched case-INSENSITIVELY by _stage_ids_named: ft_project_lifecycle names these
+# 'CLOSED' and 'HOLD', while the databases that predate it carry 'Closed'/'Hold'.
+# The earlier exact match resolved both to [] on every lifecycle database, which
+# silently counted 10 CLOSED projects as active.
+TERMINAL_STAGE_NAMES = ('Closed', 'Hold')
 
-# Stage holding projects under an annual maintenance contract.
-AMC_STAGE_NAME = 'AMC'
+# Project type, from bt_project_customization's ft_project_type selection.
+#
+# AMC and Implementation are read from the TYPE, never from the stage. They used
+# to be matched against a stage literally named 'AMC', which ft_project_lifecycle
+# archived and emptied - hence a permanent 0 on that card. Stage cannot do this
+# job even in principle: AMC and General projects share one stage, 'Working
+# (AMC/General)', so no stage test can tell them apart. ft_project_type is the
+# only discriminator, and bt_project_customization carries two migrations whose
+# whole purpose is keeping it populated.
+AMC_PROJECT_TYPE = 'amc'
+GENERAL_PROJECT_TYPE = 'general'
+IMPLEMENTATION_PROJECT_TYPE = 'implementation'
 
-# Stages whose projects are hidden from the Project Performance table until the
-# matching toggle beside its search box is ticked. One toggle per stage rather
-# than one for all three: they are hidden for different reasons and are wanted
-# back at different times, so somebody reviewing AMC renewals should not have to
-# pull 128 Closed projects onto the screen to do it.
+# Projects hidden from the Project Performance table until the matching toggle
+# beside its search box is ticked. One toggle per group rather than one for all
+# three: they are hidden for different reasons and are wanted back at different
+# times, so somebody reviewing AMC renewals should not have to pull 175 Closed
+# projects onto the screen to do it.
 #
-# Keys are the flag names the client toggles; values are the stage names. Order
-# is the order the toggles render in, so it is kept deliberate rather than
-# alphabetical — Closed first because it is by far the largest bucket.
+# Keys are the flag names the client toggles. Order is the order the toggles
+# render in, so it is kept deliberate rather than alphabetical — Closed first
+# because it is by far the largest bucket.
 #
-# Deliberately NOT the same set as INACTIVE_STAGE_NAMES: Hold is absent here,
+# Deliberately NOT the same set as TERMINAL_STAGE_NAMES: Hold is absent here,
 # because a paused project is still delivery work somebody has to chase, whereas
 # AMC is present, because a maintenance contract has no delivery performance to
 # measure. The table is about how delivery is going, so these three are noise by
 # default rather than being removed outright — hence toggles, not a filter.
-PERF_HIDDEN_STAGE_GROUPS = {
-    'closed': 'Closed',
-    'amc': AMC_STAGE_NAME,
-    'general': 'General',
+#
+# 'closed' is a STAGE test; 'amc' and 'general' are TYPE tests, for the reason
+# given above AMC_PROJECT_TYPE. Keying all three off stage names left every row
+# stamped False and all three toggles inert.
+PERF_HIDDEN_CLOSED_GROUP = 'closed'
+PERF_HIDDEN_TYPE_GROUPS = {
+    AMC_PROJECT_TYPE: 'amc',
+    GENERAL_PROJECT_TYPE: 'general',
 }
 
 # Project whose task time is reported as Standup Hours. Matched by name for the
@@ -233,51 +251,94 @@ class FtProjectDashboard(models.TransientModel):
         }
 
     def _stage_ids_named(self, names):
-        """Resolve project stage names to ids.
+        """Resolve project stage names to ids, ignoring case.
 
         Domains are built on ids rather than on ``stage_id.name`` because the
         stage name is a translated (jsonb) column, and comparing it inside a
         domain is both slower and language-dependent. Archived stages are
         included: a project can still sit in one.
+
+        The comparison is case-insensitive and done in Python rather than with
+        an ``in`` domain. ``('name', 'in', [...])`` compiles to SQL ``=``, which
+        is case-SENSITIVE, so 'Closed' did not match the 'CLOSED' row that
+        ft_project_lifecycle creates and the lookup returned [] — a silent
+        empty result that read as "no such stage" instead of failing. There are
+        a couple of dozen stage rows, so reading them all costs nothing.
         """
+        wanted = {n.strip().lower() for n in names}
         return self.env['project.project.stage'].with_context(
-            active_test=False).search([('name', 'in', list(names))]).ids
+            active_test=False).search([]).filtered(
+                lambda s: (s.name or '').strip().lower() in wanted).ids
+
+    def _project_type_leaf(self, types):
+        """Domain leaf selecting projects of the given ft_project_type values.
+
+        Falls back to a no-op leaf when bt_project_customization is absent, so
+        the board still renders (with type-based cards unfiltered) rather than
+        raising on a database that carries the dashboard but not the field.
+        """
+        if 'ft_project_type' not in self.env['project.project']._fields:
+            return []
+        return [('ft_project_type', 'in', list(types))]
+
+    def _live_project_leaves(self):
+        """The leaves shared by all three project-count cards.
+
+        Not archived, and not parked in a terminal stage. ``not in`` on a
+        many2one also matches rows with no stage set, so a project that has
+        never been staged still counts rather than silently disappearing.
+        """
+        return [
+            ('active', '=', True),
+            ('stage_id', 'not in', self._stage_ids_named(TERMINAL_STAGE_NAMES)),
+        ]
 
     def _active_project_domain(self, filters=None):
-        """Projects counted as active: not General, not Hold, not Closed.
+        """Projects counted as active: live, and not a General project.
 
-        ``not in`` on a many2one also matches rows with no stage set, so a
-        project that has never been staged still counts as active rather than
-        silently disappearing from the figure.
+        General is internal, non-delivery work (see bt_project_customization's
+        classification rules), so it is excluded here exactly as the previous
+        stage-name list intended to exclude it — the difference is that it is now
+        read from ft_project_type, which is populated, rather than from a stage
+        named 'General', which is archived and empty.
 
-        The header's Status picker is ANDed on top, so choosing an inactive
-        stage such as Closed legitimately reads 0 here — the card counts active
-        projects, and none of them are Closed.
+        Keeps the two cards below additive:
+        Active Projects == Implementation Projects + AMC Projects.
+
+        The header's Status picker is ANDed on top, so choosing a terminal stage
+        such as CLOSED legitimately reads 0 here — the card counts live
+        projects, and none of them are closed.
         """
-        return [
-            ('active', '=', True),
-            ('stage_id', 'not in', self._stage_ids_named(INACTIVE_STAGE_NAMES)),
-        ] + self._scope_leaves_on_project(filters)
+        return (
+            self._live_project_leaves()
+            + self._project_type_leaf(
+                (IMPLEMENTATION_PROJECT_TYPE, AMC_PROJECT_TYPE))
+            + self._scope_leaves_on_project(filters)
+        )
 
     def _amc_project_domain(self, filters=None):
-        """Projects sitting in the AMC stage."""
-        return [
-            ('active', '=', True),
-            ('stage_id', 'in', self._stage_ids_named((AMC_STAGE_NAME,))),
-        ] + self._scope_leaves_on_project(filters)
+        """Live projects under an annual maintenance contract.
+
+        Read from ft_project_type, not from stage: AMC and General share the
+        'Working (AMC/General)' stage, so stage cannot distinguish them.
+        """
+        return (
+            self._live_project_leaves()
+            + self._project_type_leaf((AMC_PROJECT_TYPE,))
+            + self._scope_leaves_on_project(filters)
+        )
 
     def _implementation_project_domain(self, filters=None):
-        """Active projects still being implemented: Active Projects minus AMC.
+        """Live projects still being implemented: Active Projects minus AMC.
 
         AMC is ongoing maintenance rather than delivery work, so it is reported
-        on its own card and excluded here. This keeps the two cards additive:
-        Active Projects == Implementation Projects + AMC Projects.
+        on its own card and excluded here.
         """
-        return [
-            ('active', '=', True),
-            ('stage_id', 'not in',
-             self._stage_ids_named(INACTIVE_STAGE_NAMES + (AMC_STAGE_NAME,))),
-        ] + self._scope_leaves_on_project(filters)
+        return (
+            self._live_project_leaves()
+            + self._project_type_leaf((IMPLEMENTATION_PROJECT_TYPE,))
+            + self._scope_leaves_on_project(filters)
+        )
 
     def _hours_base_domain(self, filters=None):
         """Everything the Hours Utilisation filters imply EXCEPT the task leaf.
@@ -1106,15 +1167,15 @@ class FtProjectDashboard(models.TransientModel):
         section: dev + pm + qa + ba + other + non_task == Actual Hrs.
 
         Every row carries ``hidden_group``: ``'closed'``, ``'amc'``, ``'general'``
-        or ``False`` (see PERF_HIDDEN_STAGE_GROUPS). The client hides each group
-        until that group's own toggle beside the search box is ticked, so the
-        three can be brought back independently. Sending the group name rather
-        than a plain boolean is what makes that possible without the browser
-        having to know which stage names map to which toggle.
+        or ``False`` (see PERF_HIDDEN_CLOSED_GROUP and PERF_HIDDEN_TYPE_GROUPS).
+        The client hides each group until that group's own toggle beside the
+        search box is ticked, so the three can be brought back independently.
+        Sending the group name rather than a plain boolean is what makes that
+        possible without the browser having to know the classification rules.
 
-        The classification is decided HERE, resolved through _stage_ids_named
-        like every other stage test in this module — which also means an archived
-        stage and a translated stage name both still match.
+        The classification is decided HERE: 'closed' from the stage, resolved
+        through _stage_ids_named so an archived or differently-cased stage name
+        still matches, and 'amc'/'general' from ft_project_type.
         """
         Project = self.env['project.project']
         Task = self.env['project.task']
@@ -1163,13 +1224,18 @@ class FtProjectDashboard(models.TransientModel):
         # "N/A" instead of a 0% that looks like failure.
         no_delivery = Task._ft_delivery_kpis(Task.browse())
 
-        # stage id -> toggle group, resolved once rather than per row. One search
-        # per group keeps the name matching inside _stage_ids_named, which is
-        # what handles archived and translated stage names.
-        group_by_stage_id = {}
-        for group, stage_name in PERF_HIDDEN_STAGE_GROUPS.items():
-            for stage_id in self._stage_ids_named((stage_name,)):
-                group_by_stage_id[stage_id] = group
+        # Which toggle governs a row, resolved once rather than per row.
+        # Closed is a stage; AMC and General are project types (see the comment
+        # on PERF_HIDDEN_TYPE_GROUPS). Closed wins where both apply: a finished
+        # AMC contract belongs behind the Closed toggle, which is the one
+        # somebody ticks when they want history.
+        closed_stage_ids = set(self._stage_ids_named((TERMINAL_STAGE_NAMES[0],)))
+
+        def hidden_group_for(project):
+            if project.stage_id.id in closed_stage_ids:
+                return PERF_HIDDEN_CLOSED_GROUP
+            return PERF_HIDDEN_TYPE_GROUPS.get(
+                getattr(project, 'ft_project_type', False), False)
 
         # Two projects can carry the same name — "Johns Umbrella" and
         # "Product: Real estate Pre sales" each exist twice in production — and
@@ -1194,10 +1260,10 @@ class FtProjectDashboard(models.TransientModel):
             rows.append({
                 'project': row_label(p),
                 # Which toggle governs this row, or False for always-visible.
-                # A project with no stage set is never hidden: a falsy stage_id
-                # is not in the map, so unstaged work stays visible rather than
-                # disappearing behind a toggle nobody would think to tick.
-                'hidden_group': group_by_stage_id.get(p.stage_id.id, False),
+                # A project with neither a terminal stage nor a hidden type is
+                # never hidden, so unstaged or unclassified work stays visible
+                # rather than disappearing behind a toggle nobody would tick.
+                'hidden_group': hidden_group_for(p),
                 # Show the standard Kanban stage (the status bar on the project
                 # form); the custom 'status' selection is unset on most projects.
                 'status': p.stage_id.name or '',
