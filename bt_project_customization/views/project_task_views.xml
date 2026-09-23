@@ -180,6 +180,30 @@
         <field name="arch" type="xml">
             <field name="project_id" position="after">
                 <field name="module_id" string="Module" optional="show"/>
+                <field name="task_type"
+                   string="Task Type"
+                   optional="show"/>
+
+                <field name="task_source"
+                    string="Task Source"
+                    optional="show"/>
+
+                <field name="ft_timeline_status"
+                   string="Timeline Status"
+                   widget="badge"
+                   decoration-success="ft_timeline_status == 'on_time'"
+                   decoration-danger="ft_timeline_status == 'overdue'"
+                   optional="show"/>
+
+                <field name="ft_worked_by_id"
+                    string="Worked By"
+                    widget="many2one_avatar_user"
+                    optional="show"/>
+
+                <field name="ft_completed_by_id"
+                    string="Completed By"
+                    widget="many2one_avatar_user"
+                    optional="show"/>
             </field>
         </field>
     </record>

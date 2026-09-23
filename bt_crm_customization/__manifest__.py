@@ -25,6 +25,11 @@
         'views/crm_menu_overrides.xml',
         'views/marketing_lead_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bt_crm_customization/static/src/css/crm_lead.css',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'LGPL-3',

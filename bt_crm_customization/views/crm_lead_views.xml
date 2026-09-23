@@ -47,9 +47,14 @@
 
                 <field name="lead_source" invisible="type != 'opportunity'"/>
                 <field name="cus_campaign_id" invisible="type != 'opportunity'"/>
+              
                 <field name="source_amount" invisible="type != 'opportunity'"/>
                 <field name="date_closed" invisible="type != 'opportunity'"/>
                 <field name="create_uid" invisible="type != 'opportunity'"/>
+                <field name="lead_age_days"
+                        string="Age (Days)"
+                        invisible="type != 'opportunity'"
+                        readonly="1"/>
                 <field name="bdr_id" invisible="type != 'opportunity'"/>
                 <field name="description_text" invisible="type != 'opportunity'"/>       
             </xpath>
@@ -169,10 +174,15 @@
                  (with its Employee Count) or a structured address exists. -->
             <xpath expr="//group[@name='lead_partner']//field[@name='linkedin_url']" position="after">
                 <field name="company_size" placeholder="e.g. 50-100 employees"/>
-                <field name="employee_count"/>
+                <field name="employee_count" string="Employee Count"/>
                 <field name="company_currency" invisible="1"/>
                 <field name="annual_revenue_amount"/>
+                
+                
                 <field name="lead_location" placeholder="e.g. Chennai, India"/>
+
+
+                
             </xpath>
 
             <!-- Qualification block at the top of the Lead's right-hand group:
@@ -182,14 +192,67 @@
                  view, and on a lead that bar is read-only. -->
             <xpath expr="//group[@name='lead_priority']/field[@name='priority']" position="before">
                 <field name="lead_created_date"/>
-                <!-- Days open, computed from Created Date. Read-only by
-                     nature: it has no column behind it. -->
                 <field name="lead_age_days"/>
-                <field name="lead_status"/>
-                <field name="acquisition_timeline"/>
-                <field name="current_system"/>
-                <field name="improvement_area"/>
+                <field name="lead_status"
+                        string="Status"
+                        readonly="type == 'opportunity'"/>
             </xpath>
+
+
+            <!-- Separate Qualification section below the main details. -->
+            <!-- Qualification: editable during creation, read-only after saving. -->
+            <!-- Qualification: existing fields left, customer and sales notes right -->
+            <xpath expr="//sheet/notebook" position="before">
+                <group name="qualification_section"
+                    string="Qualification"
+                    col="2"
+                    invisible="type != 'lead'">
+
+                    <group name="qualification_left">
+                        <field name="current_system"
+                            string="Current System"
+                            readonly="id"/>
+
+                        <field name="annual_revenue_range"
+                            string="Revenue Range"
+                            readonly="id"/>
+
+                        <field name="employee_range"
+                            string="Employee Range"
+                            readonly="id"/>
+
+                        <field name="improvement_area"
+                            string="What are you looking to improve?"
+                            readonly="id"/>
+
+                        <field name="acquisition_timeline"
+                            string="Timeline"
+                            readonly="id"/>
+                    </group>
+
+                    <group name="qualification_right">
+                        <label for="enquiry_notes"/>
+                        <field name="enquiry_notes"
+                            nolabel="1"
+                            colspan="2"
+                            readonly="id"
+                            placeholder="Customer-provided enquiry"/>
+
+                        <label for="first_call_feedback"/>
+                        <field name="first_call_feedback"
+                            nolabel="1"
+                            colspan="2"
+                            placeholder="Enter first-call feedback (minimum 20 characters)"/>
+                    </group>
+
+                </group>
+            </xpath>
+
+<!-- Hide the Notes tab on leads; retain its data -->
+<xpath expr="//sheet/notebook/page[.//field[@name='description']]"
+       position="attributes">
+    <attribute name="invisible">type == 'lead'</attribute>
+</xpath>
 
             <!-- LEAD layout: two continuous columns.
                  Core builds the lead form from four inner groups, which the
@@ -211,19 +274,7 @@
 
             <!-- LEFT column: contact details, between Company Name and the
                  address they belong with. -->
-            <xpath expr="//group[@name='lead_partner']/field[@name='partner_name']" position="after">
-                <xpath expr="//group[@name='lead_info']/label[@for='contact_name']" position="move"/>
-                <xpath expr="//group[@name='lead_info']/div[field[@name='contact_name']]" position="move"/>
-                <xpath expr="//group[@name='lead_info']/label[@for='email_from_group_lead_info']" position="move"/>
-                <xpath expr="//group[@name='lead_info']/div[field[@name='email_from']]" position="move"/>
-                <xpath expr="//group[@name='lead_info']/field[@name='email_cc']" position="move"/>
-                <xpath expr="//group[@name='lead_info']/field[@name='function']" position="move"/>
-                <xpath expr="//group[@name='lead_info']/label[@for='phone_group_lead_info']" position="move"/>
-                <xpath expr="//group[@name='lead_info']/div[field[@name='phone']]" position="move"/>
-                <!-- Mobile travels with Phone: it was added to `lead_info`
-                     above, and moving a div does not carry its siblings. -->
-                <xpath expr="//group[@name='lead_info']/field[@name='mobile']" position="move"/>
-            </xpath>
+            
 
             <!-- RIGHT column: Salesperson and Sales Team at the top, above the
                  qualification fields. -->
@@ -284,8 +335,30 @@
                 <field name="stage_id" optional="show"
                        options="{'no_create': True, 'no_open': True}"/>
                 <field name="lead_status" optional="show"/>
-                <field name="acquisition_timeline" optional="show"/>
-                <field name="current_system" optional="hide"/>
+                <field name="current_system"
+                    string="Current System"
+                    optional="show"
+                    readonly="id"/>
+
+                <field name="annual_revenue_range"
+                    string="Revenue Range"
+                    optional="show"
+                    readonly="id"/>
+
+                <field name="employee_range"
+                    string="Employee Range"
+                    optional="show"
+                    readonly="id"/>
+
+                <field name="improvement_area"
+                    string="Improvement Lookings"
+                    optional="show"
+                    readonly="id"/>
+
+                <field name="acquisition_timeline"
+                    string="Timeline"
+                    optional="show"
+                    readonly="id"/>
                 <field name="company_size" optional="hide"/>
                 <field name="lead_location" optional="hide"/>
                 <!-- Notes: crm.lead.description, which core labels "Notes" and

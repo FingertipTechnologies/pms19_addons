@@ -882,37 +882,37 @@ class InheritProjectProject(models.Model):
                 self._ft_check_stage_entry_dates(target_stage, vals)
         # A required date, once filled in, may not be emptied again.
         self._ft_check_cleared_dates(vals)
-        if 'timesheet_ids' in vals:
-            deduped = []
-            for cmd in vals['timesheet_ids']:
-                # cmd[0] == 0 means "create new record via O2M"
-                if cmd[0] == 0:
-                    cv = cmd[2] or {}
-                    task_id = cv.get('task_id')
-                    # Only deduplicate when the record came from a task save
-                    # (task timesheets always carry a task_id)
-                    if task_id:
-                        domain = [
-                            ('task_id', '=', task_id),
-                            ('project_id', 'in', self.ids),
-                        ]
-                        # Add optional fields only when present in the command
-                        # vals to avoid False-vs-'' mismatches causing missed hits
-                        if cv.get('date'):
-                            domain.append(('date', '=', cv['date']))
-                        if cv.get('employee_id'):
-                            domain.append(('employee_id', '=', cv['employee_id']))
-                        if cv.get('unit_amount') is not None:
-                            domain.append(('unit_amount', '=', cv['unit_amount']))
-                        existing = self.env['account.analytic.line'].search(
-                            domain, limit=1
-                        )
-                        if existing:
-                            # Replace create with a plain link to the existing record
-                            deduped.append((4, existing.id, 0))
-                            continue
-                deduped.append(cmd)
-            vals['timesheet_ids'] = deduped
+        # if 'timesheet_ids' in vals:
+        #     deduped = []
+        #     for cmd in vals['timesheet_ids']:
+        #         # cmd[0] == 0 means "create new record via O2M"
+        #         if cmd[0] == 0:
+        #             cv = cmd[2] or {}
+        #             task_id = cv.get('task_id')
+        #             # Only deduplicate when the record came from a task save
+        #             # (task timesheets always carry a task_id)
+        #             if task_id:
+        #                 domain = [
+        #                     ('task_id', '=', task_id),
+        #                     ('project_id', 'in', self.ids),
+        #                 ]
+        #                 # Add optional fields only when present in the command
+        #                 # vals to avoid False-vs-'' mismatches causing missed hits
+        #                 if cv.get('date'):
+        #                     domain.append(('date', '=', cv['date']))
+        #                 if cv.get('employee_id'):
+        #                     domain.append(('employee_id', '=', cv['employee_id']))
+        #                 if cv.get('unit_amount') is not None:
+        #                     domain.append(('unit_amount', '=', cv['unit_amount']))
+        #                 existing = self.env['account.analytic.line'].search(
+        #                     domain, limit=1
+        #                 )
+        #                 if existing:
+        #                     # Replace create with a plain link to the existing record
+        #                     deduped.append((4, existing.id, 0))
+        #                     continue
+        #         deduped.append(cmd)
+        #     vals['timesheet_ids'] = deduped
         return super().write(vals)
 
     def action_view_timesheets(self):

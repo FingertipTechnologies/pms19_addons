@@ -51,6 +51,8 @@ class InheritCrmLead(models.Model):
     account_id = fields.Many2one('res.partner', string='Account')
     features_id = fields.Many2one('cus.features', string='Features')
 
+    
+
     # Odoo 19 dropped crm.lead.mobile from core (upstream merged it into phone),
     # but the migration left the `mobile` column and every value in it untouched
     # - only the field registration went away. Re-declaring it here with the
@@ -185,6 +187,27 @@ class InheritCrmLead(models.Model):
 
     linkedin_url = fields.Char(string="LinkedIn URL")
 
+
+    enquiry_notes = fields.Text(
+        string="Enquiry Notes",
+        help="Original enquiry provided by the customer.",
+    )
+
+    first_call_feedback = fields.Text(
+        string="1st Call Feedback",
+        tracking=True,
+        help="Sales team's first-call feedback. Minimum 20 characters when entered.",
+    )
+
+    @api.constrains('first_call_feedback')
+    def _check_first_call_feedback_length(self):
+        for lead in self:
+            feedback = lead.first_call_feedback or ''
+            if feedback and len(feedback.strip()) < 20:
+                raise ValidationError(
+                    "1st Call Feedback must contain at least 20 characters."
+                )
+
     # ------------------------------------------------------------------
     # Lead qualification fields (Lead page)
     # ------------------------------------------------------------------
@@ -208,7 +231,7 @@ class InheritCrmLead(models.Model):
     ], string="Current System", tracking=True,
         help="System the prospect is using today.")
 
-
+    
     improvement_area = fields.Selection([
         ('lead_management', 'Lead Management'),
         ('sales_automation', 'Sales Automation'),
@@ -229,11 +252,38 @@ class InheritCrmLead(models.Model):
         string="Employee Count",
         help="Number of employees to copy to the account when the lead is converted.",
     )
+
+    employee_range = fields.Selection(
+        [
+            ('0_10', '0 - 10'),
+            ('10_50', '11 - 50'),
+            ('50_100', '51 - 100'),
+            ('100_500', '101 - 500'),
+            ('500_above', '501 and above'),
+        ],
+        string="Employee Range",
+        help="Employee range supplied separately through import or manual entry.",
+    )
+
     annual_revenue_amount = fields.Monetary(
         string="Annual Revenue",
         currency_field='company_currency',
         help="Annual revenue to copy to the account when the lead is converted.",
     )
+
+
+
+    annual_revenue_range = fields.Selection(
+    [
+        ('0_10_cr', '0 - 10 Cr'),
+        ('10_50_cr', '10 - 50 Cr'),
+        ('50_100_cr', '50 - 100 Cr'),
+        ('100_500_cr', '100 - 500 Cr'),
+        ('500_cr_above', '500 and above'),
+    ],
+    string="Revenue Range",
+)
+
     acquisition_timeline = fields.Selection([
         ('just_exploring', 'Just Exploring'),
         ('1_3_months', '1-3 Months'),
@@ -243,15 +293,36 @@ class InheritCrmLead(models.Model):
     # Outcome of the call / first touch. Distinct from `stage_id` (the pipeline
     # position) and from the stock `won_status`: a lead can sit in the first
     # stage with a status of RNP for several attempts.
-    lead_status = fields.Selection([
-        ('call_taken', 'Call Taken'),
-        ('rnp', 'RNP'),
-        ('busy', 'Busy'),
-        ('not_interested', 'Not Interested'),
-        ('by_mistake', 'By Mistake'),
-        ('junk', 'Junk'),
-    ], string="Status", tracking=True,
-        help="Outcome of the last contact attempt. RNP = Ring No Pick.")
+    @api.model
+    def _get_lead_status_selection(self):
+        """Call statuses plus one unique option per opportunity stage."""
+        selection = [
+            ('call_taken', 'Call Taken'),
+            ('rnp', 'RNP'),
+            ('busy', 'Busy'),
+            ('not_interested', 'Not Interested'),
+            ('by_mistake', 'By Mistake'),
+            ('junk', 'Junk'),
+            ('converted', 'Converted'),
+        ]
+
+        stages = self.env['crm.stage'].search([], order='sequence, id')
+
+        for stage in stages:
+            selection.append((
+                'opportunity_stage_%s' % stage.id,
+                stage.name,
+            ))
+
+        return selection
+
+
+    lead_status = fields.Selection(
+        selection='_get_lead_status_selection',
+        string="Status",
+        tracking=True,
+        help="Current lead status or intended opportunity stage.",
+    )
     # Free text: on a lead this is what the prospect said ("Chennai",
     # "Dubai - HQ in London"), captured before the address fields are filled.
     lead_location = fields.Char(
@@ -269,6 +340,8 @@ class InheritCrmLead(models.Model):
         help="Days since the lead was created (today - Created Date).",
     )
 
+
+    
     @api.depends('lead_created_date', 'create_date')
     def _compute_lead_age_days(self):
         today = fields.Date.context_today(self)
@@ -616,9 +689,14 @@ class InheritCrmLead(models.Model):
         Contact Name gets filled in later, if at all - so without this the
         opportunity comes out with an empty Contact Name.
         """
-        values = super()._convert_opportunity_data(customer, team_id=team_id)
+        values = super()._convert_opportunity_data(customer,team_id=team_id,)
+
         if not self.contact_name and self.name:
             values['contact_name'] = self.name
+
+        # The lead is successfully becoming an opportunity.
+        values['lead_status'] = 'converted'
+
         return values
 
     def _create_customer(self, with_parent=None):
@@ -696,6 +774,22 @@ class InheritCrmLead(models.Model):
         write) and for a Kanban drag (only stage_id is written) as long as
         Next Action was updated since the previous stage change.
         """
+        # Records becoming opportunities in this write must retain Converted.
+        converting = self.filtered(
+            lambda lead:
+                lead.type == 'lead'
+                and vals.get('type') == 'opportunity'
+        )
+
+        # Capture actual stage changes on existing opportunities.
+        status_sync_records = self.browse()
+        if 'stage_id' in vals:
+            status_sync_records = self.filtered(
+                lambda lead:
+                    lead.type == 'opportunity'
+                    and lead.stage_id.id != vals.get('stage_id')
+            )
+
         stage_changing = self.browse()
         # Moving INTO Lost is exempt: that move is made automatically when an
         # opportunity is archived, and there is no next action to record on a
@@ -750,6 +844,27 @@ class InheritCrmLead(models.Model):
                     )
                 stage_changing |= lead
         res = super().write(vals)
+
+        if converting:
+            super(InheritCrmLead, converting).write({
+                'lead_status': 'converted',
+            })
+
+        # Later opportunity stage changes update the same record's status.
+        for lead in status_sync_records:
+            if lead.type != 'opportunity':
+                continue
+
+            new_status = (
+                'opportunity_stage_%s' % lead.stage_id.id
+                if lead.stage_id else False
+            )
+
+            if lead.lead_status != new_status:
+                super(InheritCrmLead, lead).write({
+                    'lead_status': new_status,
+                })
+
         # Snapshot the new Next Action for the records whose stage just changed.
         for lead in stage_changing:
             super(InheritCrmLead, lead).write(

@@ -3,6 +3,7 @@
     <!-- Root Menu -->
     <menuitem id="menu_ft_helpdesk_root"
               name="Helpdesk"
+              action="action_ticket_list"
               web_icon="ft_helpdesk_core,static/description/icon.png"
               groups="base.group_user"
               sequence="25"/>
@@ -11,6 +12,7 @@
     <menuitem id="menu_ft_helpdesk_tickets"
               name="Tickets"
               parent="menu_ft_helpdesk_root"
+              action="action_ticket_list"
               sequence="10"/>
 
     <menuitem id="menu_ft_helpdesk_all_tickets"

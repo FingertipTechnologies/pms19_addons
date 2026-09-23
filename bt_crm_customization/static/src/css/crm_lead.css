@@ -1,0 +1,19 @@
+.qualification_group {
+    width: 100%;
+    max-width: 750px;
+}
+
+.qualification_group .o_field_widget,
+.qualification_group .o_input_dropdown,
+.qualification_group .o_input {
+    width: 100% !important;
+    min-width: 300px !important;
+}
+
+.qualification_group .o_wrap_field {
+    margin-bottom: 10px;
+}
+
+.qualification_group .o_cell {
+    padding-bottom: 8px;
+}

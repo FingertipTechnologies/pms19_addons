@@ -75,11 +75,19 @@
               name="Tickets"
               parent="project.menu_main_pm"
               sequence="30"/>
+    
+    <record id="action_pms_all_tickets" model="ir.actions.act_window">
+        <field name="name">All Tickets</field>
+        <field name="res_model">ft.helpdesk.ticket</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="ft_helpdesk_core.view_ticket_search"/>
+        <field name="context">{'search_default_active_tickets': 1}</field>
+    </record>
 
     <menuitem id="menu_pms_all_tickets"
               name="All Tickets"
               parent="menu_pms_tickets"
-              action="ft_helpdesk_core.action_ticket_list"
+              action="action_pms_all_tickets"
               sequence="20"/>
 
     <menuitem id="menu_pms_tickets_no_project"
