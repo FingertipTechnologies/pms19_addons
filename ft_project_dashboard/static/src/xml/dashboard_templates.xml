@@ -575,7 +575,7 @@
                                        t-att-value="state.projectSearch"
                                        t-on-input="onProjectSearch"/>
                             </div>
-                            <!-- Reads as "Show  [ ] Closed  [ ] AMC  [ ] General".
+                            <!-- Reads as "Show  [ ] Closed  [ ] AMC  [ ] General  [ ] No Activity".
                                  Without the lead-in a bare "Closed" checkbox
                                  could as easily mean hide as show. -->
                             <span class="ftpd_toggle_lead">Show</span>
@@ -591,6 +591,20 @@
                                     </span>
                                 </label>
                             </t>
+                            <!-- Last, and separate from the three above: it cuts
+                                 across them rather than naming a group, so a
+                                 dormant AMC contract needs this box and the AMC
+                                 box before it appears. -->
+                            <label class="ftpd_table_toggle"
+                                   title="Show projects that booked no hours in the selected period. They are listed because their dates cover it — an open-ended project always does.">
+                                <input type="checkbox"
+                                       t-att-checked="state.projectShowNoActivity"
+                                       t-on-change="(ev) => this.onProjectShowNoActivity(ev)"/>
+                                <span>No Activity</span>
+                                <span class="ftpd_toggle_count" t-if="projectNoActivityCount">
+                                    <t t-esc="projectNoActivityCount"/>
+                                </span>
+                            </label>
                         </t>
                     </DataTable>
                 </div>

@@ -1176,6 +1176,14 @@ class FtProjectDashboard(models.TransientModel):
         The classification is decided HERE: 'closed' from the stage, resolved
         through _stage_ids_named so an archived or differently-cased stage name
         still matches, and 'amc'/'general' from ft_project_type.
+
+        Each row also carries ``no_activity``, set when the project booked no
+        hours in the period and is listed only because its dates overlap it.
+        Those rows are hidden by default behind their own toggle: on a real
+        database most open AMC contracts are dormant in any given month, so they
+        padded the table out of usefulness. Hidden rather than dropped, because
+        "this project was open all month and nobody touched it" is a real
+        signal - it is just not the one the table is usually read for.
         """
         Project = self.env['project.project']
         Task = self.env['project.task']
@@ -1264,6 +1272,12 @@ class FtProjectDashboard(models.TransientModel):
                 # never hidden, so unstaged or unclassified work stays visible
                 # rather than disappearing behind a toggle nobody would tick.
                 'hidden_group': hidden_group_for(p),
+                # True when the project booked no hours in the selected period
+                # and is on the table only because its dates overlap it (an
+                # open-ended contract always overlaps). Separate from
+                # hidden_group because a row can be both, e.g. a dormant AMC
+                # contract, and the two toggles must act independently.
+                'no_activity': not act_by_proj.get(p.id),
                 # Show the standard Kanban stage (the status bar on the project
                 # form); the custom 'status' selection is unset on most projects.
                 'status': p.stage_id.name or '',

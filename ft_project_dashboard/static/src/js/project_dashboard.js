@@ -119,6 +119,12 @@ export class ProjectDashboard extends Component {
             // independently. Keyed by the `hidden_group` the server stamps on
             // each row, so adding a fourth group needs no change here.
             projectShowStage: { closed: false, amc: false, general: false },
+            // Projects with no hours in the period, listed only because their
+            // dates overlap it. Hidden by default: most open AMC contracts are
+            // dormant in a given month, so leaving them in padded the table.
+            // Separate from projectShowStage because a row can be both, e.g. a
+            // dormant AMC contract, and the toggles must act independently.
+            projectShowNoActivity: false,
             // The two filtered sections keep one person picker and nothing else.
             // Each holds an override: the figures the server recomputed for its
             // own picker, or null to read the header-scoped payload exactly as
@@ -512,6 +518,11 @@ export class ProjectDashboard extends Component {
         rows = rows.filter(
             (r) => !r.hidden_group || this.state.projectShowStage[r.hidden_group]
         );
+        // ANDed with the group filter above: a dormant AMC row needs both its
+        // own toggle and this one before it appears.
+        if (!this.state.projectShowNoActivity) {
+            rows = rows.filter((r) => !r.no_activity);
+        }
         if (q) {
             rows = rows.filter((r) => (r.project || "").toLowerCase().includes(q));
         }
@@ -522,6 +533,22 @@ export class ProjectDashboard extends Component {
     }
     onProjectShowStage(group, ev) {
         this.state.projectShowStage[group] = ev.target.checked;
+    }
+    onProjectShowNoActivity(ev) {
+        this.state.projectShowNoActivity = ev.target.checked;
+    }
+
+    /** How many rows the No Activity toggle is holding back right now.
+     *  Counted after the group filter, unlike the three group counts: a dormant
+     *  Closed project is already hidden by its own toggle, so counting it here
+     *  too would promise rows that ticking this box alone would not reveal. */
+    get projectNoActivityCount() {
+        const rows = this.tables.project_status || [];
+        return rows.filter(
+            (r) =>
+                r.no_activity &&
+                (!r.hidden_group || this.state.projectShowStage[r.hidden_group])
+        ).length;
     }
 
     /** The three toggles with the row count each is currently holding back.
