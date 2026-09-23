@@ -228,7 +228,7 @@
                     <group name="qualification_left">
                         <field name="current_system"
                             string="Current System"
-                            readonly="id"/>
+                            />
 
                         <field name="annual_revenue_range"
                             string="Revenue Range"
