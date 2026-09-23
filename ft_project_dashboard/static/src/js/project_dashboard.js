@@ -552,14 +552,20 @@ export class ProjectDashboard extends Component {
     }
 
     /** The three toggles with the row count each is currently holding back.
-     *  The counts come off the unfiltered payload, so they stay put as boxes are
-     *  ticked and explain an empty-looking table rather than leaving it looking
-     *  broken. */
+     *  A badge has to promise exactly what ticking it reveals, so a row also
+     *  hidden by No Activity is not counted here until that box is ticked too:
+     *  otherwise AMC advertised 33 and produced 14, which reads as a bug. The
+     *  No Activity badge excludes group-hidden rows for the same reason, so the
+     *  two are symmetric and neither over-promises. */
     get projectStageToggles() {
         const rows = this.tables.project_status || [];
         return PROJECT_STAGE_TOGGLES.map((toggle) => ({
             ...toggle,
-            count: rows.filter((r) => r.hidden_group === toggle.group).length,
+            count: rows.filter(
+                (r) =>
+                    r.hidden_group === toggle.group &&
+                    (!r.no_activity || this.state.projectShowNoActivity)
+            ).length,
         }));
     }
 

@@ -1,6 +1,6 @@
 {
     'name': 'FT Project Dashboard',
-    'version': '19.0.1.5.0',
+    'version': '19.0.1.5.1',
     'category': 'Project',
     'summary': 'Executive Project Dashboard — KPI cards & Chart.js analytics (OWL)',
     'description': """
