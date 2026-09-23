@@ -213,16 +213,6 @@
                             string="Revenue Range"
                             readonly="id"/>
 
-                        <field name="annual_revenue_amount"
-                                string="Annual Revenue"
-                                readonly="id"/>
-
-
-                        <field name="employee_count"
-                            string="Employee Count"
-                            readonly="id"/>
-                            
-
                         <field name="employee_range"
                             string="Employee Range"
                             readonly="id"/>
@@ -249,6 +239,12 @@
                             nolabel="1"
                             colspan="2"
                             placeholder="Enter first-call feedback (minimum 20 characters)"/>
+
+                        <field name="annual_revenue_amount"
+                            string="Annual Revenue"/>
+
+                        <field name="employee_count"
+                            string="Employee Count"/>
                     </group>
 
                 </group>
