@@ -64,7 +64,7 @@
         <td style="padding: 8px;"><t t-out="object.team_id.name or 'Unassigned'"/></td>
     </tr>
 </table>
-<p>Please review this ticket at your earliest convenience.</p>
+<p>This ticket has been assigned to you. Please review the details and start working on it.</p>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>

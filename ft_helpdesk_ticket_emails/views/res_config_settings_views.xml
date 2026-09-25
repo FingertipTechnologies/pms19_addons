@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_ticket_emails" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.ft.helpdesk.ticket.emails</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="ft_helpdesk_core.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='ft_helpdesk_core']" position="inside">
+                <block title="Ticket Emails">
+                    <setting string="Ticket Emails"
+                             help="Send one notification email per ticket event - created, escalated, closed, stage changed, or a customer-visible reply. A single email goes out per event with every recipient in Cc, never one email per person.">
+                        <field name="helpdesk_ticket_emails"/>
+                        <div class="content-group" invisible="not helpdesk_ticket_emails">
+                            <div class="mt16">
+                                <field name="helpdesk_ticket_email_to_pm" class="oe_inline"/>
+                                <label for="helpdesk_ticket_email_to_pm"
+                                       string="Project Manager (PM)"/>
+                                <div class="text-muted ms-4">Team &gt; Project Manager (PM)</div>
+                            </div>
+                            <div class="mt8">
+                                <field name="helpdesk_ticket_email_to_team_lead" class="oe_inline"/>
+                                <label for="helpdesk_ticket_email_to_team_lead"
+                                       string="Team Lead"/>
+                                <div class="text-muted ms-4">Team &gt; Team Leader</div>
+                            </div>
+                            <div class="mt8">
+                                <field name="helpdesk_ticket_email_to_assignee" class="oe_inline"/>
+                                <label for="helpdesk_ticket_email_to_assignee"
+                                       string="Assignee"/>
+                                <div class="text-muted ms-4">The user assigned to the ticket</div>
+                            </div>
+                            <div class="mt8">
+                                <field name="helpdesk_ticket_email_to_customer" class="oe_inline"/>
+                                <label for="helpdesk_ticket_email_to_customer"
+                                       string="Customer"/>
+                                <div class="text-muted ms-4">The customer on the ticket</div>
+                            </div>
+                            <div class="mt16">
+                                <label for="helpdesk_ticket_email_user_ids"
+                                       string="Users"/>
+                                <field name="helpdesk_ticket_email_user_ids"
+                                       widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       placeholder="Add users to copy on every ticket email..."/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

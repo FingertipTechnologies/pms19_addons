@@ -52,6 +52,20 @@ class ProjectProject(models.Model):
             ]
         return dates
 
+    def _ft_overdue_milestones(self):
+        """The project must have reached DATA by its Data Upload Date.
+
+        Declared here rather than in bt_project_customization for the same
+        reason as _ft_required_creation_dates: the field is this module's.
+        """
+        milestones = super()._ft_overdue_milestones()
+        milestones['data'] = ('pl_data_upload_date', _('Data Upload Date'))
+        return milestones
+
+    @api.depends('pl_data_upload_date')
+    def _compute_ft_overdue(self):
+        return super()._compute_ft_overdue()
+
     pl_data_upload_date = fields.Date(string='Data Upload Date')
     pl_support_end_date = fields.Date(string='Support End Date')
     # Stamped by _pl_stamp_lifecycle_dates when the project is put on hold, and

@@ -64,6 +64,26 @@ class ProjectWeek(models.Model):
         help='True for the week today falls in. The Weeks list opens on it.',
     )
 
+    # Read by Kanban grouping (Odoo's _fold_name is 'fold'), not shown anywhere.
+    #
+    # The server opens only the first ten columns of a grouped Kanban
+    # (web.models.MAX_NUMBER_OPENED_GROUPS) and sends the rest folded. The
+    # Week Board runs its weeks oldest first, so on any project with more than
+    # ten weeks behind it the first ten were history and the week being worked
+    # arrived folded - scrolled to, but as a closed strip. A folded group does
+    # not count towards the ten, so folding the weeks BEFORE the current one
+    # leaves the ten open columns to this week and the ones coming up. The past
+    # stays one click away, unfolded by its header.
+    #
+    # Only on the Week Board: it keys off the ft_current_week_id the board's
+    # action puts in the context, so the Weeks list, All Tasks grouped by week
+    # and every other view read False and fold nothing.
+    fold = fields.Boolean(
+        string='Folded in Week Board', compute='_compute_fold',
+        help='Technical: folds the weeks before the current one on the Week '
+             'Board, so the current week opens unfolded.',
+    )
+
     board_project_id = fields.Many2one(
         'project.project', string='Project',
         compute='_compute_board_project_id', readonly=False, store=False,
@@ -175,6 +195,16 @@ class ProjectWeek(models.Model):
             project = project.search([('id', '=', project_id)], limit=1)
         for week in self:
             week.board_project_id = project
+
+    @api.depends('start_date')
+    @api.depends_context('ft_current_week_id')
+    def _compute_fold(self):
+        current_id = self.env.context.get('ft_current_week_id')
+        current_start = current_id and self.browse(current_id).exists().start_date
+        for week in self:
+            week.fold = bool(
+                current_start and week.start_date and week.start_date < current_start
+            )
 
     @api.depends('start_date', 'end_date')
     @api.depends_context('tz')

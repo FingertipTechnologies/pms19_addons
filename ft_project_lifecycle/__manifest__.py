@@ -68,7 +68,10 @@
     # archived.
     # 19.0.2.3.0 adds this module's three Dates-group milestones to the
     # create-time required-date rule, and marks them required on the form.
-    'version': '19.0.2.3.0',
+    # 19.0.2.4.0 checks the Data Upload Date for the Overdue Reason: a
+    # project is overdue for DATA once that date has passed without it
+    # reaching DATA. Python only, no migration.
+    'version': '19.0.2.4.0',
     'summary': 'Project Type, project-level lifecycle stages and milestone dates.',
     'description': """
 Project Lifecycle

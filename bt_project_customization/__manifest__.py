@@ -157,7 +157,16 @@
     # stuck at top: 0 was hidden behind it. It now stops underneath the status
     # bar, whose height a small script measures, since it changes with the
     # screen width and zoom. Stylesheet and JS only, no migration.
-    'version': '19.0.1.23.0',
+    # 19.0.1.24.0 fixes the Overdue Reason. It read each stage's ENTRY
+    # prerequisite as that stage's deadline, so DATA - which may only be
+    # entered once a UAT Start Date is set - became overdue the day after UAT
+    # started ("UAT Start Date has passed but the project has not reached
+    # DATA"), weeks before its Data Upload Date. Each stage is now checked
+    # against its own planned date: DATA against the Data Upload Date, UAT
+    # against the UAT Start Date, and so on, and only once that date has
+    # passed. Regression joins the check with its Regression Date. Python
+    # only, nothing stored, no migration.
+    'version': '19.0.1.24.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',

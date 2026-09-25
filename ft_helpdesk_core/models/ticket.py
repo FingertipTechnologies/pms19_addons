@@ -308,6 +308,18 @@ class HelpdeskTicket(models.Model):
                 ticket_type = self.env['ft.helpdesk.ticket.type'].browse(vals['type_id'])
                 if ticket_type.default_team_id:
                     vals['team_id'] = ticket_type.default_team_id.id
+
+
+        # Apply the team's default assignee before creating the ticket.
+        for vals in vals_list:
+            if vals.get('team_id') and not vals.get('assigned_user_id'):
+                team = self.env['ft.helpdesk.team'].browse(vals['team_id'])
+                if (
+                    team.auto_assign_mode == 'manual'
+                    and team.default_assignee_id
+                ):
+                    vals['assigned_user_id'] = team.default_assignee_id.id
+                    
         tickets = super().create(vals_list)
         for ticket in tickets:
             # Auto-assign via round robin

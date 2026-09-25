@@ -217,7 +217,15 @@
     # the left of the screen, so the earlier weeks are one scroll left and the
     # coming ones one scroll right. It used to open on the project's oldest
     # week. Views, assets and Python only, no migration.
-    'version': '19.0.4.15.0',
+    # 19.0.4.16.0 opens the current week UNFOLDED on the Full Board. Odoo
+    # sends only the first ten columns of a grouped Kanban open, and the weeks
+    # run oldest first, so on a project with more than ten weeks behind it the
+    # week being worked came folded - scrolled to, but a closed strip. The
+    # weeks before the current one now fold on this board (the week gets a
+    # computed `fold`, read only when the board's action names the current
+    # week), which leaves the open columns to this week and the ones ahead.
+    # Earlier weeks unfold with a click. Python only, no migration.
+    'version': '19.0.4.16.0',
     'category': 'Project',
     'summary': 'Week-based task planning for projects (list, kanban & form views)',
     'description': """

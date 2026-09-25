@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Single email fired on each ticket event (created / escalated /
+             closed / stage change / customer conversation) when Ticket Emails
+             is enabled. Recipients ride in Cc on one mail.mail, so the event
+             never fans out into one message per person. The event wording is
+             passed through the context by _send_ticket_event_email(). -->
+        <record id="mt_ticket_event_email_template" model="mail.template">
+            <field name="name">Helpdesk Ticket: Event Notification</field>
+            <field name="model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="email_from">admin@fingertipplus.com</field>
+            <field name="subject">{{ ctx.get('ft_event_label') or 'Ticket Updated' }} {{ object.ticket_no }}{{ (' ' + object.project_id.name) if object.project_id else '' }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello,</p>
+    <p style="font-size: 14px; color: #333;">
+        <t t-out="ctx.get('ft_event_intro') or 'This helpdesk ticket has been updated.'"/>
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 150px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Ticket Number</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px; font-weight: 600; color: #6f42c1;"><t t-out="object.ticket_no or ''"/></td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Subject</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;"><t t-out="object.name or ''"/></td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Status</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">
+                <t t-set="state_label" t-value="dict(object._fields['state'].selection).get(object.state, '')"/>
+                <t t-out="state_label"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Priority</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">
+                <t t-set="priority_label" t-value="dict(object._fields['priority'].selection).get(object.priority, '')"/>
+                <t t-out="priority_label"/>
+            </td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Customer</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;"><t t-out="object.customer_id.name or ''"/></td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Team</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;"><t t-out="object.team_id.name or 'Unassigned'"/></td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Team Lead</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;"><t t-out="object.team_id.leader_user_id.name or '-'"/></td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Project Manager (PM)</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;"><t t-out="object.team_id.pm_user_id.name or '-'"/></td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Assignee</td>
+            <td style="padding: 10px 14px; font-size: 14px;"><t t-out="object.assigned_user_id.name or 'Unassigned'"/></td>
+        </tr>
+    </table>
+    <t t-if="ctx.get('ft_event_detail')">
+        <div style="margin: 16px 0; padding: 12px 14px; border-left: 3px solid #6f42c1; background-color: #faf9fc;">
+            <div style="font-size: 13px; color: #555; font-weight: bold; margin-bottom: 6px;">
+                <t t-out="ctx.get('ft_event_detail_title') or 'Details'"/>
+            </div>
+            <div style="font-size: 14px; color: #333;"><t t-out="ctx.get('ft_event_detail')"/></div>
+        </div>
+    </t>
+    <p style="font-size: 14px; color: #333;">Best regards,<br/>
+        <strong><t t-out="object.company_id.name or ''"/> Support Team</strong></p>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>

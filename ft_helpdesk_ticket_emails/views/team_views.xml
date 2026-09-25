@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Project Manager (PM) alongside the Team Leader -->
+    <record id="view_team_form_ticket_emails" model="ir.ui.view">
+        <field name="name">ft.helpdesk.team.form.ticket.emails</field>
+        <field name="model">ft.helpdesk.team</field>
+        <field name="inherit_id" ref="ft_helpdesk_core.view_team_form"/>
+        <field name="arch" type="xml">
+            <field name="leader_user_id" position="after">
+                <field name="pm_user_id" widget="many2one_avatar_user"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_team_tree_ticket_emails" model="ir.ui.view">
+        <field name="name">ft.helpdesk.team.list.ticket.emails</field>
+        <field name="model">ft.helpdesk.team</field>
+        <field name="inherit_id" ref="ft_helpdesk_core.view_team_tree"/>
+        <field name="arch" type="xml">
+            <field name="leader_user_id" position="after">
+                <field name="pm_user_id" widget="many2one_avatar_user"/>
+            </field>
+        </field>
+    </record>
+</odoo>

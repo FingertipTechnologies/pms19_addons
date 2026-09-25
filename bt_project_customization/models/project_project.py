@@ -70,12 +70,31 @@ FT_STAGE_DATE_REQUIREMENTS = {
     'closed': ('go_live_date', 'Go Live Date'),
 }
 
-# The forward delivery pipeline, in order, used by the Overdue check only. AMC,
-# CLOSED and HOLD are deliberately excluded: they are terminal or branch states
-# rather than scheduled milestones, and since go_live_date gates both AMC and
-# CLOSED, including them would flag every live project as overdue for whichever
-# end state it did not take.
-FT_OVERDUE_KEYS = ('disc', 'dev', 'srv', 'uat', 'data', 'tra', 'support')
+# canonical stage key -> (date field, human label): the date by which the
+# project must have REACHED that stage. Used by the Overdue check only.
+#
+# Deliberately not FT_STAGE_DATE_REQUIREMENTS. That map names the date that
+# must be filled in before a stage may be ENTERED - the previous milestone -
+# so DATA there is gated by the UAT Start Date. Read as a deadline it flagged a
+# project as overdue for DATA the day after UAT started, weeks before its Data
+# Upload Date. Here every stage is paired with its own planned date: the
+# project is overdue for DATA only once the Data Upload Date has passed with
+# the project still short of DATA.
+#
+# The Data Upload Date belongs to ft_project_lifecycle, which adds it through
+# _ft_overdue_milestones. AMC, CLOSED and HOLD are excluded: they are terminal
+# or branch states rather than scheduled milestones, and since go_live_date
+# ends the pipeline either way, including them would flag every live project as
+# overdue for whichever end state it did not take.
+FT_OVERDUE_MILESTONES = {
+    'disc': ('kick_start_meeting_date', 'Kick-off Date'),
+    'dev': ('brd_approval_date', 'BRD Approval Date'),
+    'reg': ('ft_regression_date', 'Regression Date'),
+    'srv': ('sandbox_review_date', 'Sandbox Review Date'),
+    'uat': ('uat_start_date', 'UAT Start Date'),
+    'tra': ('ft_training_date', 'Training Date'),
+    'support': ('support_start_date', 'Support Start Date'),
+}
 
 
 class ProjectProjectStage(models.Model):
@@ -360,13 +379,21 @@ class InheritProjectProject(models.Model):
                     'label': label,
                 })
 
+    def _ft_overdue_milestones(self):
+        """{stage key: (date field, label)} - the date by which the project
+        must have reached each stage. Extended by modules that add a stage
+        date of their own (ft_project_lifecycle adds the Data Upload Date)."""
+        return dict(FT_OVERDUE_MILESTONES)
+
     def _ft_overdue_reasons(self, stage_map=None):
         """Human reasons this project is behind schedule (possibly empty).
 
-        A milestone is overdue when its date has passed but the project has not
-        yet reached the stage that date gates. Stage order is compared with the
-        model's own (sequence, id) key, so two stages sharing a sequence still
-        order deterministically.
+        A milestone is overdue when its planned date has passed but the project
+        has not yet reached that milestone's own stage: Data Upload Date 7 Oct
+        and still short of DATA on 8 Oct. The day itself is not overdue - the
+        stage can still be reached on its date. Stage order is compared with
+        the model's own (sequence, id) key, so two stages sharing a sequence
+        still order deterministically.
         """
         self.ensure_one()
         Stage = self.env['project.project.stage']
@@ -375,8 +402,7 @@ class InheritProjectProject(models.Model):
         today = fields.Date.context_today(self)
         here = Stage._ft_stage_sort_key(self.stage_id) if self.stage_id else None
         reasons = []
-        for key in FT_OVERDUE_KEYS:
-            field_name, label = FT_STAGE_DATE_REQUIREMENTS[key]
+        for key, (field_name, label) in self._ft_overdue_milestones().items():
             due = self[field_name]
             target = stage_map.get(key)
             if not due or not target:
@@ -605,8 +631,9 @@ class InheritProjectProject(models.Model):
         string='Overdue',
         compute='_compute_ft_overdue',
         search='_search_ft_is_overdue',
-        help='A required milestone date has already passed while the project is '
-             'still short of the stage that date gates.',
+        help='A milestone date has passed while the project is still short of '
+             'that milestone\'s stage - for example the Data Upload Date has '
+             'passed and the project has not reached DATA.',
     )
     ft_overdue_reason = fields.Char(
         string='Overdue Reason',
@@ -882,37 +909,6 @@ class InheritProjectProject(models.Model):
                 self._ft_check_stage_entry_dates(target_stage, vals)
         # A required date, once filled in, may not be emptied again.
         self._ft_check_cleared_dates(vals)
-        # if 'timesheet_ids' in vals:
-        #     deduped = []
-        #     for cmd in vals['timesheet_ids']:
-        #         # cmd[0] == 0 means "create new record via O2M"
-        #         if cmd[0] == 0:
-        #             cv = cmd[2] or {}
-        #             task_id = cv.get('task_id')
-        #             # Only deduplicate when the record came from a task save
-        #             # (task timesheets always carry a task_id)
-        #             if task_id:
-        #                 domain = [
-        #                     ('task_id', '=', task_id),
-        #                     ('project_id', 'in', self.ids),
-        #                 ]
-        #                 # Add optional fields only when present in the command
-        #                 # vals to avoid False-vs-'' mismatches causing missed hits
-        #                 if cv.get('date'):
-        #                     domain.append(('date', '=', cv['date']))
-        #                 if cv.get('employee_id'):
-        #                     domain.append(('employee_id', '=', cv['employee_id']))
-        #                 if cv.get('unit_amount') is not None:
-        #                     domain.append(('unit_amount', '=', cv['unit_amount']))
-        #                 existing = self.env['account.analytic.line'].search(
-        #                     domain, limit=1
-        #                 )
-        #                 if existing:
-        #                     # Replace create with a plain link to the existing record
-        #                     deduped.append((4, existing.id, 0))
-        #                     continue
-        #         deduped.append(cmd)
-        #     vals['timesheet_ids'] = deduped
         return super().write(vals)
 
     def action_view_timesheets(self):
@@ -945,36 +941,16 @@ class AccountAnalyticLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        result_ids = []
-        to_create = []
+        # Every line is created as entered: several timesheets on the same
+        # task and day - same or different hours, each with its own
+        # description - are all legitimate and must never be merged.
         for vals in vals_list:
-            task_id = vals.get('task_id')
             project_id = vals.get('project_id')
-            # When both task_id and project_id are present, the project form's
-            # O2M widget can re-submit a task timesheet as a create command even
-            # though the record already exists in the DB.  Detect and skip it.
-            if task_id and project_id:
-                domain = [
-                    ('task_id', '=', task_id),
-                    ('project_id', '=', project_id),
-                ]
-                if vals.get('date'):
-                    domain.append(('date', '=', vals['date']))
-                if vals.get('employee_id'):
-                    domain.append(('employee_id', '=', vals['employee_id']))
-                if vals.get('unit_amount') is not None:
-                    domain.append(('unit_amount', '=', vals['unit_amount']))
-                existing = self.search(domain, limit=1)
-                if existing:
-                    result_ids.append(existing.id)
-                    continue
             if project_id and not vals.get('project_status'):
                 project = self.env['project.project'].browse(project_id)
                 if project.stage_id:
                     vals['project_status'] = project.stage_id.id
-            to_create.append(vals)
-        created = super().create(to_create) if to_create else self.browse()
-        return self.browse(result_ids) | created
+        return super().create(vals_list)
 
     def write(self, vals):
         # Only refresh project_status snapshot when the project itself changes
