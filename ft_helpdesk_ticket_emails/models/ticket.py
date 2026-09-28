@@ -125,7 +125,7 @@ class HelpdeskTicket(models.Model):
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'body_html': body,
-                    'email_from': HELPDESK_EMAIL_FROM,
+                    'email_from': 'Support Fingertip <support@fingertipplus.com>',
                     'reply_to': HELPDESK_EMAIL_FROM,
                     # A message needs a To; the recipients themselves all go in
                     # Cc, as configured.
