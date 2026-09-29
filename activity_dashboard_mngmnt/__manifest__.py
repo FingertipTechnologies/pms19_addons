@@ -27,7 +27,12 @@
     # "Cannot convert mail.activity.state to SQL because it is not stored" and
     # the dashboard returned a 500. _search_state translates those domains onto
     # date_deadline and active, mirroring core's _compute_state.
-    'version': '19.0.1.1.0',
+    # 19.0.1.2.0 lets a Sales User assign activities to colleagues: drops the
+    # res.users rule that hid every other user from the "Assigned to" lookup,
+    # and widens the mail.activity rule to activities they scheduled themselves
+    # (otherwise the create-rule check and the post-save re-read raised
+    # AccessError on Save).
+    'version': '19.0.1.2.0',
     'category': 'Extra Tools',
     'summary': """Dashboard for streamlined management of all activities.""",
     'description': """Simplify activity management with a comprehensive 

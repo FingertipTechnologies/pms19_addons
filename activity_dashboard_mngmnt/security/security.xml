@@ -84,10 +84,15 @@
         <field name="perm_unlink" eval="True"/>
     </record>
 
+    <!-- A Sales User sees the activities assigned to them AND the ones they
+         scheduled for a colleague. The second half matters: ir.rule is checked
+         on create, and the Schedule Activity dialog re-reads the record right
+         after saving, so with `user_id = me` alone assigning an activity to
+         anybody else raised an AccessError on Save. -->
     <record id="mail_activity_rule_sales_user" model="ir.rule">
-        <field name="name">Sales User: Own Activities Only</field>
+        <field name="name">Sales User: Own or Self-Scheduled Activities</field>
         <field name="model_id" ref="mail.model_mail_activity"/>
-        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="domain_force">['|', ('user_id', '=', user.id), ('create_uid', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('group_sales_user_custom'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
@@ -106,15 +111,10 @@
         <field name="perm_unlink" eval="True"/>
     </record>
 
-    <record id="user_rule_sales_user" model="ir.rule">
-        <field name="name">Sales User: Own User Record</field>
-        <field name="model_id" ref="base.model_res_users"/>
-        <field name="domain_force">[('id', '=', user.id)]</field>
-        <field name="groups" eval="[(4, ref('group_sales_user_custom'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="False"/>
-        <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
+    <!-- No rule on res.users on purpose. The earlier "Sales User: Own User
+         Record" rule (id = user.id) hid every other user from a Sales User, so
+         the "Assigned to" lookup in Schedule Activity found nobody but
+         themselves. Core already lets internal users read all users; the rule
+         is dropped rather than widened so a module upgrade removes it. -->
 
 </odoo>
