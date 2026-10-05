@@ -11,7 +11,7 @@
     # installed instead of asserting on it.
     # 19.0.1.2.3 stops the previous view painting over the Homepage when
     # switching to it from a module on wide screens.
-    "version": "19.0.1.2.4",
+    "version": "19.0.1.2.7",
     "category": "Productivity",
     "summary": "Role-based app icon visibility, default Homepage landing page, "
                 "and Quote of the Day / Announcement widget on the Homepage.",

@@ -18,7 +18,7 @@
             <field name="sequence">3</field>
         </record>
         <record id="category_feature_request" model="ft.helpdesk.category">
-            <field name="name">Feature Request</field>
+            <field name="name">Enhancement</field>
             <field name="icon">fa-lightbulb-o</field>
             <field name="sequence">4</field>
         </record>

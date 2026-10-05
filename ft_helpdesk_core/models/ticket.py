@@ -186,6 +186,12 @@ class HelpdeskTicket(models.Model):
         string='Age (Hours)', compute='_compute_age_hours',
         help='Hours since ticket creation.',
     )
+    age = fields.Integer(
+        string='Age', compute='_compute_age', search='_search_age',
+        help='Age in days, like the lead Age: days from the open time '
+             '(Created) to today. Once a ticket is closed or cancelled the '
+             'age stops at the close time.',
+    )
     is_overdue = fields.Boolean(
         string='Overdue', compute='_compute_is_overdue',
         search='_search_is_overdue',
@@ -232,6 +238,54 @@ class HelpdeskTicket(models.Model):
                 ticket.age_hours = delta.total_seconds() / 3600.0
             else:
                 ticket.age_hours = 0.0
+
+    @api.depends('create_date', 'closed_at', 'cancelled_at', 'state')
+    def _compute_age(self):
+        today = fields.Date.context_today(self)
+        for ticket in self:
+            if not ticket.create_date:
+                ticket.age = 0
+                continue
+            start = fields.Date.context_today(ticket, ticket.create_date)
+            end = today
+            if ticket.state in ('closed', 'cancelled'):
+                stop_at = ticket.closed_at or ticket.cancelled_at
+                if stop_at:
+                    end = fields.Date.context_today(ticket, stop_at)
+            ticket.age = max((end - start).days, 0)
+
+    def _search_age(self, operator, value):
+        """Turn an age in days into a range on the open time (create_date),
+        the same way the lead Age search works: a bigger age is an EARLIER
+        open time, so "Age >= 30" means "opened on or before today - 30 days".
+        """
+        if operator in ('in', 'not in'):
+            values = list(value) if isinstance(value, (list, tuple, set)) else [value]
+            if len(values) != 1:
+                raise UserError(_("Age can only be searched one value at a time."))
+            operator = '=' if operator == 'in' else '!='
+            value = values[0]
+        if operator not in ('=', '!=', '>', '>=', '<', '<='):
+            raise UserError(_("Unsupported operator '%s' for Age.") % operator)
+        try:
+            days = int(value)
+        except (TypeError, ValueError):
+            raise UserError(_("Age must be searched with a whole number of days."))
+        # Tickets opened on `day` are exactly `days` old today.
+        day = fields.Date.context_today(self) - timedelta(days=days)
+        day_start = fields.Datetime.to_datetime(day)
+        next_day = day_start + timedelta(days=1)
+        if operator == '=':
+            return [('create_date', '>=', day_start), ('create_date', '<', next_day)]
+        if operator == '!=':
+            return ['|', ('create_date', '<', day_start), ('create_date', '>=', next_day)]
+        if operator == '>=':      # opened on or before `day`
+            return [('create_date', '<', next_day)]
+        if operator == '>':       # opened before `day`
+            return [('create_date', '<', day_start)]
+        if operator == '<=':      # opened on or after `day`
+            return [('create_date', '>=', day_start)]
+        return [('create_date', '>=', next_day)]  # '<': opened after `day`
 
     def _compute_is_overdue(self):
         now = fields.Datetime.now()

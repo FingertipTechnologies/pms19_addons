@@ -9,6 +9,11 @@ from odoo.exceptions import AccessError, ValidationError
 # own "Embed this post" code). Falls back to treating the whole input as a
 # plain URL when no <iframe> is found.
 _IFRAME_SRC_RE = re.compile(r'<iframe[^>]*\bsrc=["\']([^"\']+)["\']', re.IGNORECASE)
+# height="1046" / width="504" of a pasted <iframe> embed snippet. LinkedIn
+# measures these for the exact post, so they are the only reliable way to
+# size the frame so the Like / Comment / Share bar shows without scrolling.
+_IFRAME_HEIGHT_RE = re.compile(r'<iframe[^>]*\bheight=["\']?(\d+)', re.IGNORECASE)
+_IFRAME_WIDTH_RE = re.compile(r'<iframe[^>]*\bwidth=["\']?(\d+)', re.IGNORECASE)
 
 # Exact-match allowlist of hosts we'll render as an iframe. Exact match
 # (not endswith/substring) so "linkedin.com.evil.example" can't sneak in.
@@ -140,6 +145,39 @@ class FtQuoteAnnouncement(models.Model):
         default="quote",
         required=True,
     )
+
+    def _ft_social_embed_size(self):
+        """(height, width) in px from a pasted <iframe> embed snippet, or
+        (False, False) when only a plain URL was pasted."""
+        self.ensure_one()
+        raw = self.social_url or ""
+        height = _IFRAME_HEIGHT_RE.search(raw)
+        width = _IFRAME_WIDTH_RE.search(raw)
+        return (
+            int(height.group(1)) if height else False,
+            int(width.group(1)) if width else False,
+        )
+
+    def _ft_social_post_url(self, embed_src, platform):
+        """Public page of the post on the platform, for the Like / Comment /
+        Share bar shown under the embed. A plain post URL that was pasted is
+        used as is; an embed snippet only carries the /embed/ src, so the
+        post page is rebuilt from the URN in it."""
+        self.ensure_one()
+        raw = (self.social_url or "").strip()
+        if raw.startswith("https://") and "<" not in raw:
+            return raw
+        if platform == "linkedin" and embed_src:
+            match = re.search(r"urn:li:(activity|share|ugcPost):(\d+)", embed_src)
+            if match:
+                return "https://www.linkedin.com/feed/update/urn:li:%s:%s/" % (
+                    match.group(1), match.group(2))
+        if platform == "facebook" and embed_src:
+            match = re.search(r"[?&]href=([^&]+)", embed_src)
+            if match:
+                from urllib.parse import unquote
+                return unquote(match.group(1))
+        return False
 
     def _ft_resolve_social_embed(self):
         """Turn whatever was pasted into `social_url` — a plain post URL, or
@@ -366,6 +404,11 @@ class FtQuoteAnnouncement(models.Model):
                 if record.content_type == "social"
                 else (False, False)
             )
+            social_height, social_width = (
+                record._ft_social_embed_size()
+                if record.content_type == "social"
+                else (False, False)
+            )
             items.append({
                 "id": record.id,
                 "title": record.title,
@@ -393,6 +436,17 @@ class FtQuoteAnnouncement(models.Model):
                 ),
                 "social_embed_src": social_src,
                 "social_platform": social_platform,
+                # Frame size measured by the platform for this exact post
+                # (from the pasted embed code); False for a plain URL.
+                "social_embed_height": social_height,
+                "social_embed_width": social_width,
+                # Post page on the platform, for the always-visible
+                # Like / Comment / Share bar under the frame.
+                "social_post_url": (
+                    record._ft_social_post_url(social_src, social_platform)
+                    if record.content_type == "social"
+                    else False
+                ),
                 # Fallback link shown when the post can't be embedded (e.g. the
                 # user pasted a profile/company page instead of a single post).
                 # Only expose a plain https link, never a raw <iframe> snippet.

@@ -1,6 +1,6 @@
 {
     'name': 'FT Helpdesk - Core',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.2',
     'category': 'Services/Helpdesk',
     'summary': 'Ticket Management System - Core Module',
     'description': """

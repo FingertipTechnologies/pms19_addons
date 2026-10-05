@@ -67,8 +67,29 @@
             <iframe t-if="item.social_embed_src"
                     t-att-src="item.social_embed_src"
                     t-attf-class="ft_quote_widget__social ft_quote_widget__social--{{item.social_platform}}"
+                    t-att-style="socialFrameStyle(item)"
                     t-attf-title="{{item.social_platform}} post"
                     allowfullscreen="allowfullscreen"/>
+            <!-- Always-visible Like / Comment / Share bar. The frame above
+                 is the platform's own page (another origin), so its bottom
+                 bar can neither be pinned nor restyled from here; these
+                 open the post on the platform, which is exactly where the
+                 embedded buttons send the reader anyway. -->
+            <div t-if="item.social_embed_src and item.social_post_url"
+                 class="ft_quote_widget__social_bar">
+                <a t-att-href="item.social_post_url" target="_blank" rel="noopener noreferrer"
+                   class="ft_quote_widget__social_action" title="Like this post">
+                    <i class="fa fa-thumbs-o-up"/> Like
+                </a>
+                <a t-att-href="item.social_post_url" target="_blank" rel="noopener noreferrer"
+                   class="ft_quote_widget__social_action" title="Comment on this post">
+                    <i class="fa fa-comment-o"/> Comment
+                </a>
+                <a t-att-href="shareUrl(item)" target="_blank" rel="noopener noreferrer"
+                   class="ft_quote_widget__social_action" title="Share this post">
+                    <i class="fa fa-share"/> Share
+                </a>
+            </div>
             <a t-elif="item.social_link" t-att-href="item.social_link"
                target="_blank" rel="noopener noreferrer"
                class="ft_quote_widget__social_link">

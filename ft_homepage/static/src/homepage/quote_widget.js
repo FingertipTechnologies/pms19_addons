@@ -64,6 +64,34 @@ class FtHomepageContent extends Component {
             .slice(0, MAX_FOOTER_POSTS);
     }
 
+    /**
+     * Inline size for a social embed, from the height/width the platform put
+     * in its own embed code for that post. The frame is never wider than the
+     * platform measured it for, so the post inside is laid out exactly as
+     * measured and its full height, Like / Comment / Share bar included, fits
+     * without an inner scrollbar. A plain URL has no size: the stylesheet's
+     * per-platform default height applies.
+     */
+    socialFrameStyle(item) {
+        const parts = [];
+        if (item.social_embed_height) {
+            parts.push(`height: ${item.social_embed_height}px`);
+        }
+        if (item.social_embed_width) {
+            parts.push(`max-width: ${item.social_embed_width}px`);
+        }
+        return parts.length ? parts.join("; ") : undefined;
+    }
+
+    /** Platform share dialog for the post under the action bar. */
+    shareUrl(item) {
+        const url = encodeURIComponent(item.social_post_url || "");
+        if (item.social_platform === "facebook") {
+            return `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+        }
+        return `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+    }
+
     isYoutube(item) {
         const url = item.video_url;
         return !!url && (url.includes("youtube.com") || url.includes("youtu.be"));

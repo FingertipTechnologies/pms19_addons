@@ -37,15 +37,15 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
-                    <group string="Subcategories">
-                        <field name="child_ids" nolabel="1">
-                            <list editable="bottom">
-                                <field name="sequence" widget="handle"/>
-                                <field name="name"/>
-                                <field name="portal_visible"/>
-                            </list>
-                        </field>
-                    </group>
+                    <separator string="Subcategories"/>
+
+                    <field name="child_ids" nolabel="1" class="w-100">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name" string="Subcategory"/>
+                            <field name="portal_visible" string="Visible on Portal"/>
+                        </list>
+                    </field>
                     <group>
                         <field name="description" placeholder="Category description..."/>
                     </group>

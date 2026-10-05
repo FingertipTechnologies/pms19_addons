@@ -290,11 +290,67 @@
         border: 0;
         border-radius: 8px;
         height: 460px;
+
+        &:has(+ .ft_quote_widget__social_bar) {
+            border-radius: 8px 8px 0 0;
+        }
     }
 
     &__posts[data-count="3"] .ft_quote_widget__social,
     &__posts[data-count="4"] .ft_quote_widget__social {
         height: 420px;
+    }
+
+    // LinkedIn stacks the post text, an image scaled to the column width and
+    // then the Like / Comment / Share bar. At 460px the bar sits below the
+    // fold, so the reader has to scroll inside the frame to reach it. These
+    // heights fit the whole card for a typical image post at each column
+    // width (narrower columns shrink the image, so 3-4 posts need less).
+    &__social--linkedin {
+        height: 660px;
+    }
+
+    &__posts[data-count="3"] .ft_quote_widget__social--linkedin,
+    &__posts[data-count="4"] .ft_quote_widget__social--linkedin {
+        height: 600px;
+    }
+
+    // Like / Comment / Share bar pinned under the embed frame: it is outside
+    // the frame, so it stays put while the post inside scrolls.
+    &__social_bar {
+        width: 100%;
+        max-width: 620px;
+        display: flex;
+        justify-content: space-around;
+        gap: 8px;
+        margin-top: -2px;
+        padding: 8px 6px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-top: 0;
+        border-radius: 0 0 8px 8px;
+        background: #fff;
+    }
+
+    &__social_action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        color: #444;
+
+        i.fa {
+            font-size: 1.05rem;
+        }
+
+        &:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #0a66c2;
+            text-decoration: none;
+        }
     }
 
     &__social_link {
@@ -330,8 +386,24 @@
             height: 420px;
         }
 
+        &__social--linkedin {
+            height: 620px;
+        }
+
         &__text {
             font-size: 1rem;
         }
     }
+}
+
+
+/* Compact LinkedIn preview, compatible with Odoo's SCSS compiler. */
+iframe.ft_quote_widget__social--linkedin {
+    height: 420px !important;
+    max-height: 50vh !important;
+    min-height: 0 !important;
+}
+
+.ft_quote_widget__social_bar {
+    flex-wrap: wrap;
 }
