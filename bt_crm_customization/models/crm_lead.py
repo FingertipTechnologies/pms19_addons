@@ -237,6 +237,7 @@ class InheritCrmLead(models.Model):
         ('sales_automation', 'Sales Automation'),
         ('management_reporting', 'Management Reporting'),
         ('crm_implementation', 'CRM Implementation'),
+        ('ERP_implementation', 'ERP Implementation'),
         ('existing_crm_customization', 'Existing CRM Customization'),
     ], string="What are you looking to improve?", tracking=True)
 
