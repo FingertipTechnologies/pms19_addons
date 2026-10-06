@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- All measures on ft.feedback.report are averages (aggregator="avg"):
+         draft responses and unanswered questions are already excluded by the
+         SQL view, and ratings (1-5) and scores (0-10) are separate columns. -->
+
+    <record id="view_ft_feedback_report_pivot" model="ir.ui.view">
+        <field name="name">ft.feedback.report.pivot</field>
+        <field name="model">ft.feedback.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Feedback Analysis" sample="1">
+                <field name="question_id" type="row"/>
+                <field name="rating_value" type="measure"/>
+                <field name="score_value" type="measure"/>
+                <field name="answer_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_report_graph" model="ir.ui.view">
+        <field name="name">ft.feedback.report.graph</field>
+        <field name="model">ft.feedback.report</field>
+        <field name="arch" type="xml">
+            <graph string="Feedback Analysis" type="bar" sample="1">
+                <field name="question_id"/>
+                <field name="rating_value" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_report_list" model="ir.ui.view">
+        <field name="name">ft.feedback.report.list</field>
+        <field name="model">ft.feedback.report</field>
+        <field name="arch" type="xml">
+            <list string="Feedback Answers" create="0" edit="0" delete="0">
+                <field name="date"/>
+                <field name="response_name"/>
+                <field name="partner_id"/>
+                <field name="commercial_partner_id" optional="hide"/>
+                <field name="section_id" optional="hide"/>
+                <field name="question_text"/>
+                <field name="question_type" optional="hide"/>
+                <field name="rating_value" avg="Average"/>
+                <field name="score_value" avg="Average"/>
+                <field name="text_value" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_report_search" model="ir.ui.view">
+        <field name="name">ft.feedback.report.search</field>
+        <field name="model">ft.feedback.report</field>
+        <field name="arch" type="xml">
+            <search string="Feedback Analysis">
+                <field name="partner_id"/>
+                <field name="commercial_partner_id"/>
+                <field name="question_id"/>
+                <field name="question_text"/>
+                <field name="text_value"/>
+                <filter name="date" string="Submission Date" date="date"/>
+                <separator/>
+                <filter name="ratings" string="Ratings (1-5)" domain="[('question_type', '=', 'rating')]"/>
+                <filter name="scores" string="Scores (0-10)" domain="[('question_type', '=', 'score')]"/>
+                <filter name="texts" string="Free Text" domain="[('question_type', '=', 'text')]"/>
+                <group>
+                    <filter name="group_partner" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'commercial_partner_id'}"/>
+                    <filter name="group_question" string="Question" context="{'group_by': 'question_id'}"/>
+                    <filter name="group_section" string="Section" context="{'group_by': 'section_id'}"/>
+                    <filter name="group_type" string="Question Type" context="{'group_by': 'question_type'}"/>
+                    <filter name="group_month" string="Month" context="{'group_by': 'date:month'}"/>
+                    <filter name="group_week" string="Week" context="{'group_by': 'date:week'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Customer-wise feedback: one row per customer, average rating / score. -->
+    <record id="action_ft_feedback_report_customer" model="ir.actions.act_window">
+        <field name="name">Customer-wise Feedback</field>
+        <field name="res_model">ft.feedback.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_ft_feedback_report_search"/>
+        <field name="context">{
+            'search_default_group_partner': 1,
+            'pivot_row_groupby': ['partner_id'],
+            'pivot_column_groupby': ['question_type'],
+            'pivot_measures': ['rating_value', 'score_value', 'answer_count'],
+            'graph_groupbys': ['partner_id'],
+            'graph_measure': 'rating_value',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No submitted feedback yet</p>
+            <p>Averages per customer appear here once responses are submitted from the portal.</p>
+        </field>
+    </record>
+
+    <!-- Question-wise analysis: average per question, split by section. -->
+    <record id="action_ft_feedback_report_question" model="ir.actions.act_window">
+        <field name="name">Question-wise Analysis</field>
+        <field name="res_model">ft.feedback.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="search_view_id" ref="view_ft_feedback_report_search"/>
+        <field name="context">{
+            'search_default_group_section': 1,
+            'search_default_group_question': 1,
+            'pivot_row_groupby': ['section_id', 'question_id'],
+            'pivot_measures': ['rating_value', 'score_value', 'answer_count'],
+            'graph_groupbys': ['question_id'],
+            'graph_measure': 'rating_value',
+        }</field>
+    </record>
+
+    <!-- Average ratings: bar chart of the average smiley rating per question. -->
+    <record id="action_ft_feedback_report_average" model="ir.actions.act_window">
+        <field name="name">Average Ratings</field>
+        <field name="res_model">ft.feedback.report</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="search_view_id" ref="view_ft_feedback_report_search"/>
+        <field name="context">{
+            'search_default_ratings': 1,
+            'search_default_group_question': 1,
+            'graph_groupbys': ['question_id'],
+            'graph_measure': 'rating_value',
+            'graph_mode': 'bar',
+            'pivot_row_groupby': ['question_id'],
+            'pivot_measures': ['rating_value', 'answer_count'],
+        }</field>
+    </record>
+
+    <!-- Trends: average rating per month over time. -->
+    <record id="action_ft_feedback_report_trend" model="ir.actions.act_window">
+        <field name="name">Feedback Trends</field>
+        <field name="res_model">ft.feedback.report</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="search_view_id" ref="view_ft_feedback_report_search"/>
+        <field name="context">{
+            'search_default_ratings': 1,
+            'search_default_group_month': 1,
+            'graph_groupbys': ['date:month'],
+            'graph_measure': 'rating_value',
+            'graph_mode': 'line',
+            'pivot_row_groupby': ['date:month'],
+            'pivot_column_groupby': ['question_type'],
+            'pivot_measures': ['rating_value', 'score_value', 'answer_count'],
+        }</field>
+    </record>
+</odoo>

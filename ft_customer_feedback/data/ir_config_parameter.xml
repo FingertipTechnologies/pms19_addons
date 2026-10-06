@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="param_feedback_intro_text" model="ir.config_parameter">
+        <field name="key">ft_customer_feedback.intro_text</field>
+        <field name="value">Thank you for availing our services. Please take a minute to share your experience with us.</field>
+    </record>
+    <record id="param_feedback_thanks_text" model="ir.config_parameter">
+        <field name="key">ft_customer_feedback.thanks_text</field>
+        <field name="value">Thank you for your feedback. It helps us serve you better.</field>
+    </record>
+</odoo>

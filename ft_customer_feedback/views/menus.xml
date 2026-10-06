@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_ft_feedback_root"
+              name="Customer Feedback"
+              web_icon="ft_customer_feedback,static/img/app_icon.png"
+              groups="ft_customer_feedback.group_feedback_user"
+              sequence="66"/>
+
+    <menuitem id="menu_ft_feedback_responses"
+              name="Responses"
+              parent="menu_ft_feedback_root"
+              action="action_ft_feedback_response"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_feedback_reporting"
+              name="Reporting"
+              parent="menu_ft_feedback_root"
+              sequence="20"/>
+
+    <menuitem id="menu_ft_feedback_report_customer"
+              name="Customer-wise Feedback"
+              parent="menu_ft_feedback_reporting"
+              action="action_ft_feedback_report_customer"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_feedback_report_question"
+              name="Question-wise Analysis"
+              parent="menu_ft_feedback_reporting"
+              action="action_ft_feedback_report_question"
+              sequence="20"/>
+
+    <menuitem id="menu_ft_feedback_report_average"
+              name="Average Ratings"
+              parent="menu_ft_feedback_reporting"
+              action="action_ft_feedback_report_average"
+              sequence="30"/>
+
+    <menuitem id="menu_ft_feedback_report_trend"
+              name="Feedback Trends"
+              parent="menu_ft_feedback_reporting"
+              action="action_ft_feedback_report_trend"
+              sequence="40"/>
+
+    <menuitem id="menu_ft_feedback_questions"
+              name="Feedback Questions"
+              parent="menu_ft_feedback_root"
+              action="action_ft_feedback_question"
+              groups="ft_customer_feedback.group_feedback_manager"
+              sequence="30"/>
+
+    <menuitem id="menu_ft_feedback_config"
+              name="Configuration"
+              parent="menu_ft_feedback_root"
+              groups="ft_customer_feedback.group_feedback_manager"
+              sequence="90"/>
+
+    <menuitem id="menu_ft_feedback_sections"
+              name="Sections"
+              parent="menu_ft_feedback_config"
+              action="action_ft_feedback_section"
+              sequence="20"/>
+
+    <menuitem id="menu_ft_feedback_settings"
+              name="Settings"
+              parent="menu_ft_feedback_config"
+              action="action_ft_feedback_config_settings"
+              sequence="30"/>
+              
+    <menuitem id="menu_pms_feedbacks"
+          name="Feedbacks"
+          parent="project.menu_main_pm"
+          action="ft_customer_feedback.action_ft_feedback_response"
+          groups="ft_customer_feedback.group_feedback_user"
+          sequence="85"/>
+
+</odoo>

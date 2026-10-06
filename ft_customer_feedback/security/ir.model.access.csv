@@ -1,0 +1,15 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_feedback_section_user,ft.feedback.section user,model_ft_feedback_section,group_feedback_user,1,0,0,0
+access_ft_feedback_section_manager,ft.feedback.section manager,model_ft_feedback_section,group_feedback_manager,1,1,1,1
+access_ft_feedback_section_portal,ft.feedback.section portal,model_ft_feedback_section,base.group_portal,1,0,0,0
+access_ft_feedback_question_user,ft.feedback.question user,model_ft_feedback_question,group_feedback_user,1,0,0,0
+access_ft_feedback_question_manager,ft.feedback.question manager,model_ft_feedback_question,group_feedback_manager,1,1,1,1
+access_ft_feedback_question_portal,ft.feedback.question portal,model_ft_feedback_question,base.group_portal,1,0,0,0
+access_ft_feedback_response_user,ft.feedback.response user,model_ft_feedback_response,group_feedback_user,1,1,1,0
+access_ft_feedback_response_manager,ft.feedback.response manager,model_ft_feedback_response,group_feedback_manager,1,1,1,1
+access_ft_feedback_response_portal,ft.feedback.response portal,model_ft_feedback_response,base.group_portal,1,0,0,0
+access_ft_feedback_response_line_user,ft.feedback.response.line user,model_ft_feedback_response_line,group_feedback_user,1,1,1,0
+access_ft_feedback_response_line_manager,ft.feedback.response.line manager,model_ft_feedback_response_line,group_feedback_manager,1,1,1,1
+access_ft_feedback_response_line_portal,ft.feedback.response.line portal,model_ft_feedback_response_line,base.group_portal,1,0,0,0
+access_ft_feedback_report_user,ft.feedback.report user,model_ft_feedback_report,group_feedback_user,1,0,0,0
+access_ft_feedback_report_manager,ft.feedback.report manager,model_ft_feedback_report,group_feedback_manager,1,0,0,0

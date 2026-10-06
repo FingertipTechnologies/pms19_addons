@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Starter questions. Loaded once on install (noupdate); edit or
+         delete them freely from Customer Feedback > Configuration. -->
+    <record id="section_overall" model="ft.feedback.section">
+        <field name="name">Over All</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="section_services" model="ft.feedback.section">
+        <field name="name">We constantly strive to serve you better and your honest feedback will help us improve our services.</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="question_overall_rating" model="ft.feedback.question">
+        <field name="name">How would you rate your overall experience with us?</field>
+        <field name="question_type">rating</field>
+        <field name="section_id" ref="section_overall"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="question_recommend" model="ft.feedback.question">
+        <field name="name">How likely are you to recommend us to your friends and colleagues?</field>
+        <field name="question_type">score</field>
+        <field name="section_id" ref="section_overall"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="question_reason" model="ft.feedback.question">
+        <field name="name">Please explain the reason for your rating.</field>
+        <field name="question_type">text</field>
+        <field name="section_id" ref="section_overall"/>
+        <field name="sequence">30</field>
+        <field name="required" eval="False"/>
+        <field name="placeholder">Free Text Area</field>
+    </record>
+
+    <record id="question_support" model="ft.feedback.question">
+        <field name="name">Support Experience</field>
+        <field name="question_type">rating</field>
+        <field name="section_id" ref="section_services"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="question_response_time" model="ft.feedback.question">
+        <field name="name">Response Time</field>
+        <field name="question_type">rating</field>
+        <field name="section_id" ref="section_services"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="question_quality" model="ft.feedback.question">
+        <field name="name">Quality of Deliverables</field>
+        <field name="question_type">rating</field>
+        <field name="section_id" ref="section_services"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="question_communication" model="ft.feedback.question">
+        <field name="name">Communication</field>
+        <field name="question_type">rating</field>
+        <field name="section_id" ref="section_services"/>
+        <field name="sequence">40</field>
+    </record>
+</odoo>

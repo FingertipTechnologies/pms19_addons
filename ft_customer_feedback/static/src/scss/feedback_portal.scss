@@ -1,0 +1,262 @@
+/* ===================================
+   FT Customer Feedback - portal page
+   =================================== */
+$ft-fb-purple: #6f42c1;
+$ft-fb-green-bg: #eaf6df;
+$ft-fb-green-fg: #3d8b28;
+
+/* Orange "Feedback" button (portal header, Feedbacks tab). */
+.ft-btn-orange {
+    background: linear-gradient(135deg, #f26522, #ff8c42);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    transition: box-shadow 0.2s, transform 0.2s;
+
+    &:hover,
+    &:focus {
+        background: linear-gradient(135deg, #d9531a, #f2762e);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(242, 101, 34, 0.4);
+        transform: translateY(-1px);
+    }
+}
+
+/* --- Feedbacks tab: history --------------------------- */
+.ft-fb-table th {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6c757d;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.ft-fb-answer-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+
+    .ft-fb-smiley {
+        width: 32px;
+        height: 32px;
+        margin: 0;
+        display: inline-block;
+    }
+}
+
+.ft-fb-score-badge {
+    background: $ft-fb-purple;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.ft-fb-answer-text {
+    white-space: pre-line;
+}
+
+.ft-fb-intro {
+    white-space: pre-line;
+}
+
+.ft-fb-section {
+    background: $ft-fb-green-bg;
+    color: #212529;
+    font-size: 1.15rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin: 1.5rem 0 0.25rem;
+
+    i.fa {
+        color: $ft-fb-green-fg;
+    }
+}
+
+.ft-fb-row {
+    border-bottom: 1px solid #e9ecef;
+    padding: 0.75rem 0.5rem;
+    margin: 0;
+
+    &.ft-fb-row-error {
+        background: #fff5f5;
+        border-left: 3px solid #dc3545;
+    }
+}
+
+.ft-fb-question {
+    font-size: 1rem;
+    color: #212529;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.ft-fb-error {
+    color: #dc3545;
+}
+
+/* --- Smiley rating ---------------------------------- */
+.ft-fb-option {
+    cursor: pointer;
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    transition: transform 0.15s, background 0.15s;
+
+    input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    &:hover {
+        transform: scale(1.08);
+        background: #f8f9fa;
+    }
+
+    .ft-fb-option-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 0.15rem;
+        white-space: nowrap;
+    }
+
+    /* selected state */
+    input:checked ~ .ft-fb-smiley {
+        transform: scale(1.18);
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+    }
+    input:checked ~ .ft-fb-option-label {
+        color: #212529;
+        font-weight: 700;
+    }
+    input:focus-visible ~ .ft-fb-smiley {
+        outline: 2px solid $ft-fb-purple;
+        outline-offset: 2px;
+        border-radius: 50%;
+    }
+}
+
+.ft-fb-smiley {
+    width: 40px;
+    height: 40px;
+    display: block;
+    margin: 0 auto;
+    transition: transform 0.15s, filter 0.15s;
+
+    circle:first-child {
+        stroke: rgba(0, 0, 0, 0.15);
+        stroke-width: 1.5;
+    }
+    .ft-fb-eye {
+        fill: #3a2b1e;
+    }
+    .ft-fb-brow,
+    .ft-fb-mouth {
+        fill: none;
+        stroke: #3a2b1e;
+        stroke-width: 4;
+        stroke-linecap: round;
+    }
+    .ft-fb-mouth-open {
+        fill: #3a2b1e;
+        stroke-width: 2;
+    }
+
+    &.ft-fb-smiley-1 circle:first-child { fill: #e53935; }
+    &.ft-fb-smiley-2 circle:first-child { fill: #fb8c00; }
+    &.ft-fb-smiley-3 circle:first-child { fill: #fdd835; }
+    &.ft-fb-smiley-4 circle:first-child { fill: #c0ca33; }
+    &.ft-fb-smiley-5 circle:first-child { fill: #43a047; }
+}
+
+/* --- 0-10 score scale ------------------------------- */
+.ft-fb-score-scale {
+    display: flex;
+    gap: 2px;
+}
+
+.ft-fb-score-box {
+    flex: 1 1 0;
+    margin: 0;
+    cursor: pointer;
+    text-align: center;
+    color: #fff;
+    font-weight: 700;
+    padding: 0.35rem 0;
+    transition: transform 0.15s, filter 0.15s;
+    user-select: none;
+
+    input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    &:first-child { border-radius: 6px 0 0 6px; }
+    &:last-child { border-radius: 0 6px 6px 0; }
+
+    &.ft-fb-score-poor { background: #f0625d; }
+    &.ft-fb-score-good { background: #f6b04d; }
+    &.ft-fb-score-excellent { background: #5cb85c; }
+
+    &:hover {
+        filter: brightness(0.92);
+    }
+
+    /* selected: whole box pops and gets a dark outline */
+    &:has(input:checked) {
+        transform: scale(1.12);
+        outline: 2px solid #212529;
+        outline-offset: -1px;
+        z-index: 1;
+        border-radius: 4px;
+    }
+    &:has(input:focus-visible) {
+        outline: 2px solid $ft-fb-purple;
+    }
+}
+
+.ft-fb-score-legend {
+    margin-top: 0.25rem;
+
+    .ft-fb-score-legend-poor { flex: 7 1 0; text-align: center; }
+    .ft-fb-score-legend-good { flex: 2 1 0; text-align: center; }
+    .ft-fb-score-legend-excellent { flex: 2 1 0; text-align: center; }
+}
+
+/* --- Free text -------------------------------------- */
+.ft-fb-text {
+    resize: vertical;
+}
+
+/* --- Thank you -------------------------------------- */
+.ft-fb-thanks-icon i {
+    font-size: 4rem;
+    color: #43a047;
+}
+
+/* --- Responsive ------------------------------------- */
+@media (max-width: 991.98px) {
+    .ft-fb-question {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .ft-fb-smiley {
+        width: 34px;
+        height: 34px;
+    }
+    .ft-fb-option {
+        padding: 0.25rem 0.15rem;
+    }
+    .ft-fb-option .ft-fb-option-label {
+        font-size: 0.65rem;
+    }
+    .ft-fb-score-box {
+        font-size: 0.8rem;
+    }
+}

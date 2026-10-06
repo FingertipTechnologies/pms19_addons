@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_feedback" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.ft.customer.feedback</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Customer Feedback" name="ft_customer_feedback" groups="ft_customer_feedback.group_feedback_manager">
+                    <block title="Portal Feedback Page">
+                        <setting string="Introduction" help="Text shown under the customer greeting at the top of the feedback form.">
+                            <field name="feedback_intro_text" nolabel="1" placeholder="Thank you for availing our services..."/>
+                        </setting>
+                        <setting string="Thank You Message" help="Text shown after the form is submitted.">
+                            <field name="feedback_thanks_text" nolabel="1" placeholder="Thank you for your feedback."/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_ft_feedback_config_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'ft_customer_feedback'}</field>
+    </record>
+</odoo>

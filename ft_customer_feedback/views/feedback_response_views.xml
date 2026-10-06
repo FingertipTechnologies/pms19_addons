@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_ft_feedback_response_list" model="ir.ui.view">
+        <field name="name">ft.feedback.response.list</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="arch" type="xml">
+            <list string="Feedback Responses" create="0">
+                <field name="active" column_invisible="True"/>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <!-- <field name="commercial_partner_id" optional="hide"/> -->
+                <field name="project_id" string="Project"/>
+                <field name="user_id" optional="hide"/>
+                <!-- <field name="average_rating" avg="Average"/> -->
+                <field name="rating_label" widget="badge"
+                       decoration-danger="rating_label in ('Poor', 'Fair')"
+                       decoration-warning="rating_label == 'Good'"
+                       decoration-success="rating_label in ('Very Good', 'Excellent')"/>
+                <!-- <field name="average_score" avg="Average"/> -->
+                <field name="line_count" string="Answers"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-success="state == 'submitted'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_response_form" model="ir.ui.view">
+        <field name="name">ft.feedback.response.form</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="arch" type="xml">
+            <form string="Feedback Response" create="0">
+                <header>
+                    <button name="action_submit" string="Mark Submitted" type="object"
+                            class="oe_highlight" invisible="state != 'draft'"
+                            groups="ft_customer_feedback.group_feedback_manager"/>
+                    
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="commercial_partner_id" invisible="1"/>
+
+                            <field name="project_id"
+                                string="Project"
+                                readonly="state == 'submitted'"
+                                domain="[('partner_id.commercial_partner_id', '=', commercial_partner_id)]"
+                                options="{'no_create': True}"/>
+                            <field name="user_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="1"/>
+                            <!-- <field name="average_rating"/> -->
+                            <field name="rating_label"/>
+                            <!-- <field name="average_score"/> -->
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Answers" name="answers">
+                            <field name="line_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="section_id" optional="show"/>
+                                    <field name="question_id" optional="hide"/>
+                                    <field name="question_text"/>
+                                    <field name="question_type"/>
+                                    <field name="rating_value_display" string="Rating Value"/>
+                                    <field name="display_value"/>
+                                    <field name="text_value" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <field name="active" invisible="1"/>
+                <widget name="web_ribbon"
+                        title="Archived"
+                        bg_color="text-bg-danger"
+                        invisible="active"/>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_response_search" model="ir.ui.view">
+        <field name="name">ft.feedback.response.search</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="arch" type="xml">
+            <search string="Feedback Responses">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="project_id" string="Project"/>
+                <filter name="this_month" string="This Month" date="date" default_period="month"/>
+                <separator/>
+                <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <separator/>
+                <filter name="poor" string="Poor / Fair" domain="[('average_rating', '>', 0), ('average_rating', '&lt;', 2.5)]"/>
+                <filter name="good" string="Good" domain="[('average_rating', '>=', 2.5), ('average_rating', '&lt;', 3.5)]"/>
+                <filter name="excellent" string="Very Good / Excellent" domain="[('average_rating', '>=', 3.5)]"/>
+                <separator/>
+                <filter name="archived"
+                        string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_partner" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_date" string="Month" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_response_pivot" model="ir.ui.view">
+        <field name="name">ft.feedback.response.pivot</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="arch" type="xml">
+            <pivot string="Feedback Responses">
+                <field name="date" interval="month" type="row"/>
+                <field name="average_rating" type="measure"/>
+                <field name="average_score" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_response_graph" model="ir.ui.view">
+        <field name="name">ft.feedback.response.graph</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="arch" type="xml">
+            <graph string="Feedback Responses" type="bar">
+                <field name="date" interval="month"/>
+                <field name="average_rating" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_ft_feedback_response" model="ir.actions.act_window">
+        <field name="name">Responses</field>
+        <field name="res_model">ft.feedback.response</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_ft_feedback_response_search"/>
+        <field name="context">{'search_default_submitted': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No feedback received yet</p>
+            <p>Responses appear here as customers submit the form from the portal "Feedback" tab.</p>
+        </field>
+    </record>
+
+</odoo>

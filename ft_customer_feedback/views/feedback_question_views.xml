@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================= -->
+    <!-- QUESTIONS                     -->
+    <!-- ============================= -->
+    <record id="view_ft_feedback_question_list" model="ir.ui.view">
+        <field name="name">ft.feedback.question.list</field>
+        <field name="model">ft.feedback.question</field>
+        <field name="arch" type="xml">
+            <list string="Feedback Questions" editable="bottom" default_order="section_sequence, sequence, id">
+                <field name="sequence" widget="handle"/>
+                <field name="name" placeholder="e.g. How would you rate your overall experience with us?"/>
+                <field name="question_type"/>
+                <field name="section_id"/>
+                <field name="required" widget="boolean_toggle"/>
+                <field name="placeholder" optional="hide"/>
+                <field name="active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_question_form" model="ir.ui.view">
+        <field name="name">ft.feedback.question.form</field>
+        <field name="model">ft.feedback.question</field>
+        <field name="arch" type="xml">
+            <form string="Feedback Question">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h2><field name="name" placeholder="Question subject"/></h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="question_type" widget="radio"/>
+                            <field name="section_id"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="required"/>
+                            <field name="placeholder" invisible="question_type != 'text'"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_question_search" model="ir.ui.view">
+        <field name="name">ft.feedback.question.search</field>
+        <field name="model">ft.feedback.question</field>
+        <field name="arch" type="xml">
+            <search string="Feedback Questions">
+                <field name="name"/>
+                <field name="section_id"/>
+                <filter name="rating" string="Rating" domain="[('question_type', '=', 'rating')]"/>
+                <filter name="score" string="Score 0-10" domain="[('question_type', '=', 'score')]"/>
+                <filter name="text" string="Text Response" domain="[('question_type', '=', 'text')]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_section" string="Section" context="{'group_by': 'section_id'}"/>
+                    <filter name="group_type" string="Question Type" context="{'group_by': 'question_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ft_feedback_question" model="ir.actions.act_window">
+        <field name="name">Questions</field>
+        <field name="res_model">ft.feedback.question</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_ft_feedback_question_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add your first feedback question</p>
+            <p>Each question is a subject and an answer type: a smiley rating, a 0-10 score or a free text.
+               Customers answer them from the "Feedback" tab of the portal.</p>
+        </field>
+    </record>
+
+    <!-- ============================= -->
+    <!-- SECTIONS                      -->
+    <!-- ============================= -->
+    <record id="view_ft_feedback_section_list" model="ir.ui.view">
+        <field name="name">ft.feedback.section.list</field>
+        <field name="model">ft.feedback.section</field>
+        <field name="arch" type="xml">
+            <list string="Feedback Sections" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="question_count" string="Questions"/>
+                <field name="active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_ft_feedback_section" model="ir.actions.act_window">
+        <field name="name">Sections</field>
+        <field name="res_model">ft.feedback.section</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a section</p>
+            <p>Sections are the green headings that group questions on the portal page, e.g. "Over All".</p>
+        </field>
+    </record>
+
+</odoo>
