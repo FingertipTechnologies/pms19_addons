@@ -62,7 +62,7 @@
         </tr>
     </table>
     <p style="margin: 20px 0;">
-        <a t-att-href="'%s/mail/view?model=ft.helpdesk.ticket&amp;res_id=%s' % (object.get_base_url(), object.id)"
+        <a t-att-href="'%s/fingertip/action-%s/%s' % (object.get_base_url(), object.env.ref('ft_helpdesk_core.action_ticket_list').id, object.id)"
         target="_blank"
         style="display: inline-block;
                 padding: 12px 20px;

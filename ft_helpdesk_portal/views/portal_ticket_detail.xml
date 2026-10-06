@@ -296,12 +296,7 @@
                                                     <td class="py-2 px-4"><t t-out="ticket.category_id.name"/></td>
                                                 </tr>
                                             </t>
-                                            <t t-if="ticket.type_id">
-                                                <tr>
-                                                    <td class="text-muted small py-2 px-4">Type</td>
-                                                    <td class="py-2 px-4"><t t-out="ticket.type_id.name"/></td>
-                                                </tr>
-                                            </t>
+                                           
                                             <t t-if="ticket.assigned_user_id">
                                                 <tr>
                                                     <td class="text-muted small py-2 px-4">Assignee</td>

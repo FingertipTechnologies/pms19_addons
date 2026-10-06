@@ -78,19 +78,7 @@
                                                     <option value="">-- Select Subcategory --</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-6">
-                                                <label for="type_id" class="form-label fw-medium">Ticket Type</label>
-                                                <select name="type_id" id="type_id"
-                                                        class="form-select">
-                                                    <option value="">-- Select Type --</option>
-                                                    <t t-foreach="ticket_types" t-as="ttype">
-                                                        <option t-att-value="ttype.id"
-                                                                t-att-selected="str(ttype.id) == str(type_id) if type_id else None">
-                                                            <t t-out="ttype.name"/>
-                                                        </option>
-                                                    </t>
-                                                </select>
-                                            </div>
+                                            
                                             <div class="col-md-6">
                                                 <label for="priority" class="form-label fw-medium">Priority</label>
                                                 <select name="priority" id="priority"
