@@ -54,6 +54,9 @@ FT Customer Feedback
         "web.assets_frontend": [
             "ft_customer_feedback/static/src/scss/feedback_portal.scss",
         ],
+        "web.assets_backend": [
+            "ft_customer_feedback/static/src/scss/feedback_backend.scss",
+        ],
     },
     "installable": True,
     "application": True,

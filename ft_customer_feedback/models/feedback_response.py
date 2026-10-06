@@ -195,7 +195,7 @@ class FeedbackResponseLine(models.Model):
 
     _name = "ft.feedback.response.line"
     _description = "Customer Feedback Answer"
-    _order = "sequence, id"
+    _order = "section_sequence, section_id, sequence, id"
 
     response_id = fields.Many2one(
         "ft.feedback.response",
@@ -216,6 +216,11 @@ class FeedbackResponseLine(models.Model):
     question_type = fields.Selection(QUESTION_TYPES, string="Question Type")
     section_id = fields.Many2one(
         related="question_id.section_id", store=True
+    )
+    section_sequence = fields.Integer(
+        related="section_id.sequence",
+        store=True,
+        string="Section Sequence",
     )
     sequence = fields.Integer(default=10)
     rating_value = fields.Integer(

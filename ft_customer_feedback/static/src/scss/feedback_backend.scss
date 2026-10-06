@@ -1,0 +1,29 @@
+
+.ft_feedback_answers_list .o_list_table {
+    table-layout: fixed !important;
+
+    th[data-name="section_id"],
+    td[name="section_id"] {
+        width: 22% !important;
+    }
+
+    th[data-name="question_text"],
+    td[name="question_text"] {
+        width: 45% !important;
+    }
+
+    td[name="section_id"],
+    td[name="question_text"],
+    td[name="display_value"] {
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        text-overflow: clip !important;
+
+        .o_field_widget,
+        .text-truncate {
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            text-overflow: clip !important;
+        }
+    }
+}

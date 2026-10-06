@@ -65,11 +65,15 @@
                     <notebook>
                         <page string="Answers" name="answers">
                             <field name="line_ids" readonly="1">
-                                <list create="0" delete="0">
+                                <list create="0" delete="0"
+                                    class="ft_feedback_answers_list"
+                                    default_order="section_sequence, section_id, sequence, id">
+                                    <field name="section_sequence" column_invisible="True"/>
+                                    <field name="sequence" column_invisible="True"/>
                                     <field name="section_id" optional="show"/>
                                     <field name="question_id" optional="hide"/>
                                     <field name="question_text"/>
-                                    <field name="question_type"/>
+                                    <field name="question_type" optional="hide"/>
                                     <field name="rating_value_display" string="Rating Value"/>
                                     <field name="display_value"/>
                                     <field name="text_value" optional="hide"/>
