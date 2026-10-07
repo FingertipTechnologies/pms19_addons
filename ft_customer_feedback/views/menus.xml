@@ -3,8 +3,12 @@
     <menuitem id="menu_ft_feedback_root"
               name="Customer Feedback"
               web_icon="ft_customer_feedback,static/img/app_icon.png"
-              groups="ft_customer_feedback.group_feedback_user"
               sequence="66"/>
+
+    <record id="menu_ft_feedback_root" model="ir.ui.menu">
+        <field name="group_ids"
+            eval="[(6, 0, [ref('base.group_system')])]"/>
+    </record>
 
     <menuitem id="menu_ft_feedback_responses"
               name="Responses"
