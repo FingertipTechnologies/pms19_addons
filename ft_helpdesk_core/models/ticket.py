@@ -639,7 +639,7 @@ class HelpdeskTicket(models.Model):
                 'default_model': 'ft.helpdesk.ticket',
                 'default_res_ids': self.ids,
                 'default_partner_ids': self.customer_id.ids if self.customer_id else [],
-                'default_subtype_xmlid': 'ft_helpdesk_core.mt_ticket_public_reply',
+                'default_subtype_id': self.env.ref('ft_helpdesk_core.mt_ticket_public_reply').id,
                 'default_email_from': 'admin@fingertipplus.com',
                 'default_composition_mode': 'comment',
             },
@@ -658,6 +658,24 @@ class HelpdeskTicket(models.Model):
     def message_post(self, **kwargs):
         """Override to track first response and customer replies."""
         kwargs['email_from'] = 'admin@fingertipplus.com'
+        public_reply = self.env.ref(
+            'ft_helpdesk_core.mt_ticket_public_reply',
+            raise_if_not_found=False,
+        )
+
+        is_public_reply = bool(public_reply) and (
+            kwargs.get('subtype_id') == public_reply.id
+            or kwargs.get('subtype_xmlid')
+                == 'ft_helpdesk_core.mt_ticket_public_reply'
+        )
+
+        if (
+            is_public_reply
+            and not kwargs.get('author_id')
+            and self.env.user.has_group('base.group_user')
+        ):
+            kwargs['author_id'] = self.env.user.partner_id.id
+            
         message = super().message_post(**kwargs)
         # Determine if this is a public reply by an agent
         subtype_id = kwargs.get('subtype_id')

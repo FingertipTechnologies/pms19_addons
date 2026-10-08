@@ -156,6 +156,7 @@ class SLAStatus(models.Model):
                     'policy_id': policy.id,
                     'first_response_deadline': fr_deadline,
                     'resolution_deadline': res_deadline,
+                    'first_response_done_at': ticket.first_response_at or False,
                 })
                 return True  # Use first matching policy
         return False
