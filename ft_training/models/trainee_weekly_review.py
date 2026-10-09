@@ -2,7 +2,7 @@ from datetime import timedelta
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
-WEEK_SELECTION = [('week_%02d' % w, f'Week {w}') for w in range(1, 26)]
+WEEK_SELECTION = [('week_%02d' % w, f'Week {w}') for w in range(1, 31)]
 
 DOMAIN_SELECTION = [
     ('salesforce', 'Salesforce'),
@@ -104,7 +104,7 @@ class TraineeWeeklyReview(models.Model):
         required=True,
         index=True,
         tracking=True,
-        help='Week 1 through Week 25',
+        help='Week 1 through Week 30',
     )
     date_from = fields.Date(
         string='From Date',
