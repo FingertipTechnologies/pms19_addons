@@ -84,3 +84,14 @@
 .o_ft_review_list thead th[data-name="self_dependency"] > div {
     align-items: flex-start;
 }
+
+/* --- Weekly Review: compact text columns -------------------------------- */
+.o_ft_weekly_review_list tbody td[name="work_details"],
+.o_ft_weekly_review_list tbody td[name="work_details"] *,
+.o_ft_weekly_review_list tbody td[name="pm_tl_comments"],
+.o_ft_weekly_review_list tbody td[name="pm_tl_comments"] * {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 220px !important;
+}

@@ -4,3 +4,4 @@ from . import today_learning
 from . import trainee_review
 from . import assignment
 from . import evaluation
+from . import trainee_weekly_review

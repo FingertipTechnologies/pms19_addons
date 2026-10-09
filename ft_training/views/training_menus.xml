@@ -35,12 +35,25 @@
               action="action_evaluation"
               sequence="40"/>
 
-    <!-- Tab 5: Review (trainee evaluations, Admin/HR maintained) -->
+    <!-- Tab 5: Review (main parent menu) -->
     <menuitem id="menu_training_review"
               name="Review"
               parent="menu_training_root"
-              action="action_trainee_review"
               sequence="50"/>
+
+    <!-- Child: New Review (weekly trainee review entry) -->
+    <menuitem id="menu_training_weekly_review"
+              name="New Review"
+              parent="menu_training_review"
+              action="action_trainee_weekly_review"
+              sequence="10"/>
+
+    <!-- Child: Old Review (read-only archive of trainee reviews) -->
+    <menuitem id="menu_training_review_old"
+              name="Old Review"
+              parent="menu_training_review"
+              action="action_trainee_review"
+              sequence="20"/>
 
     <!-- Tab 6: Phase (configurable training phases) -->
     <menuitem id="menu_training_phase"

@@ -33,7 +33,7 @@
                  digit stays under its header instead of drifting to the far edge
                  of the column. Description renders truncated to one line, so row
                  heights stay uniform and the score columns read straight down. -->
-            <list string="Reviews" class="o_ft_review_list">
+            <list string="Old Reviews" class="o_ft_review_list" create="0" edit="0" delete="0">
                 <field name="trainee_id" width="150px"/>
                 <field name="reviewer_id" width="130px"/>
                 <field name="review_period" width="105px"/>
@@ -54,16 +54,16 @@
         <field name="name">ft.trainee.review.form</field>
         <field name="model">ft.trainee.review</field>
         <field name="arch" type="xml">
-            <form string="Review">
+            <form string="Old Review" create="0" edit="0" delete="0">
                 <sheet>
                     <notebook>
                         <page string="Review" name="review">
                             <group>
                                 <group>
                                     <field name="trainee_id"
-                                           options="{'no_create': True}"/>
+                                           options="{'no_create': True, 'no_open': True}"/>
                                     <field name="reviewer_id"
-                                           options="{'no_create': True}"/>
+                                           options="{'no_create': True, 'no_open': True}"/>
                                     <field name="review_period"/>
                                     <field name="review_period_to"/>
                                     <field name="description"/>
@@ -115,7 +115,7 @@
     </record>
 
     <record id="action_trainee_review" model="ir.actions.act_window">
-        <field name="name">Review</field>
+        <field name="name">Old Review</field>
         <field name="res_model">ft.trainee.review</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_trainee_review_search"/>

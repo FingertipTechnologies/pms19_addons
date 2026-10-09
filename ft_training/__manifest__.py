@@ -20,7 +20,7 @@ Supports evaluating trainee progress from a centralized record.
 """,
     'author': 'Fingertip',
     'website': '',
-    'depends': ['base', 'web', 'hr'],
+    'depends': ['base', 'web', 'hr', 'mail'],
     'data': [
         'security/training_security.xml',
         'security/ir.model.access.csv',
@@ -31,6 +31,7 @@ Supports evaluating trainee progress from a centralized record.
         'views/assignment_views.xml',
         'views/evaluation_views.xml',
         'views/phase_views.xml',
+        'views/trainee_weekly_review_views.xml',
         'views/training_menus.xml',
     ],
     'assets': {

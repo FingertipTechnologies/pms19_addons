@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_trainee_weekly_review_list" model="ir.ui.view">
+        <field name="name">ft.trainee.weekly.review.list</field>
+        <field name="model">ft.trainee.weekly.review</field>
+        <field name="arch" type="xml">
+            <list string="New Reviews" class="o_ft_weekly_review_list">
+                <field name="trainee_id" width="150px"/>
+                <field name="pm_tl_id" width="140px"/>
+                <field name="week" width="85px"/>
+                <field name="date_from" width="95px"/>
+                <field name="date_to" width="95px"/>
+                <field name="review_date" width="95px"/>
+                <field name="technology" width="110px"/>
+                <field name="work_details" width="220px" optional="show"/>
+                <field name="work_completed" width="150px"/>
+                <field name="technical_performance" width="165px"/>
+                <field name="learning_improvement" width="170px"/>
+                <field name="communication" width="140px"/>
+                <field name="independence" width="135px"/>
+                <field name="overall_status" width="195px"/>
+                <field name="pm_tl_recommendation" width="195px"/>
+                <field name="pm_tl_comments" width="200px" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_trainee_weekly_review_form" model="ir.ui.view">
+        <field name="name">ft.trainee.weekly.review.form</field>
+        <field name="model">ft.trainee.weekly.review</field>
+        <field name="arch" type="xml">
+            <form string="New Review">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="display_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Review Information">
+                            <field name="trainee_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="pm_tl_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="week"/>
+                            <field name="technology"/>
+                        </group>
+                        <group string="Dates">
+                            <field name="review_date" readonly="1"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                    </group>
+                    <group string="Work &amp; Tasks">
+                        <field name="work_completed"/>
+                        <field name="work_details" placeholder="Mention the tasks/work handled by the trainee during the week..."/>
+                    </group>
+
+                    <group string="Performance Ratings">
+                        <group>
+                            <field name="technical_performance"/>
+                            <field name="learning_improvement"/>
+                        </group>
+                        <group>
+                            <field name="communication"/>
+                            <field name="independence"/>
+                        </group>
+                    </group>
+
+                    <group string="Assessment &amp; Feedback">
+                        <group>
+                            <field name="overall_status"/>
+                            <field name="pm_tl_recommendation"/>
+                        </group>
+                        <group>
+                            <field name="pm_tl_comments" placeholder="Comments/feedback from the PM or TL..."/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_trainee_weekly_review_search" model="ir.ui.view">
+        <field name="name">ft.trainee.weekly.review.search</field>
+        <field name="model">ft.trainee.weekly.review</field>
+        <field name="arch" type="xml">
+            <search string="New Reviews">
+                <field name="trainee_id"/>
+                <field name="pm_tl_id"/>
+                <field name="week"/>
+                <field name="technology"/>
+                <field name="overall_status"/>
+                <field name="pm_tl_recommendation"/>
+
+                <filter name="my_reviews" string="My Reviews"
+                        domain="[('pm_tl_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="status_t1" string="T1 – Excellent Progress"
+                        domain="[('overall_status', '=', 't1')]"/>
+                <filter name="status_t4" string="T4 – Needs Improvement"
+                        domain="[('overall_status', '=', 't4')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+
+                <group name="group_by">
+                    <filter name="group_trainee" string="Trainee"
+                            context="{'group_by': 'trainee_id'}"/>
+                    <filter name="group_pm_tl" string="PM / TL"
+                            context="{'group_by': 'pm_tl_id'}"/>
+                    <filter name="group_week" string="Week"
+                            context="{'group_by': 'week'}"/>
+                    <filter name="group_technology" string="Technology"
+                            context="{'group_by': 'technology'}"/>
+                    <filter name="group_overall_status" string="Overall Status"
+                            context="{'group_by': 'overall_status'}"/>
+                    <filter name="group_recommendation" string="Recommendation"
+                            context="{'group_by': 'pm_tl_recommendation'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_trainee_weekly_review" model="ir.actions.act_window">
+        <field name="name">New Review</field>
+        <field name="res_model">ft.trainee.weekly.review</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_trainee_weekly_review_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record a new trainee review</p>
+            <p>Select a trainee, week, technology and evaluate weekly performance.</p>
+        </field>
+    </record>
+
+</odoo>

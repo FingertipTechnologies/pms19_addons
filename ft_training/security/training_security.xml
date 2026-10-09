@@ -48,5 +48,53 @@
             <field name="groups" eval="[(4, ref('group_training_manager'))]"/>
         </record>
 
+        <!-- Weekly Review (New Review): a Trainee/User sees only their own review or reviews they lead -->
+        <record id="rule_trainee_weekly_review_user" model="ir.rule">
+            <field name="name">Weekly Review: own review (User)</field>
+            <field name="model_id" ref="model_ft_trainee_weekly_review"/>
+            <field name="domain_force">['|', '|', ('trainee_id.user_id', '=', user.id), ('trainee_id', 'in', user.employee_ids.ids), ('pm_tl_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Weekly Review: a Manager sees all reviews -->
+        <record id="rule_trainee_weekly_review_manager" model="ir.rule">
+            <field name="name">Weekly Review: all reviews (Manager)</field>
+            <field name="model_id" ref="model_ft_trainee_weekly_review"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_training_manager'))]"/>
+        </record>
+
+        <!-- Weekly Review: HR sees all reviews -->
+        <record id="rule_trainee_weekly_review_hr" model="ir.rule">
+            <field name="name">Weekly Review: all reviews (HR)</field>
+            <field name="model_id" ref="model_ft_trainee_weekly_review"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+        </record>
+
+        <!-- Trainee Review (Old Review): a User sees only their own review -->
+        <record id="rule_trainee_review_user" model="ir.rule">
+            <field name="name">Trainee Review: own review (User)</field>
+            <field name="model_id" ref="model_ft_trainee_review"/>
+            <field name="domain_force">['|', '|', ('trainee_id.user_id', '=', user.id), ('trainee_id', 'in', user.employee_ids.ids), ('reviewer_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- Trainee Review (Old Review): a Manager sees all reviews -->
+        <record id="rule_trainee_review_manager" model="ir.rule">
+            <field name="name">Trainee Review: all reviews (Manager)</field>
+            <field name="model_id" ref="model_ft_trainee_review"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_training_manager'))]"/>
+        </record>
+
+        <!-- Trainee Review (Old Review): HR sees all reviews -->
+        <record id="rule_trainee_review_hr" model="ir.rule">
+            <field name="name">Trainee Review: all reviews (HR)</field>
+            <field name="model_id" ref="model_ft_trainee_review"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+        </record>
+
     </data>
 </odoo>

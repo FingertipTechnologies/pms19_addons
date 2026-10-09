@@ -6,8 +6,8 @@ DOMAIN_SELECTION = [
     ('odoo', 'Odoo'),
     ('python', 'Python'),
     ('react', 'React'),
-    ('flutter', 'flutter'),
-    ('react_native', 'ReactNative'),
+    ('flutter', 'Flutter'),
+    ('react_native', 'React Native'),
 ]
 
 
