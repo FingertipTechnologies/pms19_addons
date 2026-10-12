@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_competency_level_list" model="ir.ui.view">
+        <field name="name">employee.competency.level.list</field>
+        <field name="model">employee.competency.level</field>
+        <field name="arch" type="xml">
+            <!-- The scale is fixed at five steps, so levels are described
+                 here rather than added or removed. -->
+            <list string="Rating Levels" editable="bottom" create="false" delete="false">
+                <field name="rating" width="90px" readonly="1"/>
+                <field name="name"/>
+                <field name="progress" width="120px"/>
+                <field name="definition"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_competency_level" model="ir.actions.act_window">
+        <field name="name">Rating Levels</field>
+        <field name="res_model">employee.competency.level</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No rating level defined</p>
+            <p>
+                The common 1-5 scale every competency is rated on: what each
+                level is called, the progress it stands for and the behaviour a
+                reviewer should see before awarding it.
+            </p>
+        </field>
+    </record>
+
+</odoo>

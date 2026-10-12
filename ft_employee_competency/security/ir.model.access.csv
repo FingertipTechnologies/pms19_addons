@@ -1,0 +1,28 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_competency_category_employee,Competency category (read),model_employee_competency_category,group_competency_employee,1,0,0,0
+access_competency_category_hr,Competency category (manage),model_employee_competency_category,group_competency_hr_manager,1,1,1,1
+access_competency_employee,Competency (read),model_employee_competency,group_competency_employee,1,0,0,0
+access_competency_hr,Competency (manage),model_employee_competency,group_competency_hr_manager,1,1,1,1
+access_job_competency_line_employee,Job competency requirement (read),model_employee_job_competency_line,group_competency_employee,1,0,0,0
+access_job_competency_line_manager,Job competency requirement (read),model_employee_job_competency_line,group_competency_manager,1,0,0,0
+access_job_competency_line_hr,Job competency requirement (manage),model_employee_job_competency_line,group_competency_hr_manager,1,1,1,1
+access_competency_cycle_employee,Review cycle (read),model_employee_competency_cycle,group_competency_employee,1,0,0,0
+access_competency_cycle_manager,Review cycle (read),model_employee_competency_cycle,group_competency_manager,1,0,0,0
+access_competency_cycle_hr,Review cycle (manage),model_employee_competency_cycle,group_competency_hr_manager,1,1,1,1
+access_competency_assessment_employee,Assessment (own),model_employee_competency_assessment,group_competency_employee,1,1,0,0
+access_competency_assessment_manager,Assessment (team),model_employee_competency_assessment,group_competency_manager,1,1,0,0
+access_competency_assessment_hr,Assessment (manage),model_employee_competency_assessment,group_competency_hr_manager,1,1,1,1
+access_competency_assessment_line_employee,Assessment line (own),model_employee_competency_assessment_line,group_competency_employee,1,1,0,0
+access_competency_assessment_line_manager,Assessment line (team),model_employee_competency_assessment_line,group_competency_manager,1,1,0,1
+access_competency_assessment_line_hr,Assessment line (manage),model_employee_competency_assessment_line,group_competency_hr_manager,1,1,1,1
+access_competency_profile_employee,Competency profile (own),model_employee_competency_profile,group_competency_employee,1,0,0,0
+access_competency_profile_manager,Competency profile (team),model_employee_competency_profile,group_competency_manager,1,1,0,0
+access_competency_profile_hr,Competency profile (manage),model_employee_competency_profile,group_competency_hr_manager,1,1,1,1
+access_development_plan_employee,Development plan (own),model_employee_development_plan,group_competency_employee,1,1,0,0
+access_development_plan_manager,Development plan (team),model_employee_development_plan,group_competency_manager,1,1,1,1
+access_development_plan_hr,Development plan (manage),model_employee_development_plan,group_competency_hr_manager,1,1,1,1
+access_competency_level_employee,Rating level (read),model_employee_competency_level,group_competency_employee,1,0,0,0
+access_competency_level_hr,Rating level (manage),model_employee_competency_level,group_competency_hr_manager,1,1,1,1
+access_appraisal_goal_employee,Appraisal goal (own),model_employee_appraisal_goal,group_competency_employee,1,1,0,0
+access_appraisal_goal_manager,Appraisal goal (team),model_employee_appraisal_goal,group_competency_manager,1,1,1,1
+access_appraisal_goal_hr,Appraisal goal (manage),model_employee_appraisal_goal,group_competency_hr_manager,1,1,1,1

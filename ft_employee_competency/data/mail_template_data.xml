@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Sent when an assessment opens for the employee's self rating. -->
+        <record id="mail_template_assessment_assigned" model="mail.template">
+            <field name="name">Competency: Assessment Assigned</field>
+            <field name="model_id" ref="model_employee_competency_assessment"/>
+            <field name="subject">Competency assessment for {{ object.cycle_id.name }}</field>
+            <field name="email_to">{{ object.employee_id.work_email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello <strong t-out="object.employee_id.name or ''">Employee</strong>,</p>
+    <p style="font-size: 14px; color: #333;">
+        Your competency assessment for <strong t-out="object.cycle_id.name or ''">the cycle</strong>
+        is open. Please rate yourself on each competency and add the evidence behind your ratings.
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 180px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Reference</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.name or ''">CA/2026/00001</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Job Position</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.job_id.name or ''">Job</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Competencies to rate</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="len(object.line_ids)">0</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Self Review Deadline</td>
+            <td style="padding: 10px 14px; font-size: 14px;" t-out="object.cycle_id.self_review_deadline or 'Not set'">Deadline</td>
+        </tr>
+    </table>
+    <p style="font-size: 13px; color: #666;">
+        Your self rating is a reference for the conversation with your manager. The official
+        result is the final rating your manager approves.
+    </p>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <!-- Sent to the reviewer when the employee submits. -->
+        <record id="mail_template_assessment_manager_review" model="mail.template">
+            <field name="name">Competency: Manager Review Required</field>
+            <field name="model_id" ref="model_employee_competency_assessment"/>
+            <field name="subject">Review the competency assessment of {{ object.employee_id.name }}</field>
+            <field name="email_to">{{ object.reviewer_id.work_email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello <strong t-out="object.reviewer_id.name or ''">Reviewer</strong>,</p>
+    <p style="font-size: 14px; color: #333;">
+        <strong t-out="object.employee_id.name or ''">Employee</strong> has submitted their self
+        assessment for <strong t-out="object.cycle_id.name or ''">the cycle</strong>. It is now
+        waiting on your rating, your evidence and the final rating you approve.
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 180px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Employee</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.employee_id.name or ''">Employee</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Department</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.department_id.name or ''">Department</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Manager Review Deadline</td>
+            <td style="padding: 10px 14px; font-size: 14px;" t-out="object.cycle_id.manager_review_deadline or 'Not set'">Deadline</td>
+        </tr>
+    </table>
+    <p style="font-size: 13px; color: #666;">
+        A rating of 1, 2 or 5, and any competency marked Evidence Required, must carry a comment
+        or evidence before the assessment can be submitted.
+    </p>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <!-- Deadline chasers, sent by the daily cron. -->
+        <record id="mail_template_assessment_self_review_reminder" model="mail.template">
+            <field name="name">Competency: Self Review Overdue</field>
+            <field name="model_id" ref="model_employee_competency_assessment"/>
+            <field name="subject">Reminder: your self assessment for {{ object.cycle_id.name }} is overdue</field>
+            <field name="email_to">{{ object.employee_id.work_email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello <strong t-out="object.employee_id.name or ''">Employee</strong>,</p>
+    <p style="font-size: 14px; color: #333;">
+        Your self assessment for <strong t-out="object.cycle_id.name or ''">the cycle</strong> was
+        due on <strong t-out="object.cycle_id.self_review_deadline or ''">the deadline</strong>
+        and has not been submitted yet.
+    </p>
+    <p style="font-size: 14px; color: #333;">
+        Please complete it so your manager can carry on with the review.
+    </p>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_assessment_manager_review_reminder" model="mail.template">
+            <field name="name">Competency: Manager Review Overdue</field>
+            <field name="model_id" ref="model_employee_competency_assessment"/>
+            <field name="subject">Reminder: the review of {{ object.employee_id.name }} is overdue</field>
+            <field name="email_to">{{ object.reviewer_id.work_email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello <strong t-out="object.reviewer_id.name or ''">Reviewer</strong>,</p>
+    <p style="font-size: 14px; color: #333;">
+        The competency assessment of <strong t-out="object.employee_id.name or ''">Employee</strong>
+        for <strong t-out="object.cycle_id.name or ''">the cycle</strong> was due on
+        <strong t-out="object.cycle_id.manager_review_deadline or ''">the deadline</strong>
+        and is still waiting on your review.
+    </p>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_development_plan_overdue" model="mail.template">
+            <field name="name">Competency: Development Plan Overdue</field>
+            <field name="model_id" ref="model_employee_development_plan"/>
+            <field name="subject">Overdue development action: {{ object.name }}</field>
+            <field name="email_to">{{ object.assigned_person_id.email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello <strong t-out="object.assigned_person_id.name or ''">Owner</strong>,</p>
+    <p style="font-size: 14px; color: #333;">
+        A development action you own has passed its target date.
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 180px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Action</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.name or ''">Action</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Employee</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.employee_id.name or ''">Employee</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Competency</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.competency_id.name or ''">Competency</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Due Date</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px; color: #d9534f;" t-out="object.target_date or ''">Date</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Progress</td>
+            <td style="padding: 10px 14px; font-size: 14px;"><span t-out="object.completion_percentage or 0">0</span>%</td>
+        </tr>
+    </table>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <!-- ============================================================
+             The sender and recipients of every competency email are set in
+             code (competency_utils.send_competency_mail): From is the HR or
+             the support mailbox, never the user who triggered the mail. The
+             email_to below is only a fallback for sending a template by hand.
+             ============================================================ -->
+
+        <!-- Mails 4 + 8: manager review completed, HR approval pending. -->
+        <record id="mail_template_assessment_hr_approval" model="mail.template">
+            <field name="name">Competency: Manager Review Completed - HR Approval Pending</field>
+            <field name="model_id" ref="model_employee_competency_assessment"/>
+            <field name="subject">HR approval pending: competency review of {{ object.employee_id.name }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello,</p>
+    <p style="font-size: 14px; color: #333;">
+        <strong t-out="object.reviewer_id.name or ''">The manager</strong> has completed the
+        competency review of <strong t-out="object.employee_id.name or ''">Employee</strong> for
+        <strong t-out="object.cycle_id.name or ''">the cycle</strong>. It is waiting on HR approval.
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 180px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Reference</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.name or ''">CA/2026/00001</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Overall Score</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;"><t t-out="'%.2f' % object.overall_score">3.00</t> / 5</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Development Required</td>
+            <td style="padding: 10px 14px; font-size: 14px;" t-out="len(object.line_ids.filtered('development_required'))">0</td>
+        </tr>
+    </table>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <!-- Mail 9: assessment completed, to the employee and the manager. -->
+        <record id="mail_template_assessment_completed" model="mail.template">
+            <field name="name">Competency: Assessment Completed</field>
+            <field name="model_id" ref="model_employee_competency_assessment"/>
+            <field name="subject">Your competency assessment for {{ object.cycle_id.name }} is complete</field>
+            <field name="email_to">{{ object.employee_id.work_email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello <strong t-out="object.employee_id.name or ''">Employee</strong>,</p>
+    <p style="font-size: 14px; color: #333;">
+        Your competency assessment for <strong t-out="object.cycle_id.name or ''">the cycle</strong>
+        has been approved. Its final ratings are now your official competency levels.
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 180px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Overall Score</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;"><t t-out="'%.2f' % object.overall_score">3.00</t> / 5</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Development Actions</td>
+            <td style="padding: 10px 14px; font-size: 14px;" t-out="len(object.development_plan_ids)">0</td>
+        </tr>
+    </table>
+    <p style="font-size: 13px; color: #666;">
+        Open My Competency &gt; My Assessments to see each rating and the development actions
+        agreed for the next cycle.
+    </p>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <!-- Mail 10: development action created, to its owner. -->
+        <record id="mail_template_development_plan_created" model="mail.template">
+            <field name="name">Competency: Development Action Created</field>
+            <field name="model_id" ref="model_employee_development_plan"/>
+            <field name="subject">New development action: {{ object.name }}</field>
+            <field name="email_to">{{ object.assigned_person_id.email or '' }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello <strong t-out="object.assigned_person_id.name or ''">Owner</strong>,</p>
+    <p style="font-size: 14px; color: #333;">
+        A competency gap was identified and a development action has been created with you as
+        its owner.
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 180px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Action</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.name or ''">Action</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Employee</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.employee_id.name or ''">Employee</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Competency</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.competency_id.name or ''">Competency</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Due Date</td>
+            <td style="padding: 10px 14px; font-size: 14px;" t-out="object.target_date or ''">Date</td>
+        </tr>
+    </table>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <!-- Mail 11: due date approaching or passed, to employee, owner and
+             manager. Replaces the owner-only Development Plan Overdue mail. -->
+        <record id="mail_template_development_plan_reminder" model="mail.template">
+            <field name="name">Competency: Development Action Reminder</field>
+            <field name="model_id" ref="model_employee_development_plan"/>
+            <field name="subject">{{ 'Overdue' if object.is_overdue else 'Due soon' }}: development action {{ object.name }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello,</p>
+    <p style="font-size: 14px; color: #333;">
+        <t t-if="object.is_overdue">This development action has passed its due date and is not completed yet.</t>
+        <t t-else="">This development action is due soon and is not completed yet.</t>
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #e0e0e0;">
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; width: 180px; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Action</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.name or ''">Action</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Employee</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.employee_id.name or ''">Employee</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Owner</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.assigned_person_id.name or ''">Owner</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e0e0e0; font-size: 13px; color: #555;">Due Date</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e0e0e0; font-size: 14px;" t-out="object.target_date or ''">Date</td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="padding: 10px 14px; font-weight: bold; font-size: 13px; color: #555;">Progress</td>
+            <td style="padding: 10px 14px; font-size: 14px;"><span t-out="object.completion_percentage or 0">0</span>%</td>
+        </tr>
+    </table>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+        <!-- Mail 12: development action completed, to employee, manager, HR. -->
+        <record id="mail_template_development_plan_completed" model="mail.template">
+            <field name="name">Competency: Development Action Completed</field>
+            <field name="model_id" ref="model_employee_development_plan"/>
+            <field name="subject">Development action completed: {{ object.name }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <p style="font-size: 15px;">Hello,</p>
+    <p style="font-size: 14px; color: #333;">
+        The development action <strong t-out="object.name or ''">Action</strong> of
+        <strong t-out="object.employee_id.name or ''">Employee</strong> on
+        <strong t-out="object.competency_id.name or ''">Competency</strong> has been completed.
+    </p>
+    <p t-if="object.result" style="font-size: 14px; color: #333;">
+        <strong>Result:</strong> <span t-out="object.result or ''">Result</span>
+    </p>
+    <p style="font-size: 14px; color: #333;">Regards,<br/><strong t-out="object.company_id.name or ''">HR</strong></p>
+</div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

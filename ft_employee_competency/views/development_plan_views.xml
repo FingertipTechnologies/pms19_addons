@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_development_plan_list" model="ir.ui.view">
+        <field name="name">employee.development.plan.list</field>
+        <field name="model">employee.development.plan</field>
+        <field name="arch" type="xml">
+            <list string="Development Plans"
+                  decoration-danger="is_overdue"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-success="state == 'completed'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="job_id" optional="show"/>
+                <field name="cycle_id" optional="show"/>
+                <field name="department_id" optional="show"/>
+                <field name="competency_id"/>
+                <field name="category_id" optional="hide"/>
+                <field name="action_type" width="160px"/>
+                <field name="assigned_person_id" widget="many2one_avatar_user" width="160px"/>
+                <field name="date_start" optional="hide"/>
+                <field name="target_date" width="140px"/>
+                <field name="target_level" optional="hide"/>
+                <field name="completion_percentage" width="140px"/>
+                <field name="assessment_id" optional="hide"/>
+                <field name="goal_id" optional="hide"/>
+                <field name="is_overdue" column_invisible="True"/>
+                <field name="state" widget="badge" width="140px"
+                       decoration-info="state == 'in_progress'"
+                       decoration-success="state == 'completed'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_development_plan_form" model="ir.ui.view">
+        <field name="name">employee.development.plan.form</field>
+        <field name="model">employee.development.plan</field>
+        <field name="arch" type="xml">
+            <form string="Development Plan">
+                <header>
+                    <button name="action_start" type="object" string="Start"
+                            class="btn-primary" invisible="state != 'planned'"/>
+                    <button name="action_complete" type="object" string="Mark Completed"
+                            class="btn-primary" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state in ('completed', 'cancelled')"/>
+                    <button name="action_reset_to_planned"
+                            type="object"
+                            string="Reset to Not Started"
+                            invisible="state in ('planned', 'completed')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="planned,in_progress,completed"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Overdue" bg_color="text-bg-danger"
+                            invisible="not is_overdue"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Lead the Q3 migration workshop" readonly="state == 'completed'"/></h1>
+                    </div>
+                    <group>
+                        <group string="Gap">
+                            <field name="employee_id"
+                                options="{'no_create': True}"
+                                invisible="state == 'completed'"/>
+
+                            <field name="employee_id"
+                                readonly="1"
+                                invisible="state != 'completed'"
+                                options="{'no_open': True, 'no_create': True}"/>
+                            <field name="department_id"
+                                readonly="1"
+                                invisible="not department_id or state == 'completed'"/>
+
+                            <field name="department_id"
+                                readonly="1"
+                                invisible="not department_id or state != 'completed'"
+                                options="{'no_open': True}"/>
+                            <field name="competency_id"
+                                options="{'no_create': True}"
+                                invisible="state == 'completed'"/>
+
+                            <field name="competency_id"
+                                readonly="1"
+                                invisible="state != 'completed'"
+                                options="{'no_open': True, 'no_create': True}"/>
+                            <field name="assessment_id" required="1" domain="[('employee_id', '=', employee_id)]" options="{'no_create': True, 'no_open': True}" readonly="state == 'completed'"/>
+                            <field name="job_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="cycle_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="assessment_line_id" options="{'no_create': True}"
+                                   invisible="not assessment_line_id" readonly="state == 'completed'"/>
+                            <field name="target_level" readonly="state == 'completed'"/>
+                            <field name="target_level_id" readonly="1" invisible="not target_level_id"/>
+                            <field name="goal_id" options="{'no_create': True}" readonly="state == 'completed'"/>
+                            <field name="profile_id" invisible="1"/>
+                            <field name="employee_user_id" invisible="1"/>
+                            <field name="is_overdue" invisible="1"/>
+                        </group>
+                        <group string="Action">
+                        <field name="action_type"
+                            readonly="state == 'completed'"/>
+                        <field name="assigned_person_id"
+                            widget="many2one_avatar_user"
+                            invisible="state == 'completed'"/>
+
+                        <field name="assigned_person_id"
+                            readonly="1"
+                            invisible="state != 'completed'"
+                            options="{'no_open': True, 'no_create': True}"/>
+                        <field name="date_start"
+                            readonly="state == 'completed'"/>
+                        <field name="target_date"
+                            readonly="state == 'completed'"/>
+                        <field name="completion_percentage"
+                            readonly="state == 'completed'"/>
+                    </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="action_plan">
+                            <field name="action_plan" nolabel="1"
+                                   placeholder="The detailed action and its expected outcome." readonly="state == 'completed'"/>
+                        </page>
+                        <page string="Result" name="result">
+                            <div class="mt-3">
+                                <label for="result"
+                                    string="Outcome"
+                                    class="o_form_label fw-bold"/>
+                                <field name="result"
+                                    nolabel="1"
+                                    class="w-100"
+                                    style="min-height: 160px;"
+                                    placeholder="Describe the outcome and improvements achieved." readonly="state == 'completed'"/>
+                            </div>
+
+                            <div class="mt-4">
+                                <label for="remarks"
+                                    string="Remarks"
+                                    class="o_form_label fw-bold"/>
+                                <field name="remarks"
+                                    nolabel="1"
+                                    class="w-100"
+                                    style="min-height: 160px;"
+                                    placeholder="Enter additional comments or follow-up notes." readonly="state == 'completed'"/>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_development_plan_kanban" model="ir.ui.view">
+        <field name="name">employee.development.plan.kanban</field>
+        <field name="model">employee.development.plan</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" quick_create="false">
+                <field name="state"/>
+                <field name="is_overdue"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between">
+                            <strong class="fs-5"><field name="name"/></strong>
+                            <span class="badge text-bg-danger" invisible="not is_overdue">Overdue</span>
+                        </div>
+                        <div class="text-muted"><field name="employee_id"/></div>
+                        <div class="text-muted"><field name="competency_id"/></div>
+                        <div class="mt-2">
+                            <field name="completion_percentage" />
+                        </div>
+                        <footer class="pt-2">
+                            <field name="assigned_person_id" widget="many2one_avatar_user"/>
+                            <field name="target_date" widget="remaining_days" class="ms-auto"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_development_plan_search" model="ir.ui.view">
+        <field name="name">employee.development.plan.search</field>
+        <field name="model">employee.development.plan</field>
+        <field name="arch" type="xml">
+            <search string="Development Plans">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="competency_id"/>
+                <field name="assigned_person_id"/>
+                <field name="department_id"/>
+                <filter name="filter_mine" string="For Me"
+                        domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="filter_owned" string="I Am the Owner"
+                        domain="[('assigned_person_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_open" string="Open"
+                        domain="[('state', 'in', ('planned', 'in_progress'))]"/>
+                <filter name="filter_overdue" string="Overdue" domain="[('is_overdue', '=', True)]"/>
+                <filter name="filter_completed" string="Completed" domain="[('state', '=', 'completed')]"/>
+                <separator/>
+                <filter name="filter_training" string="Training"
+                        domain="[('action_type', 'in', ('training', 'certification'))]"/>
+                <separator/>
+                <filter name="filter_target_date" string="Due Date" date="target_date"/>
+                <group>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_competency" string="Competency" context="{'group_by': 'competency_id'}"/>
+                    <filter name="group_action_type" string="Action Type" context="{'group_by': 'action_type'}"/>
+                    <filter name="group_owner" string="Owner" context="{'group_by': 'assigned_person_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_development_plan" model="ir.actions.act_window">
+        <field name="name">Development Plans</field>
+        <field name="res_model">employee.development.plan</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_development_plan_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a development plan</p>
+            <p>
+                A development plan is what is being done about a competency gap.
+                Raise them from the assessment in one click, give each an owner
+                and a target date, and track progress through the quarter.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_development_plan_my" model="ir.actions.act_window">
+        <field name="name">My Development Plans</field>
+        <field name="res_model">employee.development.plan</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_development_plan_search"/>
+        <!-- Both halves on purpose: an employee sees the actions ABOUT them,
+             and a manager sees the ones they were made accountable for. It
+             reaches those two only - an HR competency manager is not in the
+             Employee group and never sees this menu (see competency_menus.xml).
+             Development Plans, under Development, is theirs. -->
+        <field name="domain">['|', ('employee_user_id', '=', uid), ('assigned_person_id', '=', uid)]</field>
+        <field name="context">{'search_default_filter_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing on your development plan</p>
+            <p>
+                Actions raised against your competency gaps, and actions you were
+                made responsible for, appear here.
+            </p>
+        </field>
+    </record>
+
+</odoo>

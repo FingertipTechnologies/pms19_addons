@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="module_category_competency" model="ir.module.category">
+        <field name="name">Employee Competency</field>
+        <field name="description">Competency framework, assessments and development plans</field>
+        <field name="sequence">35</field>
+    </record>
+
+    <record id="res_groups_privilege_competency" model="res.groups.privilege">
+        <field name="name">Employee Competency</field>
+        <field name="category_id" ref="module_category_competency"/>
+    </record>
+
+    <!-- ================================================================
+         Three roles, and deliberately NOT one chain of three.
+
+         Employee and Department Manager nest, because a manager IS somebody
+         with an assessment of their own: they self-rate like anybody else and
+         then review their team on top of it.
+
+         HR Competency Manager stands apart. It is a back-office role over the
+         whole framework, not a bigger version of being reviewed, and the
+         difference is what the menus rest on: the self-service section (My
+         Assessments, My Development Plans) is shown to the Employee group, and
+         a menu shown to a group is shown to everything that implies it. While
+         HR implied Employee that section could not be hidden from an admin,
+         so it sat in their menu bar empty — an admin has no assessment of
+         their own — and widening it to be useful only produced the whole
+         company's reviews under a label reading "My".
+
+         The cost of separating them is that HR does not inherit the reviewing
+         rights either, so every place that asks "may this person review?" has
+         to name both groups: `groups="...manager,...hr_manager"` in the views,
+         and competency_utils.is_competency_manager in Python. The access lines
+         and record rules below already grant HR everything in its own right.
+
+         Odoo 19 stores only the groups a user is actually given (group_ids)
+         and derives the rest (all_group_ids), so an admin already set to HR
+         Competency Manager loses the Employee group the moment this loads.
+         Nothing has to be migrated.
+
+         sequence orders the three in the one dropdown Settings shows for this
+         privilege. Without it they sort by name — Department Manager, then
+         Employee, then HR — which reads as no order at all.
+         ================================================================ -->
+
+    <!-- Everybody with a back-office login: own profile, own assessment. -->
+    <record id="group_competency_employee" model="res.groups">
+        <field name="name">Employee</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_competency"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">See and self-rate your own competency assessment and profile</field>
+    </record>
+
+    <!-- A manager sees the people they review and the people in the
+         department they manage — and is assessed themselves, which is why this
+         one DOES imply Employee. -->
+    <record id="group_competency_manager" model="res.groups">
+        <field name="name">Department Manager</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_competency"/>
+        <field name="implied_ids" eval="[(4, ref('group_competency_employee'))]"/>
+        <field name="comment">Assess your team, raise development plans and read team competency reports</field>
+    </record>
+
+    <!-- Deliberately does NOT imply the two above; see the note at the top.
+         hr.group_hr_manager carries base.group_user along with it, so an HR
+         competency manager is still an internal user. -->
+    <record id="group_competency_hr_manager" model="res.groups">
+        <field name="name">HR Competency Manager</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_competency"/>
+        <field name="implied_ids" eval="[(4, ref('hr.group_hr_manager'))]"/>
+        <field name="comment">Configure the competency framework, run review cycles and read every report. Not assessed through this app: the self-service menus belong to the Employee role.</field>
+    </record>
+
+    <!-- ================================================================
+         Record rules
+
+         Three tiers on each transactional model, and they must be read as a
+         set: rules of the SAME group are OR-ed, so the employee rule never
+         narrows what a manager or HR can reach.
+         ================================================================ -->
+
+    <!-- Assessments -->
+    <record id="rule_assessment_employee" model="ir.rule">
+        <field name="name">Competency assessment: own only</field>
+        <field name="model_id" ref="model_employee_competency_assessment"/>
+        <field name="domain_force">[('employee_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_employee'))]"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_assessment_manager" model="ir.rule">
+        <field name="name">Competency assessment: own team</field>
+        <field name="model_id" ref="model_employee_competency_assessment"/>
+        <field name="domain_force">['|', '|',
+            ('employee_user_id', '=', user.id),
+            ('reviewer_user_id', '=', user.id),
+            ('department_id.manager_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_manager'))]"/>
+    </record>
+
+    <record id="rule_assessment_hr" model="ir.rule">
+        <field name="name">Competency assessment: all</field>
+        <field name="model_id" ref="model_employee_competency_assessment"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_hr_manager'))]"/>
+    </record>
+
+    <!-- Assessment lines follow their assessment. -->
+    <record id="rule_assessment_line_employee" model="ir.rule">
+        <field name="name">Competency assessment line: own only</field>
+        <field name="model_id" ref="model_employee_competency_assessment_line"/>
+        <field name="domain_force">[('assessment_id.employee_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_employee'))]"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_assessment_line_manager" model="ir.rule">
+        <field name="name">Competency assessment line: own team</field>
+        <field name="model_id" ref="model_employee_competency_assessment_line"/>
+        <field name="domain_force">['|', '|',
+            ('assessment_id.employee_user_id', '=', user.id),
+            ('assessment_id.reviewer_user_id', '=', user.id),
+            ('assessment_id.department_id.manager_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_manager'))]"/>
+    </record>
+
+    <record id="rule_assessment_line_hr" model="ir.rule">
+        <field name="name">Competency assessment line: all</field>
+        <field name="model_id" ref="model_employee_competency_assessment_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_hr_manager'))]"/>
+    </record>
+
+    <!-- Competency profile -->
+    <record id="rule_profile_employee" model="ir.rule">
+        <field name="name">Competency profile: own only</field>
+        <field name="model_id" ref="model_employee_competency_profile"/>
+        <field name="domain_force">[('employee_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_employee'))]"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_profile_manager" model="ir.rule">
+        <field name="name">Competency profile: own team</field>
+        <field name="model_id" ref="model_employee_competency_profile"/>
+        <field name="domain_force">['|', '|',
+            ('employee_user_id', '=', user.id),
+            ('employee_id.parent_id.user_id', '=', user.id),
+            ('department_id.manager_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_manager'))]"/>
+    </record>
+
+    <record id="rule_profile_hr" model="ir.rule">
+        <field name="name">Competency profile: all</field>
+        <field name="model_id" ref="model_employee_competency_profile"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_hr_manager'))]"/>
+    </record>
+
+    <!-- Development plans -->
+    <record id="rule_development_plan_employee" model="ir.rule">
+        <field name="name">Development plan: own only</field>
+        <field name="model_id" ref="model_employee_development_plan"/>
+        <field name="domain_force">['|',
+            ('employee_user_id', '=', user.id),
+            ('assigned_person_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_employee'))]"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_development_plan_manager" model="ir.rule">
+        <field name="name">Development plan: own team</field>
+        <field name="model_id" ref="model_employee_development_plan"/>
+        <field name="domain_force">['|', '|', '|',
+            ('employee_user_id', '=', user.id),
+            ('assigned_person_id', '=', user.id),
+            ('employee_id.parent_id.user_id', '=', user.id),
+            ('department_id.manager_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_manager'))]"/>
+    </record>
+
+    <record id="rule_development_plan_hr" model="ir.rule">
+        <field name="name">Development plan: all</field>
+        <field name="model_id" ref="model_employee_development_plan"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_hr_manager'))]"/>
+    </record>
+
+    <!-- Appraisal goals follow development plans: the employee sees their
+         own, a manager their team's, HR everyone's. -->
+    <record id="rule_appraisal_goal_employee" model="ir.rule">
+        <field name="name">Appraisal goal: own only</field>
+        <field name="model_id" ref="model_employee_appraisal_goal"/>
+        <field name="domain_force">['|',
+            ('employee_user_id', '=', user.id),
+            ('manager_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_employee'))]"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_appraisal_goal_manager" model="ir.rule">
+        <field name="name">Appraisal goal: own team</field>
+        <field name="model_id" ref="model_employee_appraisal_goal"/>
+        <field name="domain_force">['|', '|', '|',
+            ('employee_user_id', '=', user.id),
+            ('manager_id', '=', user.id),
+            ('employee_id.parent_id.user_id', '=', user.id),
+            ('department_id.manager_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_manager'))]"/>
+    </record>
+
+    <record id="rule_appraisal_goal_hr" model="ir.rule">
+        <field name="name">Appraisal goal: all</field>
+        <field name="model_id" ref="model_employee_appraisal_goal"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_hr_manager'))]"/>
+    </record>
+
+    <!-- Multi-company: the master data and cycles belong to a company. -->
+    <record id="rule_competency_company" model="ir.rule">
+        <field name="name">Competency: multi-company</field>
+        <field name="model_id" ref="model_employee_competency"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+
+    <record id="rule_cycle_company" model="ir.rule">
+        <field name="name">Review cycle: multi-company</field>
+        <field name="model_id" ref="model_employee_competency_cycle"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+
+</odoo>

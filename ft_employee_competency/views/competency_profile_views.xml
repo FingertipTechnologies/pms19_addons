@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_competency_profile_list" model="ir.ui.view">
+        <field name="name">employee.competency.profile.list</field>
+        <field name="model">employee.competency.profile</field>
+        <field name="arch" type="xml">
+            <list string="Competency Profile" create="false"
+                  decoration-warning="gap &lt; 0">
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="job_id" optional="hide"/>
+                <field name="competency_id"/>
+                <field name="category_id" optional="show"/>
+                <field name="scope" optional="hide"/>
+                <field name="required_level"/>
+                <field name="current_level"/>
+                <field name="previous_level" optional="show"/>
+                <field name="level_change" string="Change" optional="show"
+                       decoration-success="level_change &gt; 0"
+                       decoration-danger="level_change &lt; 0"/>
+                <field name="gap"/>
+                <field name="mandatory" optional="hide"/>
+                <field name="last_assessment_date"/>
+                <field name="last_assessment_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_competency_profile_form" model="ir.ui.view">
+        <field name="name">employee.competency.profile.form</field>
+        <field name="model">employee.competency.profile</field>
+        <field name="arch" type="xml">
+            <form string="Competency Profile" create="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="1"/>
+                            <field name="department_id" readonly="1"/>
+                            <field name="job_id" readonly="1"/>
+                            <field name="competency_id" readonly="1"/>
+                            <field name="category_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="current_level" readonly="1"/>
+                            <field name="previous_level" readonly="1"/>
+                            <field name="level_change" readonly="1"
+                                   decoration-success="level_change &gt; 0"
+                                   decoration-danger="level_change &lt; 0"/>
+                            <field name="required_level" readonly="1"/>
+                            <field name="gap" readonly="1"/>
+                            <field name="last_assessment_date" readonly="1"/>
+                            <field name="last_assessment_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Development Plans" name="plans">
+                            <field name="development_plan_ids" nolabel="1" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="action_type"/>
+                                    <field name="assigned_person_id"/>
+                                    <field name="target_date"/>
+                                    <field name="completion_percentage" widget="progressbar"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_competency_profile_search" model="ir.ui.view">
+        <field name="name">employee.competency.profile.search</field>
+        <field name="model">employee.competency.profile</field>
+        <field name="arch" type="xml">
+            <search string="Competency Profile">
+                <field name="employee_id"/>
+                <field name="competency_id"/>
+                <field name="department_id"/>
+                <field name="category_id"/>
+                <filter name="filter_mine" string="Mine" domain="[('employee_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_gap" string="Below Requirement"
+                        domain="[('gap', '&lt;', 0)]"/>
+                <filter name="filter_mandatory" string="Mandatory" domain="[('mandatory', '=', True)]"/>
+                <separator/>
+                <filter name="filter_improved" string="Improved" domain="[('level_change', '&gt;', 0)]"/>
+                <filter name="filter_declined" string="Declined" domain="[('level_change', '&lt;', 0)]"/>
+                <separator/>
+                <filter name="filter_never_assessed" string="Never Assessed"
+                        domain="[('last_assessment_date', '=', False)]"/>
+                <group>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_competency" string="Competency" context="{'group_by': 'competency_id'}"/>
+                    <filter name="group_category" string="Category" context="{'group_by': 'category_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_competency_profile" model="ir.actions.act_window">
+        <field name="name">Competency Profiles</field>
+        <field name="res_model">employee.competency.profile</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_competency_profile_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No competency profile yet</p>
+            <p>
+                A profile entry appears for an employee once an assessment
+                carrying that competency is completed. It always shows the latest
+                approved level, measured against what their current job asks for.
+            </p>
+        </field>
+    </record>
+
+</odoo>

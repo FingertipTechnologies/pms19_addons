@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_competency_assessment_list" model="ir.ui.view">
+        <field name="name">employee.competency.assessment.list</field>
+        <field name="model">employee.competency.assessment</field>
+        <field name="arch" type="xml">
+            <list string="Competency Assessments"
+
+                  decoration-muted="state == 'cancel'"
+                  decoration-success="state == 'done'">
+                <field name="active" column_invisible="True"/>
+                <field name="name" width="150px"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="job_id" optional="hide"/>
+                <field name="cycle_id"/>
+                <field name="reviewer_id" optional="show"/>
+                <field name="assessment_date" width="140px"/>
+                <field name="overall_score_percent"
+                    string="Final Score %"
+                    width="140px"/>
+                
+                
+                <field name="role_readiness_percent" string="Readiness %" width="130px" optional="hide"/>
+                <field name="readiness_status" widget="badge" width="140px" optional="hide"
+                       decoration-success="readiness_status == 'ready'"
+                       decoration-info="readiness_status == 'near_ready'"
+                       decoration-warning="readiness_status == 'developing'"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge" width="160px"
+                       decoration-info="state == 'employee_review'"
+                       decoration-warning="state in ('manager_review', 'hr_review')"
+                       decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_competency_assessment_form" model="ir.ui.view">
+        <field name="name">employee.competency.assessment.form</field>
+        <field name="model">employee.competency.assessment</field>
+        <field name="arch" type="xml">
+            <form string="Competency Assessment">
+                <header>
+                    <button name="action_start_self_review" type="object"
+                            string="Start Self Assessment" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <!-- Employee: can submit their own self-assessment. -->
+                    <field name="can_submit_own_self_review" invisible="1"/>
+                    <field name="can_submit_manager_review" invisible="1"/>
+
+                    <button name="action_submit_self_review"
+                            type="object"
+                            string="Submit Self Assessment"
+                            class="btn-primary"
+                            invisible="not can_submit_own_self_review"/>
+                    <!-- HR/Admin: retains submission access. -->
+                    
+                    
+                    <button name="action_submit_manager_review"
+                        type="object"
+                        string="Submit Manager Review"
+                        class="btn-primary"
+                        invisible="not can_submit_manager_review"
+                        groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager"
+                        help="Submit the manager review for HR approval."/>
+                    <button name="action_hr_approve" type="object"
+                            string="Approve &amp; Certify" class="btn-primary"
+                            invisible="state != 'hr_review'"
+                            groups="ft_employee_competency.group_competency_hr_manager,base.group_system"
+                            help="Approves the final ratings as the official competency result, writes them onto the employee's competency profile and completes the review."/>
+                    
+                    <button name="action_reset_to_draft" type="object"
+                            string="Reset to Draft" invisible="state == 'draft'"
+                            groups="ft_employee_competency.group_competency_hr_manager"
+                            confirm="Resetting takes the review back to draft. A completed review stops counting: the employee's competency profile is rebuilt without it. Continue?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,employee_review,manager_review,hr_review,done"/>
+                </header>
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_development_plans" type="object"
+                                class="oe_stat_button" icon="fa-graduation-cap"
+                                string="Dev Plans"/>
+                    </div>
+                    <widget name="web_ribbon" title="Certified" bg_color="text-bg-success"
+                            invisible="state != 'done'"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <!-- Keep these available for field permissions and expressions. -->
+                        <field name="employee_user_id" invisible="1"/>
+                        <field name="reviewer_user_id" invisible="1"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="can_edit_as_manager" invisible="1"/>
+
+                        <!-- Manager / HR: allow permitted editing, prevent opening linked pages. -->
+                        <group string="Who"
+                            groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager">
+
+                            <field name="employee_id"
+                                readonly="state != 'draft' or employee_user_id == uid"
+                                options="{'no_open': True, 'no_create': True}"/>
+
+                            <field name="department_id"
+                                readonly="state != 'draft' or employee_user_id == uid"
+                                options="{'no_open': True, 'no_create': True}"/>
+
+                            <field name="job_id"
+                                readonly="state != 'draft' or employee_user_id == uid"
+                                options="{'no_open': True, 'no_create': True}"/>
+
+                            <field name="reviewer_id"
+                                readonly="state in ('done', 'cancel') or not can_edit_as_manager"
+                                options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+
+                        <group string="When"
+                            groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager">
+
+                            <field name="cycle_id"
+                                readonly="state != 'draft' or employee_user_id == uid"
+                                options="{'no_open': True, 'no_create': True}"/>
+
+                            <field name="assessment_date"
+                                readonly="state in ('done', 'cancel') or not can_edit_as_manager"/>
+
+                            <field name="previous_assessment_id"
+                                readonly="1"
+                                invisible="not previous_assessment_id"
+                                options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+
+                        <!-- Employee: display values without editing or opening records. -->
+                        <group string="Who"
+                            groups="!ft_employee_competency.group_competency_manager,!ft_employee_competency.group_competency_hr_manager">
+                            <field name="employee_id"
+                                readonly="1"
+                                options="{'no_open': True, 'no_create': True}"/>
+                            <field name="department_id"
+                                readonly="1"
+                                options="{'no_open': True, 'no_create': True}"/>
+                            <field name="job_id"
+                                readonly="1"
+                                options="{'no_open': True, 'no_create': True}"/>
+                            <field name="reviewer_id"
+                                readonly="1"
+                                options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+
+                        <group string="When"
+                            groups="!ft_employee_competency.group_competency_manager,!ft_employee_competency.group_competency_hr_manager">
+                            <field name="cycle_id"
+                                readonly="1"
+                                options="{'no_open': True, 'no_create': True}"/>
+                            <field name="assessment_date" readonly="1"/>
+                            <field name="previous_assessment_id"
+                                readonly="1"
+                                invisible="not previous_assessment_id"
+                                options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+                    </group>
+                    <group string="Certification" invisible="not hr_approved_on">
+                        <group>
+                            <field name="hr_approved_by_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group>
+                            <field name="hr_approved_on"/>
+                        </group>
+                    </group>
+                    <group string="Scores">
+                        <group>
+                                <field name="overall_score_percent"
+                                    string="Final Score %"
+                                    readonly="1"/>
+
+                        </group>
+                        <group>
+                            <field name="core_score"/>
+                            <field name="functional_score"/>
+                            <field name="leadership_score" invisible="leadership_score == 0"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Competencies" name="competencies">
+                            <!-- The tab shares the form with the scores and
+                                 the chatter, so a scorecard with many columns
+                                 is cramped here. The full board opens the same
+                                 lines on their own, full width, with the same
+                                 rating rules. -->
+                            <div class="d-flex justify-content-end mb-2">
+                                <button name="action_open_competency_board" type="object"
+                                        string="Open Full Board" icon="fa-expand"
+                                        class="btn btn-secondary"/>
+                            </div>
+                            <field name="line_ids" nolabel="1"
+                                   readonly="state in ('done', 'cancel') or (employee_user_id == uid and state != 'employee_review')">
+                                <list editable="bottom" limit="200">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="competency_id" readonly="1"/>
+                                    <field name="category_id" readonly="1" optional="show"/>
+                                   
+                                    <field name="weightage" string="Weight %" readonly="1"
+                                           sum="Total"/>
+                        
+                                    <field name="self_rating"
+                                           readonly="not can_self_rate"/>
+                                    <field name="manager_rating"
+                                           readonly="state in ('done', 'cancel') or not can_rate_as_manager"/>
+                                    <field name="final_rating"
+                                            readonly="not can_edit_final_rating"/>
+                                    
+                                    <field name="weighted_score" string="Final Score %" readonly="1"
+                                           sum="Total"/>
+                                    
+                                    <field name="employee_comments" optional="show"
+                                           readonly="not can_self_rate"/>
+                                    <field name="manager_comments" optional="show"
+                                           readonly="not can_rate_as_manager"/>
+                                    <field name="can_edit_final_rating"
+                                            column_invisible="True"/>
+                                    
+                                    <field name="can_rate_as_manager" column_invisible="True"/>
+                                    <field name="can_self_rate" column_invisible="True"/>
+                                    
+                                    <field name="minimum_level" column_invisible="True"/>
+                                    <field name="mandatory" column_invisible="True"/>
+                                    
+                                </list>
+                            </field>
+                            <div class="alert alert-info mt-2" role="alert"
+                                 invisible="state != 'employee_review'">
+                                Rate yourself on each competency. Your self-rating will serve as a reference during the review discussion. 
+                            </div>
+                            <div class="alert alert-info mt-2" role="alert"
+                                 invisible="state != 'hr_review'">
+                                The manager has submitted this review. HR checks the final ratings
+                                and scores, then approves and certifies the review.
+                            </div>
+                            
+                        </page>
+                        <page string="Readiness" name="readiness"  invisible="1">
+                            <group>
+                                <group string="Next Role">
+                                    <!-- The manager's call, like the two
+                                         ratings beside it and like the same
+                                         field on the employee form, which is
+                                         already manager-only. Shown to the
+                                         employee rather than hidden: where
+                                         they are being pointed is theirs to
+                                         read, just not to set.
+                                         _check_manager_fields enforces it. -->
+                                    <field name="target_job_id"
+                                            options="{'no_create': True}"
+                                            readonly="state in ('done', 'cancel') or not can_edit_as_manager"/>
+                                    <field name="role_readiness_percent"
+                                           invisible="not target_job_id"/>
+                                    <field name="readiness_status" widget="badge"
+                                           invisible="not target_job_id"
+                                           decoration-success="readiness_status == 'ready'"
+                                           decoration-info="readiness_status == 'near_ready'"
+                                           decoration-warning="readiness_status == 'developing'"/>
+                                </group>
+                                <group string="Management View">
+                                    <field name="performance_rating"
+                                           readonly="state in ('done', 'cancel') or not can_edit_as_manager"
+                                           groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager"/>
+                                    <field name="potential_rating"
+                                           readonly="state in ('done', 'cancel') or not can_edit_as_manager"
+                                           groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-info" role="alert"
+                                 invisible="target_job_id">
+                                Set a target job to measure readiness. Readiness is the share
+                                of that job's <strong>mandatory</strong> competencies the
+                                employee already meets: under 60% is Developing, 60-75%
+                                Progressing, 75-90% Near Ready and 90% or more Ready. A
+                                competency two or more levels short holds the band at Near
+                                Ready however high the percentage runs.
+                            </div>
+                        </page>
+                        <page string="Summary" name="summary">
+                            <div class="row mt-3">
+                                <div class="col-12 col-lg-6 mb-3">
+                                    <label for="strength_summary"
+                                        string="Strengths"
+                                        class="o_form_label fw-bold mb-2"/>
+
+                                    <field name="strength_summary"
+                                        nolabel="1"
+                                        class="w-100"
+                                        readonly="state in ('hr_review', 'done', 'cancel') or not can_edit_as_manager"
+                                        placeholder="The strengths worth recording for this cycle."/>
+                                </div>
+
+                                <div class="col-12 col-lg-6 mb-3">
+                                    <label for="development_summary"
+                                        string="Development Areas"
+                                        class="o_form_label fw-bold mb-2"/>
+
+                                    <field name="development_summary"
+                                        nolabel="1"
+                                        class="w-100"
+                                        readonly="state in ('hr_review', 'done', 'cancel') or not can_edit_as_manager"
+                                        placeholder="The gaps and focus areas for the next cycle."/>
+                                </div>
+                            </div>
+                        </page>
+                        <page string="Development Plans" name="development_plans">
+                            <!-- EVERY plan this employee has, not only the ones
+                                 raised from this review. The tab used to list
+                                 development_plan_ids, which is keyed on the
+                                 assessment link - and a plan created from the
+                                 Development Plans menu carries no link, the
+                                 field being optional with no default - so the
+                                 tab came back empty however many plans the
+                                 person had. Which review raised a plan is
+                                 still worth seeing, so it is a column.
+
+                                 create="false": these rows are the employee's,
+                                 not this record's, so there is nothing sensible
+                                 for a blank line here to belong to. The button
+                                 below raises one with the employee and this
+                                 assessment already filled in, which is also
+                                 what the old inline row could never do - it
+                                 left Employee empty and required, so adding a
+                                 line simply failed to save.
+
+                                 delete="false" for the same reason: the bin on
+                                 a row of a computed list unlinks nothing that
+                                 is stored, so the plan would simply come back
+                                 on the next read. Cancelling a plan is done on
+                                 the plan. -->
+                            <field name="employee_plan_ids"
+                                    nolabel="1"
+                                    domain="[('employee_id', '=', employee_id)]"
+                                    readonly="state in ('done', 'cancel') or not can_edit_as_manager">
+                                <list editable="bottom" create="false" delete="false">
+                                    <field name="name"
+                                        readonly="state == 'completed'"/>
+                                    <field name="competency_id"
+                                        readonly="state == 'completed'"/>
+                                    <field name="action_type"
+                                        readonly="state == 'completed'"/>
+                                    <field name="assigned_person_id"
+                                        widget="many2one_avatar_user"
+                                        readonly="state == 'completed'"/>
+                                    <field name="target_date"
+                                        readonly="state == 'completed'"/>
+                                    <field name="completion_percentage"
+                                        widget="progressbar"
+                                        readonly="state == 'completed'"/>
+                                    <field name="state"
+                                        widget="badge"
+                                        readonly="state == 'completed'"
+                                        decoration-success="state == 'completed'"
+                                        decoration-muted="state == 'cancelled'"/>
+                                    <field name="assessment_id"
+                                        string="Raised By"
+                                        optional="show"
+                                        readonly="1"/>
+                                    <field name="employee_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                            <button name="action_new_development_plan" type="object"
+                                    string="New Development Plan" icon="fa-plus"
+                                    class="btn-link ps-0"
+                                    invisible="state in ('done', 'cancel') or not can_edit_as_manager"
+                                    groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager"/>
+                           
+                        </page>
+                        <page string="Goals" name="goals">
+                            <field name="goal_ids" nolabel="1"
+                                   readonly="state in ('done', 'cancel') or not can_edit_as_manager"
+                                   context="{'default_employee_id': employee_id, 'default_assessment_id': id}">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="manager_id" widget="many2one_avatar_user" optional="show"/>
+                                    <field name="deadline"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'done'"
+                                           decoration-info="state == 'in_progress'"
+                                           decoration-muted="state == 'cancel'"/>
+                                    <field name="employee_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- The Competencies tab, full screen: opened by Open Full Board on the
+         assessment. The same columns and the same readonly rules as the tab,
+         keyed on the line's own status (the assessment's, stored on the
+         line) since there is no parent form here to read it from. -->
+    <record id="view_assessment_line_board_list" model="ir.ui.view">
+        <field name="name">employee.competency.assessment.line.board.list</field>
+        <field name="model">employee.competency.assessment.line</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <list string="Competencies" editable="bottom" create="0" delete="0">
+                <field name="sequence" widget="handle"/>
+                <field name="competency_id" readonly="1"/>
+                <field name="category_id" readonly="1" optional="show"/>
+                
+                <field name="weightage" string="Weight %" readonly="1" sum="Total"/>
+                <field name="self_rating" readonly="not can_self_rate"/>
+                <field name="manager_rating"
+                       readonly="state in ('done', 'cancel') or not can_rate_as_manager"/>
+                <field name="final_rating"
+                    readonly="not can_edit_final_rating"/>
+                <field name="weighted_score" string="Final Score %" readonly="1" sum="Total"/>
+                
+                <field name="employee_comments" optional="show"
+                       readonly="state in ('done', 'cancel') or not can_self_rate"/>
+                <field name="manager_comments" optional="show"
+                       readonly="state in ('done', 'cancel') or not can_rate_as_manager"/>
+                
+                <field name="state" column_invisible="True"/>
+                <field name="can_edit_final_rating" column_invisible="True"/>
+                <field name="can_rate_as_manager" column_invisible="True"/>
+                <field name="can_self_rate" column_invisible="True"/>
+            
+                
+            </list>
+        </field>
+    </record>
+
+    <record id="view_competency_assessment_kanban" model="ir.ui.view">
+        <field name="name">employee.competency.assessment.kanban</field>
+        <field name="model">employee.competency.assessment</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" quick_create="false">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between">
+                            <strong class="fs-5"><field name="employee_id"/></strong>
+                            <span class="badge text-bg-primary">
+                                <field name="overall_score_percent"/>%
+                            </span>
+                        </div>
+                        <div class="text-muted"><field name="job_id"/></div>
+                        <div class="text-muted"><field name="cycle_id"/></div>
+                        <footer class="pt-2">
+                            <field name="reviewer_id" widget="many2one_avatar"/>
+                            <field name="assessment_date" widget="date" class="ms-auto"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_competency_assessment_search" model="ir.ui.view">
+        <field name="name">employee.competency.assessment.search</field>
+        <field name="model">employee.competency.assessment</field>
+        <field name="arch" type="xml">
+            <search string="Competency Assessments">
+                <filter name="filter_archived"
+                        string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="cycle_id"/>
+                <field name="reviewer_id"/>
+                <field name="job_id"/>
+                <filter name="filter_mine" string="My Assessments"
+                        domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="filter_to_review" string="To Review"
+                        domain="[('reviewer_user_id', '=', uid), ('state', '=', 'manager_review')]"/>
+                <filter name="filter_reviewed_by_me" string="I Am the Reviewer"
+                        domain="[('reviewer_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_employee_review" string="Employee Review"
+                        domain="[('state', '=', 'employee_review')]"/>
+                <filter name="filter_manager_review" string="Manager Review"
+                        domain="[('state', '=', 'manager_review')]"/>
+                <filter name="filter_hr_review" string="HR Approval"
+                        domain="[('state', '=', 'hr_review')]"/>
+                <filter name="filter_done" string="Completed" domain="[('state', '=', 'done')]"/>
+                
+                
+                <separator/>
+                <filter name="filter_high_potential" string="High Potential"
+                        domain="[('potential_rating', '=', 'high')]"/>
+                <filter name="filter_ready" string="Ready for Next Role"
+                        domain="[('readiness_status', '=', 'ready')]"/>
+                <group>
+                    <filter name="group_cycle" string="Review Cycle" context="{'group_by': 'cycle_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_job" string="Job Position" context="{'group_by': 'job_id'}"/>
+                    <filter name="group_reviewer" string="Reviewer" context="{'group_by': 'reviewer_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_readiness" string="Readiness" context="{'group_by': 'readiness_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_competency_assessment" model="ir.actions.act_window">
+        <field name="name">Assessments</field>
+        <field name="res_model">employee.competency.assessment</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_competency_assessment_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No assessment yet</p>
+            <p>
+                Assessments are normally generated in bulk from a review cycle,
+                which snapshots each employee's job competency matrix onto their
+                own review. You can also raise one here for a single employee.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_competency_assessment_my" model="ir.actions.act_window">
+        <field name="name">My Assessments</field>
+        <field name="res_model">employee.competency.assessment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_competency_assessment_search"/>
+        <!-- Own records, which is what the menu says. It reaches employees
+             and department managers only: an HR competency manager is not in
+             the Employee group and so never sees this menu (see
+             competency_menus.xml), which is why it does not have to answer for
+             them. All Assessments is theirs. -->
+        <field name="domain">[('employee_user_id', '=', uid)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">You have no assessment yet</p>
+            <p>Your competency assessments appear here once HR opens a review cycle.</p>
+        </field>
+    </record>
+
+    <record id="action_competency_assessment_to_review" model="ir.actions.act_window">
+        <field name="name">To Review</field>
+        <field name="res_model">employee.competency.assessment</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_competency_assessment_search"/>
+        <!-- is_pending_my_review, not a reviewer_user_id domain: an HR
+             manager is rarely anyone's named reviewer, so the old domain left
+             their To Review empty. HR now sees every open assessment here;
+             a reviewing manager still sees only their own. -->
+        <field name="domain">
+            [('is_pending_my_review', '=', True)]
+        </field>
+        <field name="help" type="html">
+            <p>No assessments are waiting for your review.</p>
+            <p>
+                Assigned manager reviews appear here.
+                HR/Admin also see all assessments awaiting HR Approval.
+            </p>
+        </field>
+    </record>
+    <record id="view_assessment_manager_hr_readonly"
+            model="ir.ui.view">
+        <field name="name">assessment.manager.hr.readonly</field>
+        <field name="model">employee.competency.assessment</field>
+        <field name="inherit_id"
+            ref="view_competency_assessment_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//sheet" position="before">
+                <field name="manager_hr_readonly" invisible="1"/>
+            </xpath>
+
+            <xpath expr="//sheet//field[not(ancestor::field)]"
+                position="attributes">
+                <attribute name="readonly"
+                        add="manager_hr_readonly"
+                        separator=" or "/>
+            </xpath>
+
+            <xpath expr="//header/button[@type='object']"
+                position="attributes">
+                <attribute name="invisible"
+                        add="manager_hr_readonly"
+                        separator=" or "/>
+            </xpath>
+
+            <xpath expr="//button[@name='action_new_development_plan']"
+                position="attributes">
+                <attribute name="invisible"
+                        add="manager_hr_readonly"
+                        separator=" or "/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

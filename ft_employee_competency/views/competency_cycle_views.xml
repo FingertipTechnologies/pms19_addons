@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_competency_cycle_list" model="ir.ui.view">
+        <field name="name">employee.competency.cycle.list</field>
+        <field name="model">employee.competency.cycle</field>
+        <field name="arch" type="xml">
+            <list string="Review Cycles"
+                  decoration-muted="state == 'closed'"
+                  decoration-bf="state == 'open'">
+                <field name="name"/>
+                <field name="review_type" width="140px"/>
+                <field name="date_from" width="130px"/>
+                <field name="date_to" width="130px"/>
+                <field name="self_review_deadline" width="170px" optional="hide"/>
+                <field name="manager_review_deadline" width="180px" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge" width="170px"
+                       decoration-info="state == 'open'"
+                       decoration-success="state == 'closed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_competency_cycle_form" model="ir.ui.view">
+        <field name="name">employee.competency.cycle.form</field>
+        <field name="model">employee.competency.cycle</field>
+        <field name="arch" type="xml">
+            <form string="Review Cycle">
+                <header>
+                    <button name="action_open" type="object" string="Open Cycle"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_generate_assessments" type="object"
+                            string="Generate Assessments" class="btn-primary"
+                            invisible="state != 'open'"
+                            help="Raises one assessment per applicable employee, snapshotting their job competency matrix onto it. Employees who already have an assessment in this cycle are skipped."/>
+                    <button name="action_close" type="object" string="Close Cycle"
+                            invisible="state != 'open'"
+                            confirm="Closing the cycle stops any further assessment or submission against it. Continue?"/>
+                    <button name="action_reopen" type="object" string="Reopen"
+                            invisible="state != 'closed'"
+                            groups="ft_employee_competency.group_competency_hr_manager"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="Reset to Draft" invisible="state != 'open'"
+                            groups="ft_employee_competency.group_competency_hr_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,open,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_assessments" type="object"
+                                class="oe_stat_button" icon="fa-clipboard"
+                                string="Assessments"/>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Q2 FY 2026-27"/></h1>
+                    </div>
+                    <group>
+                        <group string="Period">
+                            <field name="review_type"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Deadlines">
+                            <field name="self_review_deadline"/>
+                            <field name="manager_review_deadline"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Coverage" name="coverage">
+                            <div class="alert alert-info" role="alert">
+                                Leave both lists empty to cover every active employee whose
+                                job position has a <strong>validated</strong> competency
+                                matrix. Employees on a job with no validated matrix are
+                                always skipped — there is nothing to assess them against.
+                            </div>
+                            <group>
+                                <field name="employee_ids" widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       readonly="state == 'closed'"/>
+                                <field name="department_ids" widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       invisible="employee_ids"
+                                       readonly="state == 'closed'"/>
+                            </group>
+                        </page>
+                        <page string="Assessments" name="assessments">
+                            <field name="assessment_ids" nolabel="1" readonly="1">
+                                <list decoration-success="state == 'done'"
+                                      decoration-muted="state == 'cancel'">
+                                    <field name="name"/>
+                                    <field name="employee_id"/>
+                                    <field name="department_id"/>
+                                    <field name="job_id" optional="hide"/>
+                                    <field name="reviewer_id"/>
+                                    <field name="overall_score_percent" string="Score %"/>
+                                    <field name="overall_score" string="Score / 5" optional="hide"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state == 'employee_review'"
+                                           decoration-warning="state in ('manager_review', 'hr_review')"
+                                           decoration-success="state == 'done'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_competency_cycle_search" model="ir.ui.view">
+        <field name="name">employee.competency.cycle.search</field>
+        <field name="model">employee.competency.cycle</field>
+        <field name="arch" type="xml">
+            <search string="Review Cycles">
+                <field name="name"/>
+                <filter name="filter_open" string="Open" domain="[('state', '=', 'open')]"/>
+                <filter name="filter_closed" string="Closed" domain="[('state', '=', 'closed')]"/>
+                <separator/>
+                <filter name="filter_current" string="Current"
+                        domain="[('date_from', '&lt;=', context_today().strftime('%Y-%m-%d')),
+                                 ('date_to', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_review_type" string="Review Type" context="{'group_by': 'review_type'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_competency_cycle" model="ir.actions.act_window">
+        <field name="name">Review Cycles</field>
+        <field name="res_model">employee.competency.cycle</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_competency_cycle_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Open a review cycle</p>
+            <p>
+                A cycle is the window a round of reviews belongs to — a quarter,
+                a half year or a year. Open it, generate the assessments, and
+                close it when every assessment is signed off. Quarter-on-quarter
+                improvement is measured between one closed cycle and the next.
+            </p>
+        </field>
+    </record>
+
+</odoo>

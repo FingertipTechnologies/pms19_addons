@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_competency_category_list" model="ir.ui.view">
+        <field name="name">employee.competency.category.list</field>
+        <field name="model">employee.competency.category</field>
+        <field name="arch" type="xml">
+            <list string="Competency Categories">
+                <field name="sequence" widget="handle"/>
+                <field name="code" width="100px"/>
+                <field name="name"/>
+                <field name="scope" width="140px"/>
+                <field name="description" optional="hide"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_competency_category_form" model="ir.ui.view">
+        <field name="name">employee.competency.category.form</field>
+        <field name="model">employee.competency.category</field>
+        <field name="arch" type="xml">
+            <form string="Competency Category">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Leadership"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" placeholder="e.g. LED"/>
+                            <field name="scope"/>
+                            <field name="hr_skill_type_id" invisible="not hr_skill_type_id"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1"
+                               placeholder="What this group of competencies covers."/>
+                    </group>
+                    <notebook>
+                        <page string="Competencies" name="competencies">
+                            <field name="competency_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="scope"/>
+                                    <field name="default_weightage" sum="Total"/>
+                                    <field name="development_threshold"/>
+                                    <field name="is_company_wide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_competency_category_search" model="ir.ui.view">
+        <field name="name">employee.competency.category.search</field>
+        <field name="model">employee.competency.category</field>
+        <field name="arch" type="xml">
+            <search string="Competency Categories">
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="filter_core" string="Core" domain="[('scope', '=', 'core')]"/>
+                <filter name="filter_functional" string="Functional" domain="[('scope', '=', 'functional')]"/>
+                <filter name="filter_leadership" string="Leadership" domain="[('scope', '=', 'leadership')]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_scope" string="Scope" context="{'group_by': 'scope'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_competency_category" model="ir.actions.act_window">
+        <field name="name">Competency Categories</field>
+        <field name="res_model">employee.competency.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_competency_category_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a competency category</p>
+            <p>
+                Categories group the competency master — Leadership, Communication,
+                Behaviour &amp; Attitude, and so on. The category sets the default
+                scope of the competencies inside it, which decides whether they
+                count towards the core, functional or leadership score.
+            </p>
+        </field>
+    </record>
+
+</odoo>

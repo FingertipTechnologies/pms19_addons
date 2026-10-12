@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Employee Competency Handbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+
+<style>
+  :root {
+    --paper: #f5f7f8;
+    --surface: #ffffff;
+    --ink: #16212b;
+    --muted: #5a6b78;
+    --hair: #dbe3e8;
+    --hair-strong: #c3cfd7;
+    --accent: #1d3f66;
+    --accent-soft: #e7eef5;
+    --good: #1f6b4a;
+    --good-soft: #e3f0e8;
+    --warn: #8a5a10;
+    --warn-soft: #f7edda;
+    --bad: #99302c;
+    --bad-soft: #f8e5e3;
+    --info: #1e5674;
+    --info-soft: #e2eef4;
+    --code-bg: #eef2f5;
+    --btn-text: #ffffff;
+
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #101a21;
+      --surface: #16222b;
+      --ink: #e6edf2;
+      --muted: #9bacb8;
+      --hair: #2a3a46;
+      --hair-strong: #3b4e5c;
+      --accent: #8fb6dd;
+      --accent-soft: #1b2e40;
+      --good: #7fc59f;
+      --good-soft: #172e23;
+      --warn: #d8ab62;
+      --warn-soft: #302516;
+      --bad: #e79b95;
+      --bad-soft: #35201f;
+      --info: #8cc0da;
+      --info-soft: #152b36;
+      --code-bg: #1c2b35;
+      --btn-text: #0d1620;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #101a21;
+    --surface: #16222b;
+    --ink: #e6edf2;
+    --muted: #9bacb8;
+    --hair: #2a3a46;
+    --hair-strong: #3b4e5c;
+    --accent: #8fb6dd;
+    --accent-soft: #1b2e40;
+    --good: #7fc59f;
+    --good-soft: #172e23;
+    --warn: #d8ab62;
+    --warn-soft: #302516;
+    --bad: #e79b95;
+    --bad-soft: #35201f;
+    --info: #8cc0da;
+    --info-soft: #152b36;
+    --code-bg: #1c2b35;
+    --btn-text: #0d1620;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 1140px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  @media (min-width: 1000px) {
+    .shell { grid-template-columns: 232px minmax(0, 1fr); gap: 56px; align-items: start; }
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    grid-column: 1 / -1;
+    border-bottom: 2px solid var(--ink);
+    padding-block: 48px 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.1rem, 5.4vw, 3.1rem);
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    margin: 6px 0 10px;
+    text-wrap: balance;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .masthead p {
+    margin: 0;
+    max-width: 54ch;
+    color: var(--muted);
+    font-size: 1.02rem;
+  }
+  .stamp {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    line-height: 1.9;
+    color: var(--muted);
+    border-left: 2px solid var(--hair-strong);
+    padding-left: 14px;
+  }
+  .stamp b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- contents rail ---------- */
+  nav.toc { font-size: 0.88rem; }
+  @media (min-width: 1000px) {
+    nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); max-height: calc(100vh - 80px); overflow-y: auto; }
+  }
+  nav.toc h2 {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; counter-reset: toc; }
+  nav.toc a {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 6px;
+    padding: 5px 8px 5px 0;
+    color: var(--ink);
+    text-decoration: none;
+    border-radius: 3px;
+  }
+  nav.toc a::before {
+    counter-increment: toc;
+    content: counter(toc, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--muted);
+    padding-top: 2px;
+  }
+  nav.toc a:hover { background: var(--accent-soft); color: var(--accent); }
+  nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* ---------- article ---------- */
+  article { min-width: 0; }
+  section { padding-block: 34px 6px; border-top: 1px solid var(--hair); }
+  section:first-of-type { border-top: 0; padding-top: 26px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 1.92rem);
+    line-height: 1.16;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1.04rem;
+    margin: 30px 0 8px;
+  }
+  h4 {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 26px 0 8px;
+  }
+  .chapter-no {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  .lede { font-size: 1.06rem; color: var(--muted); max-width: 64ch; }
+  ul, ol.steps { max-width: 68ch; }
+  ul { padding-left: 20px; margin: 0 0 16px; }
+  li { margin-bottom: 7px; }
+  a { color: var(--accent); }
+
+  /* numbered procedure */
+  ol.steps { list-style: none; counter-reset: step; margin: 0 0 20px; padding: 0; }
+  ol.steps > li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 38px;
+    margin-bottom: 14px;
+  }
+  ol.steps > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 1px;
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 50%;
+  }
+
+  /* inline devices */
+  code, .path, .btn, .fieldname {
+    font-family: var(--mono);
+    font-size: 0.855em;
+  }
+  code, .fieldname { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+  .path { background: var(--code-bg); padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--btn-text);
+    padding: 1px 8px;
+    border-radius: 3px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    padding: 1px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill.draft { background: var(--code-bg); color: var(--muted); }
+  .pill.info { background: var(--info-soft); color: var(--info); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; margin: 0 0 22px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  caption {
+    caption-side: top;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 8px;
+  }
+  th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  thead th {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--hair-strong);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 1px solid var(--hair-strong); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 0.88rem; }
+  tr > *:last-child { padding-right: 0; }
+  tfoot td { font-weight: 600; border-bottom: 0; padding-top: 10px; }
+  tfoot td.num { font-family: var(--mono); }
+  table.terms td:first-child { width: 12.5rem; font-weight: 500; }
+  table.rating td:first-child { font-family: var(--mono); width: 3rem; }
+
+  /* pipeline strip */
+  .rail { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 4px 0 24px; }
+  .rail .stage {
+    flex: 1 1 130px;
+    border: 1px solid var(--hair-strong);
+    border-top: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 10px 12px;
+  }
+  .rail .stage .who {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 3px;
+  }
+  .rail .stage .st { font-weight: 600; font-size: 0.95rem; display: block; }
+  .rail .stage .act { font-size: 0.82rem; color: var(--muted); }
+
+  /* callouts */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 14px 16px;
+    margin: 0 0 22px;
+    max-width: 68ch;
+  }
+  .note.caution { border-left-color: var(--warn); }
+  .note.stop { border-left-color: var(--bad); }
+  .note p:last-child { margin-bottom: 0; }
+  .note .tag {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .k { font-weight: 600; }
+  hr.thin { border: 0; border-top: 1px solid var(--hair); margin: 26px 0; }
+
+  footer.colophon {
+    grid-column: 1 / -1;
+    border-top: 2px solid var(--ink);
+    margin-top: 40px;
+    padding-top: 16px;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+    justify-content: space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media print {
+    body { background: #fff; color: #000; padding: 0; }
+    nav.toc, .stamp { display: none; }
+    .shell { display: block; max-width: none; }
+    section { break-inside: auto; page-break-inside: auto; }
+    h2 { break-after: avoid; }
+  }
+</style>
+
+<style>
+  @page { size: A4; margin: 16mm 14mm 18mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @media print {
+    body { font-size: 10.5pt; line-height: 1.5; color: var(--ink); background: #fff; }
+    .masthead { padding-block: 0 14px; break-after: avoid; }
+    .masthead h1 { font-size: 30pt; }
+    section { padding-block: 20px 4px; break-before: auto; }
+    section#overview, section#glossary, section#scale, section#roles, section#setup,
+    section#matrix, section#cycle, section#self, section#review, section#maths,
+    section#plans, section#profile, section#reports, section#mail, section#errors,
+    section#quirks, section#appendix { break-before: page; }
+    section#overview { break-before: avoid; }
+    h2, h3, h4 { break-after: avoid; }
+    .chapter-no { break-after: avoid; }
+    table { font-size: 8.8pt; }
+    th, td { padding: 5px 10px 5px 0; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    .table-wrap { overflow: visible; }
+    ol.steps > li, .note, .rail { break-inside: avoid; }
+    .rail .stage { border-top-width: 2px; }
+    a { color: var(--ink); text-decoration: none; }
+    p, ul, ol.steps { max-width: none; }
+    footer.colophon { break-before: avoid; }
+  }
+</style>
+
+</head>
+<body>
+
+
+<div class="shell">
+
+  <header class="masthead">
+    <div>
+      <span class="eyebrow">Odoo 19 · Employees · User manual</span>
+      <h1>Employee Competency Handbook</h1>
+      <p>How the competency framework works, what every word on the screen means, and the exact click path for HR, for managers and for employees.</p>
+    </div>
+    <div class="stamp">
+      Module <b>ft_employee_competency</b><br>
+      Version <b>19.0.1.0.0</b><br>
+      Depends on <b>hr</b>, <b>mail</b><br>
+      Menu <b>Competency</b>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#overview">What the module does</a></li>
+      <li><a href="#glossary">Every word on the screen</a></li>
+      <li><a href="#scale">The 1–5 rating scale</a></li>
+      <li><a href="#roles">Who can do what</a></li>
+      <li><a href="#setup">HR: build the framework</a></li>
+      <li><a href="#matrix">HR: the job competency matrix</a></li>
+      <li><a href="#cycle">HR: run a review cycle</a></li>
+      <li><a href="#self">Employee: the self assessment</a></li>
+      <li><a href="#review">Manager: the review</a></li>
+      <li><a href="#maths">How every number is worked out</a></li>
+      <li><a href="#plans">Development plans</a></li>
+      <li><a href="#profile">The competency profile</a></li>
+      <li><a href="#reports">The three reports</a></li>
+      <li><a href="#mail">Emails and reminders</a></li>
+      <li><a href="#errors">Messages you may hit</a></li>
+      <li><a href="#quirks">Known quirks</a></li>
+      <li><a href="#appendix">Appendix: what ships pre-loaded</a></li>
+    </ol>
+  </nav>
+
+  <article>
+
+    <!-- 1 -->
+    <section id="overview">
+      <span class="chapter-no">Chapter 1</span>
+      <h2>What the module does</h2>
+      <p class="lede">HR decides which skills each job needs and how much each one counts. Every review period, employees rate themselves, managers give the official rating, and the module works out the scores, the skill gaps, and the actions to close them.</p>
+
+      <p>Six things happen in a fixed order. Nothing later works until the step before it is done.</p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>The chain, end to end</caption>
+          <thead>
+            <tr><th style="width:3rem">Step</th><th>What is built</th><th>Where</th><th>Who</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">1</td><td><span class="k">Competencies</span> — the list of skills, grouped into categories</td><td><span class="path">Competency ▸ Configuration</span></td><td>HR</td></tr>
+            <tr><td class="num">2</td><td><span class="k">Job competency matrix</span> — which skills a job needs, at what level, at what weight</td><td><span class="path">Job Position ▸ Competency Matrix</span></td><td>HR</td></tr>
+            <tr><td class="num">3</td><td><span class="k">Review cycle</span> — the period being reviewed, such as Q3 FY 2026-27</td><td><span class="path">Competency ▸ Assessments ▸ Review Cycles</span></td><td>HR</td></tr>
+            <tr><td class="num">4</td><td><span class="k">Assessments</span> — one per employee, generated from the matrix</td><td>Generated by the cycle</td><td>HR, then employee, then manager</td></tr>
+            <tr><td class="num">5</td><td><span class="k">Scores and gaps</span> — calculated the moment ratings are entered</td><td>On the assessment</td><td>Automatic</td></tr>
+            <tr><td class="num">6</td><td><span class="k">Development plans</span> and the <span class="k">competency profile</span></td><td><span class="path">Competency ▸ Development</span></td><td>Manager, then automatic</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <span class="tag">The one rule worth learning first</span>
+        <p>A job's skill weights must total <span class="k">exactly 100%</span>, and its matrix must be <span class="k">Validated</span>. Until both are true, no assessment can be generated for anyone holding that job.</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="glossary">
+      <span class="chapter-no">Chapter 2</span>
+      <h2>Every word on the screen</h2>
+      <p class="lede">The module uses a handful of terms consistently. Learn these and the rest of the manual reads itself.</p>
+
+      <h4>Setup words</h4>
+      <div class="table-wrap">
+        <table class="terms">
+          <tbody>
+            <tr><td>Competency Category</td><td>A group of related skills — Communication, Leadership, Quality &amp; Process. Eleven ship pre-loaded.</td></tr>
+            <tr><td>Competency</td><td>One skill, with a code such as <code>OWN-001</code>. Seventeen ship pre-loaded.</td></tr>
+            <tr><td>Scope</td><td>Which sub-score a skill feeds: <span class="k">Core</span> (expected of everyone), <span class="k">Functional</span> (the craft of the job) or <span class="k">Leadership</span>. A category sets the default; a single competency may override it.</td></tr>
+            <tr><td>Company-wide</td><td>A skill every job needs. The fifteen company-wide ones total exactly 100%, so one button builds a matrix that validates with no further editing.</td></tr>
+            <tr><td>Development Threshold</td><td>A rating below this (default <code>3</code>) marks the skill as needing development, even where the job's requirement is met.</td></tr>
+            <tr><td>Evidence Required</td><td>The manager must record a comment or evidence for this skill before the review can be completed. <span class="k">Ticked on all seventeen pre-loaded skills.</span></td></tr>
+            <tr><td>Required Level</td><td>The level the job expects, 1 to 5. Rating below it is a gap.</td></tr>
+            <tr><td>Minimum Level</td><td>Optional. The lowest level still acceptable in the role, for telling "below target" from "below acceptable". It cannot exceed the Required Level.</td></tr>
+            <tr><td>Weightage %</td><td>How much of the overall score a skill carries.</td></tr>
+            <tr><td>Mandatory</td><td>A must-have skill for the role. Only mandatory skills count toward readiness for a role.</td></tr>
+            <tr><td>Assess</td><td>Include this skill on generated assessments. Untick to record a requirement for reference only — such a line carries no weight.</td></tr>
+            <tr><td>Effective From / To</td><td>Optional dates. A requirement outside these dates is skipped when assessments are generated.</td></tr>
+            <tr><td>Matrix Status</td><td><span class="pill draft">Draft</span> or <span class="pill good">Validated</span>. Only a validated matrix can produce assessments.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Review words</h4>
+      <div class="table-wrap">
+        <table class="terms">
+          <tbody>
+            <tr><td>Review Cycle</td><td>The window a round of reviews belongs to — quarterly, half-yearly or annual. Quarter-on-quarter improvement is measured from one completed cycle to the next.</td></tr>
+            <tr><td>Assessment</td><td>One employee's review inside one cycle. An employee can have only one assessment per cycle.</td></tr>
+            <tr><td>Assessment Line</td><td>One row per skill inside an assessment. Each line <span class="k">copies</span> the job matrix as it stood when the assessment was created, so re-weighting a job next quarter never rewrites a signed-off review.</td></tr>
+            <tr><td>Reviewer</td><td>The manager who owns the manager review. Defaults to the employee's Manager, or the department manager.</td></tr>
+            <tr><td>Self Rating</td><td>The employee's own rating. Reference for the conversation — it never counts toward the score.</td></tr>
+            <tr><td>Manager Rating</td><td>The manager's rating. The Final Rating fills in from it automatically.</td></tr>
+            <tr><td>Final Rating</td><td>The official rating and the only one that scores. The manager may override it.</td></tr>
+            <tr><td>Previous Rating</td><td>The same skill's final rating in the employee's last completed assessment, copied in when the assessment is generated.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Result words</h4>
+      <div class="table-wrap">
+        <table class="terms">
+          <tbody>
+            <tr><td>Score %</td><td>What one line contributes to the overall score.</td></tr>
+            <tr><td>Overall Score % · / 5</td><td>The whole review, as a percentage and back on the 1–5 scale.</td></tr>
+            <tr><td>Core / Functional / Leadership Score</td><td>Weighted average rating out of 5 within each scope. Leadership reads 0 and stays hidden when the job's matrix has no leadership skill.</td></tr>
+            <tr><td>Gap</td><td>Final Rating minus Required Level.</td></tr>
+            <tr><td>Gap Status</td><td><span class="pill good">No Gap</span> <span class="pill warn">Improvement Required</span> <span class="pill bad">Critical Gap</span></td></tr>
+            <tr><td>Strength</td><td>A rating of 4 or 5 that also meets the job's requirement.</td></tr>
+            <tr><td>Development Required</td><td>Rating below the threshold, or any negative gap. This is what "gap" means in the counters and in the <span class="btn">Raise Development Plans</span> button.</td></tr>
+            <tr><td>Improvement</td><td>This score minus the previous completed score. Positive means the employee improved.</td></tr>
+            <tr><td>Target Job</td><td>The role the employee is being grown toward. Readiness is measured against it.</td></tr>
+            <tr><td>Role Readiness %</td><td>Share of the target job's <span class="k">mandatory</span> skills the employee already meets.</td></tr>
+            <tr><td>Readiness Status</td><td><span class="pill draft">Developing</span> <span class="pill info">Progressing</span> <span class="pill warn">Near Ready</span> <span class="pill good">Ready</span></td></tr>
+            <tr><td>Performance / Potential</td><td>Low, Medium or High. Typed in by the manager — never calculated — and used by the Leadership Pipeline report.</td></tr>
+            <tr><td>Development Plan</td><td>One action against one gap, with an owner, a target date and a completion percentage.</td></tr>
+            <tr><td>Competency Profile</td><td>The employee's current level in each skill. It moves only when an assessment is completed.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="scale">
+      <span class="chapter-no">Chapter 3</span>
+      <h2>The 1–5 rating scale</h2>
+      <p>Every level in the module — required, minimum, self, manager, final, target — uses this one scale. Ratings are whole numbers only.</p>
+      <div class="table-wrap">
+        <table class="rating">
+          <thead><tr><th>Rating</th><th>Label on screen</th><th>Read it as</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Needs Improvement</td><td>Below what the job can work with. Needs evidence recorded.</td></tr>
+            <tr><td>2</td><td>Developing</td><td>Getting there with support. Needs evidence recorded.</td></tr>
+            <tr><td>3</td><td>Competent</td><td>Does the job unaided. The default requirement and the default threshold.</td></tr>
+            <tr><td>4</td><td>Strong</td><td>Better than the job asks. Counts as a strength.</td></tr>
+            <tr><td>5</td><td>Expert / Role Model</td><td>Sets the standard for others. Needs evidence recorded.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note caution">
+        <span class="tag">Why 1, 2 and 5 are special</span>
+        <p>These three are the ratings a reader will question, so the module insists the manager writes a <span class="fieldname">Manager Comment</span> or <span class="fieldname">Evidence</span> before the assessment can be completed. Any skill with <span class="fieldname">Evidence Required</span> ticked needs the same — and that is ticked on everything pre-loaded, so in practice every line needs a comment.</p>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="roles">
+      <span class="chapter-no">Chapter 4</span>
+      <h2>Who can do what</h2>
+      <p>Three roles, each one including everything the role above it can do. Set them on a user at <span class="path">Settings ▸ Users &amp; Companies ▸ Users</span>, in the <span class="k">Employee Competency</span> section.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Role</th><th>Sees</th><th>Can do</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">Employee</td>
+              <td>Only their own assessment, profile and plans</td>
+              <td>Enter their self rating and comments while the review is open. Read the competency list. Cannot create or delete anything.</td>
+            </tr>
+            <tr>
+              <td class="k">Department Manager</td>
+              <td>Their own records, plus anyone who names them as Reviewer, plus everyone in a department they manage</td>
+              <td>Enter manager and final ratings, set Performance and Potential, raise and run development plans, cancel an assessment, read the reports.</td>
+            </tr>
+            <tr>
+              <td class="k">HR Competency Manager</td>
+              <td>Everything, in every department</td>
+              <td>Everything above, plus: build categories and competencies, edit and validate job matrices, run review cycles, regenerate lines, reset an assessment or a cycle to draft. Also grants Odoo's HR Manager rights.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note stop">
+        <span class="tag">Before you test anything</span>
+        <p>The <span class="k">Competency</span> app menu is invisible to a user with none of these three roles — an ordinary Odoo login does not get one automatically. Assign the role first, then reload the browser.</p>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="setup">
+      <span class="chapter-no">Chapter 5 · HR</span>
+      <h2>Build the framework</h2>
+      <p class="lede">The module installs a complete, usable framework. Most teams adjust it rather than build one from scratch.</p>
+
+      <h3>Check what you already have</h3>
+      <ol class="steps">
+        <li>Open <span class="path">Competency ▸ Configuration ▸ Competency Categories</span>. Eleven categories are listed. The <span class="fieldname">Default Scope</span> column is what new skills in that category inherit.</li>
+        <li>Open <span class="path">Competency ▸ Configuration ▸ Competencies</span>. Seventeen skills are listed with their codes and default weights. The full list is in <a href="#appendix">the appendix</a>.</li>
+      </ol>
+
+      <h3>Add a skill of your own</h3>
+      <ol class="steps">
+        <li>From the Competencies list, click <span class="btn">New</span>.</li>
+        <li>Fill in <span class="fieldname">Competency Name</span>, pick a <span class="fieldname">Competency Category</span>, and give it a <span class="fieldname">Competency Code</span> — the code must be unique and is what makes spreadsheet imports possible.</li>
+        <li>Set <span class="fieldname">Default Weightage</span>. This is only a suggestion offered when the skill is added to a job; each job may override it.</li>
+        <li>Leave <span class="fieldname">Development Threshold</span> at 3 unless this skill needs a higher bar.</li>
+        <li>Use the <span class="k">Evaluation Guidelines</span> tab to describe what each of the five ratings looks like. This is the single most useful thing you can do for rating consistency — managers read it while reviewing.</li>
+        <li>Tick <span class="fieldname">Company-wide</span> only if every job needs this skill. Doing so changes what the one-click matrix button produces, and will push the company-wide total off 100%.</li>
+      </ol>
+
+      <div class="note caution">
+        <span class="tag">Editing, not deleting</span>
+        <p>A skill that has ever been assessed cannot be deleted — history depends on it. <span class="k">Archive</span> it instead: archived skills keep their history but are never offered for new matrix lines or generated onto new assessments.</p>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="matrix">
+      <span class="chapter-no">Chapter 6 · HR</span>
+      <h2>The job competency matrix</h2>
+      <p class="lede">A job's matrix is the standard the people in that job are measured against. This is the step that most often blocks a first test, so it is worth doing carefully once.</p>
+
+      <h3>Build and validate a matrix</h3>
+      <ol class="steps">
+        <li>Open <span class="path">Employees ▸ Configuration ▸ Job Positions</span> and pick a job. Go to the <span class="k">Competency Matrix</span> tab.</li>
+        <li>Click <span class="btn">Add Company-wide Competencies</span>. Fifteen lines appear, each at its default weight and with a required level of 3. <span class="fieldname">Total Weightage %</span> now reads 100.</li>
+        <li>Add anything specific to this job — a technical skill, or a leadership skill for a job that leads. For each line set <span class="fieldname">Required Level</span>, <span class="fieldname">Weight %</span> and whether it is <span class="fieldname">Mandatory</span>.</li>
+        <li>Rebalance so the total returns to exactly 100. Adding a line without reducing others is refused the moment the total passes 100.</li>
+        <li>Click <span class="btn">Validate Matrix</span> in the header. The status badge turns <span class="pill good">Validated</span> and the lines become read-only.</li>
+      </ol>
+
+      <p>To change a validated matrix, click <span class="btn">Reset Matrix to Draft</span> first. Assessments already generated are untouched by anything you do here — they kept their own copy.</p>
+
+      <h3>The three flags people mix up</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Flag</th><th>Affects</th><th>Does not affect</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Assess</td><td>Whether the skill appears on generated assessments, and whether its weight counts toward the 100%</td><td>Nothing else — an unassessed line is a note to the reader</td></tr>
+            <tr><td class="k">Mandatory</td><td>Readiness for the role: only mandatory skills are counted</td><td>The overall score, which uses weights alone</td></tr>
+            <tr><td class="k">Weightage %</td><td>The overall score</td><td>Readiness, and whether a gap is flagged</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section id="cycle">
+      <span class="chapter-no">Chapter 7 · HR</span>
+      <h2>Run a review cycle</h2>
+
+      <div class="rail">
+        <div class="stage"><span class="who">HR</span><span class="st">Draft</span><span class="act">Set dates and coverage</span></div>
+        <div class="stage"><span class="who">HR</span><span class="st">Open</span><span class="act">Ready to generate</span></div>
+        <div class="stage"><span class="who">HR</span><span class="st">Assessment Running</span><span class="act">Reviews are live</span></div>
+        <div class="stage"><span class="who">HR</span><span class="st">Completed</span><span class="act">Locked for good</span></div>
+      </div>
+
+      <ol class="steps">
+        <li>Open <span class="path">Competency ▸ Assessments ▸ Review Cycles</span> and click <span class="btn">New</span>.</li>
+        <li>Name it the way the business says it — <span class="k">Q3 FY 2026-27</span>. Pick the <span class="fieldname">Review Type</span> and the period's <span class="fieldname">Start Date</span> and <span class="fieldname">End Date</span>.</li>
+        <li>Set the two deadlines. <span class="fieldname">Self Review Deadline</span> and <span class="fieldname">Manager Review Deadline</span> are what the daily reminder emails chase; leave them empty and no reminders go out. Neither may fall before the cycle starts, and the manager's may not fall before the employee's.</li>
+        <li>On the <span class="k">Coverage</span> tab, either name the employees, or name departments, or leave both empty to cover every employee in the company whose job has a validated matrix. Naming employees overrides the department list.</li>
+        <li>Click <span class="btn">Open Cycle</span>, then <span class="btn">Generate Assessments</span>.</li>
+      </ol>
+
+      <p>Generating does four things: it creates one assessment per employee, copies each employee's job matrix onto it, moves each one to <span class="pill info">Employee Review</span>, and emails every employee with an activity on their to-do list. Anyone whose job has no validated matrix is skipped, and the cycle's chatter records exactly who and why. Employees who already have an assessment in this cycle are skipped silently, so you can safely press the button again after fixing a matrix.</p>
+
+      <h3>Closing the cycle</h3>
+      <p>Click <span class="btn">Complete Cycle</span> once every assessment is completed or cancelled. If any are still open the button refuses and names up to ten of them. After closing, the cycle and everything in it is read-only: no new assessments, no edits to ratings, dates, reviewers or summaries. An HR Competency Manager can click <span class="btn">Reset to Draft</span> to reopen it.</p>
+
+      <div class="note">
+        <span class="tag">What the cycle gives you beyond tidiness</span>
+        <p>Improvement is measured between cycles. An assessment's "previous" one is the employee's most recent <span class="k">completed</span> assessment from a cycle that <span class="k">ended before this cycle started</span>. Overlapping cycle dates therefore break the trend columns — keep periods clean and consecutive.</p>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section id="self">
+      <span class="chapter-no">Chapter 8 · Employee</span>
+      <h2>The self assessment</h2>
+      <p class="lede">For the employee, the whole module is two menu items and one screen.</p>
+
+      <ol class="steps">
+        <li>Open <span class="path">Competency ▸ My Competency ▸ My Assessments</span> and open the one for the current cycle. It will be in <span class="pill info">Employee Review</span>.</li>
+        <li>On the <span class="k">Competencies</span> tab, enter a <span class="fieldname">Self Rating</span> from 1 to 5 on <span class="k">every</span> line. The <span class="fieldname">Required Level</span> column shows what the job asks for; <span class="fieldname">Previous</span> shows where you landed last cycle.</li>
+        <li>Use <span class="fieldname">Employee Comments</span> to say what you base the rating on. Turn on the column from the <span class="k">⚙</span> icon at the right of the header row if you do not see it.</li>
+        <li>Click <span class="btn">Submit Self Assessment</span>. Miss a rating and the module names exactly which skills are still blank.</li>
+      </ol>
+
+      <p>Submitting hands the review to your manager and closes your side of it: self ratings and employee comments can no longer be changed, because they are now part of the record being reviewed. Your rating never sets your score — the final rating your manager approves is the official one.</p>
+
+      <div class="note">
+        <span class="tag">Where to see your own standing</span>
+        <p><span class="path">Competency ▸ My Competency ▸ My Development Plans</span> lists the actions raised against your gaps, and the actions you were made accountable for. Your own employee record's <span class="k">Competency</span> tab shows your current level in every skill, your score history and your readiness for a target role.</p>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section id="review">
+      <span class="chapter-no">Chapter 9 · Manager</span>
+      <h2>The review</h2>
+
+      <div class="rail">
+        <div class="stage"><span class="who">HR generates</span><span class="st">Draft</span><span class="act">Lines created from the matrix</span></div>
+        <div class="stage"><span class="who">Employee</span><span class="st">Employee Review</span><span class="act">Self ratings, then submit</span></div>
+        <div class="stage"><span class="who">Manager</span><span class="st">Manager Review</span><span class="act">Manager and final ratings</span></div>
+        <div class="stage"><span class="who">Manager</span><span class="st">Completed</span><span class="act">Profile updated</span></div>
+      </div>
+
+      <ol class="steps">
+        <li>Open <span class="path">Competency ▸ Assessments ▸ To Review</span>. It lists every assessment naming you as Reviewer that is still open.</li>
+        <li>On the <span class="k">Competencies</span> tab, enter a <span class="fieldname">Manager Rating</span> on every line. <span class="fieldname">Final Rating</span> copies it as you go; type over the final rating where you want it to differ, and say why in the comment.</li>
+        <li>Write a <span class="fieldname">Manager Comment</span> or <span class="fieldname">Evidence</span> on every line. The module will not let you complete without one wherever the rating is 1, 2 or 5, or the skill has Evidence Required ticked.</li>
+        <li>Watch the colours as you type: rows turn <span class="pill bad">red</span> for a critical gap, <span class="pill warn">amber</span> for improvement required and <span class="pill good">green</span> for a strength, and the score group at the top recalculates live.</li>
+        <li>On the <span class="k">Readiness</span> tab, set <span class="fieldname">Target Job</span> if this person is being grown toward a role, and set <span class="fieldname">Performance Rating</span> and <span class="fieldname">Potential Rating</span>. These two are your judgement, not arithmetic, and they drive the Leadership Pipeline report.</li>
+        <li>On the <span class="k">Summary</span> tab, write the <span class="fieldname">Strength Summary</span> and <span class="fieldname">Development Summary</span> — the two paragraphs the employee will actually remember.</li>
+        <li>Click <span class="btn">Raise Development Plans</span>. One draft plan is created for every gap that has none yet, each aimed at the required level, owned by you, dated to the end of the cycle.</li>
+        <li>Click <span class="btn">Complete Assessment</span>.</li>
+      </ol>
+
+      <p>Completing writes the approved final ratings onto the employee's competency profile and locks the review. If any gap still has no plan against it, the module completes anyway and posts a note in the chatter naming those skills — a gap with no plan is a management conversation, not a data error.</p>
+
+      <h4>The other buttons in the header</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Button</th><th>When it shows</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><span class="btn">Start Self Assessment</span></td><td>Draft</td><td>Opens the review to the employee and notifies them. The cycle normally does this for you.</td></tr>
+            <tr><td><span class="btn">Start Manager Review</span></td><td>Employee Review</td><td>Moves the review to your stage without waiting for the employee — but only once every manager rating, final rating and required comment is already filled in. See <a href="#quirks">known quirks</a>.</td></tr>
+            <tr><td><span class="btn">Regenerate Lines</span></td><td>Draft, Employee Review · HR only</td><td>Throws away the current lines and re-copies the job matrix. Every rating entered so far is lost; it asks for confirmation.</td></tr>
+            <tr><td><span class="btn">Cancel</span></td><td>Any open state</td><td>Marks the review cancelled. It stops counting anywhere.</td></tr>
+            <tr><td><span class="btn">Reset to Draft</span></td><td>Any state · HR only</td><td>Reopens a completed or cancelled review. Ratings are kept; the profile is not rolled back.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="maths">
+      <span class="chapter-no">Chapter 10</span>
+      <h2>How every number is worked out</h2>
+      <p class="lede">Nothing here is entered by hand. If a figure looks wrong, one of these formulas will explain it.</p>
+
+      <h3>A worked example</h3>
+      <p>One employee, on a job carrying the fifteen pre-loaded company-wide skills. Every requirement is level 3, every threshold is 3, and every skill is Core.</p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Assessment: the fifteen lines and what each contributes</caption>
+          <thead>
+            <tr>
+              <th>Competency</th>
+              <th class="num">Weight %</th>
+              <th class="num">Required</th>
+              <th class="num">Final</th>
+              <th class="num">Score %</th>
+              <th class="num">Gap</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Attitude</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num">4.00</td><td class="num">+1</td><td><span class="pill good">Strength</span></td></tr>
+            <tr><td>Professionalism &amp; Reliability</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num">4.00</td><td class="num">+1</td><td><span class="pill good">Strength</span></td></tr>
+            <tr><td>Ownership &amp; Accountability</td><td class="num">10</td><td class="num">3</td><td class="num">3</td><td class="num">6.00</td><td class="num">0</td><td><span class="pill good">No Gap</span></td></tr>
+            <tr><td>Problem Solving &amp; Analytical Ability</td><td class="num">10</td><td class="num">3</td><td class="num">3</td><td class="num">6.00</td><td class="num">0</td><td><span class="pill good">No Gap</span></td></tr>
+            <tr><td>Planning &amp; Prioritisation</td><td class="num">5</td><td class="num">3</td><td class="num">2</td><td class="num">2.00</td><td class="num">−1</td><td><span class="pill warn">Improvement Required</span></td></tr>
+            <tr><td>Execution / Result Orientation</td><td class="num">10</td><td class="num">3</td><td class="num">4</td><td class="num">8.00</td><td class="num">+1</td><td><span class="pill good">Strength</span></td></tr>
+            <tr><td>Communication</td><td class="num">10</td><td class="num">3</td><td class="num">3</td><td class="num">6.00</td><td class="num">0</td><td><span class="pill good">No Gap</span></td></tr>
+            <tr><td>Listening &amp; Understanding</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num">4.00</td><td class="num">+1</td><td><span class="pill good">Strength</span></td></tr>
+            <tr><td>Business Knowledge</td><td class="num">10</td><td class="num">3</td><td class="num">2</td><td class="num">4.00</td><td class="num">−1</td><td><span class="pill warn">Improvement Required</span></td></tr>
+            <tr><td>Customer Orientation</td><td class="num">5</td><td class="num">3</td><td class="num">3</td><td class="num">3.00</td><td class="num">0</td><td><span class="pill good">No Gap</span></td></tr>
+            <tr><td>Teamwork &amp; Collaboration</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num">4.00</td><td class="num">+1</td><td><span class="pill good">Strength</span></td></tr>
+            <tr><td>Learning Agility</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num">4.00</td><td class="num">+1</td><td><span class="pill good">Strength</span></td></tr>
+            <tr><td>Adaptability &amp; Change Readiness</td><td class="num">5</td><td class="num">3</td><td class="num">3</td><td class="num">3.00</td><td class="num">0</td><td><span class="pill good">No Gap</span></td></tr>
+            <tr><td>Innovation / Continuous Improvement</td><td class="num">5</td><td class="num">3</td><td class="num">2</td><td class="num">2.00</td><td class="num">−1</td><td><span class="pill warn">Improvement Required</span></td></tr>
+            <tr><td>Quality of Work</td><td class="num">5</td><td class="num">3</td><td class="num">3</td><td class="num">3.00</td><td class="num">0</td><td><span class="pill good">No Gap</span></td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td>Totals</td><td class="num">100</td><td class="num"></td><td class="num"></td><td class="num">63.00</td><td class="num"></td><td>3 gaps · 6 strengths</td></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <p>The header of that assessment therefore reads <span class="fieldname">Overall Score %</span> 63.00, <span class="fieldname">Overall Score / 5</span> 3.15, <span class="fieldname">Core Score / 5</span> 3.15, <span class="fieldname">Strengths</span> 6, <span class="fieldname">Critical Gaps</span> 0 — and the gap counter, which drives the development-plan button, reads 3.</p>
+
+      <h3>The formulas</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Figure</th><th>How it is worked out</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Score % (one line)</td><td>(Final Rating ÷ 5) × Weight. A 4 on a 10% skill gives 8.00.</td></tr>
+            <tr><td class="k">Overall Score %</td><td>The sum of every line's Score %. With weights at 100%, all 1s give 20% and all 5s give 100%.</td></tr>
+            <tr><td class="k">Overall Score / 5</td><td>Overall % ÷ 20.</td></tr>
+            <tr><td class="k">Core / Functional / Leadership</td><td>Weighted average rating inside that scope: Σ(rating × weight) ÷ Σ(weight). It is out of 5, not out of 100, and it ignores the other scopes entirely.</td></tr>
+            <tr><td class="k">Gap</td><td>Final Rating − Required Level. <span class="pill good">No Gap</span> at 0 or above, <span class="pill warn">Improvement Required</span> at −1, <span class="pill bad">Critical Gap</span> at −2 or worse.</td></tr>
+            <tr><td class="k">Development Required</td><td>Final Rating below the Development Threshold, <span class="k">or</span> a negative gap. So a job that asks for 2 on a skill whose threshold is 3 still flags development at a rating of 2.</td></tr>
+            <tr><td class="k">Strength</td><td>Final Rating of 4 or more and gap of 0 or more.</td></tr>
+            <tr><td class="k">Improvement</td><td>This Overall Score / 5 − the previous one. With no previous completed assessment it reads 0, not the whole of this score.</td></tr>
+            <tr><td class="k">Role Readiness %</td><td>Of the target job's mandatory, active skills: how many the employee's level meets, ÷ how many there are. The employee's level comes from this assessment's final ratings first, and from their standing profile for skills this job never assessed.</td></tr>
+            <tr><td class="k">Readiness Status</td><td>Under 60% <span class="pill draft">Developing</span> · 60–75% <span class="pill info">Progressing</span> · 75–90% <span class="pill warn">Near Ready</span> · 90% and over <span class="pill good">Ready</span>. One override: being two or more levels short on any mandatory skill of the target job holds the status at Near Ready however high the percentage runs.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Nothing is a gap until somebody has rated it. Before a final rating exists, a line's score, gap and status are all blank rather than zero — which is why a half-finished review does not look like a disaster.</p>
+    </section>
+
+    <!-- 11 -->
+    <section id="plans">
+      <span class="chapter-no">Chapter 11</span>
+      <h2>Development plans</h2>
+      <p class="lede">A plan is what is being done about one gap. It is the only part of the module that lives between reviews.</p>
+
+      <h3>Raising them</h3>
+      <ul>
+        <li><span class="k">In bulk</span> — <span class="btn">Raise Development Plans</span> on the assessment creates one plan per unplanned gap.</li>
+        <li><span class="k">One at a time</span> — the small graduation-cap button at the end of any gap row on the Competencies tab.</li>
+        <li><span class="k">From scratch</span> — <span class="path">Competency ▸ Development ▸ Development Plans</span>, then <span class="btn">New</span>. Pick the employee and the skill; a plan does not have to come from an assessment.</li>
+      </ul>
+
+      <h3>The fields that matter</h3>
+      <div class="table-wrap">
+        <table class="terms">
+          <tbody>
+            <tr><td>Action</td><td>The plan's name. Write the actual action — "Lead the Q3 migration workshop", not "Improve communication".</td></tr>
+            <tr><td>Action Type</td><td>Training · Mentoring · Project / On-the-job · Certification · Exposure · Self Learning. Picking Training or Certification ticks <span class="fieldname">Training Required</span> for you, which is how HR pulls the training list.</td></tr>
+            <tr><td>Assigned Person</td><td>Who is accountable for the action happening — usually the manager or a mentor, not the employee. This is who the overdue email goes to.</td></tr>
+            <tr><td>Target Date</td><td>Required. Past this date, while the plan is still Planned or In Progress, the plan is <span class="k">Overdue</span>: the row turns red, the form shows an Overdue ribbon, and a daily email starts chasing the owner.</td></tr>
+            <tr><td>Target Level</td><td>The level the employee should reach once the action is done. Pre-filled with the job's required level.</td></tr>
+            <tr><td>Completion %</td><td>Progress. It must read 100 before the plan can be marked Completed.</td></tr>
+            <tr><td>Result / Outcome</td><td>What actually changed. Fill this in when you close the plan — it is what the next reviewer reads.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Buttons run <span class="btn">Start</span> → <span class="btn">Mark Completed</span>, with <span class="btn">Cancel</span> and <span class="btn">Reset to Planned</span> available throughout. Marking a plan completed sets its completion to 100 for you.</p>
+
+      <div class="note caution">
+        <span class="tag">A plan does not change a rating</span>
+        <p>Completing a plan records that the action happened. The employee's level only moves when their next assessment is completed with a higher final rating. Nothing back-dates a score.</p>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section id="profile">
+      <span class="chapter-no">Chapter 12</span>
+      <h2>The competency profile</h2>
+      <p>The profile is one row per employee per skill, holding their <span class="fieldname">Current Level</span>. Find it at <span class="path">Competency ▸ Development ▸ Competency Profiles</span>, or on the <span class="k">Competency</span> tab of any employee record.</p>
+
+      <ul>
+        <li>It is written <span class="k">only</span> when an assessment is completed, from that review's final ratings.</li>
+        <li>It only ever moves forward in time: completing an old review out of order will not overwrite a newer result.</li>
+        <li>Its <span class="fieldname">Required Level</span> and <span class="fieldname">Gap</span> follow the employee's <span class="k">current</span> job matrix, live. Move someone to a new job and their profile gaps re-state themselves against the new job immediately — unlike an assessment line, which keeps the history.</li>
+        <li>Nobody types in a profile row. HR can correct one, but the honest fix for a wrong level is to correct the assessment.</li>
+      </ul>
+
+      <h3>What the employee form shows</h3>
+      <p>The <span class="k">Competency</span> tab gathers everything about one person: <span class="fieldname">Resource Strength / 5</span> (their latest completed overall score), the previous score and the improvement between them, the number of open gaps, readiness for their <span class="fieldname">Target Job</span>, then three lists — the full competency profile, every development action, and the assessment history. Two stat buttons at the top jump to assessments and to plans.</p>
+    </section>
+
+    <!-- 13 -->
+    <section id="reports">
+      <span class="chapter-no">Chapter 13</span>
+      <h2>The three reports</h2>
+      <p>All three live under <span class="path">Competency ▸ Reporting</span> and all three count <span class="k">completed reviews only</span> — an unapproved rating is not a result.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Report</th><th>Opens as</th><th>Answers</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">Employee Competency</td>
+              <td>Pivot, grouped by employee. Measures: Final Rating, Gap, Score %</td>
+              <td>Where does this person stand, skill by skill? Swap rows to Category or Cycle to see their shape or their trend.</td>
+            </tr>
+            <tr>
+              <td class="k">Department Skill Matrix</td>
+              <td>Pivot: departments down, competencies across</td>
+              <td>Where is a department strong and where is it thin? Switch the measure to Gap to find where a department sits furthest from what its jobs require.</td>
+            </tr>
+            <tr>
+              <td class="k">Leadership Pipeline</td>
+              <td>List, grouped by readiness</td>
+              <td>Who is ready for a bigger role? Shows the leadership score, performance, potential, readiness and critical gaps side by side. Only people with a Target Job appear here — no target job, no row.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Useful filters on the first two: <span class="k">Below Requirement</span>, <span class="k">Critical Gap</span>, <span class="k">Strengths</span>, and the Core / Functional / Leadership split. On the pipeline: <span class="k">High Potential</span> and <span class="k">Ready for Next Role</span>.</p>
+    </section>
+
+    <!-- 14 -->
+    <section id="mail">
+      <span class="chapter-no">Chapter 14</span>
+      <h2>Emails and reminders</h2>
+      <p>Five emails, two of them on a daily schedule. Mail goes to the employee's <span class="fieldname">Work Email</span>, so a missing work email means a missing notification.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Email</th><th>Goes to</th><th>Sent when</th></tr></thead>
+          <tbody>
+            <tr><td>Assessment Assigned</td><td>Employee</td><td>The review opens to them. An activity is also placed on their to-do list, dated to the self-review deadline.</td></tr>
+            <tr><td>Manager Review Required</td><td>Reviewer</td><td>The employee submits. An activity is placed on the reviewer's list, dated to the manager-review deadline.</td></tr>
+            <tr><td>Self Review Overdue</td><td>Employee</td><td>Daily, while the cycle is running, the review is still with the employee, and the self-review deadline has passed.</td></tr>
+            <tr><td>Manager Review Overdue</td><td>Reviewer</td><td>Daily, on the same terms, once the manager-review deadline has passed.</td></tr>
+            <tr><td>Development Plan Overdue</td><td>Assigned Person</td><td>Daily, for every plan past its target date that is not yet completed or cancelled.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>The two daily jobs are <span class="fieldname">Competency: Pending Review Reminders</span> and <span class="fieldname">Competency: Overdue Development Plans</span>, under <span class="path">Settings ▸ Technical ▸ Scheduled Actions</span>. Reminders only chase cycles in <span class="pill warn">Assessment Running</span>, and only where the relevant deadline is filled in.</p>
+    </section>
+
+    <!-- 15 -->
+    <section id="errors">
+      <span class="chapter-no">Chapter 15</span>
+      <h2>Messages you may hit</h2>
+      <p class="lede">Every one of these is the module protecting the numbers. The fix is always in the same place as the cause.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>What you see</th><th>Why</th><th>Fix</th></tr></thead>
+          <tbody>
+            <tr><td>"The competency weightages … total 104.00%. They cannot pass 100%"</td><td>You added or raised a weight past the ceiling</td><td>Reduce another line first. The ceiling is enforced as you type; falling short of 100 is allowed until you validate.</td></tr>
+            <tr><td>"They must total exactly 100% before the matrix can be validated"</td><td>Validating at 95%</td><td>Rebalance to 100. Only lines with <span class="k">Assess</span> ticked count.</td></tr>
+            <tr><td>"… is validated, so its weightages must stay at 100%"</td><td>Editing a validated matrix</td><td>Click <span class="btn">Reset Matrix to Draft</span> first.</td></tr>
+            <tr><td>"No employee matches this cycle"</td><td>Coverage found nobody — usually because no job has a validated matrix</td><td>Validate at least one job matrix, or name employees on the Coverage tab.</td></tr>
+            <tr><td>"… has no job position, so there is no competency matrix to assess against"</td><td>An assessment was raised for an employee with no job</td><td>Set the employee's Job Position.</td></tr>
+            <tr><td>"The competency matrix of … has no competency in effect on <span class="k">date</span>"</td><td>Every matrix line is outside its Effective From / To window for this cycle's end date</td><td>Clear or widen the effective dates.</td></tr>
+            <tr><td>"This employee already has an assessment in this review cycle"</td><td>One review per employee per cycle, always</td><td>Open the existing one.</td></tr>
+            <tr><td>"Rate every competency before submitting. Still to rate: …"</td><td>A self rating is blank</td><td>The message names the skills.</td></tr>
+            <tr><td>"Every competency needs a manager rating and a final rating"</td><td>Completing with a blank rating</td><td>The message names the skills.</td></tr>
+            <tr><td>"Record the evidence behind these ratings before submitting"</td><td>A rating of 1, 2 or 5, or a skill with Evidence Required, has no comment and no evidence</td><td>Write a Manager Comment or fill Evidence on the named lines.</td></tr>
+            <tr><td>"Only a reviewing manager can set the manager rating …"</td><td>An employee tried to save a manager-side field</td><td>Expected. Only Self Rating and Employee Comments are the employee's to fill.</td></tr>
+            <tr><td>"The self assessment of … has already been submitted"</td><td>An employee edited their self rating after submitting</td><td>Ask the manager or HR to reset the review to draft if it genuinely needs reopening.</td></tr>
+            <tr><td>"… belongs to the completed cycle … and can no longer be changed"</td><td>Editing a review in a closed cycle</td><td>HR resets the cycle to draft, or the correction waits for the next cycle.</td></tr>
+            <tr><td>"… assessment(s) in this cycle are not completed yet"</td><td>Closing a cycle with open reviews</td><td>Complete or cancel the ones named.</td></tr>
+            <tr><td>"… is marked Completed, so its completion must be 100%"</td><td>A development plan closed at 40%</td><td>Set completion to 100, or use <span class="btn">Mark Completed</span>, which does it for you.</td></tr>
+            <tr><td>"Competency lines can only be regenerated while … Draft or Employee Review"</td><td>Regenerating after ratings exist</td><td>Intentional. Regenerating discards ratings, so it is blocked once the manager has started.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 16 -->
+    <section id="quirks">
+      <span class="chapter-no">Chapter 16</span>
+      <h2>Known quirks</h2>
+      <p class="lede">Five behaviours that are confusing rather than dangerous. They are worth knowing before you conclude something is broken.</p>
+
+      <ol class="steps">
+        <li><span class="k">The Competency menu is invisible without a role.</span> No user gets one automatically, including the administrator. Assign Employee, Department Manager or HR Competency Manager first.</li>
+        <li><span class="k">Every pre-loaded skill has Evidence Required ticked.</span> So in practice every line needs a manager comment before the review can be completed, not only ratings of 1, 2 and 5. Untick it on the skills where you do not want that.</li>
+        <li><span class="k">"Start Manager Review" does not skip the self assessment.</span> Its tooltip says it does, but it demands every manager rating, final rating and required comment first. On an untouched review it simply reports what is missing. In practice you either wait for the employee to submit, or fill the manager side in first and then press it.</li>
+        <li><span class="k">Employees see Manager Rating and Final Rating as editable columns.</span> The server correctly refuses the change, so the employee gets an access error on save rather than a hidden column. Nothing is at risk; it just looks wrong.</li>
+        <li><span class="k">Changing the Employee on a draft assessment does not refresh Department, Job or Reviewer.</span> Those three are filled once, when the assessment is created, and deliberately do not follow the employee afterwards — which is right for a mid-cycle transfer but surprising if you simply picked the wrong name. Set them by hand, or delete the draft and start again.</li>
+      </ol>
+    </section>
+
+    <!-- 17 -->
+    <section id="appendix">
+      <span class="chapter-no">Chapter 17</span>
+      <h2>Appendix: what ships pre-loaded</h2>
+
+      <h3>The fifteen company-wide skills</h3>
+      <p>These are what <span class="btn">Add Company-wide Competencies</span> puts on a job. Their default weights total exactly 100%.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Competency</th><th>Category</th><th class="num">Default weight %</th></tr></thead>
+          <tbody>
+            <tr><td><code>ATT-001</code></td><td>Attitude</td><td>Behaviour &amp; Attitude</td><td class="num">5</td></tr>
+            <tr><td><code>ATT-002</code></td><td>Professionalism &amp; Reliability</td><td>Behaviour &amp; Attitude</td><td class="num">5</td></tr>
+            <tr><td><code>OWN-001</code></td><td>Ownership &amp; Accountability</td><td>Ownership &amp; Execution</td><td class="num">10</td></tr>
+            <tr><td><code>ANA-001</code></td><td>Problem Solving &amp; Analytical Ability</td><td>Ownership &amp; Execution</td><td class="num">10</td></tr>
+            <tr><td><code>EXE-001</code></td><td>Planning &amp; Prioritisation</td><td>Ownership &amp; Execution</td><td class="num">5</td></tr>
+            <tr><td><code>EXE-002</code></td><td>Execution / Result Orientation</td><td>Ownership &amp; Execution</td><td class="num">10</td></tr>
+            <tr><td><code>COM-001</code></td><td>Communication</td><td>Communication</td><td class="num">10</td></tr>
+            <tr><td><code>COM-002</code></td><td>Listening &amp; Understanding</td><td>Communication</td><td class="num">5</td></tr>
+            <tr><td><code>BUS-001</code></td><td>Business Knowledge</td><td>Business Knowledge</td><td class="num">10</td></tr>
+            <tr><td><code>CUS-001</code></td><td>Customer Orientation</td><td>Customer Orientation</td><td class="num">5</td></tr>
+            <tr><td><code>COL-001</code></td><td>Teamwork &amp; Collaboration</td><td>Collaboration</td><td class="num">5</td></tr>
+            <tr><td><code>GRW-001</code></td><td>Learning Agility</td><td>Learning &amp; Growth</td><td class="num">5</td></tr>
+            <tr><td><code>GRW-002</code></td><td>Adaptability &amp; Change Readiness</td><td>Learning &amp; Growth</td><td class="num">5</td></tr>
+            <tr><td><code>IMP-001</code></td><td>Innovation / Continuous Improvement</td><td>Learning &amp; Growth</td><td class="num">5</td></tr>
+            <tr><td><code>QLT-001</code></td><td>Quality of Work</td><td>Quality &amp; Process</td><td class="num">5</td></tr>
+          </tbody>
+          <tfoot><tr><td colspan="3">Total</td><td class="num">100</td></tr></tfoot>
+        </table>
+      </div>
+
+      <h3>The two leadership skills</h3>
+      <p><code>LED-001</code> Decision Making and <code>LED-002</code> Team Development &amp; Mentoring carry <span class="k">no default weight</span> and are not company-wide. Add them to the jobs that actually lead, give them a weight there, and rebalance the rest back to 100%. Only then does the <span class="fieldname">Leadership Score / 5</span> appear on those employees' assessments.</p>
+
+      <h3>The eleven categories</h3>
+      <p>Behaviour &amp; Attitude, Ownership &amp; Execution, Communication, Business Knowledge, Customer Orientation, Collaboration, Learning &amp; Growth and Quality &amp; Process are <span class="k">Core</span>. Functional Skills and Technical Skills are <span class="k">Functional</span>. Leadership is <span class="k">Leadership</span>.</p>
+
+      <div class="note">
+        <span class="tag">All of it is yours to change</span>
+        <p>The pre-loaded framework is a starting point, not a definition the module owns. Upgrading or reinstalling the module will never undo a weight, a threshold or a guideline you deliberately changed.</p>
+      </div>
+
+      <h3>For whoever maintains the code</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>What you see on screen</th><th>Model</th></tr></thead>
+          <tbody>
+            <tr><td>Competency Category</td><td><code>employee.competency.category</code></td></tr>
+            <tr><td>Competency</td><td><code>employee.competency</code></td></tr>
+            <tr><td>Job Competency Matrix line</td><td><code>employee.job.competency.line</code></td></tr>
+            <tr><td>Review Cycle</td><td><code>employee.competency.cycle</code></td></tr>
+            <tr><td>Assessment · its lines</td><td><code>employee.competency.assessment</code> · <code>…assessment.line</code></td></tr>
+            <tr><td>Competency Profile</td><td><code>employee.competency.profile</code></td></tr>
+            <tr><td>Development Plan</td><td><code>employee.development.plan</code></td></tr>
+            <tr><td>Target Job, readiness, strength score</td><td>added to <code>hr.employee</code></td></tr>
+            <tr><td>Competency Matrix tab and its status</td><td>added to <code>hr.job</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </article>
+
+  <footer class="colophon">
+    <span>Employee Competency Handbook · ft_employee_competency 19.0.1.0.0</span>
+    <span>Odoo 19 Community · Employees</span>
+  </footer>
+
+</div>
+
+</body>
+</html>

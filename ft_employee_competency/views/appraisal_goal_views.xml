@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_appraisal_goal_list" model="ir.ui.view">
+        <field name="name">employee.appraisal.goal.list</field>
+        <field name="model">employee.appraisal.goal</field>
+        <field name="arch" type="xml">
+            <list string="Goals"
+                  decoration-success="state == 'done'"
+                  decoration-muted="state == 'cancel'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="job_id" optional="show"/>
+                <field name="cycle_id" optional="show"/>
+                <field name="assessment_id" optional="hide"/>
+                <field name="manager_id" widget="many2one_avatar_user" optional="show"/>
+                <field name="deadline"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-info="state == 'in_progress'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_appraisal_goal_form" model="ir.ui.view">
+        <field name="name">employee.appraisal.goal.form</field>
+        <field name="model">employee.appraisal.goal</field>
+        <field name="arch" type="xml">
+            <form string="Goal">
+                <header>
+                    <button name="action_start" type="object" string="Start"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_done" type="object" string="Mark Achieved"
+                            class="btn-primary" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state in ('done', 'cancel')"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Lead the Q3 client migration"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" options="{'no_create': True}"/>
+                            <!-- HR/Admin can open the linked department. -->
+                            <field name="department_id"
+                                readonly="1"
+                                invisible="not department_id"
+                                groups="ft_employee_competency.group_competency_hr_manager,base.group_system"/>
+
+                            <!-- Managers and employees see a non-clickable department. -->
+                            <field name="department_id"
+                                readonly="1"
+                                invisible="not department_id"
+                                options="{'no_open': True, 'no_create': True}"
+                                groups="!ft_employee_competency.group_competency_hr_manager,!base.group_system"/>
+                            <!-- HR/Admin can open the linked job. -->
+                            <field name="job_id"
+                                readonly="1"
+                                groups="ft_employee_competency.group_competency_hr_manager,base.group_system"/>
+
+                            <!-- Other users see a non-clickable value. -->
+                            <field name="job_id"
+                                readonly="1"
+                                options="{'no_open': True, 'no_create': True}"
+                                groups="!ft_employee_competency.group_competency_hr_manager,!base.group_system"/>
+                            <field name="assessment_id" options="{'no_create': True}"/>
+                            <!-- HR/Admin can open the linked cycle. -->
+                            <field name="cycle_id"
+                                readonly="1"
+                                groups="ft_employee_competency.group_competency_hr_manager,base.group_system"/>
+
+                            <!-- Other users see a non-clickable value. -->
+                            <field name="cycle_id"
+                                readonly="1"
+                                options="{'no_open': True, 'no_create': True}"
+                                groups="!ft_employee_competency.group_competency_hr_manager,!base.group_system"/>
+                        </group>
+                        <group>
+                            <field name="manager_id" widget="many2one_avatar_user"/>
+                            <field name="deadline"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description" nolabel="1"
+                                   placeholder="What success looks like, and how it will be measured."/>
+                        </page>
+                        <page string="Development Actions" name="development_actions">
+                            <field name="development_action_ids" nolabel="1" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="competency_id"/>
+                                    <field name="action_type"/>
+                                    <field name="target_date"/>
+                                    <field name="completion_percentage" widget="progressbar"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_appraisal_goal_search" model="ir.ui.view">
+        <field name="name">employee.appraisal.goal.search</field>
+        <field name="model">employee.appraisal.goal</field>
+        <field name="arch" type="xml">
+            <search string="Goals">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <filter name="filter_mine" string="My Goals" domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="filter_managed" string="I Manage" domain="[('manager_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_open" string="Open" domain="[('state', 'in', ('draft', 'in_progress'))]"/>
+                <filter name="filter_done" string="Achieved" domain="[('state', '=', 'done')]"/>
+                <group>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_appraisal_goal" model="ir.actions.act_window">
+        <field name="name">Goals</field>
+        <field name="res_model">employee.appraisal.goal</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_appraisal_goal_search"/>
+        <field name="context">{'search_default_filter_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Agree a goal</p>
+            <p>
+                A goal is the outcome agreed with an employee during their review.
+                Development actions can be linked to it: they are the steps that close
+                the competency gaps standing in its way.
+            </p>
+        </field>
+    </record>
+
+</odoo>

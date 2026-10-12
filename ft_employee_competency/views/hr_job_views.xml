@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_job_competency_line_list" model="ir.ui.view">
+        <field name="name">employee.job.competency.line.list</field>
+        <field name="model">employee.job.competency.line</field>
+        <field name="arch" type="xml">
+            <list string="Job Competency Requirements">
+                <field name="department_id"/>
+                <field name="job_id"/>
+                <field name="competency_id"/>
+                <field name="category_id" optional="show"/>
+                <field name="scope" optional="hide"/>
+                <field name="minimum_level" optional="show"/>
+                <field name="required_level"/>
+                <field name="target_level_id" optional="hide"/>
+                <field name="weightage" string="Weight %" sum="Total"/>
+                <field name="mandatory"/>
+                <field name="leadership_competency" optional="hide"/>
+                <field name="assessment_required" string="Assess"/>
+                <field name="effective_from" optional="hide"/>
+                <field name="effective_to" optional="hide"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_job_competency_line_form" model="ir.ui.view">
+        <field name="name">employee.job.competency.line.form</field>
+        <field name="model">employee.job.competency.line</field>
+        <field name="arch" type="xml">
+            <form string="Job Competency Requirement">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="job_id"/>
+                            <field name="department_id" readonly="1"/>
+                            <field name="competency_id"/>
+                            <field name="category_id" readonly="1"/>
+                            <field name="scope" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="minimum_level"/>
+                            <field name="minimum_level_id" readonly="1" invisible="not minimum_level_id"/>
+                            <field name="required_level"/>
+                            <field name="target_level_id" readonly="1"/>
+                            <field name="weightage" string="Weightage %"/>
+                            <field name="mandatory"/>
+                            <field name="leadership_competency"/>
+                            <field name="assessment_required"/>
+                        </group>
+                    </group>
+                    <group string="Applicability">
+                        <group>
+                            <field name="effective_from"/>
+                            <field name="effective_to"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_job_competency_line_search" model="ir.ui.view">
+        <field name="name">employee.job.competency.line.search</field>
+        <field name="model">employee.job.competency.line</field>
+        <field name="arch" type="xml">
+            <search string="Job Competency Requirements">
+                <field name="job_id"/>
+                <field name="department_id"/>
+                <field name="competency_id"/>
+                <field name="category_id"/>
+                <filter name="filter_mandatory" string="Mandatory" domain="[('mandatory', '=', True)]"/>
+                <filter name="filter_leadership" string="Leadership" domain="[('leadership_competency', '=', True)]"/>
+                <filter name="filter_assessed" string="Assessed" domain="[('assessment_required', '=', True)]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_job" string="Job Position" context="{'group_by': 'job_id'}"/>
+                    <filter name="group_category" string="Category" context="{'group_by': 'category_id'}"/>
+                    <filter name="group_scope" string="Scope" context="{'group_by': 'scope'}"/>
+                    <filter name="group_department"
+                        string="Department"
+                        context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- List of job positions whose matrices can be configured. -->
+    <record id="view_job_matrix_header_list" model="ir.ui.view">
+        <field name="name">hr.job.competency.matrix.list</field>
+        <field name="model">hr.job</field>
+        <field name="priority" eval="100"/>
+        <field name="arch" type="xml">
+            <list string="Job Competency Matrix"
+                create="false"
+                delete="false">
+                <field name="name" string="Job Position"/>
+                <field name="department_id"/>
+                <field name="competency_weightage_total"
+                    string="Total Weightage %"/>
+                <field name="competency_matrix_state"
+                    string="Matrix Status"
+                    widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- One job matrix containing multiple competency rows. -->
+    <record id="view_job_matrix_header_form" model="ir.ui.view">
+        <field name="name">hr.job.competency.matrix.form</field>
+        <field name="model">hr.job</field>
+        <field name="priority" eval="100"/>
+        <field name="arch" type="xml">
+            <form string="Job Competency Matrix"
+                create="false"
+                delete="false"
+                duplicate="false">
+                <header>
+                    <button name="action_validate_competency_matrix"
+                            type="object"
+                            string="Validate Matrix"
+                            class="btn-primary"
+                            invisible="competency_matrix_state == 'validated'"/>
+
+                    <button name="action_reset_competency_matrix"
+                            type="object"
+                            string="Reset Matrix to Draft"
+                            invisible="competency_matrix_state != 'validated'"/>
+
+                    <field name="competency_matrix_state"
+                        widget="statusbar"/>
+                </header>
+
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"
+                                string="Job Position"
+                                readonly="1"/>
+                            <field name="department_id"
+                                readonly="1"
+                                options="{'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="competency_weightage_total"
+                                string="Total Weightage %"
+                                readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Competencies"
+                            name="matrix_competencies">
+                            <field name="competency_line_ids"
+                                readonly="competency_matrix_state == 'validated'">
+                                <list editable="bottom">
+                                    <field name="sequence"
+                                        widget="handle"/>
+                                    <field name="competency_id"
+                                        options="{'no_create': True}"/>
+                                    <field name="category_id"
+                                        readonly="1"/>
+                                    <field name="minimum_level"
+                                        optional="hide"/>
+                                    <field name="required_level"
+                                        string="Target Level"/>
+                                    <field name="weightage"
+                                        string="Weightage %"
+                                        sum="Total"/>
+                                    <field name="mandatory"/>
+                                    <field name="assessment_required"
+                                        string="Assess"/>
+                                    <field name="effective_from"
+                                        optional="hide"/>
+                                    <field name="effective_to"
+                                        optional="hide"/>
+                                    <field name="notes"
+                                        string="Row Notes"
+                                        optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Notes" name="matrix_notes">
+                            <field name="competency_matrix_notes"
+                                nolabel="1"
+                                placeholder="Enter matrix notes..."
+                                style="min-height: 150px;"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Keep the existing action ID so the menu still works. -->
+    <record id="action_job_competency_line"
+            model="ir.actions.act_window">
+        <field name="name">Job Competency Matrix</field>
+        <field name="res_model">hr.job</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id"
+            ref="view_job_matrix_header_list"/>
+        <field name="search_view_id" eval="False"/>
+        <field name="context">{}</field>
+        <field name="view_ids"
+            eval="[
+                (5, 0, 0),
+                (0, 0, {
+                    'view_mode': 'list',
+                    'view_id': ref('view_job_matrix_header_list')
+                }),
+                (0, 0, {
+                    'view_mode': 'form',
+                    'view_id': ref('view_job_matrix_header_form')
+                })
+            ]"/>
+        <field name="help" type="html">
+            <p>Select a job position to configure its competency matrix.</p>
+        </field>
+    </record>
+
+    <!-- The matrix, on the job position itself. -->
+    <record id="view_hr_job_form_competency" model="ir.ui.view">
+        <field name="name">hr.job.form.competency</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <!-- hr.view_hr_job_form already carries an empty <header/> for
+                 exactly this. Adding another one would give the form two. -->
+            <xpath expr="//header" position="inside">
+                    <button name="action_validate_competency_matrix" type="object"
+                            string="Validate Matrix" class="btn-primary"
+                            invisible="competency_matrix_state == 'validated'"
+                            help="Activates the matrix so assessments can be generated from it. Requires the assessed weightages to total exactly 100%."/>
+                    <button name="action_reset_competency_matrix" type="object"
+                            string="Reset Matrix to Draft"
+                            invisible="competency_matrix_state != 'validated'"/>
+                    <field name="competency_matrix_state" widget="statusbar"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Competency Matrix" name="competency_matrix">
+                    <div class="alert alert-warning" role="alert"
+                         invisible="competency_matrix_state == 'validated' or competency_weightage_total == 100">
+                        The assessed competencies of this job weigh
+                        <field name="competency_weightage_total" class="oe_inline" readonly="1"/>%
+                        in total. They must reach 100% before the matrix can be validated.
+                    </div>
+                    <div class="alert alert-success" role="alert"
+                         invisible="competency_matrix_state != 'validated'">
+                        This matrix is validated and assessments can be generated from it.
+                        Reset it to draft to change the competencies or their weightages.
+                    </div>
+                    <field name="competency_line_ids"
+                           readonly="competency_matrix_state == 'validated'">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="competency_id"/>
+                            <field name="category_id" readonly="1" optional="show"/>
+                            <field name="scope" readonly="1" optional="hide"/>
+                            <field name="minimum_level" optional="show"/>
+                            <field name="required_level"/>
+                            <field name="weightage" string="Weight %" sum="Total"/>
+                            <field name="mandatory"/>
+                            <field name="leadership_competency" optional="hide"/>
+                            <field name="assessment_required" string="Assess"/>
+                            <field name="effective_from" optional="hide"/>
+                            <field name="effective_to" optional="hide"/>
+                        </list>
+                    </field>
+                    <group class="mt-2">
+                        <group>
+                            <button name="action_add_company_wide_competencies" type="object"
+                                    string="Add Company-wide Competencies" class="btn-link"
+                                    icon="fa-plus"
+                                    invisible="competency_matrix_state == 'validated'"
+                                    help="Adds every competency marked company-wide, at its default weightage."/>
+                        </group>
+                        <group>
+                            <field name="competency_weightage_total" string="Total Weightage %"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_hr_job_list_competency" model="ir.ui.view">
+        <field name="name">hr.job.list.competency</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="competency_weightage_total" string="Weight %" optional="hide"/>
+                <field name="competency_matrix_state" string="Matrix" optional="hide"
+                       widget="badge"
+                       decoration-success="competency_matrix_state == 'validated'"
+                       decoration-warning="competency_matrix_state == 'draft'"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Seed competency framework.
+
+         noupdate="1" on purpose: these records are a STARTING POINT for HR to
+         edit, not a definition the module owns. Reinstalling or upgrading the
+         module must not undo a weightage somebody deliberately changed.
+
+         The fifteen company-wide competencies below total exactly 100%, so
+         "Add Company-wide Competencies" on a job position produces a matrix
+         that validates without further editing. Leadership competencies carry
+         no default weight — they are added to the jobs that lead, and the
+         weightages rebalanced there. -->
+    <data noupdate="1">
+
+        <!-- Rating levels: the common 1-5 scale -->
+        <record id="competency_level_1" model="employee.competency.level">
+            <field name="rating">1</field>
+            <field name="name">Needs Improvement</field>
+            <field name="progress">20</field>
+            <field name="definition">Requires close supervision and frequent correction.</field>
+        </record>
+        <record id="competency_level_2" model="employee.competency.level">
+            <field name="rating">2</field>
+            <field name="name">Developing</field>
+            <field name="progress">40</field>
+            <field name="definition">Understands basics but needs regular guidance.</field>
+        </record>
+        <record id="competency_level_3" model="employee.competency.level">
+            <field name="rating">3</field>
+            <field name="name">Competent</field>
+            <field name="progress">60</field>
+            <field name="definition">Performs expected responsibilities independently.</field>
+        </record>
+        <record id="competency_level_4" model="employee.competency.level">
+            <field name="rating">4</field>
+            <field name="name">Strong</field>
+            <field name="progress">80</field>
+            <field name="definition">Handles complex situations and supports others.</field>
+        </record>
+        <record id="competency_level_5" model="employee.competency.level">
+            <field name="rating">5</field>
+            <field name="name">Expert / Role Model</field>
+            <field name="progress">100</field>
+            <field name="definition">Mentors others, improves process and leads by example.</field>
+        </record>
+
+        <!-- Categories -->
+        <!-- <record id="competency_category_beh" model="employee.competency.category">
+            <field name="name">Behaviour &amp; Attitude</field>
+            <field name="code">BEH</field>
+            <field name="scope">core</field>
+            <field name="sequence">10</field>
+            <field name="description">How the employee shows up: attitude, reliability and professional conduct.</field>
+        </record> -->
+        <!-- <record id="competency_category_own" model="employee.competency.category">
+            <field name="name">Ownership &amp; Execution</field>
+            <field name="code">OWN</field>
+            <field name="scope">core</field>
+            <field name="sequence">20</field>
+            <field name="description">Taking responsibility for outcomes, planning the work and delivering it.</field>
+        </record> -->
+        <!-- <record id="competency_category_com" model="employee.competency.category">
+            <field name="name">Communication</field>
+            <field name="code">COM</field>
+            <field name="scope">core</field>
+            <field name="sequence">30</field>
+            <field name="description">Getting understood, and understanding others, in writing and in person.</field>
+        </record> -->
+        <!-- <record id="competency_category_bus" model="employee.competency.category">
+            <field name="name">Business Knowledge</field>
+            <field name="code">BUS</field>
+            <field name="scope">core</field>
+            <field name="sequence">40</field>
+            <field name="description">Understanding of the business, its customers and the domain worked in.</field>
+        </record> -->
+        <!-- <record id="competency_category_cus" model="employee.competency.category">
+            <field name="name">Customer Orientation</field>
+            <field name="code">CUS</field>
+            <field name="scope">core</field>
+            <field name="sequence">50</field>
+            <field name="description">Keeping the customer in view when deciding and delivering.</field>
+        </record>
+        <record id="competency_category_col" model="employee.competency.category">
+            <field name="name">Collaboration</field>
+            <field name="code">COL</field>
+            <field name="scope">core</field>
+            <field name="sequence">60</field>
+            <field name="description">Working with and through others, inside and across teams.</field>
+        </record>
+        <record id="competency_category_grw" model="employee.competency.category">
+            <field name="name">Learning &amp; Growth</field>
+            <field name="code">GRW</field>
+            <field name="scope">core</field>
+            <field name="sequence">70</field>
+            <field name="description">Picking things up quickly, adapting to change and improving what exists.</field>
+        </record> -->
+        <!-- <record id="competency_category_qlt" model="employee.competency.category">
+            <field name="name">Quality &amp; Process</field>
+            <field name="code">QLT</field>
+            <field name="scope">core</field>
+            <field name="sequence">80</field>
+            <field name="description">Accuracy, completeness and adherence to the way the work should be done.</field>
+        </record>
+        <record id="competency_category_fun" model="employee.competency.category">
+            <field name="name">Functional / Technical</field>
+            <field name="code">FUN</field>
+            <field name="scope">functional</field>
+            <field name="sequence">90</field>
+            <field name="description">Craft skills, tools and technical depth belonging to the job the employee does.</field>
+        </record>
+        <record id="competency_category_led" model="employee.competency.category">
+            <field name="name">Leadership</field>
+            <field name="code">LED</field>
+            <field name="scope">leadership</field>
+            <field name="sequence">110</field>
+            <field name="description">Deciding, setting direction and growing other people.</field>
+        </record> -->
+
+        <!-- Competencies -->
+        <!-- <record id="competency_att_001" model="employee.competency">
+            <field name="name">Attitude</field>
+            <field name="code">ATT-001</field>
+            <field name="category_id" ref="competency_category_beh"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">10</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Positive, receptive and constructive in the face of work and feedback.</field>
+        </record>
+        <record id="competency_att_002" model="employee.competency">
+            <field name="name">Professionalism &amp; Reliability</field>
+            <field name="code">ATT-002</field>
+            <field name="category_id" ref="competency_category_beh"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">20</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Keeps commitments, is on time and behaves consistently with company standards.</field>
+        </record> -->
+        <!-- <record id="competency_own_001" model="employee.competency">
+            <field name="name">Ownership &amp; Accountability</field>
+            <field name="code">OWN-001</field>
+            <field name="category_id" ref="competency_category_own"/>
+            <field name="default_weightage">10.0</field>
+            <field name="sequence">30</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Owns the outcome, not just the task, and does not need chasing.</field>
+        </record>
+        <record id="competency_ana_001" model="employee.competency">
+            <field name="name">Problem Solving &amp; Analytical Ability</field>
+            <field name="code">ANA-001</field>
+            <field name="category_id" ref="competency_category_own"/>
+            <field name="default_weightage">10.0</field>
+            <field name="sequence">40</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Breaks a problem down, reasons about causes and reaches a workable answer.</field>
+        </record> -->
+        <!-- <record id="competency_exe_001" model="employee.competency">
+            <field name="name">Planning &amp; Prioritisation</field>
+            <field name="code">EXE-001</field>
+            <field name="category_id" ref="competency_category_own"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">50</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Sequences the work so the important things land first.</field>
+        </record>
+        <record id="competency_exe_002" model="employee.competency">
+            <field name="name">Execution / Result Orientation</field>
+            <field name="code">EXE-002</field>
+            <field name="category_id" ref="competency_category_own"/>
+            <field name="default_weightage">10.0</field>
+            <field name="sequence">60</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Drives work to a finished, usable result.</field>
+        </record> -->
+        <!-- <record id="competency_com_001" model="employee.competency">
+            <field name="name">Communication</field>
+            <field name="code">COM-001</field>
+            <field name="category_id" ref="competency_category_com"/>
+            <field name="default_weightage">10.0</field>
+            <field name="sequence">70</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Explains clearly and at the right level for the audience.</field>
+        </record>
+        <record id="competency_com_002" model="employee.competency">
+            <field name="name">Listening &amp; Understanding</field>
+            <field name="code">COM-002</field>
+            <field name="category_id" ref="competency_category_com"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">80</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Hears what was actually said, and checks before acting on it.</field>
+        </record> -->
+        <!-- <record id="competency_bus_001" model="employee.competency">
+            <field name="name">Business Knowledge</field>
+            <field name="code">BUS-001</field>
+            <field name="category_id" ref="competency_category_bus"/>
+            <field name="default_weightage">10.0</field>
+            <field name="sequence">90</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Knows how the business makes money and where this work fits into it.</field>
+        </record>
+        <record id="competency_cus_001" model="employee.competency">
+            <field name="name">Customer Orientation</field>
+            <field name="code">CUS-001</field>
+            <field name="category_id" ref="competency_category_cus"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">100</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Weighs decisions by what they do for the customer.</field>
+        </record> -->
+        <!-- <record id="competency_col_001" model="employee.competency">
+            <field name="name">Teamwork &amp; Collaboration</field>
+            <field name="code">COL-001</field>
+            <field name="category_id" ref="competency_category_col"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">110</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Contributes to the team result and works well across functions.</field>
+        </record>
+        <record id="competency_grw_001" model="employee.competency">
+            <field name="name">Learning Agility</field>
+            <field name="code">GRW-001</field>
+            <field name="category_id" ref="competency_category_grw"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">120</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Picks up unfamiliar ground quickly and applies it.</field>
+        </record> -->
+        <!-- <record id="competency_grw_002" model="employee.competency">
+            <field name="name">Adaptability &amp; Change Readiness</field>
+            <field name="code">GRW-002</field>
+            <field name="category_id" ref="competency_category_grw"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">130</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Adjusts to changed priorities without losing effectiveness.</field>
+        </record>
+        <record id="competency_imp_001" model="employee.competency">
+            <field name="name">Innovation / Continuous Improvement</field>
+            <field name="code">IMP-001</field>
+            <field name="category_id" ref="competency_category_grw"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">140</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Improves the way the work is done rather than only doing it.</field>
+        </record> -->
+        <!-- <record id="competency_qlt_001" model="employee.competency">
+            <field name="name">Quality of Work</field>
+            <field name="code">QLT-001</field>
+            <field name="category_id" ref="competency_category_qlt"/>
+            <field name="default_weightage">5.0</field>
+            <field name="sequence">150</field>
+            <field name="is_company_wide" eval="True"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Output is accurate, complete and needs little rework.</field>
+        </record>
+        <record id="competency_led_001" model="employee.competency">
+            <field name="name">Decision Making</field>
+            <field name="code">LED-001</field>
+            <field name="category_id" ref="competency_category_led"/>
+            <field name="default_weightage">0.0</field>
+            <field name="sequence">160</field>
+            <field name="is_company_wide" eval="False"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Decides with incomplete information and stands behind the call.</field>
+        </record> -->
+        <!-- <record id="competency_led_002" model="employee.competency">
+            <field name="name">Team Development &amp; Mentoring</field>
+            <field name="code">LED-002</field>
+            <field name="category_id" ref="competency_category_led"/>
+            <field name="default_weightage">0.0</field>
+            <field name="sequence">170</field>
+            <field name="is_company_wide" eval="False"/>
+            <field name="development_threshold">3</field>
+            <field name="description">Grows the people in the team and builds successors.</field>
+        </record> -->
+
+        <!-- Functional competencies of the sample Salesforce Developer
+             matrix. Not company-wide: they belong to that craft. -->
+        <!-- <record id="competency_fun_apex" model="employee.competency">
+            <field name="name">Apex</field>
+            <field name="code">FUN-001</field>
+            <field name="category_id" ref="competency_category_fun"/>
+            <field name="default_weightage">15.0</field>
+            <field name="sequence">180</field>
+            <field name="is_company_wide" eval="False"/>
+            <field name="development_threshold">3</field>
+        </record>
+        <record id="competency_fun_lwc" model="employee.competency">
+            <field name="name">Lightning Web Components (LWC)</field>
+            <field name="code">FUN-002</field>
+            <field name="category_id" ref="competency_category_fun"/>
+            <field name="default_weightage">15.0</field>
+            <field name="sequence">190</field>
+            <field name="is_company_wide" eval="False"/>
+            <field name="development_threshold">3</field>
+        </record> -->
+        <!-- <record id="competency_fun_flow" model="employee.competency">
+            <field name="name">Salesforce Flow</field>
+            <field name="code">FUN-003</field>
+            <field name="category_id" ref="competency_category_fun"/>
+            <field name="default_weightage">10.0</field>
+            <field name="sequence">200</field>
+            <field name="is_company_wide" eval="False"/>
+            <field name="development_threshold">3</field>
+        </record>
+        <record id="competency_fun_api" model="employee.competency">
+            <field name="name">Integration / API</field>
+            <field name="code">FUN-004</field>
+            <field name="category_id" ref="competency_category_fun"/>
+            <field name="default_weightage">10.0</field>
+            <field name="sequence">210</field>
+            <field name="is_company_wide" eval="False"/>
+            <field name="development_threshold">3</field>
+        </record> -->
+
+        <!-- Sample job matrix. A <function> in a noupdate block runs on
+             install only; an existing database gets it from the 19.0.1.3.0
+             post-migration instead. -->
+        <!-- <function model="hr.job" name="_seed_competency_sample_matrix"/> -->
+
+    </data>
+</odoo>

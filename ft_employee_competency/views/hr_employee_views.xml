@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_form_competency" model="ir.ui.view">
+        <field name="name">hr.employee.form.competency</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_competency_assessments" type="object"
+                        class="oe_stat_button" icon="fa-clipboard"
+                        groups="ft_employee_competency.group_competency_employee,ft_employee_competency.group_competency_hr_manager"
+                        string="Assessments"/>
+                <button name="action_view_development_plans" type="object"
+                        class="oe_stat_button" icon="fa-graduation-cap"
+                        groups="ft_employee_competency.group_competency_employee,ft_employee_competency.group_competency_hr_manager"
+                        string="Dev Plans"/>
+            </xpath>
+
+            <!-- Placed last in the notebook: it is a summary of the review
+                 process, not part of the employee's own record. -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Competency" name="competency"
+                      groups="ft_employee_competency.group_competency_employee,ft_employee_competency.group_competency_hr_manager">
+                    <group>
+                        <!-- Both blocks are hr.group_hr_user, matching the
+                             `groups` now carried by every field inside them.
+                             Without it the fields alone would be stripped for a
+                             non-HR reader while the `invisible` expressions
+                             referring to them stayed behind, leaving modifiers
+                             pointing at fields no longer in the arch. Dropping
+                             each block whole keeps the two consistent - and the
+                             rest of the page, which is the employee's OWN
+                             profile, plans and history, stays visible to them. -->
+                        <group string="Standing" groups="hr.group_hr_user">
+                            <field name="resource_strength_score"/>
+                            <field name="previous_strength_score"
+                                   invisible="previous_strength_score == 0"/>
+                            <field name="competency_improvement_score"
+                                   invisible="previous_strength_score == 0"
+                                   decoration-success="competency_improvement_score &gt; 0"
+                                   decoration-danger="competency_improvement_score &lt; 0"/>
+                            <field name="last_assessment_date"/>
+                            <field name="latest_assessment_id"
+                                   invisible="not latest_assessment_id"/>
+                        </group>
+                        <group string="Next Role" groups="hr.group_hr_user">
+                            <field name="target_job_id" options="{'no_create': True}"
+                                   groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager"/>
+                            <field name="role_readiness_percent"
+                                   invisible="not target_job_id"/>
+                            <field name="readiness_status" widget="badge"
+                                   invisible="not target_job_id"
+                                   decoration-success="readiness_status == 'ready'"
+                                   decoration-info="readiness_status == 'near_ready'"
+                                   decoration-warning="readiness_status == 'developing'"/>
+                        </group>
+                    </group>
+                    <separator string="Competency Profile"/>
+                    <field name="competency_profile_ids" nolabel="1" readonly="1">
+                        <list decoration-warning="gap &lt; 0">
+                            <field name="competency_id"/>
+                            <field name="category_id"/>
+                            <field name="scope" optional="hide"/>
+                            <field name="required_level"/>
+                            <field name="current_level"/>
+                            <field name="previous_level" optional="show"/>
+                            <field name="level_change" string="Change" optional="show"
+                                   decoration-success="level_change &gt; 0"
+                                   decoration-danger="level_change &lt; 0"/>
+                            <field name="gap"/>
+                            <field name="mandatory" optional="hide"/>
+                            <field name="last_assessment_date"/>
+                        </list>
+                    </field>
+                    <separator string="Development Actions"/>
+                    <field name="development_plan_ids" nolabel="1" readonly="1">
+                        <list decoration-danger="is_overdue"
+                              decoration-success="state == 'completed'"
+                              decoration-muted="state == 'cancelled'">
+                            <field name="name"/>
+                            <field name="competency_id"/>
+                            <field name="action_type"/>
+                            <field name="assigned_person_id" widget="many2one_avatar_user"/>
+                            <field name="target_date"/>
+                            <field name="completion_percentage" widget="progressbar"/>
+                            <field name="is_overdue" column_invisible="True"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                    <separator string="Assessment History"/>
+                    <field name="competency_assessment_ids" nolabel="1" readonly="1">
+                        <list decoration-success="state == 'done'"
+                              decoration-muted="state == 'cancel'">
+                            <field name="name"/>
+                            <field name="cycle_id"/>
+                            <field name="assessment_date"/>
+                            <field name="overall_score_percent" string="Score %"/>
+                            <field name="overall_score" string="Score / 5"/>
+                            <field name="improvement_score" string="Improvement"
+                                   decoration-success="improvement_score &gt; 0"
+                                   decoration-danger="improvement_score &lt; 0"/>
+                            <field name="readiness_status" widget="badge" optional="hide"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

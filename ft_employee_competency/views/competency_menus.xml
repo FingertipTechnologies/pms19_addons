@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_competency_root"
+              name="Competency"
+              web_icon="ft_employee_competency,static/description/icon.png"
+              groups="ft_employee_competency.group_competency_employee,ft_employee_competency.group_competency_hr_manager"
+              sequence="76"/>
+
+    <!-- ================================================================
+         My work — what an ordinary employee opens the app for.
+
+         Employee only, which now really means only. A department manager is
+         an Employee too and keeps this section, because they are assessed like
+         anybody else; an HR competency manager is not, and no longer implies
+         the group, so the whole section is gone from their menu bar. It never
+         made sense there: an admin has no assessment of their own, so all
+         three menus read "My ..." over nothing at all.
+
+         What HR wants instead is already a menu each — All Assessments under
+         Assessments, and Development Plans under Development — both covering
+         the whole company, and correctly named.
+
+         The groups sit on the children as well as the parent. A menu carrying
+         no groups of its own is visible to whoever can see its parent, so the
+         parent alone would do; naming them is what stops the next menu added
+         here inheriting the wrong audience by omission.
+         ================================================================ -->
+    <menuitem id="menu_competency_my"
+              name="My Competency"
+              parent="menu_competency_root"
+              groups="ft_employee_competency.group_competency_employee"
+              sequence="10"/>
+
+    <menuitem id="menu_competency_my_assessments"
+              name="My Assessments"
+              parent="menu_competency_my"
+              action="action_competency_assessment_my"
+              groups="ft_employee_competency.group_competency_employee"
+              sequence="10"/>
+
+    <menuitem id="menu_competency_my_plans"
+              name="My Development Plans"
+              parent="menu_competency_my"
+              action="action_development_plan_my"
+              groups="ft_employee_competency.group_competency_employee"
+              sequence="20"/>
+
+    <!-- ================================================================
+         Assessments
+         ================================================================ -->
+    <menuitem id="menu_competency_assessments"
+              name="Assessments"
+              parent="menu_competency_root"
+              groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager"
+              sequence="20"/>
+
+    <menuitem id="menu_competency_assessment_to_review"
+              name="To Review"
+              parent="menu_competency_assessments"
+              action="action_competency_assessment_to_review"
+              sequence="10"/>
+
+    <menuitem id="menu_competency_assessment_all"
+              name="All Assessments"
+              parent="menu_competency_assessments"
+              action="action_competency_assessment"
+              sequence="20"/>
+
+    <menuitem id="menu_competency_cycles"
+              name="Review Cycles"
+              parent="menu_competency_assessments"
+              action="action_competency_cycle"
+              groups="ft_employee_competency.group_competency_hr_manager"
+              sequence="30"/>
+
+    <!-- ================================================================
+         Development
+         ================================================================ -->
+    <menuitem id="menu_competency_development"
+              name="Development"
+              parent="menu_competency_root"
+              groups="ft_employee_competency.group_competency_manager,ft_employee_competency.group_competency_hr_manager"
+              sequence="30"/>
+
+    <menuitem id="menu_competency_development_plans"
+              name="Development Plans"
+              parent="menu_competency_development"
+              action="action_development_plan"
+              sequence="10"/>
+
+    <menuitem id="menu_competency_goals"
+              name="Goals"
+              parent="menu_competency_development"
+              action="action_appraisal_goal"
+              sequence="15"/>
+
+    <menuitem id="menu_competency_profiles"
+              name="Competency Profiles"
+              parent="menu_competency_development"
+              action="action_competency_profile"
+              sequence="20"/> <record id="menu_competency_profiles" model="ir.ui.menu">
+               <field name="active" eval="False"/>
+               </record>
+          
+
+    <!-- ================================================================
+         Configuration
+         ================================================================ -->
+    <menuitem id="menu_competency_configuration"
+              name="Configuration"
+              parent="menu_competency_root"
+              groups="ft_employee_competency.group_competency_hr_manager"
+              sequence="90"/>
+
+    <menuitem id="menu_competency_config_levels"
+              name="Rating Levels"
+              parent="menu_competency_configuration"
+              action="action_competency_level"
+              sequence="5"/>
+
+    <menuitem id="menu_competency_config_categories"
+              name="Competency Categories"
+              parent="menu_competency_configuration"
+              action="action_competency_category"
+              sequence="10"/>
+
+    <menuitem id="menu_competency_config_competencies"
+              name="Competencies"
+              parent="menu_competency_configuration"
+              action="action_competency"
+              sequence="20"/>
+
+    <menuitem id="menu_competency_config_job_matrix"
+              name="Job Competency Matrix"
+              parent="menu_competency_configuration"
+              action="action_job_competency_line"
+              sequence="30"/>
+
+</odoo>
