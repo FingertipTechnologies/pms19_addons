@@ -3,7 +3,9 @@
     # 19.0.1.3.8 adds Notes as a column in the Leads list.
     # 19.0.1.3.11 adds the Archived / Include Archived filters to the
     # Pipeline (opportunity) search view.
-    'version': '19.0.1.3.11',
+    # 19.0.1.3.12 opens the opportunity actions with Include Archived set by
+    # default and greys out archived rows in the list.
+    'version': '19.0.1.3.12',
     'category': 'Contacts',
     'summary': 'Contact Customization',
     'author': 'Broadtech',
@@ -25,6 +27,7 @@
         'views/technology_views.xml',
         'views/campaign_views.xml',
         'views/crm_menu_overrides.xml',
+        'views/crm_action_overrides.xml',
         'views/marketing_lead_menu.xml',
     ],
     'assets': {

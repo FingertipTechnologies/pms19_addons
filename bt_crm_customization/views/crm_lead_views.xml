@@ -338,6 +338,15 @@
                 <attribute name="optional"/>
             </xpath>
 
+            <!-- Archived opportunities show up by default now (see
+                 crm_action_overrides.xml). Core only greys out Lost rows; grey
+                 out every archived row so they read as closed at a glance, the
+                 way the kanban card's Archived ribbon already does. `active` is
+                 a (column-invisible) field of the stock list, so it is loaded. -->
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-muted">won_status == 'lost' or not active</attribute>
+            </xpath>
+
             <xpath expr="//list" position="inside">
                 <field name="bdr_id" optional="show"/>
                 <field name="lead_source" optional="hide"/>
