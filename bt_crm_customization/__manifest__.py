@@ -1,7 +1,9 @@
 {
     'name': 'CRM Customization',
     # 19.0.1.3.8 adds Notes as a column in the Leads list.
-    'version': '19.0.1.3.10',
+    # 19.0.1.3.11 adds the Archived / Include Archived filters to the
+    # Pipeline (opportunity) search view.
+    'version': '19.0.1.3.11',
     'category': 'Contacts',
     'summary': 'Contact Customization',
     'author': 'Broadtech',

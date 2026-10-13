@@ -530,6 +530,26 @@
                 <attribute name="string">Owner</attribute>
             </xpath>
 
+            <!-- Archived opportunities. Core gives the Leads search view an
+                 "Archived" filter but leaves it out of this one, so from
+                 My Pipeline the only way to an archived opportunity was the
+                 "Lost" filter - which misses anything archived by hand
+                 (active = False with a probability other than 0). Own
+                 separator group so the filter ANDs with the Won / Ongoing /
+                 Lost group instead of OR-ing into it. Named "inactive" to
+                 match the Leads view, so search_default_inactive works on
+                 both. "Include Archived" names `active` in its domain, which
+                 is what stops the ORM from adding its implicit active = True. -->
+            <xpath expr="//filter[@name='filter_won_status_lost']" position="after">
+                <separator/>
+                <filter string="Archived" name="inactive"
+                        domain="[('active', '=', False)]"
+                        help="Only archived opportunities"/>
+                <filter string="Include Archived" name="include_archived"
+                        domain="[('active', 'in', [True, False])]"
+                        help="Active and archived opportunities together"/>
+            </xpath>
+
             <!-- Hide the stock UTM group-bys.
                  Core CRM offers "Campaign" (campaign_id), "Medium" (medium_id)
                  and "Source" (source_id) - none of which this business fills
