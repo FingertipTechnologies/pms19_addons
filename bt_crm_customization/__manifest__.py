@@ -3,7 +3,10 @@
     # 19.0.1.3.8 adds Notes as a column in the Leads list.
     # 19.0.1.3.11 adds the Archived / Include Archived filters to the
     # Pipeline (opportunity) search view.
-    'version': '19.0.1.3.11',
+    # 19.0.1.3.12 (reverted) opened the opportunity actions with Include
+    # Archived set by default; 19.0.1.3.13 carries the migration that takes
+    # that default back off databases upgraded while .12 was installed.
+    'version': '19.0.1.3.13',
     'category': 'Contacts',
     'summary': 'Contact Customization',
     'author': 'Broadtech',
