@@ -6,7 +6,9 @@
     # 19.0.1.3.12 (reverted) opened the opportunity actions with Include
     # Archived set by default; 19.0.1.3.13 carries the migration that takes
     # that default back off databases upgraded while .12 was installed.
-    'version': '19.0.1.3.13',
+    # 19.0.1.3.14 (2026-10-15) turns Rating into Hot / Warm / Cold and shows
+    # it on the lead and opportunity forms and lists.
+    'version': '19.0.1.3.14',
     'category': 'Contacts',
     'summary': 'Contact Customization',
     'author': 'Broadtech',

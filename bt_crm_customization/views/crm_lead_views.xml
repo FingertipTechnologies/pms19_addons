@@ -45,6 +45,7 @@
                 <field name="require_qualified_fields" invisible="1"/>
                 <field name="is_won_stage" invisible="1"/>
 
+                <field name="rating" invisible="type != 'opportunity'"/>
                 <field name="lead_source" invisible="type != 'opportunity'"/>
                 <field name="cus_campaign_id" invisible="type != 'opportunity'"/>
               
@@ -213,6 +214,7 @@
                 <field name="lead_status"
                         string="Status"
                         readonly="type == 'opportunity'"/>
+                <field name="rating"/>
             </xpath>
 
 
@@ -340,6 +342,7 @@
 
             <xpath expr="//list" position="inside">
                 <field name="bdr_id" optional="show"/>
+                <field name="rating" optional="show"/>
                 <field name="lead_source" optional="hide"/>
                 <field name="cus_campaign_id" optional="hide"/>
             </xpath>
@@ -393,6 +396,7 @@
                 <field name="stage_id" optional="show"
                        options="{'no_create': True, 'no_open': True}"/>
                 <field name="lead_status" optional="show"/>
+                <field name="rating" optional="show"/>
                 <field name="current_system"
                     string="Current System"
                     optional="show"

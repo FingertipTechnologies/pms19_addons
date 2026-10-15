@@ -153,11 +153,13 @@ class InheritCrmLead(models.Model):
     technology_id = fields.Many2one('cus.technology', string='Technology')
     profit = fields.Monetary(string='Profit', currency_field='company_currency')
     amount = fields.Monetary(string='Amount', currency_field='company_currency')
+    # Lead temperature. Was Low / Medium / High, which no view ever showed
+    # and no record ever carried, so the values were simply replaced.
     rating = fields.Selection([
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-    ], string='Rating')
+        ('hot', 'Hot'),
+        ('warm', 'Warm'),
+        ('cold', 'Cold'),
+    ], string='Rating', tracking=True)
     revenue = fields.Monetary(string='Closed Amount', currency_field='company_currency')
     source_amount = fields.Monetary(string='Source Amount', currency_field='company_currency')
     cus_type = fields.Selection([
