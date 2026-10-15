@@ -946,10 +946,14 @@ class ProjectTask(models.Model):
                     "work really is shared."
                 ) % (task.name or '', ', '.join(task.user_ids.mapped('name'))))
 
-    @api.constrains('name')
+    @api.constrains('name', 'project_id')
     def _check_task_title_length(self):
         # #2 - Task title must be at least TASK_TITLE_MIN_LEN characters.
+        # Apply only to tasks belonging to a project: personal To-dos,
+        # including the user onboarding to-do, are excluded.
         for task in self:
+            if not task.project_id:
+                continue
             if task.name and len(task.name.strip()) < TASK_TITLE_MIN_LEN:
                 raise ValidationError(_(
                     "Task title must be at least %s characters long."
