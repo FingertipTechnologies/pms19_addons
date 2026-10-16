@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates xml:space="preserve">
+
+    <t t-name="ft_pms_planning_workflow.PlannerLegend">
+        <div class="o_pms_legend" title="Planned hours (task estimates spread over the Mon–Fri of their week) per resource per day: grey &lt; 4 h, yellow 4 h to &lt; 6 h, green 6 h to 8 h (6 and 8 count as green), red &gt; 8 h. Employee rows are coloured by the person's total across all projects.">
+            <span t-foreach="legend" t-as="item" t-key="item_index" class="o_pms_legend_item">
+                <span class="o_pms_legend_swatch" t-attf-class="o_pms_c_{{ item.color }}"/>
+                <t t-esc="item.label"/>
+            </span>
+            <span class="o_pms_legend_item" title="The resource is planned on more than one project that day">
+                <span class="o_pms_legend_swatch o_pms_c_grey o_pms_collision"/>Collision
+            </span>
+        </div>
+    </t>
+
+    <t t-name="ft_pms_planning_workflow.PlannerSegments">
+        <td t-foreach="cells" t-as="cell" t-key="cell_index" class="o_pms_cell">
+            <button type="button"
+                    t-att-class="cell.cls"
+                    t-att-title="cell.tooltip"
+                    t-att-data-project-id="projectId"
+                    t-att-data-date="cell.date"
+                    t-att-data-user-id="userId or ''"/>
+        </td>
+    </t>
+
+    <t t-name="ft_pms_planning_workflow.ProjectPlanner">
+        <div class="o_action o_pms_planner o_pms_project_planner">
+            <Layout display="{ controlPanel: {} }" className="'o_pms_planner_content'">
+                <div class="o_pms_toolbar">
+                    <PlannerMultiSelect label.translate="Project"
+                                        options="options.projects"
+                                        selected="state.filters.project_ids"
+                                        onChange="(ids) => this.setFilter('project_ids', ids)"/>
+                    <PlannerMultiSelect label.translate="PM"
+                                        options="options.pms"
+                                        selected="state.filters.pm_ids"
+                                        onChange="(ids) => this.setFilter('pm_ids', ids)"/>
+                    <PlannerMultiSelect label.translate="Resource"
+                                        options="options.resources"
+                                        selected="state.filters.resource_ids"
+                                        onChange="(ids) => this.setFilter('resource_ids', ids)"/>
+                    <div class="o_pms_filter">
+                        <span class="o_pms_filter_label">Days</span>
+                        <select class="form-select form-select-sm o_pms_range_select" t-on-change="onRangeChange">
+                            <optgroup t-foreach="rangeGroups" t-as="group" t-key="group_index" t-att-label="group.label">
+                                <option t-foreach="group.options" t-as="option" t-key="option.key"
+                                        t-att-value="option.key"
+                                        t-att-selected="option.key === state.filters.range_key"
+                                        t-esc="option.label"/>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div t-if="isCustomRange" class="o_pms_filter o_pms_custom_range">
+                        <input type="date" class="form-control form-control-sm" aria-label="From"
+                               t-att-class="{ 'is-invalid': state.customError }"
+                               t-att-value="state.customFrom"
+                               t-on-change="(ev) => this.onCustomDateChange('customFrom', ev)"/>
+                        <span class="text-muted">→</span>
+                        <input type="date" class="form-control form-control-sm" aria-label="To"
+                               t-att-class="{ 'is-invalid': state.customError }"
+                               t-att-value="state.customTo"
+                               t-on-change="(ev) => this.onCustomDateChange('customTo', ev)"/>
+                        <span t-if="state.customError" class="text-danger small" t-esc="state.customError"/>
+                    </div>
+                    <div class="btn-group btn-group-sm o_pms_mode" role="group" aria-label="View mode">
+                        <button type="button" class="btn"
+                                t-att-class="state.filters.mode === 'cumulative' ? 'btn-primary' : 'btn-outline-secondary'"
+                                title="One row per project: planned hours per allocated resource that day"
+                                t-on-click="() => this.setFilter('mode', 'cumulative')">Cumulative</button>
+                        <button type="button" class="btn"
+                                t-att-class="state.filters.mode === 'employee' ? 'btn-primary' : 'btn-outline-secondary'"
+                                title="Adds one compact row per allocated resource under each project, coloured by that person's total load across all projects"
+                                t-on-click="() => this.setFilter('mode', 'employee')">Employee-wise</button>
+                    </div>
+                    <i t-if="state.loading" class="fa fa-circle-o-notch fa-spin text-muted" title="Loading"/>
+                    <t t-if="state.data">
+                        <t t-call="ft_pms_planning_workflow.PlannerLegend">
+                            <t t-set="legend" t-value="state.data.legend"/>
+                        </t>
+                    </t>
+                </div>
+
+                <div t-if="!state.data" class="o_pms_empty text-muted">
+                    <i class="fa fa-circle-o-notch fa-spin me-2"/>Loading…
+                </div>
+                <t t-else="">
+                    <t t-set="data" t-value="state.data"/>
+                    <div class="o_pms_subheader">
+                        <span><t t-esc="data.dateFrom"/> → <t t-esc="data.dateTo"/></span>
+                        <span>·</span>
+                        <span><t t-esc="data.projects.length"/> project(s)</span>
+                        <span class="ms-auto">Planned effort from task estimates. Click a project bar to open its Task Planner; click a resource bar to open it for that resource.</span>
+                    </div>
+                    <div t-if="!data.projects.length" class="o_pms_empty text-muted">
+                        No projects match these filters.
+                    </div>
+                    <div t-else="" class="o_pms_grid_scroll" t-ref="scroll" t-att-class="{ o_pms_loading: state.loading }">
+                        <table class="o_pms_grid" t-on-click="onGridClick"
+                               t-attf-style="min-width: {{ 260 + data.days.length * 16 }}px;">
+                            <thead>
+                                <tr class="o_pms_head_month">
+                                    <th class="o_pms_col_project o_pms_sticky" rowspan="3">Project</th>
+                                    <th t-foreach="data.monthGroups" t-as="month" t-key="month.key"
+                                        t-att-colspan="month.span" class="o_pms_month">
+                                        <span t-esc="month.label"/>
+                                    </th>
+                                </tr>
+                                <tr class="o_pms_head_week">
+                                    <th t-foreach="data.weekGroups" t-as="week" t-key="week.index"
+                                        t-att-colspan="week.span" class="o_pms_week" t-att-title="week.label">
+                                        <span t-esc="week.span > 1 ? week.label : ''"/>
+                                    </th>
+                                </tr>
+                                <tr class="o_pms_head_day">
+                                    <th t-foreach="data.days" t-as="day" t-key="day.date"
+                                        t-attf-class="o_pms_day {{ day.cls }}"
+                                        t-att-title="day.weekday + ' ' + day.day + ' ' + day.month + (day.is_today ? ' (today)' : '')">
+                                        <span class="o_pms_day_wd" t-esc="day.weekday ? day.weekday.slice(0, 1) : ''"/>
+                                        <span class="o_pms_day_num" t-esc="day.day"/>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data.projects" t-as="project" t-key="project.id">
+                                    <tr class="o_pms_row o_pms_row_project">
+                                        <th class="o_pms_col_project o_pms_sticky" t-att-title="project.name">
+                                            <div class="o_pms_project_name" t-esc="project.name"/>
+                                        </th>
+                                        <!-- Project segments appear only in Cumulative mode -->
+                                        <t t-if="!showEmployees">
+                                            <t t-call="ft_pms_planning_workflow.PlannerSegments">
+                                                <t t-set="cells" t-value="project.cells"/>
+                                                <t t-set="projectId" t-value="project.id"/>
+                                            </t>
+                                        </t>
+
+                                        <!-- Keep the project heading aligned in Employee-wise mode -->
+                                        <td t-else="" t-att-colspan="data.days.length"/>
+                                    </tr>
+                                    <t t-if="showEmployees">
+                                        <tr t-foreach="project.employees" t-as="employee" t-key="employee.id"
+                                            class="o_pms_row o_pms_row_employee">
+                                            <th class="o_pms_col_project o_pms_sticky" t-att-title="employee.name">
+                                                <div class="o_pms_employee_label">
+                                                    <span class="o_pms_initials" t-esc="employee.initials"/>
+                                                    <span class="o_pms_employee_name" t-esc="employee.name"/>
+                                                </div>
+                                            </th>
+                                            <t t-call="ft_pms_planning_workflow.PlannerSegments">
+                                                <t t-set="cells" t-value="employee.cells"/>
+                                                <t t-set="projectId" t-value="project.id"/>
+                                                <t t-set="userId" t-value="employee.userId"/>
+                                            </t>
+                                        </tr>
+                                        <tr t-if="!project.employees.length" class="o_pms_row o_pms_row_employee">
+                                            <th class="o_pms_col_project o_pms_sticky text-muted fst-italic">No resources allocated in range</th>
+                                            <td t-att-colspan="data.days.length"/>
+                                        </tr>
+                                    </t>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </Layout>
+        </div>
+    </t>
+
+</templates>

@@ -206,4 +206,38 @@
     </field>
 </record>
 
+<record id="view_project_list_actual_hours_stage" model="ir.ui.view">
+    <field name="name">project.project.list.actual.hours.stage</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id"
+           ref="hr_timesheet.project_project_view_tree_inherit_sale_project"/>
+    <field name="priority">100</field>
+    <field name="arch" type="xml">
+
+            <!-- Rename Hours Spent to Actual Hours -->
+        <xpath expr="//list/field[@name='effective_hours']"
+               position="attributes">
+            <attribute name="string">Actual Hours</attribute>
+            <attribute name="optional">show</attribute>
+        </xpath>
+
+            <!-- Show the existing Project Stage column -->
+        <xpath expr="//list/field[@name='stage_id']"
+               position="attributes">
+            <attribute name="string">Stage</attribute>
+            <attribute name="optional">show</attribute>
+        </xpath>
+
+            <!-- Place Stage immediately after Actual Hours -->
+        <xpath expr="//list/field[@name='effective_hours']"
+               position="after">
+            <xpath expr="//list/field[@name='stage_id']"
+                   position="move"/>
+        </xpath>
+
+    </field>
+</record>
+
+
+
 </odoo>

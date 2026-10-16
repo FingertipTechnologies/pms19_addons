@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_ft_pms_workflow" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.ft.pms.workflow</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="project.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='project']" position="inside">
+                <block title="Stage Change Notifications" name="pwf_stage_notifications"
+                       groups="base.group_system">
+                    <setting id="pwf_stage_notify_recipients"
+                             string="Notification Recipients"
+                             help="Contacts e-mailed, together with the project's customer and its Project Manager, whenever a project changes stage.">
+                        <field name="pwf_stage_notify_partner_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </setting>
+                    <setting id="pwf_stage_notify_email"
+                             string="Info E-mail"
+                             help="Additional address(es) e-mailed on every stage change. Separate several with a comma.">
+                        <field name="pwf_stage_notify_email" placeholder="e.g. info@yourcompany.com"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

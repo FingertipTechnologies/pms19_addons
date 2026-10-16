@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Planner icon buttons, first in the navigation group, right before the
+         view switcher (List / Kanban / ...). Shown only for the targeted
+         actions (see control_panel_buttons.js), never inside dialogs. -->
+    <t t-name="ft_pms_planning_workflow.PlannerSwitchButtons">
+        <t t-set="pmsButtons" t-value="pmsPlannerButtons"/>
+        <nav t-if="pmsButtons.length" class="o_pms_planner_switch d-print-none d-inline-flex btn-group me-1">
+            <t t-foreach="pmsButtons" t-as="pmsButton" t-key="pmsButton.key">
+                <button type="button"
+                        class="btn btn-secondary o_switch_view"
+                        t-attf-class="o_pms_btn_{{pmsButton.key}}"
+                        t-att-data-tooltip="pmsButton.name"
+                        t-att-aria-label="pmsButton.name"
+                        t-att-title="env.isSmall ? pmsButton.name : undefined"
+                        t-on-click="pmsButton.onClick">
+                    <i class="fa fa-fw" t-att-class="pmsButton.icon"/>
+                </button>
+            </t>
+        </nav>
+    </t>
+
+    <t t-inherit="web.ControlPanel" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_control_panel_navigation')]/t[contains(@t-if, 'viewSwitcherEntries')]" position="before">
+            <t t-call="ft_pms_planning_workflow.PlannerSwitchButtons"/>
+        </xpath>
+    </t>
+
+    <!-- The task views (All Tasks: list, kanban, calendar, pivot, graph,
+         activity) render project.ProjectTaskControlPanel, a PRIMARY copy of
+         web.ControlPanel. A primary copy only takes the parent's extensions
+         loaded before it (web/static/src/core/templates.js, blockId check),
+         and project loads before this addon, so the extension above never
+         reaches it. Extending it directly cannot duplicate the button. -->
+    <t t-inherit="project.ProjectTaskControlPanel" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_control_panel_navigation')]/t[contains(@t-if, 'viewSwitcherEntries')]" position="before">
+            <t t-call="ft_pms_planning_workflow.PlannerSwitchButtons"/>
+        </xpath>
+    </t>
+
+</templates>

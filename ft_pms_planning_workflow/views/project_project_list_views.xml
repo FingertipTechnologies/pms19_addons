@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Standalone primary list for Project > Projects. Not an inheritance of
+         project.view_project: the database carries an un-exported list
+         customization on the core views, so the column set is owned here. -->
+    <record id="pwf_project_list_view" model="ir.ui.view">
+        <field name="name">project.project.list.pwf.planning</field>
+        <field name="model">project.project</field>
+        <field name="mode">primary</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Projects" js_class="project_project_list"
+                  multi_edit="1" sample="1"
+                  default_group_by="stage_id"
+                  default_order="is_favorite desc, sequence, name, id"
+                  decoration-muted="active == False"
+                  decoration-danger="ft_is_overdue">
+                <!-- helpers read by decorations / the project_project_list js_class -->
+                <field name="sequence" column_invisible="True"/>
+                <field name="message_needaction" column_invisible="True"/>
+                <field name="active" column_invisible="True"/>
+                <field name="is_template" column_invisible="True"/>
+                <field name="company_id" column_invisible="True"/>
+                <field name="stage_id_color" column_invisible="True"/>
+                <field name="ft_is_overdue" column_invisible="True"/>
+
+                <field name="is_favorite" string="Favorite" nolabel="1"
+                       widget="project_is_favorite" optional="hide"/>
+                <field name="name" string="Project" class="fw-bold"/>
+                <field name="partner_id" string="Customer" optional="hide"
+                       invisible="is_template"/>
+                <field name="date_start" string="Start Date" optional="show"/>
+                <field name="date" string="End Date" optional="show"/>
+                <field name="estimated" string="Estimated Time"
+                       widget="float_time" sum="Total Estimated" optional="show"/>
+                <field name="effective_hours" string="Actual Hours"
+                       widget="float_time" optional="show"/>
+                <field name="user_id" string="Project Manager" optional="show"
+                       widget="many2one_avatar_user"
+                       options="{'no_open': True, 'no_create': True}"/>
+                <field name="allow_billable" string="Billable" optional="show"/>
+                <field name="stage_id" string="Stage" optional="show"
+                       widget="badge"
+                       domain="[('company_id', 'in', (company_id, False))]"
+                       options="{'no_open': True, 'color_field': 'stage_id_color'}"/>
+                <field name="pwf_avg_effort_state" optional="hide"/>
+                <field name="pwf_avg_daily_effort" string="Avg. Daily Effort"  widget="float_time"
+                       optional="show"
+                       decoration-muted="pwf_avg_effort_state in ('no_end_date', 'exhausted', 'no_estimate') or (pwf_avg_effort_state == 'ok' and pwf_avg_daily_effort &lt; 4)"
+                       decoration-warning="pwf_avg_effort_state == 'ok' and pwf_avg_daily_effort &gt;= 4 and pwf_avg_daily_effort &lt; 6"
+                       decoration-success="pwf_avg_effort_state == 'ok' and pwf_avg_daily_effort &gt;= 6 and pwf_avg_daily_effort &lt;= 8"
+                       decoration-danger="pwf_avg_effort_state == 'overdue' or (pwf_avg_effort_state == 'ok' and pwf_avg_daily_effort &gt; 8)"/>
+                <field name="ft_overdue_reason" optional="hide"/>
+                <button string="View Tasks" name="action_view_tasks" type="object"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Point the Projects menu's list view at it. Restored to
+         project.project_list_view_group_stage by the uninstall hook. -->
+    <record id="project.open_view_project_all_group_stage_tree_view" model="ir.actions.act_window.view">
+        <field name="view_id" ref="pwf_project_list_view"/>
+    </record>
+</odoo>

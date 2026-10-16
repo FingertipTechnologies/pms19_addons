@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_pms_task_week_move_user,ft.pms.task.week.move user,model_ft_pms_task_week_move,base.group_user,1,0,0,0
+access_ft_pms_task_week_move_admin,ft.pms.task.week.move admin,model_ft_pms_task_week_move,base.group_system,1,0,0,0
+access_ft_pms_stage_approval_user,ft.pms.stage.approval user,model_ft_pms_stage_approval,base.group_user,1,0,0,0
+access_ft_pms_stage_approval_admin,ft.pms.stage.approval admin,model_ft_pms_stage_approval,base.group_system,1,1,1,1
+access_ft_pms_stage_approval_reject_wizard,ft.pms.stage.approval.reject.wizard admin,model_ft_pms_stage_approval_reject_wizard,base.group_system,1,1,1,0

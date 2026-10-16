@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Finance users may tick / untick the "Finance Payment Clearance" of the
+         gated stages. Administrators (base.group_system) are treated as finance
+         in Python, so no implied_ids are needed. The privilege is the one
+         bt_project_customization already uses for its project/timesheet roles. -->
+    <record id="group_pms_finance" model="res.groups">
+        <field name="name">PMS Finance Clearance</field>
+        <field name="privilege_id" ref="bt_project_customization.res_groups_privilege_project_timesheet"/>
+        <field name="comment">May grant or revoke the Finance Payment Clearance of the project stage gates (DEV, UAT, DATA, SUPPORT, CLOSED).</field>
+    </record>
+
+    <record id="rule_ft_pms_stage_approval_company" model="ir.rule">
+        <field name="name">Stage Approval: multi-company</field>
+        <field name="model_id" ref="model_ft_pms_stage_approval"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

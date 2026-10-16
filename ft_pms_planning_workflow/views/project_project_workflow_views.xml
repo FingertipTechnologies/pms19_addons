@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ft_pms_project_form_stage_gates" model="ir.ui.view">
+        <field name="name">project.project.form.ft.pms.stage.gates</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="pwf_pending_approval_id" invisible="1"/>
+                <field name="pwf_can_request_uat_approval" invisible="1"/>
+                <button name="action_request_uat_approval" type="object"
+                        string="Request Admin Approval (UAT)"
+                        invisible="not pwf_can_request_uat_approval"/>
+                <button name="action_pwf_approve_pending" type="object"
+                        string="Approve Stage Request" class="btn-primary"
+                        groups="base.group_system"
+                        invisible="not pwf_pending_approval_id"
+                        confirm="Approve the pending request and move the project?"/>
+                <button name="action_pwf_reject_pending" type="object"
+                        string="Reject Stage Request"
+                        groups="base.group_system"
+                        invisible="not pwf_pending_approval_id"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <widget name="web_ribbon" title="Locked" bg_color="text-bg-warning" invisible="not pwf_locked"/>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <div class="d-flex align-items-center gap-2 mb-2" groups="base.group_system">
+                    <label for="pwf_locked" string="Locked"/>
+                    <field name="pwf_locked" widget="boolean_toggle" nolabel="1"/>
+                    <span class="badge text-bg-secondary" invisible="not pwf_manual_unlock">Unlocked by Administrator</span>
+                    <span class="text-muted small">Set automatically on Closed / Hold / overdue; switching it off keeps the project unlocked until its stage changes.</span>
+                </div>
+                <field name="pwf_manual_unlock" invisible="1"/>
+                <field name="pwf_locked" invisible="1"/>
+            </xpath>
+            <!-- DATES: split ft_task_hours_tracker's single ft_dates_col into
+                 two balanced columns. Final order of ft_dates_col (after
+                 ft_project_lifecycle): Start, Kick-off, BRD Approval,
+                 Regression, Sandbox Review, UAT Start | Data Upload, Training,
+                 Go Live, Support Start, Support End, Closed, Hold, (warranty,
+                 hidden). The second half moves to pwf_dates_col2, keeping the
+                 delivery order and every attribute the other modules set. -->
+            <xpath expr="//group[@name='ft_dates_col']" position="after">
+                <group name="pwf_dates_col2"/>
+            </xpath>
+            <xpath expr="//group[@name='pwf_dates_col2']" position="inside">
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='pl_data_upload_date']" position="move"/>
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='ft_training_date']" position="move"/>
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='go_live_date']" position="move"/>
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='support_start_date']" position="move"/>
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='pl_support_end_date']" position="move"/>
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='date']" position="move"/>
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='pl_hold_date']" position="move"/>
+                <xpath expr="//group[@name='ft_dates_col']//field[@name='warranty_end_date']" position="move"/>
+            </xpath>
+
+            <!-- Stage requirements: own section BELOW the Dates group. Every
+                 stage's requirements are shown together (Implementation
+                 projects), so evidence for any transition can be prepared and
+                 reviewed in one place; the Next Stage line says which block the
+                 upcoming move is checked against. -->
+            <xpath expr="//group[@name='ft_dates']" position="after">
+                <group string="Stage Requirements" name="pwf_stage_requirements"
+                       invisible="ft_project_type != 'implementation'">
+                    <field name="pwf_can_edit_reg" invisible="1"/>
+                    <field name="pwf_can_edit_finance" invisible="1"/>
+                    <group name="pwf_req_target" colspan="2">
+                        <field name="pwf_next_stage_id" string="Next Stage"
+                               readonly="1" options="{'no_open': True}"
+                               invisible="not pwf_next_stage_id"/>
+                    </group>
+
+                    <!-- DEV -->
+                    <separator string="DEV – Development" colspan="2"/>
+                    <group name="pwf_req_dev" colspan="2">
+                        <group string="Evidence" name="pwf_req_dev_evidence">
+                            <field name="pwf_brd_signoff_attachment_ids" widget="many2many_binary"
+                                   string="Signed BRD E-mail Screenshot"/>
+                        </group>
+                        <group string="Finance" name="pwf_req_dev_finance">
+                            <field name="pwf_fin_clear_dev" string="Finance Payment Clearance"
+                                   readonly="1"/>
+                            <div colspan="2" name="pwf_req_dev_finance_btns"
+                                 invisible="not pwf_can_edit_finance">
+                                <button name="action_pwf_finance_grant" type="object"
+                                        string="Grant Finance Clearance" class="btn-primary"
+                                        icon="fa-check" context="{'pwf_fin_key': 'dev'}"
+                                        invisible="not pwf_can_edit_finance or pwf_fin_clear_dev"/>
+                                <button name="action_pwf_finance_revoke" type="object"
+                                        string="Revoke" class="btn-secondary"
+                                        icon="fa-undo" context="{'pwf_fin_key': 'dev'}"
+                                        invisible="not pwf_can_edit_finance or not pwf_fin_clear_dev"/>
+                            </div>
+                            <field name="pwf_fin_clear_dev_by_id" string="Cleared By" readonly="1"
+                                   invisible="not pwf_fin_clear_dev"/>
+                            <field name="pwf_fin_clear_dev_on" string="Cleared On" readonly="1"
+                                   invisible="not pwf_fin_clear_dev"/>
+                        </group>
+                    </group>
+
+                    <!-- REG -->
+                    <separator string="REG – Regression" colspan="2"/>
+                    <div colspan="2" class="text-muted small" name="pwf_req_reg">
+                        No evidence required to move to REG.
+                    </div>
+
+                    <!-- SRV: regression sign-off by QA -->
+                    <separator string="SRV – Regression Sign-Off" colspan="2"/>
+                    <group name="pwf_req_srv" colspan="2">
+                        <div colspan="2" class="text-muted small" name="pwf_req_srv_hint"
+                             invisible="pwf_can_edit_reg">
+                            Only QA can fill in and sign off the regression results.
+                        </div>
+                        <field name="pwf_reg_current_status" string="Current Status" readonly="not pwf_can_edit_reg"
+                               placeholder="Current regression status..."/>
+                        <field name="pwf_reg_open_issues" string="Open Issues" readonly="not pwf_can_edit_reg"
+                               placeholder="Open issues found during regression..."/>
+                        <field name="pwf_reg_signed_by_id" string="Signed Off By" readonly="1"/>
+                        <field name="pwf_reg_signed_on" string="Signed Off On" readonly="1"/>
+                        <div colspan="2" name="pwf_req_srv_sign" invisible="not pwf_can_edit_reg">
+                            <button name="action_pwf_reg_signoff" type="object"
+                                    string="QA Sign Off" class="btn-secondary"
+                                    icon="fa-check"/>
+                        </div>
+                    </group>
+
+                    <!-- UAT -->
+                    <separator string="UAT – User Acceptance Testing" colspan="2"/>
+                    <group name="pwf_req_uat" colspan="2">
+                        <group string="Evidence" name="pwf_req_uat_evidence">
+                            <field name="pwf_sandbox_review_attachment_ids" widget="many2many_binary"
+                                   string="Sandbox Review Evidence"/>
+                            <field name="pwf_uat_request_state" string="Approval Request"
+                                   widget="badge" readonly="1"
+                                   decoration-info="pwf_uat_request_state == 'pending'"
+                                   decoration-success="pwf_uat_request_state == 'approved'"
+                                   decoration-danger="pwf_uat_request_state == 'rejected'"
+                                   decoration-muted="pwf_uat_request_state in ('none', 'cancelled')"/>
+                            <field name="pwf_uat_request_date" string="Requested On" readonly="1"
+                                   invisible="pwf_uat_request_state == 'none'"/>
+                            <field name="pwf_uat_request_decided_by_id" string="Decided By" readonly="1"
+                                   invisible="pwf_uat_request_state not in ('approved', 'rejected')"/>
+                            <field name="pwf_uat_request_reason" string="Rejection Reason" readonly="1"
+                                   invisible="pwf_uat_request_state != 'rejected'"/>
+                        </group>
+                        <group string="Finance" name="pwf_req_uat_finance">
+                            <field name="pwf_fin_clear_uat" string="Finance Payment Clearance"
+                                   readonly="1"/>
+                            <div colspan="2" name="pwf_req_uat_finance_btns"
+                                 invisible="not pwf_can_edit_finance">
+                                <button name="action_pwf_finance_grant" type="object"
+                                        string="Grant Finance Clearance" class="btn-primary"
+                                        icon="fa-check" context="{'pwf_fin_key': 'uat'}"
+                                        invisible="not pwf_can_edit_finance or pwf_fin_clear_uat"/>
+                                <button name="action_pwf_finance_revoke" type="object"
+                                        string="Revoke" class="btn-secondary"
+                                        icon="fa-undo" context="{'pwf_fin_key': 'uat'}"
+                                        invisible="not pwf_can_edit_finance or not pwf_fin_clear_uat"/>
+                            </div>
+                            <field name="pwf_fin_clear_uat_by_id" string="Cleared By" readonly="1"
+                                   invisible="not pwf_fin_clear_uat"/>
+                            <field name="pwf_fin_clear_uat_on" string="Cleared On" readonly="1"
+                                   invisible="not pwf_fin_clear_uat"/>
+                        </group>
+                    </group>
+
+                    <!-- DATA -->
+                    <separator string="DATA – Data Upload" colspan="2"/>
+                    <group name="pwf_req_data" colspan="2">
+                        <group string="Evidence" name="pwf_req_data_evidence">
+                            <field name="pwf_uat_signoff_attachment_ids" widget="many2many_binary"
+                                   string="Customer UAT Sign-off / Completion E-mail Screenshot"/>
+                        </group>
+                        <group string="Finance" name="pwf_req_data_finance">
+                            <field name="pwf_fin_clear_data" string="Finance Payment Clearance"
+                                   readonly="1"/>
+                            <div colspan="2" name="pwf_req_data_finance_btns"
+                                 invisible="not pwf_can_edit_finance">
+                                <button name="action_pwf_finance_grant" type="object"
+                                        string="Grant Finance Clearance" class="btn-primary"
+                                        icon="fa-check" context="{'pwf_fin_key': 'data'}"
+                                        invisible="not pwf_can_edit_finance or pwf_fin_clear_data"/>
+                                <button name="action_pwf_finance_revoke" type="object"
+                                        string="Revoke" class="btn-secondary"
+                                        icon="fa-undo" context="{'pwf_fin_key': 'data'}"
+                                        invisible="not pwf_can_edit_finance or not pwf_fin_clear_data"/>
+                            </div>
+                            <field name="pwf_fin_clear_data_by_id" string="Cleared By" readonly="1"
+                                   invisible="not pwf_fin_clear_data"/>
+                            <field name="pwf_fin_clear_data_on" string="Cleared On" readonly="1"
+                                   invisible="not pwf_fin_clear_data"/>
+                        </group>
+                    </group>
+
+                    <!-- TRA -->
+                    <separator string="TRA – Training" colspan="2"/>
+                    <div colspan="2" class="text-muted small" name="pwf_req_tra">
+                        No additional evidence: the Customer UAT Sign-off / Completion E-mail
+                        Screenshot (DATA) is carried forward and must still be present.
+                    </div>
+
+                    <!-- SUPPORT -->
+                    <separator string="SUPPORT" colspan="2"/>
+                    <group name="pwf_req_support" colspan="2">
+                        <group string="Evidence" name="pwf_req_support_evidence">
+                            <div colspan="2" class="text-muted small" name="pwf_req_support_note">
+                                The Customer UAT Sign-off / Completion E-mail Screenshot (DATA) is
+                                carried forward.
+                            </div>
+                        </group>
+                        <group string="Finance" name="pwf_req_support_finance">
+                            <field name="pwf_fin_clear_support" string="Finance Payment Clearance"
+                                   readonly="1"/>
+                            <div colspan="2" name="pwf_req_support_finance_btns"
+                                 invisible="not pwf_can_edit_finance">
+                                <button name="action_pwf_finance_grant" type="object"
+                                        string="Grant Finance Clearance" class="btn-primary"
+                                        icon="fa-check" context="{'pwf_fin_key': 'support'}"
+                                        invisible="not pwf_can_edit_finance or pwf_fin_clear_support"/>
+                                <button name="action_pwf_finance_revoke" type="object"
+                                        string="Revoke" class="btn-secondary"
+                                        icon="fa-undo" context="{'pwf_fin_key': 'support'}"
+                                        invisible="not pwf_can_edit_finance or not pwf_fin_clear_support"/>
+                            </div>
+                            <field name="pwf_fin_clear_support_by_id" string="Cleared By" readonly="1"
+                                   invisible="not pwf_fin_clear_support"/>
+                            <field name="pwf_fin_clear_support_on" string="Cleared On" readonly="1"
+                                   invisible="not pwf_fin_clear_support"/>
+                        </group>
+                    </group>
+
+                    <!-- CLOSED -->
+                    <separator string="CLOSED – Feedback &amp; Closure" colspan="2"/>
+                    <group name="pwf_req_closed" colspan="2">
+                        <group string="Evidence" name="pwf_req_closed_evidence">
+                            <field name="pwf_internal_feedback_attachment_ids" widget="many2many_binary"
+                                   string="Internal Feedback Screenshot"/>
+                            <field name="pwf_external_feedback_attachment_ids" widget="many2many_binary"
+                                   string="External Review (Partner Portal) Screenshot"/>
+                            <field name="pwf_google_review_attachment_ids" widget="many2many_binary"
+                                   string="Google Review (optional)"/>
+                            <div colspan="2" class="text-muted small" name="pwf_req_closed_note">
+                                The Internal Feedback Screenshot and the External Review
+                                (Partner Portal) Screenshot are required. The Retrospectives
+                                tab must also be filled in.
+                            </div>
+                        </group>
+                        <group string="Finance" name="pwf_req_closed_finance">
+                            <field name="pwf_fin_clear_closed" string="Finance Payment Clearance"
+                                   readonly="1"/>
+                            <div colspan="2" name="pwf_req_closed_finance_btns"
+                                 invisible="not pwf_can_edit_finance">
+                                <button name="action_pwf_finance_grant" type="object"
+                                        string="Grant Finance Clearance" class="btn-primary"
+                                        icon="fa-check" context="{'pwf_fin_key': 'closed'}"
+                                        invisible="not pwf_can_edit_finance or pwf_fin_clear_closed"/>
+                                <button name="action_pwf_finance_revoke" type="object"
+                                        string="Revoke" class="btn-secondary"
+                                        icon="fa-undo" context="{'pwf_fin_key': 'closed'}"
+                                        invisible="not pwf_can_edit_finance or not pwf_fin_clear_closed"/>
+                            </div>
+                            <field name="pwf_fin_clear_closed_by_id" string="Cleared By" readonly="1"
+                                   invisible="not pwf_fin_clear_closed"/>
+                            <field name="pwf_fin_clear_closed_on" string="Cleared On" readonly="1"
+                                   invisible="not pwf_fin_clear_closed"/>
+                        </group>
+                    </group>
+                </group>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Retrospectives" name="pwf_retrospectives"
+                      invisible="ft_project_type != 'implementation'">
+                    <separator />
+                    <group name="pwf_sec_retro">
+                        <field name="pwf_retro_went_well" string="What Went Well"
+                               placeholder="What went well in this project..."/>
+                        <field name="pwf_retro_went_wrong" string="What Went Wrong"
+                               placeholder="What went wrong..."/>
+                        <field name="pwf_retro_to_correct" string="What Needs to Be Corrected"
+                               placeholder="What needs to be corrected next time..."/>
+                    </group>
+                </page>
+                <page string="Approval History" name="pwf_approval_history"
+                      invisible="ft_project_type != 'implementation'">
+                    <field name="pwf_approval_ids" readonly="1" nolabel="1">
+                        <list decoration-info="state == 'pending'"
+                              decoration-success="state == 'approved'"
+                              decoration-danger="state == 'rejected'"
+                              decoration-muted="state == 'cancelled'">
+                            <field name="from_stage_id"/>
+                            <field name="target_stage_id"/>
+                            <field name="requested_by_id"/>
+                            <field name="request_date"/>
+                            <field name="state" widget="badge"
+                                   decoration-info="state == 'pending'"
+                                   decoration-success="state == 'approved'"
+                                   decoration-danger="state == 'rejected'"
+                                   decoration-muted="state == 'cancelled'"/>
+                            <field name="decided_by_id"/>
+                            <field name="decided_on"/>
+                            <field name="rejection_reason"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

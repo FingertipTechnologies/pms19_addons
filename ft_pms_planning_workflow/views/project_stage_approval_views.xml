@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ft_pms_stage_approval_view_list" model="ir.ui.view">
+        <field name="name">ft.pms.stage.approval.list</field>
+        <field name="model">ft.pms.stage.approval</field>
+        <field name="arch" type="xml">
+            <list string="Stage Approvals" create="0" decoration-info="state == 'pending'"
+                  decoration-success="state == 'approved'" decoration-danger="state == 'rejected'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="project_id"/>
+                <field name="from_stage_id"/>
+                <field name="target_stage_id"/>
+                <field name="requested_by_id" widget="many2one_avatar_user"/>
+                <field name="request_date"/>
+                <field name="state" widget="badge"/>
+                <field name="decided_by_id" optional="show"/>
+                <field name="decided_on" optional="show"/>
+                <field name="rejection_reason" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="ft_pms_stage_approval_view_form" model="ir.ui.view">
+        <field name="name">ft.pms.stage.approval.form</field>
+        <field name="model">ft.pms.stage.approval</field>
+        <field name="arch" type="xml">
+            <form string="Stage Approval" create="0">
+                <header>
+                    <button name="action_approve" type="object" string="Approve" class="btn-primary"
+                            groups="base.group_system" invisible="state != 'pending'"
+                            confirm="Approve this request and move the project to the target stage?"/>
+                    <button name="action_reject" type="object" string="Reject"
+                            groups="base.group_system" invisible="state != 'pending'"/>
+                    <button name="action_cancel" type="object" string="Cancel Request"
+                            invisible="state != 'pending'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,approved,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="project_id"/>
+                            <field name="from_stage_id"/>
+                            <field name="target_stage_id"/>
+                        </group>
+                        <group>
+                            <field name="requested_by_id"/>
+                            <field name="request_date"/>
+                            <field name="decided_by_id" invisible="state == 'pending'"/>
+                            <field name="decided_on" invisible="state == 'pending'"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group invisible="state != 'rejected'">
+                        <field name="rejection_reason"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="ft_pms_stage_approval_view_search" model="ir.ui.view">
+        <field name="name">ft.pms.stage.approval.search</field>
+        <field name="model">ft.pms.stage.approval</field>
+        <field name="arch" type="xml">
+            <search string="Stage Approvals">
+                <field name="project_id"/>
+                <field name="requested_by_id"/>
+                <field name="target_stage_id"/>
+                <filter name="filter_pending" string="Pending" domain="[('state', '=', 'pending')]"/>
+                <filter name="filter_approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <filter name="filter_rejected" string="Rejected" domain="[('state', '=', 'rejected')]"/>
+                <filter name="filter_cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter name="filter_mine" string="My Requests" domain="[('requested_by_id', '=', uid)]"/>
+                <group>
+                    <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_target" string="Target Stage" context="{'group_by': 'target_stage_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="ft_pms_stage_approval_action" model="ir.actions.act_window">
+        <field name="name">Stage Approvals</field>
+        <field name="res_model">ft.pms.stage.approval</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="ft_pms_stage_approval_view_search"/>
+        <field name="context">{'search_default_filter_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No stage approval requests</p>
+            <p>Project Managers request an Administrator approval from the project's
+               Stage Gates tab before moving an Implementation project into UAT.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_ft_pms_stage_approval"
+          name="Stage Approvals"
+          parent="project.menu_main_pm"
+          action="ft_pms_stage_approval_action"
+          sequence="90"
+          groups="base.group_system"/>
+</odoo>

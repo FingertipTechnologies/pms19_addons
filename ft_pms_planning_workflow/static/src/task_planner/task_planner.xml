@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_pms_planning_workflow.TaskPlannerCard">
+        <div class="o_pms_tp_card"
+             t-attf-class="o_pms_tp_cat_{{ task.category }}"
+             t-att-data-task-id="task.id"
+             t-att-title="task.name"
+             t-on-click="() => this.openTask(task.id)">
+            <div class="d-flex align-items-start gap-1">
+                <div class="o_pms_tp_card_title flex-grow-1" t-esc="task.name"/>
+                <span class="o_pms_tp_move_wrap" t-on-click.stop="() => {}">
+                    <Dropdown menuClass="'o_pms_tp_move_menu'">
+                        <button type="button" class="btn btn-link btn-sm p-0 o_pms_tp_move"
+                                title="Move to another week (deadline moves to that week's Sunday)">
+                            <i class="fa fa-exchange"/>
+                        </button>
+                        <t t-set-slot="content">
+                            <div class="dropdown-header">Move to week</div>
+                            <DropdownItem t-foreach="moveTargets(task)" t-as="target" t-key="target.id"
+                                          onSelected="() => this.moveTask(task, target.id)">
+                                <t t-esc="target.label"/>
+                            </DropdownItem>
+                        </t>
+                    </Dropdown>
+                </span>
+            </div>
+            <div t-if="!state.filters.project_id and task.project" class="o_pms_tp_card_line fw-medium" t-esc="task.project"/>
+            <div t-if="task.module" class="o_pms_tp_card_line" t-esc="task.module"/>
+            <div t-if="task.stage" class="o_pms_tp_card_line">
+                <span class="badge rounded-pill text-bg-light border" t-esc="task.stage"/>
+            </div>
+            <div t-if="task.deadline_label or task.deadline" class="o_pms_tp_card_line"
+                 t-att-class="{ 'text-danger fw-bold': task.category === 'overdue' }">
+                <i class="fa fa-clock-o me-1"/><t t-esc="task.deadline_label or task.deadline"/>
+            </div>
+            <div class="o_pms_tp_card_footer">
+                <span class="o_pms_tp_card_hours">
+                    <span title="Estimated hours"><i class="fa fa-hourglass-half me-1"/><t t-esc="task.estimated_hhmm"/></span>
+                    <span title="Actual hours (timesheets)"><i class="fa fa-check me-1"/><t t-esc="task.actual_hhmm"/></span>
+                    <i t-if="task.priority and task.priority !== '0'" class="fa fa-star text-warning" title="High priority"/>
+                </span>
+                <span t-if="task.assignees and task.assignees.length" class="o_pms_tp_card_avatars">
+                    <img t-foreach="task.assignees" t-as="user" t-key="user.id"
+                         class="o_pms_tp_avatar rounded-circle"
+                         t-att-src="'/web/image/res.users/' + user.id + '/avatar_128'"
+                         t-att-alt="user.name" t-att-title="user.name"/>
+                </span>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="ft_pms_planning_workflow.TaskPlanner">
+        <div class="o_action o_pms_planner o_pms_task_planner">
+            <Layout display="{ controlPanel: {} }" className="'o_pms_planner_content'">
+                <div class="o_pms_toolbar">
+                    <PlannerMultiSelect label.translate="Project"
+                                        multiple="false"
+                                        allLabel.translate="All projects"
+                                        options="projectOptions"
+                                        selected="state.filters.project_id ? [state.filters.project_id] : []"
+                                        onChange="(ids) => this.setFilter('project_id', ids[0] || false)"/>
+                    <PlannerMultiSelect label.translate="PM"
+                                        options="options.pms"
+                                        selected="state.filters.pm_ids"
+                                        onChange="(ids) => this.setFilter('pm_ids', ids)"/>
+                    <PlannerMultiSelect label.translate="Resource"
+                                        options="options.resources"
+                                        selected="state.filters.resource_ids"
+                                        onChange="(ids) => this.setFilter('resource_ids', ids)"/>
+                    <div class="o_pms_filter">
+                        <span class="o_pms_filter_label">Status</span>
+                        <div class="btn-group btn-group-sm o_pms_tp_status" role="group" aria-label="Task status">
+                            <button t-foreach="statusOptions" t-as="option" t-key="option.key"
+                                    type="button" class="btn"
+                                    t-att-class="state.filters.status_filter === option.key ? 'btn-primary' : 'btn-outline-secondary'"
+                                    t-att-title="option.title"
+                                    t-on-click="() => this.setStatusFilter(option.key)"
+                                    t-esc="option.label"/>
+                        </div>
+                    </div>
+                    <div class="btn-group btn-group-sm o_pms_tp_nav" role="group" aria-label="Week navigation">
+                        <button type="button" class="btn btn-outline-secondary" title="Previous week" t-on-click="() => this.shiftWeeks(-1)">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary"
+                                t-att-disabled="state.filters.week_offset === 0"
+                                t-att-title="state.filters.focus_date ? 'Back to the focus week' : 'Back to the current week'"
+                                t-on-click="resetWeeks">
+                            <t t-if="state.filters.focus_date">Focus week</t>
+                            <t t-else="">This week</t>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" title="Next week" t-on-click="() => this.shiftWeeks(1)">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+                    <span t-if="state.filters.focus_date" class="badge text-bg-light border o_pms_tp_focus_badge">
+                        Focus: <t t-esc="state.filters.focus_date"/>
+                        <i class="fa fa-times ms-1" role="button" title="Clear focus date" t-on-click="clearFocus"/>
+                    </span>
+                    <i t-if="state.loading" class="fa fa-circle-o-notch fa-spin text-muted" title="Loading"/>
+                    <span class="ms-auto small text-muted">Drag a card to another week (or use <i class="fa fa-exchange"/>) to move it. The deadline moves to that week's Sunday and the move is recorded in Week Moves.</span>
+                </div>
+
+                <div t-if="!state.data" class="o_pms_empty text-muted">
+                    <i class="fa fa-circle-o-notch fa-spin me-2"/>Loading…
+                </div>
+                <div t-else="" class="o_pms_tp_board" t-ref="board" t-att-class="{ o_pms_loading: state.loading }">
+                    <div t-foreach="state.data.weeks" t-as="week" t-key="week.id"
+                         class="o_pms_tp_column" t-att-class="columnClass(week)"
+                         t-att-data-week-id="week.id">
+                        <div class="o_pms_tp_column_header">
+                            <div class="o_pms_tp_column_title" t-esc="week.label"/>
+                            <div class="o_pms_tp_column_badges">
+                                <span t-if="week.is_current" class="badge text-bg-primary">This week</span>
+                                <span t-if="week.contains_focus" class="badge text-bg-warning">Focus</span>
+                                <span class="badge text-bg-light border ms-auto" t-att-title="'Tasks shown'" t-esc="week.tasks.length"/>
+                            </div>
+                        </div>
+                        <div class="o_pms_tp_column_body">
+                            <t t-foreach="week.sections" t-as="section" t-key="section.category">
+                                <div class="o_pms_tp_section_title" t-attf-class="o_pms_tp_cat_{{ section.category }}">
+                                    <t t-esc="section.label"/> <span class="text-muted">(<t t-esc="section.tasks.length"/>)</span>
+                                </div>
+                                <t t-foreach="section.tasks" t-as="task" t-key="task.id">
+                                    <t t-call="ft_pms_planning_workflow.TaskPlannerCard"/>
+                                </t>
+                            </t>
+                            <div t-if="!week.tasks.length" class="o_pms_tp_column_empty">No tasks</div>
+                        </div>
+                        <div class="o_pms_tp_column_footer" t-att-title="totalsTooltip">
+                            <div><span>Estimated</span><b t-esc="week.totals.estimated_hhmm"/></div>
+                            <div><span>Open</span><b t-esc="week.totals.open_hhmm"/></div>
+                            <div><span>Completed</span><b t-esc="week.totals.completed_hhmm"/></div>
+                        </div>
+                        <div class="o_pms_tp_column_actual" t-att-title="actualTooltip">
+                            <span><i class="fa fa-clock-o me-1"/>Actual (timesheets)</span>
+                            <b t-esc="week.totals.actual_hhmm"/>
+                        </div>
+                    </div>
+                    <div t-if="!state.data.weeks.length" class="o_pms_empty text-muted w-100">No weeks to show.</div>
+                </div>
+            </Layout>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="ft_pms_planning_workflow.PlannerMultiSelect">
+        <div class="o_pms_filter o_pms_multi">
+            <span class="o_pms_filter_label" t-esc="props.label"/>
+            <Dropdown state="dropdown"
+                      menuClass="'o_pms_multi_menu'"
+                      navigationOptions="navigationOptions"
+                      onOpened.bind="onOpened">
+                <button type="button"
+                        class="btn btn-sm o_pms_multi_toggle"
+                        t-att-class="state.selected.length ? 'btn-secondary o_pms_multi_active' : 'btn-light'"
+                        t-att-title="props.label">
+                    <span class="o_pms_multi_summary" t-esc="summary"/>
+                    <i class="fa fa-caret-down ms-1"/>
+                </button>
+                <t t-set-slot="content">
+                    <div t-ref="menu" class="o_pms_multi_body">
+                        <div class="o_pms_multi_search px-2 pb-1">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fa fa-search"/></span>
+                                <input t-ref="search"
+                                       type="search"
+                                       class="form-control"
+                                       autocomplete="off"
+                                       t-att-placeholder="'Search ' + props.label.toLowerCase() + '…'"
+                                       t-att-aria-label="'Search ' + props.label"
+                                       t-att-value="state.query"
+                                       t-on-input="onSearchInput"
+                                       t-on-keydown="onSearchKeydown"/>
+                            </div>
+                        </div>
+                        <DropdownItem t-if="state.selected.length"
+                                      class="'text-muted small'"
+                                      closingMode="'none'"
+                                      onSelected="() => this.clear()">
+                            <i class="fa fa-fw fa-times me-1"/><t t-if="props.multiple">Clear selection</t><t t-else="" t-esc="props.allLabel or 'All'"/>
+                        </DropdownItem>
+                        <t t-set="matches" t-value="visibleOptions"/>
+                        <div t-if="!props.options.length" class="dropdown-item-text text-muted small">
+                            No options
+                        </div>
+                        <div t-elif="!matches.length" class="dropdown-item-text text-muted small">
+                            No matches
+                        </div>
+                        <div class="o_pms_multi_options">
+                            <t t-foreach="matches" t-as="option" t-key="option.id">
+                                <CheckboxItem checked="state.selected.includes(option.id)"
+                                              class="{ selected: state.selected.includes(option.id) }"
+                                              closingMode="'none'"
+                                              onSelected="() => this.pick(option.id)">
+                                    <i t-if="props.multiple" class="fa fa-fw me-1"
+                                       t-att-class="state.selected.includes(option.id) ? 'fa-check-square text-primary' : 'fa-square-o'"/>
+                                    <i t-else="" class="fa fa-fw me-1"
+                                       t-att-class="state.selected.includes(option.id) ? 'fa-dot-circle-o text-primary' : 'fa-circle-o'"/>
+                                    <span t-if="option.initials" class="o_pms_initials me-1" t-esc="option.initials"/>
+                                    <t t-esc="option.name"/>
+                                </CheckboxItem>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </Dropdown>
+        </div>
+    </t>
+
+</templates>

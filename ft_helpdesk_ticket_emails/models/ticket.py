@@ -279,12 +279,22 @@ class HelpdeskTicket(models.Model):
         public_reply = self.env.ref(
             'ft_helpdesk_core.mt_ticket_public_reply', raise_if_not_found=False)
         if public_reply and message.subtype_id == public_reply:
+            sender_name = message.author_id.name
+
+            # For messages posted by a logged-in internal user,
+            # fall back to the user who is posting the message.
+            if (
+                not sender_name
+                and message.message_type == 'comment'
+                and self.env.user.has_group('base.group_user')
+            ):
+                sender_name = self.env.user.partner_id.name
             self._send_ticket_event_email(
                 'conversation',
                 # Already sanitized by mail.message; mark it safe so the
                 # template renders the reply as HTML instead of escaping it.
                 detail=Markup(message.body or ''),
                 detail_title=_('Message from %s') % (
-                    message.author_id.name or _('Unknown')),
+                    sender_name or _('Unknown')),
             )
         return message

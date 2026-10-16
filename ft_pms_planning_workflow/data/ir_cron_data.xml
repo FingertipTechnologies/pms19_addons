@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate="0": the record is refreshed on every module upgrade so the
+         renamed method / name reach databases that installed an older version.
+         Interval and active flag are re-applied as well. -->
+    <data noupdate="0">
+        <record id="ir_cron_pwf_lock_overdue_projects" model="ir.cron">
+            <field name="name">PMS: evaluate project locks</field>
+            <field name="model_id" ref="project.model_project_project"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_pwf_evaluate_locks()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

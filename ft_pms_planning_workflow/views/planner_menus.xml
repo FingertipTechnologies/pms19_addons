@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Client actions of the two planners (OWL components registered under
+         these tags in static/src/project_planner and static/src/task_planner). -->
+    <record id="action_pms_project_planner" model="ir.actions.client">
+        <field name="name">Project Status</field>
+        <field name="tag">ft_pms_project_planner</field>
+        <field name="path">pms-project-planner</field>
+    </record>
+
+    <record id="action_pms_task_planner" model="ir.actions.client">
+        <field name="name">Task Planner</field>
+        <field name="tag">ft_pms_task_planner</field>
+        <field name="path">pms-task-planner</field>
+    </record>
+
+    <!-- PMS > Project Status: top level, right after Projects (sequence 10,
+         qa_testapp/views/menu_reorganization.xml) and before Tasks (20).
+         PMS > Planning > Task Planner. -->
+    <menuitem id="menu_pms_planning"
+              name="Planning"
+              parent="project.menu_main_pm"
+              sequence="22"/>
+
+    <menuitem id="menu_pms_project_planner"
+              name="Project Status"
+              parent="project.menu_main_pm"
+              action="action_pms_project_planner"
+              sequence="15"/>
+
+    <menuitem id="menu_pms_task_planner"
+              name="Task Planner"
+              parent="menu_pms_planning"
+              action="action_pms_task_planner"
+              sequence="20"/>
+
+    <!-- Hide Project Status from the top navigation -->
+    <record id="menu_pms_project_planner" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Hide Planning from the top navigation -->
+    <record id="menu_pms_planning" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Hide its Task Planner submenu -->
+    <record id="menu_pms_task_planner" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+</odoo>

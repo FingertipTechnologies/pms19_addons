@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="mail_template_pwf_stage_change" model="mail.template">
+            <field name="name">PMS: Project Stage Changed</field>
+            <field name="model_id" ref="project.model_project_project"/>
+            <field name="subject">{{ object.name }}: project now in {{ ctx.get('pwf_new_stage_code') or object.stage_id.name }} stage</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent after a successful project stage change to the customer, the Project Manager and configured stakeholders.</field>
+            <field name="body_html" type="html">
+<div style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#333333;">
+    <t t-set="pm_name" t-value="ctx.get('pwf_pm_name') or ''"/>
+    <t t-set="pm_email" t-value="ctx.get('pwf_pm_email') or ''"/>
+    <p style="margin:0 0 12px 0;">Dear <t t-out="ctx.get('pwf_greeting_name') or 'Customer'"/>,</p>
+    <p style="margin:0 0 12px 0;">This is to let you know that the project <b t-out="object.name or ''"/> is now in the <t t-out="ctx.get('pwf_new_stage_desc') or ctx.get('pwf_new_stage_code') or object.stage_id.name or ''"/> stage.</p>
+    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:16px 0;font-size:14px;">
+        <tr>
+            <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Previous stage</td>
+            <td style="padding:6px 0;" t-out="ctx.get('pwf_old_stage_label') or '-'"/>
+        </tr>
+        <tr>
+            <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Current stage</td>
+            <td style="padding:6px 0;" t-out="ctx.get('pwf_new_stage_label') or object.stage_id.name or '-'"/>
+        </tr>
+        <tr>
+            <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Next stage</td>
+            <td style="padding:6px 0;" t-out="ctx.get('pwf_next_stage_label') or '-'"/>
+        </tr>
+        <tr>
+            <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Updated on</td>
+            <td style="padding:6px 0;" t-out="ctx.get('pwf_moved_on_str') or '-'"/>
+        </tr>
+        <tr>
+            <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Updated by</td>
+            <td style="padding:6px 0;" t-out="ctx.get('pwf_moved_by') or '-'"/>
+        </tr>
+    </table>
+    <p t-if="pm_name or pm_email" style="margin:0 0 12px 0;">For any questions, please contact your Project Manager, <t t-if="pm_name"><t t-out="pm_name"/><t t-if="pm_email"> (<a t-att-href="'mailto:%s' % pm_email" t-out="pm_email"/>)</t></t><t t-else=""><a t-att-href="'mailto:%s' % pm_email" t-out="pm_email"/></t>.</p>
+    <p style="margin:0 0 12px 0;">Regards,<br/><t t-out="ctx.get('pwf_company_name') or object.company_id.name or ''"/></p>
+    <p style="margin:16px 0 0 0;font-size:12px;color:#888888;">This is an automatic notification sent when a project changes stage.</p>
+</div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>
