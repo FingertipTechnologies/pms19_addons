@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         AMC task approval.
+
+         Tasks of AMC projects are approved (or rejected) once they reach
+         a final stage. The approval is shown and actioned on the All
+         Tasks list (bulk, via list header buttons acting on the selected
+         rows) and on the task form.
+         ================================================================ -->
+
+    <!-- All Tasks list: Approval column + bulk Approve / Reject / Reset.
+         project.open_view_all_tasks_list_view is the primary list of the
+         All Tasks action; no sibling addon adds a <header> to the task
+         lists, so one is created as the first child of <list>. -->
+    <record id="view_task_all_list_pwf_amc_approval" model="ir.ui.view">
+        <field name="name">project.task.all.list.pwf.amc.approval</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.open_view_all_tasks_list_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="/list/*[1]" position="before">
+                <header>
+                    <button name="action_pwf_amc_approve" type="object"
+                            string="Approve" class="btn-primary"/>
+                    <button name="action_pwf_amc_reject" type="object"
+                            string="Reject"/>
+                    <button name="action_pwf_amc_reset" type="object"
+                            string="Reset Approval"/>
+                </header>
+            </xpath>
+            <xpath expr="//field[@name='stage_id']" position="after">
+                <field name="ft_project_type" column_invisible="True"/>
+                <field name="pwf_amc_is_completed" column_invisible="True"/>
+                <field name="pwf_amc_approval" string="Approval"
+                       widget="badge" readonly="1" optional="show"
+                       decoration-success="pwf_amc_approval == 'approved'"
+                       decoration-danger="pwf_amc_approval == 'rejected'"
+                       invisible="ft_project_type != 'amc'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Task form: header buttons + read-only AMC Approval info group. -->
+    <record id="view_task_form_pwf_amc_approval" model="ir.ui.view">
+        <field name="name">project.task.form.pwf.amc.approval</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_pwf_amc_approve" type="object"
+                        string="Approve" class="btn-primary"
+                        invisible="ft_project_type != 'amc' or not pwf_amc_can_approve or not pwf_amc_is_completed or pwf_amc_approval == 'approved'"/>
+                <button name="action_pwf_amc_reject" type="object"
+                        string="Reject"
+                        invisible="ft_project_type != 'amc' or not pwf_amc_can_approve or not pwf_amc_is_completed or pwf_amc_approval == 'rejected'"/>
+                <button name="action_pwf_amc_reset" type="object"
+                        string="Reset Approval"
+                        invisible="ft_project_type != 'amc' or not pwf_amc_can_approve or not pwf_amc_is_completed or not pwf_amc_approval"/>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <field name="ft_project_type" invisible="1"/>
+                <field name="pwf_amc_can_approve" invisible="1"/>
+                <field name="pwf_amc_is_completed" invisible="1"/>
+                <group string="AMC Approval" name="pwf_amc_approval_section"
+                       invisible="ft_project_type != 'amc'">
+                    <group>
+                        <field name="pwf_amc_approval" string="Approval"
+                               widget="badge" readonly="1"
+                               decoration-success="pwf_amc_approval == 'approved'"
+                               decoration-danger="pwf_amc_approval == 'rejected'"/>
+                        <field name="pwf_amc_rejection_reason" readonly="1"
+                               invisible="pwf_amc_approval != 'rejected'"/>
+                    </group>
+                    <group>
+                        <field name="pwf_amc_approved_by_id" readonly="1"
+                               widget="many2one_avatar_user"
+                               invisible="not pwf_amc_approved_by_id"/>
+                        <field name="pwf_amc_approved_on" readonly="1"
+                               invisible="not pwf_amc_approved_on"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Reject wizard (returned by action_pwf_amc_reject). -->
+    <record id="view_pwf_amc_reject_wizard_form" model="ir.ui.view">
+        <field name="name">ft.pms.amc.reject.wizard.form</field>
+        <field name="model">ft.pms.amc.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject AMC Tasks">
+                <group>
+                    <field name="reason" required="1"
+                           placeholder="Why are these tasks rejected?"/>
+                </group>
+                <field name="task_ids" readonly="1" nolabel="1">
+                    <list create="0" edit="0" delete="0">
+                        <field name="name" string="Task"/>
+                        <field name="project_id"/>
+                        <field name="stage_id"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm"
+                            class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel"
+                            class="btn-secondary" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- All Tasks search: AMC approval filters and Group By.
+         Domains go through project_id.ft_project_type (stored on the
+         project) rather than the task's non-stored related field. -->
+    <record id="view_task_search_pwf_amc_approval" model="ir.ui.view">
+        <field name="name">project.task.search.pwf.amc.approval</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form"/>
+        <field name="arch" type="xml">
+            <filter name="closed_on" position="after">
+                <separator/>
+                <filter string="AMC: To Approve" name="pwf_amc_to_approve"
+                        domain="[('project_id.ft_project_type', '=', 'amc'), ('pwf_amc_approval', '=', False), ('pwf_amc_is_completed', '=', True)]"/>
+                <filter string="AMC: Approved" name="pwf_amc_approved"
+                        domain="[('project_id.ft_project_type', '=', 'amc'), ('pwf_amc_approval', '=', 'approved')]"/>
+                <filter string="AMC: Rejected" name="pwf_amc_rejected"
+                        domain="[('project_id.ft_project_type', '=', 'amc'), ('pwf_amc_approval', '=', 'rejected')]"/>
+            </filter>
+            <filter name="stage" position="after">
+                <filter string="Approval" name="groupby_pwf_amc_approval"
+                        context="{'group_by': 'pwf_amc_approval'}"/>
+            </filter>
+        </field>
+    </record>
+
+</odoo>

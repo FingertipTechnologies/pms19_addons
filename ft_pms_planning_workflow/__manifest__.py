@@ -1,6 +1,6 @@
 {
     'name': 'PMS Planning & Stage Workflow',
-    'version': '19.0.1.14.0',
+    'version': '19.0.1.16.0',
     'summary': 'Project Planner, weekly Task Planner, Avg. Daily Effort and '
                'gated project stage workflow with approvals and notifications.',
     'description': """
@@ -39,6 +39,7 @@ PMS Planning & Stage Workflow
         'views/project_project_workflow_views.xml',
         'views/res_config_settings_views.xml',
         'views/planner_menus.xml',
+        'views/project_task_amc_approval_views.xml',
         'data/mail_template_data.xml',
         'data/ir_cron_data.xml',
     ],

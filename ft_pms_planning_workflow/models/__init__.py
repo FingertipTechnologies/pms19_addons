@@ -10,3 +10,4 @@ from . import account_analytic_line
 from . import res_company
 from . import res_config_settings
 from . import project_project_stage_panel
+from . import project_task_amc_approval
