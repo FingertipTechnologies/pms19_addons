@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_employee_family_user,hr.employee.family.user,model_hr_employee_family,hr.group_hr_user,1,1,1,1
+access_hr_employee_reference_user,hr.employee.reference.user,model_hr_employee_reference,hr.group_hr_user,1,1,1,1
+access_hr_employee_family_employee,hr.employee.family.employee,model_hr_employee_family,base.group_user,1,1,1,1
+access_hr_employee_reference_employee,hr.employee.reference.employee,model_hr_employee_reference,base.group_user,1,1,1,1
+access_hr_employee_public_details_write,hr.employee.public.details.write,hr.model_hr_employee_public,base.group_user,1,1,0,0
