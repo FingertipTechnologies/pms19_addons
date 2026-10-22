@@ -296,6 +296,17 @@ class InheritCrmLead(models.Model):
     # Outcome of the call / first touch. Distinct from `stage_id` (the pipeline
     # position) and from the stock `won_status`: a lead can sit in the first
     # stage with a status of RNP for several attempts.
+
+    question = fields.Selection([
+        ('nolive_view_across_plants_entities', 'No live view across plants & entities'),
+        ('high_inventory_but_frequent_stockouts', 'High inventory but frequent stockouts'),
+        ('disconnected_systems_manual_re_entry', 'Disconnected systems, manual re-entry'),
+        ('no_visibility_into_dealer_distributor_sales', 'No visibility into dealer & distributor sales'),
+        ('traceability_audit_readiness', 'Traceability & audit readiness'),
+        ('month_end_close_consolidation_too_slow', 'Month-end close & consolidation too slow'),
+
+    ], string="What is your biggest challenge right now?", tracking=True, )
+
     @api.model
     def _get_lead_status_selection(self):
         """Call statuses plus one unique option per opportunity stage."""

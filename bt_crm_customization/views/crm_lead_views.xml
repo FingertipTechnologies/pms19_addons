@@ -244,6 +244,10 @@
                             string="What are you looking to improve?"
                             readonly="id"/>
 
+                        <field name="question"
+                            string="What is your biggest challenge right now?"
+                            readonly="id"/>
+
                         <field name="acquisition_timeline"
                             string="Timeline"
                             readonly="id"/>
@@ -415,6 +419,10 @@
                 <field name="improvement_area"
                     string="Improvement Lookings"
                     optional="show"
+                    readonly="id"/>
+
+                <field name="question"
+                    string="What is your biggest challenge right now?"
                     readonly="id"/>
 
                 <field name="acquisition_timeline"
