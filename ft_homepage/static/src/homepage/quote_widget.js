@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onWillStart, useState, markup } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { patch } from "@web/core/utils/patch";
 import { AppsMenu } from "@web_responsive/components/apps_menu/apps_menu.esm";
@@ -39,7 +39,16 @@ class FtHomepageContent extends Component {
                     "get_homepage_content",
                     []
                 );
-                this.state.items = Array.isArray(items) ? items : [];
+                if (Array.isArray(items)) {
+                    for (const item of items) {
+                        if (item.content_type === "text" && item.text_content) {
+                            item.text_content_html = markup(item.text_content);
+                        }
+                    }
+                    this.state.items = items;
+                } else {
+                    this.state.items = [];
+                }
             } catch (e) {
                 // Never let these widgets break the Homepage for any user.
                 console.warn("ft_homepage: could not load quote/announcement", e);

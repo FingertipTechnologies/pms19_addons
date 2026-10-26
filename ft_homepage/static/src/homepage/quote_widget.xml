@@ -19,11 +19,11 @@
              (It used to scroll past as a marquee, which meant only a sliver
              of the quote was ever readable at any moment.) -->
         <div t-if="item.content_type == 'text'" class="ft_quote_widget__media">
-            <blockquote class="ft_quote_widget__text">
-                <span class="ft_quote_widget__mark ft_quote_widget__mark--open">&#8220;</span>
-                <span class="ft_quote_widget__quote_text" t-esc="item.text_content"/>
-                <span class="ft_quote_widget__mark ft_quote_widget__mark--close">&#8221;</span>
-            </blockquote>
+            <div class="ft_quote_widget__text">
+                <span t-if="item.kind == 'quote'" class="ft_quote_widget__mark ft_quote_widget__mark--open">&#8220;</span>
+                <div class="ft_quote_widget__quote_text" t-out="item.text_content_html || item.text_content"/>
+                <span t-if="item.kind == 'quote'" class="ft_quote_widget__mark ft_quote_widget__mark--close">&#8221;</span>
+            </div>
             <span t-if="item.contributor" class="ft_quote_widget__contributor">
                 — <t t-esc="item.contributor"/>
             </span>

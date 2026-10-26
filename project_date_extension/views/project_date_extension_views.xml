@@ -15,8 +15,7 @@
                         <button name="action_approve" type="object"
                                 string="Approve" class="btn-primary"
                                 invisible="state != 'request'"
-                                groups="project_date_extension.group_project_date_extension_approver"
-                                confirm="Approve this Date Extension Request? The milestone/stage date on the Project will be updated immediately."/>
+                                groups="project_date_extension.group_project_date_extension_approver"/>
                         <button name="action_reject" type="object"
                                 string="Reject" class="btn-secondary"
                                 invisible="state != 'request'"
@@ -50,7 +49,7 @@
                             </group>
                             <group>
                                 <field name="current_date" readonly="1"/>
-                                <field name="requested_date" readonly="state != 'draft'"/>
+                                <field name="requested_date" readonly="state not in ('draft', 'request') or (state == 'request' and not is_approver)"/>
                             </group>
                         </group>
                         <group string="Reason">
@@ -74,13 +73,14 @@
                                  grows with what is typed; this only sets where
                                  it starts. -->
                             <field name="reason" nolabel="1" colspan="2" rows="8"
-                                   placeholder="Explain why this date extension is requested..."
-                                   readonly="state != 'draft'"/>
+                                    placeholder="Explain why this date extension is requested..."
+                                    readonly="state != 'draft'"/>
                         </group>
                         <group string="Extension History" invisible="state == 'draft'">
                             <field name="approver_id" readonly="1"/>
                             <field name="decision_date" readonly="1"/>
-                            <field name="rejection_reason" readonly="state != 'draft'" invisible="state != 'rejected'"/>
+                            <field name="approval_comment" readonly="1" invisible="state != 'approved' and not approval_comment"/>
+                            <field name="rejection_reason" readonly="1" invisible="state != 'rejected' and not rejection_reason"/>
                         </group>
                     </sheet>
                     <chatter/>

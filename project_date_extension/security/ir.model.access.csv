@@ -6,3 +6,4 @@ access_project_date_extension_request_admin,project.date.extension.request.admin
 access_project_lifecycle_date_all,project.lifecycle.date.all,model_project_lifecycle_date,base.group_user,1,0,0,0
 access_project_lifecycle_date_approver,project.lifecycle.date.approver,model_project_lifecycle_date,group_project_date_extension_approver,1,1,1,1
 access_project_lifecycle_date_admin,project.lifecycle.date.admin,model_project_lifecycle_date,base.group_system,1,1,1,1
+access_project_date_extension_decision_wizard_user,project.date.extension.decision.wizard.user,model_project_date_extension_decision_wizard,base.group_user,1,1,1,1

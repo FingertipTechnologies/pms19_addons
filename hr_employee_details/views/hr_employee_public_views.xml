@@ -17,6 +17,14 @@
         <field name="inherit_id" ref="hr.hr_employee_public_view_form"/>
         <field name="arch" type="xml">
 
+            <!-- Profile photo: editable on the employee's own record (and
+                 for HR / administrators), read-only on anybody else's. The
+                 model makes the field writable; this keeps the widget locked
+                 where the server would refuse the write anyway. -->
+            <xpath expr="//field[@name='image_1920']" position="attributes">
+                <attribute name="readonly">not can_access_personal_details</attribute>
+            </xpath>
+
             <xpath expr="//page[@name='work_information']" position="after">
                 <page string="Personal" name="personal_information"
                       invisible="not can_access_personal_details">

@@ -141,7 +141,8 @@ class ProjectDateExtensionRequest(models.Model):
         readonly=True,
         copy=False,
     )
-    rejection_reason = fields.Text(string="Rejection Reason", copy=False)
+    rejection_reason = fields.Text(string="Rejection Reason", copy=False, tracking=True)
+    approval_comment = fields.Text(string="Approval Comment", copy=False, tracking=True)
 
     company_id = fields.Many2one(
         related="project_id.company_id", store=True, readonly=True
@@ -336,69 +337,108 @@ class ProjectDateExtensionRequest(models.Model):
                     user=self.env.user.name,
                 )
             )
+        return True
 
-    def action_approve(self):
+    def _do_approve(self, new_date=None, comment=None):
         self._check_can_decide()
         for rec in self:
             if rec.state != "request":
                 raise UserError(
                     _("Only submitted requests (in Request state) can be approved.")
                 )
+            if new_date:
+                rec.requested_date = new_date
             old_date = rec._get_source_date()
             # Set the selected date to the requested one and shift every
             # later lifecycle date forward by the same gap (earlier dates
             # untouched). sudo + skip checks so it isn't blocked by the
             # admin-only / ordering guards.
             rec._apply_extension()
-            rec.write(
-                {
-                    "state": "approved",
-                    "approver_id": self.env.user.id,
-                    "decision_date": fields.Datetime.now(),
-                    "current_date": old_date,
-                }
-            )
-            rec.message_post(
-                body=_(
-                    "Date Extension approved by %(user)s. %(target)s changed "
-                    "from %(old)s to %(new)s.",
-                    user=self.env.user.name,
-                    target=rec._target_label(),
-                    old=old_date,
-                    new=rec.requested_date,
-                )
-            )
+            vals = {
+                "state": "approved",
+                "approver_id": self.env.user.id,
+                "decision_date": fields.Datetime.now(),
+                "current_date": old_date,
+            }
+            if comment:
+                vals["approval_comment"] = comment
+            rec.write(vals)
 
-    def action_reject(self):
+            body = _(
+                "Date Extension approved by %(user)s. %(target)s changed "
+                "from %(old)s to %(new)s.",
+                user=self.env.user.name,
+                target=rec._target_label(),
+                old=old_date,
+                new=rec.requested_date,
+            )
+            if comment:
+                body += f"<br/><b>{_('Approval Comment:')}</b> {comment}"
+            rec.message_post(body=body)
+
+    def _do_reject(self, comment=None):
         self._check_can_decide()
         for rec in self:
             if rec.state != "request":
                 raise UserError(
                     _("Only submitted requests (in Request state) can be rejected.")
                 )
-            rec.write(
-                {
-                    "state": "rejected",
-                    "approver_id": self.env.user.id,
-                    "decision_date": fields.Datetime.now(),
-                }
+            vals = {
+                "state": "rejected",
+                "approver_id": self.env.user.id,
+                "decision_date": fields.Datetime.now(),
+            }
+            if comment:
+                vals["rejection_reason"] = comment
+            rec.write(vals)
+
+            body = _(
+                "Date Extension rejected by %(user)s.",
+                user=self.env.user.name,
             )
-            if rec.rejection_reason:
-                rec.message_post(
-                    body=_(
-                        "Date Extension rejected by %(user)s. Reason: "
-                        "%(reason)s",
-                        user=self.env.user.name,
-                        reason=rec.rejection_reason,
-                    )
-                )
-            else:
-                rec.message_post(
-                    body=_(
-                        "Date Extension rejected by %(user)s.",
-                        user=self.env.user.name,
-                    )
-                )
+            if comment:
+                body += f"<br/><b>{_('Rejection Reason:')}</b> {comment}"
+            rec.message_post(body=body)
+
+    def action_approve(self):
+        self._check_can_decide()
+        self.ensure_one()
+        if self.env.context.get("skip_wizard"):
+            return self._do_approve(
+                new_date=self.requested_date,
+                comment=self.approval_comment or self.env.context.get("comment"),
+            )
+        return {
+            "name": _("Approve Date Extension"),
+            "type": "ir.actions.act_window",
+            "res_model": "project.date.extension.decision.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_request_id": self.id,
+                "default_decision": "approve",
+                "default_requested_date": self.requested_date,
+            },
+        }
+
+    def action_reject(self):
+        self._check_can_decide()
+        self.ensure_one()
+        if self.env.context.get("skip_wizard"):
+            return self._do_reject(
+                comment=self.rejection_reason or self.env.context.get("comment"),
+            )
+        return {
+            "name": _("Reject Date Extension"),
+            "type": "ir.actions.act_window",
+            "res_model": "project.date.extension.decision.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_request_id": self.id,
+                "default_decision": "reject",
+            },
+        }
 
     def action_reset_to_draft(self):
         """Allow a rejected request to be reworked and resubmitted while
@@ -416,8 +456,11 @@ class ProjectDateExtensionRequest(models.Model):
                     "state": "draft",
                     "approver_id": False,
                     "decision_date": False,
+                    "rejection_reason": False,
+                    "approval_comment": False,
                 }
             )
+        return True
 
     # ----------------------------------------------------------------
     # Point 7: keep the full history - processed requests can't be

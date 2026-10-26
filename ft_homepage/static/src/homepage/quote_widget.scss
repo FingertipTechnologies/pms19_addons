@@ -158,6 +158,29 @@
 
     &__quote_text {
         font-weight: 500;
+        line-height: 1.5;
+        text-align: left;
+
+        ul, ol {
+            margin: 6px 0 6px 18px;
+            padding-left: 4px;
+        }
+
+        li {
+            margin-bottom: 4px;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        p {
+            margin-bottom: 6px;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
     }
 
     &__contributor {

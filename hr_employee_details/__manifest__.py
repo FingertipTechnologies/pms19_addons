@@ -1,6 +1,9 @@
 {
     'name': 'HR Employee Details',
-    'version': '19.0.1.3.0',
+    # 19.0.1.4.0: every employee can change their own profile photo on their
+    #   public employee profile (Employees app); it also updates their user
+    #   avatar. Python/view only, no migration.
+    'version': '19.0.1.4.0',
     'category': 'Human Resources',
     'summary': 'Extended Employee Details - Aadhar, PAN, Family, Bank, References',
     'description': """
@@ -13,7 +16,8 @@
 
         The same Personal page is shown on the public employee profile
         (hr.employee.public). Each employee sees and edits only their own
-        details there; HR Officers and administrators see everyone's.
+        details there, including their profile photo; HR Officers and
+        administrators see everyone's.
     """,
     'author': 'Fingertip Plus',
     'depends': ['hr'],

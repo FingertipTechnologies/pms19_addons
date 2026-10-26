@@ -75,6 +75,8 @@
                 <field name="department"/>
                 <field name="claim_date"/>
                 <field name="total_amount"/>
+                <field name="approved_amount" optional="hide"/>
+                <field name="paid_amount" optional="hide"/>
                 <field name="currency_id" invisible="1"/>
                 <field name="approval_status" widget="badge"/>
                 <field name="payment_status" widget="badge"/>
@@ -87,30 +89,38 @@
         <field name="model">employee.expense.claim</field>
         <field name="arch" type="xml">
             <form string="Expense Claim">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary"
+                            invisible="approval_status != 'draft'"/>
+                    <field name="approval_status" widget="statusbar"
+                           statusbar_visible="draft,submitted,approved,paid"/>
+                </header>
                 <sheet>
+                    <field name="is_approver" invisible="1"/>
                     <div class="oe_title">
                         <label for="claim_number"/>
                         <h1><field name="claim_number" readonly="1"/></h1>
                     </div>
                     <group>
                         <group>
-                            <field name="employee"/>
-                            <field name="department"/>
-                            <field name="claim_date"/>
+                            <field name="employee" readonly="approval_status != 'draft' and not is_approver"/>
+                            <field name="department" readonly="approval_status != 'draft' and not is_approver"/>
+                            <field name="claim_date" readonly="approval_status != 'draft' and not is_approver"/>
                             <field name="total_amount"/>
                         </group>
                         <group>
-                            <field name="expense_period_from"/>
-                            <field name="expense_period_to"/>
-                            <field name="project_id"/>
-                            <field name="partner_id"/>
-                            <field name="bill_available"/>
+                            <field name="expense_period_from" readonly="approval_status != 'draft' and not is_approver"/>
+                            <field name="expense_period_to" readonly="approval_status != 'draft' and not is_approver"/>
+                            <field name="project_id" readonly="approval_status != 'draft' and not is_approver"/>
+                            <field name="partner_id" readonly="approval_status != 'draft' and not is_approver"/>
+                            <field name="bill_available" readonly="approval_status != 'draft' and not is_approver"/>
                         </group>
                     </group>
                     <notebook>
                         <page string="Expense Lines" name="lines">
                             <field name="expense_line_ids"
-                                   context="{'default_expense_claim': id}">
+                                   context="{'default_expense_claim': id}"
+                                   readonly="approval_status != 'draft' and not is_approver">
                                 <list editable="bottom">
                                     <field name="expense_date"/>
                                     <field name="category"/>
@@ -128,19 +138,21 @@
                         <page string="Approval &amp; Payment" name="approval">
                             <group>
                                 <group string="Approval">
-                                    <field name="approved_by"/>
-                                    <field name="approved_date"/>
-                                    <field name="approval_status"/>
+                                    <field name="approved_by" readonly="not is_approver"/>
+                                    <field name="approved_date" readonly="not is_approver"/>
+                                    <field name="approval_status" readonly="not is_approver"/>
+                                    <field name="approved_amount" readonly="not is_approver"/>
                                 </group>
                                 <group string="Payment">
-                                    <field name="payment_status"/>
-                                    <field name="paid_date"/>
-                                    <field name="payment_reference"/>
+                                    <field name="payment_status" readonly="not is_approver"/>
+                                    <field name="paid_date" readonly="not is_approver"/>
+                                    <field name="payment_reference" readonly="not is_approver"/>
+                                    <field name="paid_amount" readonly="not is_approver"/>
                                 </group>
                             </group>
                         </page>
                         <page string="Remarks" name="remarks">
-                            <field name="remarks"/>
+                            <field name="remarks" readonly="approval_status != 'draft' and not is_approver"/>
                         </page>
                     </notebook>
                 </sheet>

@@ -92,8 +92,26 @@
             </field>
             <field name="groups" eval="[(4, ref('group_expense_user'))]"/>
             <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
+            <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Record rule: regular users can only edit or delete own draft claims -->
+        <record id="employee_expense_claim_own_draft_rule" model="ir.rule">
+            <field name="name">Expense Claim: edit own draft claims only</field>
+            <field name="model_id" ref="model_employee_expense_claim"/>
+            <field name="domain_force">
+                ['&amp;',
+                    ('approval_status', '=', 'draft'),
+                    '|',
+                        ('employee.user_id', '=', user.id),
+                        ('create_uid', '=', user.id)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_expense_user'))]"/>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="True"/>
         </record>
 
@@ -124,8 +142,25 @@
             </field>
             <field name="groups" eval="[(4, ref('group_expense_user'))]"/>
             <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
+            <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="employee_expense_line_user_draft_rule" model="ir.rule">
+            <field name="name">Expense Line: edit own draft lines only</field>
+            <field name="model_id" ref="model_employee_expense_line"/>
+            <field name="domain_force">
+                ['&amp;',
+                    ('expense_claim.approval_status', '=', 'draft'),
+                    '|',
+                        ('expense_claim.employee.user_id', '=', user.id),
+                        ('expense_claim.create_uid', '=', user.id)]
+            </field>
+            <field name="groups" eval="[(4, ref('group_expense_user'))]"/>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="True"/>
         </record>
 

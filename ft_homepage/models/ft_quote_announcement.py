@@ -4,6 +4,7 @@ from urllib.parse import quote, urlparse
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools import html2plaintext, is_html_empty
 
 # Matches the src="..." of a pasted <iframe> embed snippet (e.g. LinkedIn's
 # own "Embed this post" code). Falls back to treating the whole input as a
@@ -37,21 +38,10 @@ MAX_ACTIVE_MEDIA = 4
 # block of text beside the app icons.
 MAX_ACTIVE_TEXT = 1
 
-# Longest text that fits the upper-right panel without being clipped or
-# pushing the panel past the app-icon grid.
-#
-# Derived from the panel's own geometry rather than picked at random: the panel
-# caps at 360px wide with 16px of padding each side, leaving 328px of content.
-# At its 0.95rem font that is roughly 43 characters a line, and 300 characters
-# is therefore about seven lines — near 165px of text, comfortably inside the
-# panel's 420px body even once the contributor line is added.
-#
-# Change this and the CSS together: the whole point of the limit is that no
-# text long enough to overflow can be saved in the first place, which is what
-# lets the panel drop the line-clamp that used to truncate quotes mid-sentence.
-# The form view repeats the number as the ft_limited_text widget's max_length
-# (and in its placeholder) to stop the typing at the cap — keep the two in step.
-TEXT_MAX_LENGTH = 300
+# Maximum plain-text character length allowed for rich text in the panel.
+# Generous cap to allow multiline announcements and bullet points while
+# maintaining scrollable ergonomics on the Homepage.
+TEXT_MAX_LENGTH = 1000
 
 
 class FtQuoteAnnouncement(models.Model):
@@ -83,12 +73,11 @@ class FtQuoteAnnouncement(models.Model):
         default="text",
     )
 
-    # Text content — rendered with decorative quotation-mark styling in the
-    # upper-right panel, whatever `kind` the entry carries.
-    text_content = fields.Text(
+    # Text content — rich text supporting bullet points, formatting, and paragraphs
+    text_content = fields.Html(
         string="Quote / Announcement Text",
-        help="Shown in the panel beside the app icons. Limited to %d "
-        "characters so it always fits without being cut off." % TEXT_MAX_LENGTH,
+        help="Shown in the panel beside the app icons. Rich text with bullet points.",
+        sanitize=True,
     )
 
     # Image content
@@ -251,7 +240,7 @@ class FtQuoteAnnouncement(models.Model):
     )
     def _check_content_matches_type(self):
         for rec in self:
-            if rec.content_type == "text" and not rec.text_content:
+            if rec.content_type == "text" and (not rec.text_content or is_html_empty(rec.text_content)):
                 raise ValidationError("Please add the quote/announcement text.")
             if rec.content_type == "image" and not rec.image:
                 raise ValidationError("Please upload an image.")
@@ -276,22 +265,18 @@ class FtQuoteAnnouncement(models.Model):
 
     @api.constrains("content_type", "text_content")
     def _check_text_length(self):
-        """Keep text short enough that the panel never has to truncate it.
-
-        Enforced on save rather than trimmed at display time on purpose: a
-        limit the author is told about while writing is the only version of
-        this that prevents a half-sentence appearing on everybody's Homepage.
-        """
+        """Keep text length within a reasonable limit for the Homepage panel."""
         for rec in self:
-            if rec.content_type != "text":
+            if rec.content_type != "text" or not rec.text_content:
                 continue
-            length = len(rec.text_content or "")
+            plain_text = html2plaintext(rec.text_content).strip()
+            length = len(plain_text)
             if length > TEXT_MAX_LENGTH:
                 raise ValidationError(
                     _(
                         "The text is %(length)s characters long, which is more "
-                        "than the %(limit)s that fit the Homepage panel. Please "
-                        "shorten it by %(excess)s characters.",
+                        "than the %(limit)s characters allowed for the Homepage panel. "
+                        "Please shorten it by %(excess)s characters.",
                         length=length,
                         limit=TEXT_MAX_LENGTH,
                         excess=length - TEXT_MAX_LENGTH,

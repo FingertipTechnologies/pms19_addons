@@ -73,3 +73,37 @@ class EmployeeExpenseLine(models.Model):
                     },
                 },
             }
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
+        if not is_manager:
+            for vals in vals_list:
+                claim_id = vals.get('expense_claim')
+                if claim_id:
+                    claim = self.env['employee.expense.claim'].browse(claim_id)
+                    if claim.approval_status != 'draft':
+                        raise UserError(_(
+                            "You cannot add expense lines to a claim that has already been submitted."
+                        ))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
+        if not is_manager:
+            for line in self:
+                if line.expense_claim.approval_status != 'draft':
+                    raise UserError(_(
+                        "You cannot modify expense lines on a claim that has already been submitted."
+                    ))
+        return super().write(vals)
+
+    def unlink(self):
+        is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
+        if not is_manager:
+            for line in self:
+                if line.expense_claim.approval_status != 'draft':
+                    raise UserError(_(
+                        "You cannot delete expense lines on a claim that has already been submitted."
+                    ))
+        return super().unlink()

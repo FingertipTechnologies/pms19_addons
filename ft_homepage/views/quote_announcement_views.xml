@@ -47,9 +47,8 @@
                                  TEXT_MAX_LENGTH in ft_quote_announcement.py are
                                  the same number — change them together. -->
                             <field name="text_content" invisible="content_type != 'text'"
-                                   widget="ft_limited_text"
-                                   options="{'max_length': 300}"
-                                   placeholder="The quote or announcement text (max 300 characters, so it fits the Homepage panel without being cut off)..."/>
+                                   widget="html"
+                                   placeholder="Write the quote or announcement text here. Use bullet points or rich text formatting as needed..."/>
                             <field name="image" widget="image" invisible="content_type != 'image'"/>
                             <field name="video_file" widget="binary"
                                    filename="video_filename"

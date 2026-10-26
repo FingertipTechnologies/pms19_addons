@@ -50,6 +50,7 @@ Project Milestone Date Extension
         "data/ir_sequence_data.xml",
         "data/project_lifecycle_date_data.xml",
         "views/project_date_extension_views.xml",
+        "wizard/project_date_extension_decision_wizard_views.xml",
         "views/project_project_views.xml",
         "views/project_milestone_views.xml",
         "views/project_task_views.xml",

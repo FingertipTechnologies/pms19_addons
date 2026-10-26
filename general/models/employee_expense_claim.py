@@ -19,7 +19,7 @@ class EmployeeExpenseClaim(models.Model):
     department = fields.Many2one(
         'hr.department', string="Department")
     claim_date = fields.Date(
-        string="Claim Date", required=True, tracking=True)
+        string="Claim Requested Date", required=True, tracking=True)
 
     # Period
     expense_period_from = fields.Date(string="Expense Period From")
@@ -56,6 +56,8 @@ class EmployeeExpenseClaim(models.Model):
     approved_by = fields.Many2one(
         'res.users', string="Approved By")
     approved_date = fields.Date(string="Approved Date")
+    approved_amount = fields.Monetary(
+        string="Approved Amount", currency_field='currency_id', tracking=True)
 
     # Payment
     payment_status = fields.Selection(
@@ -66,6 +68,8 @@ class EmployeeExpenseClaim(models.Model):
         string="Payment Status", default='unpaid', tracking=True)
     paid_date = fields.Date(string="Paid Date")
     payment_reference = fields.Char(string="Payment Reference")
+    paid_amount = fields.Monetary(
+        string="Paid Amount", currency_field='currency_id', tracking=True)
 
     remarks = fields.Text(string="Remarks")
 
@@ -108,7 +112,35 @@ class EmployeeExpenseClaim(models.Model):
                     "Expense Period From cannot be after Expense "
                     "Period To."))
 
+    is_approver = fields.Boolean(
+        string="Is Approver", compute='_compute_is_approver')
+
+    def _compute_is_approver(self):
+        is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin()
+        for rec in self:
+            rec.is_approver = is_manager
+
+    def action_submit(self):
+        for rec in self:
+            if rec.approval_status != 'draft':
+                raise UserError(_("This claim has already been submitted and cannot be re-submitted."))
+            if not rec.expense_line_ids:
+                raise UserError(_("Please add at least one expense line before submitting."))
+            rec.approval_status = 'submitted'
+        return True
+
     def write(self, vals):
+        is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
+        if not is_manager:
+            for rec in self:
+                if rec.approval_status != 'draft':
+                    raise UserError(_(
+                        "You cannot modify an expense claim that has already been submitted."
+                    ))
+                if 'approval_status' in vals and vals['approval_status'] not in ('draft', 'submitted'):
+                    raise UserError(_(
+                        "Only an approver can approve, reject, or mark an expense claim as paid."
+                    ))
         res = super().write(vals)
         # Light automation when the user changes the status manually.
         if 'approval_status' in vals:
@@ -123,3 +155,13 @@ class EmployeeExpenseClaim(models.Model):
                     if rec.advance_id:
                         rec.advance_id._recompute_adjustment()
         return res
+
+    def unlink(self):
+        is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
+        if not is_manager:
+            for rec in self:
+                if rec.approval_status != 'draft':
+                    raise UserError(_(
+                        "You cannot delete an expense claim that has already been submitted."
+                    ))
+        return super().unlink()

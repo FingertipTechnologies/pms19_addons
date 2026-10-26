@@ -78,6 +78,18 @@ def _details_field(field_class, *args, **kwargs):
 class HrEmployeePublic(models.Model):
     _inherit = 'hr.employee.public'
 
+    # Editable profile photo. In core this related field is readonly, so a
+    # regular employee (who only ever sees hr.employee.public in the Employees
+    # app) could change their photo nowhere but the avatar menu's "My
+    # Preferences". readonly=False makes the widget editable; write() below
+    # intercepts the value and stores it on hr.employee with sudo, after the
+    # same own-record / HR check as the personal details, so the ORM never
+    # tries to write hr.employee as the employee (no ACL there). The form
+    # keeps the widget readonly for anybody else's record.
+    image_1920 = fields.Image(
+        "Image", related='employee_id.image_1920', compute_sudo=True,
+        readonly=False)
+
     can_access_personal_details = fields.Boolean(
         compute='_compute_can_access_personal_details',
         help="True when the current user is this employee, an HR Officer or an administrator.")
@@ -239,7 +251,9 @@ class HrEmployeePublic(models.Model):
             fname: vals.pop(fname) for fname in list(vals)
             if fname in DETAIL_LINE_FIELDS
         }
-        if detail_vals or line_vals:
+        has_image = 'image_1920' in vals
+        image = vals.pop('image_1920', False)
+        if detail_vals or line_vals or has_image:
             # ACL + record rules (own record for employees, all for HR/admin) ...
             self.check_access('write')
             # ... and an explicit ownership check, independent of the rules.
@@ -253,10 +267,27 @@ class HrEmployeePublic(models.Model):
                 self.env['hr.employee'].sudo().browse(self.ids).write(employee_vals)
             for fname, commands in line_vals.items():
                 self._write_personal_detail_lines(fname, commands)
+            if has_image:
+                self._write_profile_image(image)
             self.invalidate_recordset()
         if vals:
             return super().write(vals)
         return True
+
+    def _write_profile_image(self, image):
+        """Store a new profile photo on hr.employee (sudo; access was checked
+        by write()).
+
+        When the employee changes their OWN photo, the linked user's avatar
+        is updated as well, exactly as "My Preferences" would do, so the
+        chatter, the top-right avatar and the employee card all agree. HR
+        changing somebody else's photo leaves that person's user avatar
+        alone, as core does.
+        """
+        self.env['hr.employee'].sudo().browse(self.ids).write({'image_1920': image})
+        own = self.filtered(lambda emp: emp.user_id and emp.user_id == self.env.user)
+        if own:
+            own.user_id.sudo().write({'image_1920': image})
 
     def _write_personal_detail_lines(self, fname, commands):
         """Apply x2many commands on family / reference lines as the current
