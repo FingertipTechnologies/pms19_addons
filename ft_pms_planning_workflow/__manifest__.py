@@ -1,6 +1,11 @@
 {
     'name': 'PMS Planning & Stage Workflow',
-    'version': '19.0.1.16.0',
+    # 19.0.1.21.0: task-level approval (Approve / Reject / Reset) is AMC-only;
+    #   Implementation / General tasks are refused and the form hides it.
+    # 19.0.1.22.0: AMC "To Approve" task filter lists only completed tasks.
+    # 19.0.1.23.0: a timesheet reviewer may approve / reject their own lines
+    #   (a PM logs time on their own project); the self-review block is gone.
+    'version': '19.0.1.23.0',
     'summary': 'Project Planner, weekly Task Planner, Avg. Daily Effort and '
                'gated project stage workflow with approvals and notifications.',
     'description': """
@@ -40,6 +45,7 @@ PMS Planning & Stage Workflow
         'views/res_config_settings_views.xml',
         'views/planner_menus.xml',
         'views/project_task_amc_approval_views.xml',
+        'views/timesheet_approval_views.xml',
         'data/mail_template_data.xml',
         'data/ir_cron_data.xml',
     ],

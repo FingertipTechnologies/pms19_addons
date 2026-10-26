@@ -5,3 +5,4 @@ access_ft_pms_stage_approval_user,ft.pms.stage.approval user,model_ft_pms_stage_
 access_ft_pms_stage_approval_admin,ft.pms.stage.approval admin,model_ft_pms_stage_approval,base.group_system,1,1,1,1
 access_ft_pms_amc_reject_wizard_user,ft.pms.amc.reject.wizard user,model_ft_pms_amc_reject_wizard,base.group_user,1,1,1,0
 access_ft_pms_stage_approval_reject_wizard,ft.pms.stage.approval.reject.wizard admin,model_ft_pms_stage_approval_reject_wizard,base.group_system,1,1,1,0
+access_ft_timesheet_reject_wizard_user,ft.timesheet.reject.wizard user,model_ft_timesheet_reject_wizard,base.group_user,1,1,1,0

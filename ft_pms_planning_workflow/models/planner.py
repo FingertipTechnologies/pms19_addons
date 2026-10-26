@@ -356,6 +356,19 @@ class FtPmsPlanner(models.AbstractModel):
         mode = 'employee' if filters.get('mode') == 'employee' else 'cumulative'
         Task = self.env['project.task']
         Project = self.env['project.project']
+        status_filter = (
+            'completed'
+            if filters.get('status_filter') == 'completed'
+            else 'all'
+        )
+
+        # "Completed" toggle (same rule as the Task list "Closed" filter and
+        # the Task Planner): only tasks in a final stage feed the bars, the
+        # employee rows and the unscheduled count; projects without such a
+        # task in the range drop out. Collision load stays the TOTAL workload.
+        status_domain = []
+        if status_filter == 'completed':
+            status_domain = [('stage_id', 'in', Task._ft_final_stage_ids())]
 
         days = []
         day = date_from
@@ -368,7 +381,7 @@ class FtPmsPlanner(models.AbstractModel):
         # --- 1st search: the visible plan (normal record rules) ------------
         tasks = Task.search(
             self._pwf_task_base_domain(project_ids, pm_ids, resource_ids)
-            + [('user_ids', '!=', False)] + scheduled)
+            + [('user_ids', '!=', False)] + scheduled + status_domain)
         plan = self._pwf_allocate(
             tasks, days_in_range,
             only_users=set(resource_ids) if resource_ids else None)
@@ -387,7 +400,8 @@ class FtPmsPlanner(models.AbstractModel):
         if projects:
             groups = Task._read_group(
                 self._pwf_task_base_domain(projects.ids, None, resource_ids)
-                + [('sprint_id', '=', False), ('date_deadline', '=', False)],
+                + [('sprint_id', '=', False), ('date_deadline', '=', False)]
+                + status_domain,
                 ['project_id'], ['__count'])
             unscheduled = {project.id: count for project, count in groups}
 
@@ -750,8 +764,9 @@ class FtPmsPlanner(models.AbstractModel):
         if first_move and deadline_before:
             vals['pwf_original_deadline'] = deadline_before
         # Normal ft_sprint_management write: the deadline follows the week
-        # (target Sunday 23:59 local).
-        task.write(vals)
+        # (target Sunday 23:59 local). The flag stops the generic deadline
+        # log (task_week_move.py) from duplicating the row created below.
+        task.with_context(pwf_skip_deadline_log=True).write(vals)
         new_deadline = task.date_deadline
 
         # sudo: the log is read-only for everyone (no create ACL); the access

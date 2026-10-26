@@ -74,6 +74,15 @@
                                 title="Adds one compact row per allocated resource under each project, coloured by that person's total load across all projects"
                                 t-on-click="() => this.setFilter('mode', 'employee')">Employee-wise</button>
                     </div>
+                    <button type="button" class="btn btn-sm"
+                            t-att-class="state.filters.status_filter === 'completed' ? 'btn-primary' : 'btn-outline-secondary'"
+                            title="Show only completed tasks (and their projects); click again to show all tasks"
+                            t-on-click="() => this.setFilter(
+                                'status_filter',
+                                state.filters.status_filter === 'completed' ? 'all' : 'completed'
+                            )">
+                        Completed
+                    </button>
                     <i t-if="state.loading" class="fa fa-circle-o-notch fa-spin text-muted" title="Loading"/>
                     <t t-if="state.data">
                         <t t-call="ft_pms_planning_workflow.PlannerLegend">

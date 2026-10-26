@@ -195,6 +195,7 @@ export class ProjectPlanner extends Component {
             "project_ids",
             "pm_ids",
             "resource_ids",
+            "status_filter",
             "mode",
         ]);
         let rangeKey = RANGE_KEYS.has(initial.range_key) ? initial.range_key : DEFAULT_RANGE_KEY;
@@ -212,6 +213,7 @@ export class ProjectPlanner extends Component {
                 pm_ids: toIdList(initial.pm_ids),
                 resource_ids: toIdList(initial.resource_ids),
                 mode: initial.mode === "employee" ? "employee" : "cumulative",
+                status_filter: initial.status_filter === "completed" ? "completed" : "all",
             },
             // Custom date inputs: edited locally, applied when both are valid.
             customFrom: dateFrom || "",
@@ -239,6 +241,7 @@ export class ProjectPlanner extends Component {
             date_to: isCustom ? f.date_to : false,
             project_ids: [...f.project_ids],
             pm_ids: [...f.pm_ids],
+            status_filter: f.status_filter,
             resource_ids: [...f.resource_ids],
             mode: f.mode,
         };
@@ -527,6 +530,7 @@ export class ProjectPlanner extends Component {
             resource_ids: userId ? [userId] : [],
             focus_date: focusDate || false,
             range_key: f.range_key,
+            status_filter: f.status_filter,
             mode: f.mode,
         };
         this.actionService.doAction({

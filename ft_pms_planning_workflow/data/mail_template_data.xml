@@ -5,7 +5,8 @@
             <field name="name">PMS: Project Stage Changed</field>
             <field name="model_id" ref="project.model_project_project"/>
             <field name="subject">{{ object.name }}: project now in {{ ctx.get('pwf_new_stage_code') or object.stage_id.name }} stage</field>
-            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="email_from">Support Fingertip &lt;support@fingertipplus.com&gt;</field>
+            <field name="reply_to">support@fingertipplus.com</field>
             <field name="use_default_to" eval="False"/>
             <field name="description">Sent after a successful project stage change to the customer, the Project Manager and configured stakeholders.</field>
             <field name="body_html" type="html">

@@ -133,6 +133,14 @@
                 <field name="ft_billing_status"/>
             </xpath>
 
+            <!-- Age (Days) next to the Deadline in the right-hand column.
+                 Anchored after the deadline's wrapper div (the label/div pair
+                 the base form renders Deadline with), so it gets its own
+                 label row. Read-only: computed, not stored. -->
+            <xpath expr="//div[@id='date_deadline_and_recurring_task']" position="after">
+                <field name="ft_task_age" string="Age (Days)" readonly="1"/>
+            </xpath>
+
         </field>
     </record>
 
@@ -210,6 +218,8 @@
                        widget="float_time" sum="Total Estimated" optional="show"/>
                 <field name="ft_total_hours_taken" string="Actual Hours"
                        widget="float_time" sum="Total Actual" optional="show"/>
+                <field name="ft_billable_hours" string="Billable Hours"
+                       widget="float_time" sum="Total Billable" optional="show"/>
                 <field name="ft_billing_status" string="Billing Status"
                        optional="show"/>
             </field>
@@ -240,6 +250,10 @@
             </field>
             <field name="date_deadline" position="attributes">
                 <attribute name="optional">show</attribute>
+            </field>
+            <!-- Age (Days): non-stored compute, so no sum and not sortable. -->
+            <field name="date_deadline" position="after">
+                <field name="ft_task_age" string="Age (Days)" optional="show"/>
             </field>
         </field>
     </record>

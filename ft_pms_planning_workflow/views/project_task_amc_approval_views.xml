@@ -2,10 +2,14 @@
 <odoo>
 
     <!-- ================================================================
-         AMC task approval.
+         Task approval (AMC projects only).
 
-         Tasks of AMC projects are approved (or rejected) once they reach
-         a final stage. The approval is shown and actioned on the All
+         Only tasks of AMC projects (ft_project_type == 'amc') are approved
+         or rejected; Implementation and General projects do not use task
+         approval, so the form hides the buttons and the Approval section
+         on their tasks, and the backend refuses them (the list header
+         buttons cannot be hidden per record). Tasks are approved (or
+         rejected) in any stage - approving never changes the stage. The approval is shown and actioned on the All
          Tasks list (bulk, via list header buttons acting on the selected
          rows) and on the task form.
          ================================================================ -->
@@ -30,39 +34,46 @@
                 </header>
             </xpath>
             <xpath expr="//field[@name='stage_id']" position="after">
-                <field name="ft_project_type" column_invisible="True"/>
-                <field name="pwf_amc_is_completed" column_invisible="True"/>
+                <field name="ft_project_type" column_invisible="1"/>
+                <!-- Per-cell: empty on non-AMC rows (old stored values too). -->
                 <field name="pwf_amc_approval" string="Approval"
                        widget="badge" readonly="1" optional="show"
+                       invisible="ft_project_type != 'amc'"
                        decoration-success="pwf_amc_approval == 'approved'"
-                       decoration-danger="pwf_amc_approval == 'rejected'"
-                       invisible="ft_project_type != 'amc'"/>
+                       decoration-danger="pwf_amc_approval == 'rejected'"/>
             </xpath>
         </field>
     </record>
 
-    <!-- Task form: header buttons + read-only AMC Approval info group. -->
+    <!-- Task form: header buttons + read-only Approval info group. -->
     <record id="view_task_form_pwf_amc_approval" model="ir.ui.view">
         <field name="name">project.task.form.pwf.amc.approval</field>
         <field name="model">project.task</field>
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
+                <!-- Two variants of Approve: the second warns when timesheet
+                     hours of the task still await the weekly timesheet
+                     approval (models/timesheet_approval.py). -->
                 <button name="action_pwf_amc_approve" type="object"
                         string="Approve" class="btn-primary"
-                        invisible="ft_project_type != 'amc' or not pwf_amc_can_approve or not pwf_amc_is_completed or pwf_amc_approval == 'approved'"/>
+                        invisible="not pwf_amc_can_approve or pwf_amc_approval == 'approved' or ft_pending_hours &gt; 0 or ft_project_type != 'amc'"/>
+                <button name="action_pwf_amc_approve" type="object"
+                        string="Approve" class="btn-primary"
+                        confirm="This task still has timesheet hours pending weekly approval. Approve the task anyway?"
+                        invisible="not pwf_amc_can_approve or pwf_amc_approval == 'approved' or ft_pending_hours &lt;= 0 or ft_project_type != 'amc'"/>
                 <button name="action_pwf_amc_reject" type="object"
                         string="Reject"
-                        invisible="ft_project_type != 'amc' or not pwf_amc_can_approve or not pwf_amc_is_completed or pwf_amc_approval == 'rejected'"/>
+                        invisible="not pwf_amc_can_approve or pwf_amc_approval == 'rejected' or ft_project_type != 'amc'"/>
                 <button name="action_pwf_amc_reset" type="object"
                         string="Reset Approval"
-                        invisible="ft_project_type != 'amc' or not pwf_amc_can_approve or not pwf_amc_is_completed or not pwf_amc_approval"/>
+                        invisible="not pwf_amc_can_approve or not pwf_amc_approval or ft_project_type != 'amc'"/>
             </xpath>
             <xpath expr="//notebook" position="before">
-                <field name="ft_project_type" invisible="1"/>
                 <field name="pwf_amc_can_approve" invisible="1"/>
-                <field name="pwf_amc_is_completed" invisible="1"/>
-                <group string="AMC Approval" name="pwf_amc_approval_section"
+                <field name="ft_project_type" invisible="1"/>
+                <!-- AMC projects only. -->
+                <group string="Approval" name="pwf_amc_approval_section"
                        invisible="ft_project_type != 'amc'">
                     <group>
                         <field name="pwf_amc_approval" string="Approval"
@@ -71,6 +82,10 @@
                                decoration-danger="pwf_amc_approval == 'rejected'"/>
                         <field name="pwf_amc_rejection_reason" readonly="1"
                                invisible="pwf_amc_approval != 'rejected'"/>
+                        <!-- Review the timesheets before approving the task. -->
+                        <field name="ft_pending_hours" string="Timesheet Hours Pending Approval"
+                               widget="float_time" readonly="1"
+                               decoration-warning="ft_pending_hours &gt; 0"/>
                     </group>
                     <group>
                         <field name="pwf_amc_approved_by_id" readonly="1"
@@ -89,7 +104,7 @@
         <field name="name">ft.pms.amc.reject.wizard.form</field>
         <field name="model">ft.pms.amc.reject.wizard</field>
         <field name="arch" type="xml">
-            <form string="Reject AMC Tasks">
+            <form string="Reject Tasks">
                 <group>
                     <field name="reason" required="1"
                            placeholder="Why are these tasks rejected?"/>
@@ -111,9 +126,7 @@
         </field>
     </record>
 
-    <!-- All Tasks search: AMC approval filters and Group By.
-         Domains go through project_id.ft_project_type (stored on the
-         project) rather than the task's non-stored related field. -->
+    <!-- All Tasks search: approval filters and Group By. -->
     <record id="view_task_search_pwf_amc_approval" model="ir.ui.view">
         <field name="name">project.task.search.pwf.amc.approval</field>
         <field name="model">project.task</field>
@@ -121,12 +134,21 @@
         <field name="arch" type="xml">
             <filter name="closed_on" position="after">
                 <separator/>
-                <filter string="AMC: To Approve" name="pwf_amc_to_approve"
-                        domain="[('project_id.ft_project_type', '=', 'amc'), ('pwf_amc_approval', '=', False), ('pwf_amc_is_completed', '=', True)]"/>
-                <filter string="AMC: Approved" name="pwf_amc_approved"
-                        domain="[('project_id.ft_project_type', '=', 'amc'), ('pwf_amc_approval', '=', 'approved')]"/>
-                <filter string="AMC: Rejected" name="pwf_amc_rejected"
-                        domain="[('project_id.ft_project_type', '=', 'amc'), ('pwf_amc_approval', '=', 'rejected')]"/>
+                <!-- To Approve = AMC, completed, not yet reviewed
+                     (projects not CLOSED). Approval itself is still
+                     allowed in any stage; this filter only lists
+                     completed tasks. -->
+                <filter string="To Approve" name="pwf_amc_to_approve"
+                        domain="[
+                            ('pwf_amc_approval', '=', False),
+                            ('pwf_amc_is_completed', '=', True),
+                            ('project_id.ft_project_type', '=', 'amc'),
+                            ('project_id.stage_id.name', '!=', 'CLOSED')
+                        ]"/>
+                <filter string="Approved" name="pwf_amc_approved"
+                        domain="[('pwf_amc_approval', '=', 'approved')]"/>
+                <filter string="Rejected" name="pwf_amc_rejected"
+                        domain="[('pwf_amc_approval', '=', 'rejected')]"/>
             </filter>
             <filter name="stage" position="after">
                 <filter string="Approval" name="groupby_pwf_amc_approval"

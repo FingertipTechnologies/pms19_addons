@@ -4,6 +4,15 @@
         <field name="model">project.task</field>
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
+            <!-- Reopen for Rework: the only way out of a final stage. The
+                 server refuses every other move out of Completed, and the
+                 button's method refuses anyone but the PM. -->
+            <xpath expr="//header/field[@name='stage_id']" position="before">
+                <field name="ft_is_in_final_stage" invisible="1"/>
+                <button name="action_ft_open_reopen_wizard" type="object"
+                        string="Reopen for Rework" class="btn-secondary"
+                        invisible="not ft_is_in_final_stage"/>
+            </xpath>
             <field name="partner_id" position="after">
                 <field name="task_type"/>
                 <!-- The project's type, for the Task Source requirements
@@ -29,9 +38,32 @@
             <!-- Deadline is a core field, so it is marked required here rather
                  than redeclared. Without one a task can never be judged on time
                  or late: it is excluded from On-Time Delivery and counted as
-                 Delivered Without Deadline. -->
+                 Delivered Without Deadline. Not required on a COMPLETED task:
+                 the form validates required fields before any header button
+                 runs, so an old completed task without a deadline could not
+                 open "Reopen for Rework" (which sets the deadline itself)
+                 without first being given one. -->
             <xpath expr="//field[@name='date_deadline']" position="attributes">
-                <attribute name="required">1</attribute>
+                <attribute name="required">not ft_is_in_final_stage</attribute>
+                <!-- Same-day types (every type but User Story and Testing) are
+                     due the day they are created: once saved their Deadline is
+                     locked (write() refuses a change) for as long as the Task
+                     Type stays what was saved. Any change of Task Type unlocks
+                     it: the onchange clears the Deadline and the user chooses
+                     the new one (today for a same-day type, validated by
+                     write()). Editable on a new task so the today default
+                     shows and can be adjusted within today. force_save: the
+                     restored deadline when the saved type is chosen again must
+                     still reach the server while the field is readonly.
+                     Also readonly on a COMPLETED task, with or without a
+                     deadline: a completed task's deadline moves only through
+                     "Reopen for Rework" (write() refuses a direct change), so
+                     the button is the one place to set it. -->
+                <attribute name="readonly">ft_deadline_locked or ft_is_in_final_stage</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='date_deadline']" position="before">
+                <field name="ft_deadline_locked" invisible="1"/>
             </xpath>
             <!-- Keep the long Text field in the wider left-hand details group;
                  the nested custom group on the right compresses Text widgets. -->
@@ -171,15 +203,17 @@
          different menus and people look for "Module" in both: this one puts it
          in the column picker (the toggle at the right of the header row),
          while the search view below puts it in the Filters / Group By dropdown
-         next to the search box. optional="show" so it is visible straight away;
-         it can be switched off per user from the same picker. -->
+         next to the search box. Module, Worked By and Completed By are
+         optional="hide": they are not default columns of the task list (they
+         stay filterable / groupable from the search view below) but can still
+         be switched on per user from the column picker. -->
     <record id="view_task_list_module_column" model="ir.ui.view">
         <field name="name">project.task.list.module.column</field>
         <field name="model">project.task</field>
         <field name="inherit_id" ref="project.project_task_view_tree_main_base"/>
         <field name="arch" type="xml">
             <field name="project_id" position="after">
-                <field name="module_id" string="Module" optional="show"/>
+                <field name="module_id" string="Module" optional="hide"/>
                 <field name="task_type"
                    string="Task Type"
                    optional="show"/>
@@ -198,12 +232,12 @@
                 <field name="ft_worked_by_id"
                     string="Worked By"
                     widget="many2one_avatar_user"
-                    optional="show"/>
+                    optional="hide"/>
 
                 <field name="ft_completed_by_id"
                     string="Completed By"
                     widget="many2one_avatar_user"
-                    optional="show"/>
+                    optional="hide"/>
             </field>
         </field>
     </record>
@@ -233,6 +267,98 @@
             <filter name="stage" position="after">
                 <filter string="Module" name="groupby_module"
                         context="{'group_by': 'module_id'}"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- Task list: core columns that are not default columns here.
+
+         Next Activity, Tags and Priority are taken out of the default columns
+         with optional="hide" rather than removed: the fields stay loaded and
+         each one can still be switched back on per user from the column
+         picker. Time Spent (hr_timesheet effective_hours) duplicates Actual
+         Hours (ft_task_hours_tracker), which stays, so it is made
+         column_invisible with optional removed: not shown and not offered in
+         the picker.
+
+         Extension of project.view_task_tree2, so it reaches the project task
+         list and the My Tasks / All Tasks lists that are primary children of
+         it. activity_ids is added by project_task_view_tree_base, so it is not
+         reachable from an extension of project_task_view_tree_main_base.
+
+         Time Spent: only the visible timesheet_uom column is targeted. The
+         column_invisible copy of effective_hours is read by that column's own
+         invisible expression and must stay. -->
+    <record id="view_task_tree2_hide_default_columns" model="ir.ui.view">
+        <field name="name">project.task.list.hide.default.columns</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='activity_ids']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='tag_ids']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='priority']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <!-- Time Spent: fully hidden, also out of the optional-columns
+                 picker (Odoo omits column_invisible fields from it). -->
+            <xpath expr="//field[@name='effective_hours'][@widget='timesheet_uom']"
+                   position="attributes">
+                <attribute name="column_invisible">True</attribute>
+                <attribute name="optional"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Search: the columns hidden above stay findable from the search box.
+         Tags (field + Group By), Priority (Group By) and Module (field +
+         Group By, above) already exist; added here are what was missing:
+         Priority as a search field and filter, Worked By / Completed By as
+         search fields and Group By (both plain stored Many2one), and the core
+         activity filters, which project ships invisible="1", made visible. -->
+    <record id="view_task_search_hidden_columns" model="ir.ui.view">
+        <field name="name">project.task.search.hidden.columns</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form"/>
+        <field name="arch" type="xml">
+            <field name="stage_id" position="after">
+                <field name="priority"/>
+                <field name="ft_worked_by_id" string="Worked By"/>
+                <field name="ft_completed_by_id" string="Completed By"/>
+            </field>
+            <filter name="unassigned" position="after">
+                <filter string="High Priority" name="ft_high_priority"
+                        domain="[('priority', 'in', ['2', '3'])]"/>
+            </filter>
+            <!-- Activity filters: un-hide the core entries and their separators. -->
+            <xpath expr="//filter[@name='filter_activities_my']/preceding-sibling::separator[1]"
+                   position="attributes">
+                <attribute name="invisible"/>
+            </xpath>
+            <xpath expr="//filter[@name='activities_overdue']/preceding-sibling::separator[1]"
+                   position="attributes">
+                <attribute name="invisible"/>
+            </xpath>
+            <filter name="filter_activities_my" position="attributes">
+                <attribute name="invisible"/>
+            </filter>
+            <filter name="activities_overdue" position="attributes">
+                <attribute name="invisible"/>
+            </filter>
+            <filter name="activities_today" position="attributes">
+                <attribute name="invisible"/>
+            </filter>
+            <filter name="activities_upcoming_all" position="attributes">
+                <attribute name="invisible"/>
+            </filter>
+            <filter name="stage" position="after">
+                <filter string="Worked By" name="groupby_ft_worked_by"
+                        context="{'group_by': 'ft_worked_by_id'}"/>
+                <filter string="Completed By" name="groupby_ft_completed_by"
+                        context="{'group_by': 'ft_completed_by_id'}"/>
             </filter>
         </field>
     </record>

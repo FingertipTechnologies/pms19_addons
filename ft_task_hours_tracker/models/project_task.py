@@ -1,4 +1,25 @@
-from odoo import models, fields, api
+import logging
+import math
+from datetime import datetime, time, timedelta
+
+import pytz
+
+from odoo import models, fields, api, _
+from odoo.fields import Domain
+
+from odoo.addons.bt_project_customization.models.project_task import (
+    COMPLETED_STAGE_NAMES,
+)
+
+_logger = logging.getLogger(__name__)
+
+# A task whose Deadline (local calendar day) lies MORE than this many days
+# before today is treated as abandoned: the daily cron moves it to its
+# project's Completed stage (once — see ft_auto_completed). Time is then
+# refused only because the task is completed; reopening it lifts that.
+FT_OVERDUE_AUTO_COMPLETE_DAYS = 30
+# Tasks handled between two commits of the auto-complete cron.
+FT_AUTO_COMPLETE_BATCH_SIZE = 100
 
 # Map a job-position name (lower-cased, stripped) to an hours bucket.
 # Any position whose name starts with "trainee" is classified as 'trainee'.
@@ -165,6 +186,33 @@ class ProjectTask(models.Model):
         store=False,
         help='True when Trainee Hours exceeds the task time limit.',
     )
+    # Not stored: the value changes every day without the record changing, so
+    # a stored column would be stale by the next morning. Computed on read in
+    # the reader's timezone instead. The search method makes it filterable;
+    # sorting a list on it is not possible (non-stored).
+    ft_task_age = fields.Integer(
+        string='Age (Days)',
+        compute='_compute_ft_task_age',
+        search='_search_ft_task_age',
+        store=False,
+        readonly=True,
+        help='Whole calendar days since the task was created, counted in '
+             'your timezone. 0 on the day of creation.',
+    )
+    # Set by _cron_ft_auto_complete_overdue_tasks when it moves the task to
+    # Completed, and never reset. The cron skips flagged tasks, so a task a
+    # user reopens after auto-completion stays open (and takes time again)
+    # instead of being closed again the next morning.
+    ft_auto_completed = fields.Boolean(
+        string='Auto-completed (overdue)',
+        copy=False,
+        readonly=True,
+        help='Set when the daily overdue cron moved this task to Completed '
+             'because its Deadline had passed more than 30 days earlier. A '
+             'task flagged this way is never auto-completed again, so once '
+             'it is reopened it stays open and timesheets can be logged on '
+             'it.',
+    )
 
     @api.model
     def _ft_job_bucket(self, job):
@@ -253,3 +301,226 @@ class ProjectTask(models.Model):
             # per-role (Dev / QA / PM / BA / Trainee) 16h limits apply, so the
             # task's combined total across roles is never flagged as exceeded.
             task.ft_hours_exceeded = False
+
+    # ------------------------------------------------------------------
+    # Task age
+    # ------------------------------------------------------------------
+    @api.model
+    def _ft_local_midnight_utc(self, day):
+        """Naive UTC datetime at which local calendar ``day`` starts.
+
+        Local = the environment's timezone (context tz, else the user's, else
+        UTC), the same one ``fields.Date.context_today`` and ``_ft_local_date``
+        read, so domains built from it agree with the computed values.
+        """
+        tz = self.env.tz
+        local = tz.localize(datetime.combine(day, time.min))
+        return local.astimezone(pytz.utc).replace(tzinfo=None)
+
+    @api.depends('create_date')
+    @api.depends_context('tz', 'uid')
+    def _compute_ft_task_age(self):
+        today = fields.Date.context_today(self)
+        for task in self:
+            created = task._ft_local_date(task.create_date)
+            task.ft_task_age = max((today - created).days, 0) if created else 0
+
+    def _search_ft_task_age(self, operator, value):
+        """Translate an age condition into a create_date range.
+
+        age >= n  <=>  created on/before local day (today - n)
+                  <=>  create_date <  start of local day (today - n + 1)
+        age <= n  <=>  create_date >= start of local day (today - n)
+        """
+        today = fields.Date.context_today(self)
+
+        def day_start(days_ago):
+            return self._ft_local_midnight_utc(today - timedelta(days=days_ago))
+
+        if operator == 'in':
+            ages = {int(v) for v in value if v not in (False, None)}
+            if not ages:
+                return Domain.FALSE
+            return Domain.OR([
+                Domain('create_date', '>=', day_start(age))
+                & Domain('create_date', '<', day_start(age - 1))
+                for age in ages
+            ])
+        if operator not in ('<', '<=', '>', '>=') or value in (False, None):
+            return NotImplemented
+        if operator == '>':
+            operator, value = '>=', math.floor(value) + 1
+        elif operator == '<':
+            operator, value = '<=', math.ceil(value) - 1
+        elif operator == '>=':
+            value = math.ceil(value)
+        else:
+            value = math.floor(value)
+        if operator == '>=':
+            return Domain('create_date', '<', day_start(value - 1))
+        return Domain('create_date', '>=', day_start(value))
+
+    # ------------------------------------------------------------------
+    # Long-overdue tasks: one-time auto-completion
+    # ------------------------------------------------------------------
+    def _ft_is_long_overdue(self):
+        """True when the Deadline's local day is more than
+        FT_OVERDUE_AUTO_COMPLETE_DAYS days before today (local)."""
+        self.ensure_one()
+        deadline = self._ft_local_date(self.date_deadline)
+        if not deadline:
+            return False
+        today = fields.Date.context_today(self)
+        return (today - deadline).days > FT_OVERDUE_AUTO_COMPLETE_DAYS
+
+    @api.model
+    def _ft_long_overdue_cutoff(self):
+        """UTC instant such that ``date_deadline < cutoff`` is exactly
+        ``_ft_is_long_overdue()`` in the current timezone.
+
+        Overdue by more than N days = local deadline day <= today - (N + 1)
+        = deadline strictly before local midnight starting day today - N.
+        """
+        today = fields.Date.context_today(self)
+        return self._ft_local_midnight_utc(
+            today - timedelta(days=FT_OVERDUE_AUTO_COMPLETE_DAYS))
+
+    @api.model
+    def _ft_cron_tz_env(self):
+        """Give a cron (run as OdooBot, which has no timezone) a calendar.
+
+        Without one, "today" and the deadline's day would be read in UTC while
+        users see them in their own zone. Falls back to the company's
+        timezone, then to the main administrator's.
+        """
+        tz = (self.env.context.get('tz') or self.env.user.tz
+              or self.env.company.partner_id.tz)
+        if not tz:
+            admin = self.env.ref('base.user_admin', raise_if_not_found=False)
+            tz = admin and admin.sudo().tz
+        return self.with_context(tz=tz) if tz else self
+
+    def _ft_completed_stage_for_project(self, cache):
+        """The project's own Completed stage, or an empty recordset.
+
+        A stage named in COMPLETED_STAGE_NAMES that is attached to the task's
+        project (project_ids) and is not a personal stage; lowest sequence
+        wins if a project somehow carries several. Archived stages are not
+        candidates. ``cache`` maps project id -> stage across one cron run.
+        """
+        self.ensure_one()
+        project = self.project_id
+        if project.id not in cache:
+            Stage = self.env['project.task.type'].with_context(lang='en_US')
+            cache[project.id] = Stage.search([
+                ('name', 'in', list(COMPLETED_STAGE_NAMES)),
+                ('user_id', '=', False),
+                ('project_ids', 'in', project.ids),
+            ], order='sequence, id', limit=1)
+        return cache[project.id]
+
+    def _ft_auto_complete_long_overdue(self, final_ids, stage_cache):
+        """Move one long-overdue task to Completed. Returns 'done',
+        'skipped' or 'failed'; never raises."""
+        self.ensure_one()
+        task = self
+        # Re-checked per task: the candidate list may be stale by now (a user
+        # completed it, moved the deadline, cancelled it...).
+        if (not task.exists() or not task.active or not task.project_id
+                or task.ft_auto_completed
+                or task.stage_id.id in final_ids
+                or task.state == '1_canceled'
+                or not task._ft_is_long_overdue()):
+            return 'skipped'
+        stage = task._ft_completed_stage_for_project(stage_cache)
+        if not stage:
+            _logger.warning(
+                "Auto-complete overdue tasks: project %s (id %s) has no "
+                "Completed stage; task %s (id %s) left in stage %r",
+                task.project_id.display_name, task.project_id.id,
+                task.name, task.id, task.stage_id.name)
+            return 'skipped'
+        deadline = task._ft_local_date(task.date_deadline)
+        try:
+            with self.env.cr.savepoint():
+                task.with_context(ft_auto_complete_overdue=True).write(
+                    {'stage_id': stage.id, 'ft_auto_completed': True})
+                task.message_post(
+                    body=_(
+                        "Automatically moved to %(stage)s: the deadline "
+                        "(%(deadline)s) passed more than %(days)s days ago. "
+                        "Timesheets can no longer be logged on this task "
+                        "unless it is reopened.",
+                        stage=stage.name,
+                        deadline=deadline,
+                        days=FT_OVERDUE_AUTO_COMPLETE_DAYS,
+                    ),
+                    subtype_xmlid='mail.mt_note',
+                )
+        except Exception:  # noqa: BLE001 - one bad task must not stop the run
+            _logger.exception(
+                "Auto-complete overdue tasks: could not complete task %s "
+                "(id %s)", task.name, task.id)
+            return 'failed'
+        return 'done'
+
+    @api.model
+    def _cron_ft_auto_complete_overdue_tasks(
+            self, batch_size=FT_AUTO_COMPLETE_BATCH_SIZE):
+        """Daily: complete every task more than 30 days past its Deadline.
+
+        Runs as superuser (sudo) on purpose. The only stage-move guards on a
+        plain ``stage_id`` write are bt_project_customization's
+        _check_planned_stage_write and _check_user_story_stage_move, which
+        restrict *which person* may make a move (e.g. only QA may sign a User
+        Story off from Testing) and both exempt env.su. The cron is not a
+        person, so those checks have nothing to judge. Everything else in
+        the write chain still runs: date_end / state=1_done / Completed By
+        (OdooBot) / work end stamps, chatter tracking of the stage change.
+
+        Sweeps every match, so tasks that were already overdue when this was
+        installed are caught on the first run. Each task is completed at most
+        once: the move sets ``ft_auto_completed`` and flagged tasks are left
+        out of the search, so a user who reopens one (to log more time on it)
+        is not overruled by the next run. Commits every ``batch_size``
+        tasks through the cron progress API; if the run's time budget is
+        exhausted, the remaining count makes Odoo reschedule it right away.
+        Each task is written inside its own savepoint, so one failure is
+        logged and the rest of the batch carries on.
+        """
+        Task = self.sudo()._ft_cron_tz_env()
+        final_ids = Task._ft_final_stage_ids()
+        domain = [
+            ('project_id', '!=', False),
+            ('is_template', '=', False),
+            ('date_deadline', '!=', False),
+            ('date_deadline', '<', Task._ft_long_overdue_cutoff()),
+            ('stage_id', 'not in', final_ids),
+            ('state', '!=', '1_canceled'),
+            ('ft_auto_completed', '=', False),
+        ]
+        task_ids = Task.search(domain, order='date_deadline, id').ids
+        in_cron = bool(self.env.context.get('cron_id'))
+        IrCron = self.env['ir.cron']
+        if in_cron:
+            IrCron._commit_progress(remaining=len(task_ids))
+        counts = {'done': 0, 'skipped': 0, 'failed': 0}
+        stage_cache = {}
+        pending = task_ids
+        while pending:
+            batch, pending = pending[:batch_size], pending[batch_size:]
+            for task in Task.browse(batch):
+                outcome = task._ft_auto_complete_long_overdue(
+                    final_ids, stage_cache)
+                counts[outcome] += 1
+            if in_cron:
+                time_left = IrCron._commit_progress(
+                    len(batch), remaining=len(pending))
+                if pending and time_left <= 0:
+                    break
+        _logger.info(
+            "Auto-complete overdue tasks: %s candidate(s); %s completed, "
+            "%s skipped, %s failed, %s left for the next run",
+            len(task_ids), counts['done'], counts['skipped'],
+            counts['failed'], len(pending))
+        return counts

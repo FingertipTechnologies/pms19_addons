@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-"""AMC task approval.
+"""Task approval (AMC projects only).
 
-A completed task of an AMC project is approved or rejected by an approver:
+A task of an AMC project (project_id.ft_project_type == 'amc'), at any
+stage, is approved or rejected by an approver:
 the project's Project Manager (project.user_id), anybody whose job position
 is one of PM_JOB_NAMES or a Team Lead role (_PWF_AMC_LEAD_JOB_NAMES), or an
 Administrator (base.group_system).
@@ -11,6 +12,13 @@ form, list multi-edit, import and RPC - and are skipped only under
 superuser. Approvers frequently have no write access on the task, so the
 buttons (action_pwf_amc_*) validate as the real user and then write via
 sudo, stamping the real user as the approver.
+
+Implementation and General projects do not use task-level approval (their
+work is reviewed through the weekly timesheet approval only): approve /
+reject / reset and direct writes of the approval are refused on their tasks,
+and the form hides the buttons and the Approval section. Values already
+stored on such tasks (from when approval applied to every project type) are
+left untouched - no migration - but can no longer be changed.
 """
 from markupsafe import Markup
 
@@ -43,19 +51,22 @@ class ProjectTask(models.Model):
 
     pwf_amc_approval = fields.Selection(
         PWF_AMC_APPROVAL, string='Approval', tracking=True, copy=False, index=True,
-        help="Approval of a completed AMC task by the Project Manager.")
+        help="Approval of an AMC task (at any stage) by the Project Manager or another approver.")
     pwf_amc_approved_by_id = fields.Many2one(
         'res.users', string='Approved / Rejected By', readonly=True, copy=False)
     pwf_amc_approved_on = fields.Datetime(
         string='Approved / Rejected On', readonly=True, copy=False)
     pwf_amc_rejection_reason = fields.Text(string='Rejection Reason', copy=False)
+    # Informational only (and searchable): approval does NOT depend on it.
     pwf_amc_is_completed = fields.Boolean(
         string='Completed (Final Stage)', compute='_compute_pwf_amc_is_completed',
-        search='_search_pwf_amc_is_completed')
+        search='_search_pwf_amc_is_completed',
+        help="The task is in a final (completed) stage. Informational only: "
+             "tasks can be approved in any stage.")
     pwf_amc_can_approve = fields.Boolean(
         string='Can Approve', compute='_compute_pwf_amc_can_approve',
-        help="The current user may approve / reject this task now: it is an "
-             "AMC task, it is completed and the user is an approver.")
+        help="The current user may approve / reject this task: it belongs "
+             "to an AMC project and the user is an approver.")
 
     # ------------------------------------------------------------------
     # computes
@@ -86,16 +97,16 @@ class ProjectTask(models.Model):
             return [('stage_id', 'in', final_ids)]
         return ['|', ('stage_id', '=', False), ('stage_id', 'not in', final_ids)]
 
-    @api.depends('stage_id', 'project_id', 'project_id.user_id', 'ft_project_type')
+    @api.depends('stage_id', 'project_id', 'project_id.user_id', 'project_id.ft_project_type')
     @api.depends_context('uid')
     def _compute_pwf_amc_can_approve(self):
-        final_ids = set(self._ft_final_stage_ids()) if self else set()
         global_approver = self._pwf_amc_is_global_approver() if self else False
         for task in self:
+            project = task.sudo().project_id
             task.pwf_amc_can_approve = bool(
-                task.ft_project_type == 'amc'
-                and task.stage_id.id in final_ids
-                and (global_approver or task.sudo().project_id.user_id == self.env.user)
+                project
+                and project.ft_project_type == 'amc'
+                and (global_approver or project.user_id == self.env.user)
             )
 
     # ------------------------------------------------------------------
@@ -119,30 +130,43 @@ class ProjectTask(models.Model):
         pwf_amc_rejection_reason); fields missing from it keep the task's
         current value. ``stage_id`` is the stage the tasks are being moved to
         in the same write, if any. All tasks are validated before anything is
-        written, so a bulk call is all-or-nothing.
+        written, so a bulk call is all-or-nothing. Only tasks of AMC
+        projects can be approved: a selection containing any Implementation /
+        General task is refused as a whole.
+
+        The task's stage is deliberately NOT checked: an approver may approve
+        or reject a task in any stage (Working, Testing, Completed, ...), and
+        approving never changes the stage.
         """
         if self.env.su or not self:
             return
         vals = vals or {}
         tasks = self.sudo()
-        non_amc = tasks.filtered(lambda t: t.ft_project_type != 'amc')
+        no_project = tasks.filtered(lambda t: not t.project_id)
+        if no_project:
+            raise UserError(_(
+                "Approval is only available on tasks that belong to a project.\n\n"
+                "Without a project:\n%s", _pwf_amc_task_lines(no_project)))
+        non_amc = tasks.filtered(lambda t: t.project_id.ft_project_type != 'amc')
         if non_amc:
-            raise UserError(_(
-                "Approval is only available on tasks of AMC projects.\n\n"
-                "Not AMC:\n%s", _pwf_amc_task_lines(non_amc)))
-        final_ids = set(self._ft_final_stage_ids())
-        not_done = tasks.filtered(
-            lambda t: (stage_id or t.stage_id.id) not in final_ids)
-        if not_done:
-            raise UserError(_(
-                "Only a completed task (in a final stage) can be approved or "
-                "rejected.\n\nNot completed:\n%s", _pwf_amc_task_lines(not_done)))
+            first = non_amc[0]
+            type_labels = dict(first.project_id._fields['ft_project_type']
+                               ._description_selection(self.env))
+            message = _(
+                "Task approval is only used on AMC projects. '%(task)s' belongs "
+                "to a %(type)s project.",
+                task=first.display_name or first.name or '',
+                type=type_labels.get(first.project_id.ft_project_type) or _("non-AMC"))
+            if len(non_amc) > 1:
+                message += "\n\n" + _(
+                    "Tasks not on an AMC project:\n%s", _pwf_amc_task_lines(non_amc))
+            raise UserError(message)
         if not self._pwf_amc_is_global_approver():
             if any(t.project_id.user_id != self.env.user for t in tasks):
                 raise AccessError(_(
                     "Only the Project Manager of the project, a Project Manager / "
                     "Project Coordinator, a Team Lead or an Administrator can "
-                    "approve or reject AMC tasks."))
+                    "approve or reject tasks."))
         if check_reason:
             no_reason = tasks.filtered(lambda t: (
                 (vals['pwf_amc_approval'] if 'pwf_amc_approval' in vals
@@ -194,7 +218,6 @@ class ProjectTask(models.Model):
         return tasks
 
     def write(self, vals):
-        reopened_watch = self.browse()
         self._pwf_amc_refuse_stamp_write(vals)
         if any(f in vals for f in _PWF_AMC_GUARDED):
             if not self.env.su:
@@ -207,22 +230,9 @@ class ProjectTask(models.Model):
                                             != (vals['pwf_amc_rejection_reason'] or False))
                 checked._pwf_amc_check_rules(vals, stage_id=vals.get('stage_id'))
             vals = self._pwf_amc_stamp_vals(vals)
-        if 'stage_id' in vals and 'pwf_amc_approval' not in vals:
-            final_ids = set(self._ft_final_stage_ids())
-            reopened_watch = self.sudo().filtered(
-                lambda t: t.pwf_amc_approval == 'approved' and t.stage_id.id in final_ids)
-        res = super().write(vals)
-        if reopened_watch:
-            final_ids = set(self._ft_final_stage_ids())
-            reopened = reopened_watch.filtered(lambda t: t.stage_id.id not in final_ids)
-            if reopened:
-                reopened.write({'pwf_amc_approval': False})
-                for task in reopened:
-                    task.message_post(
-                        body=_("AMC approval reset: the task was moved back out "
-                               "of a completed stage (to %s).", task.stage_id.name or ''),
-                        subtype_xmlid='mail.mt_note')
-        return res
+        # Approval is independent of the stage: moving the task does not
+        # touch it.
+        return super().write(vals)
 
     # ------------------------------------------------------------------
     # actions (bulk-capable)
@@ -237,17 +247,18 @@ class ProjectTask(models.Model):
         # Validated as the real user, for every task, before anything is written.
         tasks._pwf_amc_check_rules(vals)
         tasks.sudo().write(vals)
-        user = self.env.user.name or ''
+        # Not named `user`: _() reads a local `user` to pick the language.
+        approver_name = self.env.user.name or ''
         for task in tasks.sudo():
             if value == 'approved':
-                body = _("AMC task approved by %s.", user)
+                body = _("Task approved by %s.", approver_name)
             elif value == 'rejected':
                 body = Markup('%s<br/>%s') % (
-                    _("AMC task rejected by %s.", user),
+                    _("Task rejected by %s.", approver_name),
                     _("Reason: %s", reason or ''),
                 )
             else:
-                body = _("AMC approval reset by %s.", user)
+                body = _("Approval reset by %s.", approver_name)
             task.message_post(body=body, subtype_xmlid='mail.mt_note')
         return tasks
 
@@ -257,7 +268,7 @@ class ProjectTask(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _("AMC Approval"),
+                'title': _("Task Approval"),
                 'message': message,
                 'type': 'success',
                 'sticky': False,
@@ -282,7 +293,7 @@ class ProjectTask(models.Model):
         tasks._pwf_amc_check_rules({'pwf_amc_approval': 'rejected'}, check_reason=False)
         return {
             'type': 'ir.actions.act_window',
-            'name': _("Reject AMC Task(s)"),
+            'name': _("Reject Task(s)"),
             'res_model': 'ft.pms.amc.reject.wizard',
             'view_mode': 'form',
             'views': [(False, 'form')],
@@ -293,7 +304,7 @@ class ProjectTask(models.Model):
 
 class FtPmsAmcRejectWizard(models.TransientModel):
     _name = 'ft.pms.amc.reject.wizard'
-    _description = 'Reject AMC Task'
+    _description = 'Reject Task'
 
     task_ids = fields.Many2many('project.task', string='Tasks')
     reason = fields.Text(string='Rejection Reason', required=True)
@@ -307,7 +318,7 @@ class FtPmsAmcRejectWizard(models.TransientModel):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _("AMC Approval"),
+                'title': _("Task Approval"),
                 'message': _("%s task(s) rejected.", len(tasks)),
                 'type': 'warning',
                 'sticky': False,

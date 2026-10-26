@@ -58,6 +58,10 @@ PWF_STAGE_DESCRIPTIONS = {
     'hold': 'On Hold',
 }
 PWF_MOVED_ON_FORMAT = 'd MMM yyyy, h:mm a'
+# Stage-change e-mails always go out from the support mailbox, whoever moves
+# the stage (same sender as ft_helpdesk_ticket_emails).
+PWF_STAGE_EMAIL_FROM = 'Support Fingertip <support@fingertipplus.com>'
+PWF_STAGE_REPLY_TO = 'support@fingertipplus.com'
 # Stage keys (see project.project.stage._ft_stage_key) that carry a gate.
 PWF_GATED_KEYS = ('dev', 'srv', 'uat', 'data', 'tra', 'support', 'closed')
 # Gates whose evidence must be present for DATA and every later stage.
@@ -747,9 +751,13 @@ class ProjectProject(models.Model):
             ).send_mail(
                 project.id,
                 force_send=False,
+                # Sender forced here too, so a template edited in the UI can't
+                # make the mover (author) appear as sender.
                 email_values={
                     'recipient_ids': [Command.set(partners.ids)],
                     'email_to': ','.join(emails) or False,
+                    'email_from': PWF_STAGE_EMAIL_FROM,
+                    'reply_to': PWF_STAGE_REPLY_TO,
                 },
             )
 

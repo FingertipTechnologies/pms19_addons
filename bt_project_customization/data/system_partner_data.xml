@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Show the system-generated user as "System" instead of "OdooBot".
+
+        base.partner_root (the partner of base.user_root / __system__) is named
+        "System" by base, then renamed "OdooBot" by mail's
+        data/res_partner_data.xml. Both XMLIDs are noupdate, so a <record
+        id="base.partner_root"> here would only apply when this module is
+        first INSTALLED: on an upgrade, Model._load_records() skips the write
+        for any XMLID whose ir.model.data row is noupdate. A <function> outside
+        a noupdate block runs on install and on every upgrade, so the rename
+        reaches databases where this module is already installed.
+
+        Only the display name changes. The record, its XMLID, user_root, the
+        bot's automation (mail_bot replies, activity/notification authorship,
+        cron/sudo work) all keep working: they reference the partner by
+        XMLID / id, never by name. res.users.name is related to the partner
+        name, so __system__ shows as "System" too.
+    -->
+    <function model="res.partner" name="write">
+        <value eval="[ref('base.partner_root')]"/>
+        <value eval="{'name': 'System'}"/>
+    </function>
+</odoo>

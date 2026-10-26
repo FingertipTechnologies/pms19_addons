@@ -51,7 +51,18 @@
     # bt_project_customization's _ft_check_creation_dates. The milestones
     # also carry the Implementation test, or AMC and General would be
     # refused over fields their own form does not show.
-    'version': '19.0.0.1.0',
+    # 19.0.0.1.1 adds the non-stored Age (Days) column on tasks, a daily cron
+    # that moves tasks more than 30 days past their Deadline to the project's
+    # Completed stage, and refuses new timesheet lines on such tasks.
+    # 19.0.0.1.2 lets time be entered again once such a task is reopened: the
+    # deadline-based timesheet guard is removed (a task is blocked only while
+    # it sits in Completed), and the new stored ft_auto_completed flag makes
+    # the cron complete a task at most once, so a reopened task stays open.
+    # The migration flags the tasks the cron had already completed.
+    # 19.0.0.1.3 caps Internal/External Call tasks at 3:00 hours per person
+    # per task, and only lets a task's assignees log time on it (Settings
+    # administrators and superuser jobs exempt). No new fields.
+    'version': '19.0.0.1.3',
     'summary': 'project hours tracking',
     'category': 'Project',
     'author': 'Fingertip',
@@ -64,6 +75,7 @@
         'ft_sprint_management',
     ],
     'data': [
+        'data/ir_cron_data.xml',
         'views/project_task_views.xml',
         'views/project_project_views.xml',
         'views/account_analytic_line_views.xml',

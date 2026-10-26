@@ -717,6 +717,21 @@ class TestPmsStageWorkflow(TransactionCase):
         self.assertIn(self.stage['reg'].name, latest.body_html or '')
         self.assertIn(self.stage['srv'].name, latest.body_html or '')
 
+    def test_notification_sent_from_support_mailbox(self):
+        # The template sender can't be changed in the UI to bypass this.
+        self.env.ref('ft_pms_planning_workflow.mail_template_pwf_stage_change'
+                     ).sudo().email_from = '{{ user.email_formatted }}'
+        self.pm.email = 'pm.mover@example.com'
+        self.admin.email = 'admin.mover@example.com'
+        self._move(self.project, 'reg', user=self.pm)
+        self._move(self.project, 'dev', user=self.admin)
+        mails = self._mails(self.project)
+        self.assertEqual(len(mails), 2)
+        for mail in mails:
+            self.assertIn('support@fingertipplus.com', mail.email_from)
+            self.assertNotIn('mover@example.com', mail.email_from)
+            self.assertEqual(mail.reply_to, 'support@fingertipplus.com')
+
     def test_notification_recipients_include_pm(self):
         partners, emails = self.project._pwf_stage_notify_recipients()
         self.assertIn(self.pm.partner_id, partners)

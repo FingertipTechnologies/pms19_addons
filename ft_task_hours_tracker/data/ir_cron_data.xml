@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Daily sweep: every task more than 30 days past its Deadline that is
+         not yet in a final stage is moved to its project's Completed stage.
+         noupdate="1" so an administrator's changes to the schedule survive
+         module upgrades. -->
+    <data noupdate="1">
+        <record id="ir_cron_ft_auto_complete_overdue_tasks" model="ir.cron">
+            <field name="name">PMS: auto-complete tasks overdue by more than 30 days</field>
+            <field name="model_id" ref="project.model_project_task"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_ft_auto_complete_overdue_tasks()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

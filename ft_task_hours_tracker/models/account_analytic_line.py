@@ -3,8 +3,25 @@ import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from odoo.fields import Domain
+from odoo.tools import float_compare
 
 _logger = logging.getLogger(__name__)
+
+# Call tasks (Ashitha, 22 Oct 2026): a single Internal/External Call task takes
+# at most this many hours from EACH person logging on it. Further time on the
+# same call needs a new task, so a long-running "call" cannot quietly turn into
+# an open-ended bucket for unrelated work.
+FT_CALL_MAX_HOURS_PER_PERSON = 3.0
+FT_CALL_TASK_TYPES = ('internal_call', 'external_call')
+
+# Fields whose change alters what a timesheet line says was done, by whom, when
+# and on what. Only writes touching these re-run the assignee guard; approval
+# stamps (ft_approval_state, ft_approved_by_id, ft_approved_on,
+# ft_rejection_reason from ft_pms_planning_workflow) and other bookkeeping
+# writes do not, so a PM can still approve or reject historical lines.
+FT_TIMESHEET_CONTENT_FIELDS = (
+    'task_id', 'employee_id', 'user_id', 'unit_amount', 'date', 'name',
+)
 
 
 class AccountAnalyticLine(models.Model):
@@ -184,6 +201,12 @@ class AccountAnalyticLine(models.Model):
         made to reopen anything, and ft_reopen_count sat at 0 across all 7,028
         active tasks — leaving Rework Rate a permanent 0%.
 
+        This is also the only block on a long-overdue task: the daily
+        _cron_ft_auto_complete_overdue_tasks moves it to Completed, which is
+        what stops the time. A deadline alone never refuses time, so once the
+        task is reopened (and the cron completes a task only once) it takes
+        timesheets again.
+
         Superuser is exempt so imports, migrations and scheduled jobs are not
         blocked; a plain administrator is NOT, because admins log time too and
         exempting them would leave the rule unenforced for the people most
@@ -228,6 +251,169 @@ class AccountAnalyticLine(models.Model):
             'without a task cannot be estimated, billed, or attributed to a '
             'role, and it will not appear in any task-based report.'
         ) % (project.display_name,))
+
+    # ------------------------------------------------------------------
+    # Call-task hour cap and assignee-only entry (Ashitha, 22 Oct 2026)
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _ft_format_hours(self, hours):
+        """Render a float hour amount as H:MM, the way the timesheet widget
+        shows it, so the figures in the messages match what the user typed."""
+        minutes = int(round((hours or 0.0) * 60))
+        sign = '-' if minutes < 0 else ''
+        minutes = abs(minutes)
+        return '%s%d:%02d' % (sign, minutes // 60, minutes % 60)
+
+    @api.model
+    def _ft_call_type_label(self, task):
+        """The human label of a call task's type (Internal Call / External Call)."""
+        selection = dict(task._fields['task_type']._description_selection(self.env))
+        return selection.get(task.task_type, task.task_type)
+
+    def _ft_vals_employee(self, vals):
+        """The employee a line being created from ``vals`` will belong to.
+
+        Same resolution as _ft_vals_trainee_employee and as hr_timesheet itself
+        when employee_id is left out: an explicit employee_id wins, otherwise
+        the employee of user_id, otherwise the employee of whoever is creating
+        the line. sudo on the user lookup for the same reason as there.
+        """
+        if vals.get('employee_id'):
+            return self.env['hr.employee'].browse(vals['employee_id'])
+        if vals.get('user_id'):
+            return self.env['res.users'].sudo().browse(
+                vals['user_id']).employee_id
+        return self.env.user.employee_id
+
+    def _ft_existing_call_hours(self, task, employee, exclude_line=None):
+        """Hours ``employee`` has already logged on ``task``.
+
+        sudo: the person logging time may not be allowed to read colleagues'
+        lines, but the cap is per employee and must see all of THEIR lines
+        regardless of who created them. ``exclude_line`` leaves out the line
+        being edited so its old amount is not counted twice.
+        """
+        if not task or not employee:
+            return 0.0
+        domain = [('task_id', '=', task.id), ('employee_id', '=', employee.id)]
+        if exclude_line and exclude_line.id:
+            domain.append(('id', '!=', exclude_line.id))
+        lines = self.sudo().search(domain)
+        return sum(lines.mapped('unit_amount'))
+
+    def _ft_call_limit_message(self, task, employee, existing, unit_amount):
+        """The refusal/warning text for the call-task cap, or False if the
+        entry fits within FT_CALL_MAX_HOURS_PER_PERSON."""
+        task = task.sudo()
+        if not task or task.task_type not in FT_CALL_TASK_TYPES:
+            return False
+        total = existing + (unit_amount or 0.0)
+        if float_compare(total, FT_CALL_MAX_HOURS_PER_PERSON,
+                         precision_digits=2) <= 0:
+            return False
+        label = self._ft_call_type_label(task)
+        return _(
+            '%(label)s tasks allow at most %(max)s hours per person.\n\n'
+            "%(employee)s has already logged %(existing)s on '%(task)s'; "
+            'this entry (%(entry)s) would make %(total)s.\n\n'
+            'Create a new task for further time.',
+            label=label,
+            max=self._ft_format_hours(FT_CALL_MAX_HOURS_PER_PERSON),
+            employee=employee.sudo().name or _('This employee'),
+            existing=self._ft_format_hours(existing),
+            task=task.name,
+            entry=self._ft_format_hours(unit_amount),
+            total=self._ft_format_hours(total),
+        )
+
+    def _ft_check_call_task_limit(self, task, employee, unit_amount,
+                                  exclude_line=None, pending=0.0):
+        """Refuse time that takes one person past 3:00 on a call task.
+
+        Internal and External Call tasks are meant to capture a single call.
+        The cap is per person per task: every employee logging on the call has
+        their own FT_CALL_MAX_HOURS_PER_PERSON, counted over all of that
+        employee's lines on the task (whoever created them). Applies to every
+        project, billable or not — the rule is about what a call task is, not
+        about invoicing.
+
+        ``pending`` carries hours from earlier lines in the same create batch
+        for the same task and employee, which are not in the table yet.
+
+        Superuser is exempt so imports and scheduled jobs are not blocked; a
+        plain administrator is NOT, for the same reason as the completed-task
+        guard.
+        """
+        if self.env.su or not task or not employee:
+            return
+        if task.sudo().task_type not in FT_CALL_TASK_TYPES:
+            return
+        existing = self._ft_existing_call_hours(
+            task, employee, exclude_line=exclude_line) + (pending or 0.0)
+        message = self._ft_call_limit_message(
+            task, employee, existing, unit_amount)
+        if message:
+            raise UserError(message)
+
+    def _ft_check_task_assignee(self, task, employee, user=None):
+        """Refuse time on a task from somebody who is not assigned to it.
+
+        The owner of a line is the user behind its employee
+        (``employee_id.user_id``), falling back to the line's ``user_id`` when
+        the employee has no linked user. That person must be one of the task's
+        Assignees (``user_ids``); otherwise the hours show up on a task its PM
+        never planned them for. Lines without a task are not affected.
+
+        Superuser is exempt so imports, migrations and scheduled jobs keep
+        working, and so are Settings administrators (base.group_system), to
+        preserve their existing permissions. Anyone else — including the PM
+        entering time on someone's behalf — has the owner checked, not
+        themselves.
+        """
+        if self.env.su or not task:
+            return
+        if self.env.user.has_group('base.group_system'):
+            return
+        employee = employee.sudo() if employee else employee
+        owner = (employee.user_id if employee else False) or user
+        task = task.sudo()
+        if owner and owner in task.user_ids:
+            return
+        name = (employee and employee.name) or (owner and owner.sudo().name) \
+            or _('This user')
+        raise UserError(_(
+            "Only users assigned to task '%(task)s' can log time on it. "
+            '%(name)s is not an assignee — ask the PM to add them to the task '
+            'first.',
+            task=task.name,
+            name=name,
+        ))
+
+    @api.onchange('unit_amount', 'task_id', 'employee_id')
+    def _ft_onchange_call_task_limit(self):
+        """Warn, without blocking, when the entry would break the call-task cap.
+
+        A UI hint only: the same figure is enforced in create/write through
+        _ft_check_call_task_limit, which is what actually refuses the save.
+        """
+        for line in self:
+            task = line.task_id
+            if not task or task.sudo().task_type not in FT_CALL_TASK_TYPES:
+                continue
+            employee = line.employee_id or self.env.user.employee_id
+            if not employee:
+                continue
+            existing = self._ft_existing_call_hours(
+                task, employee, exclude_line=line._origin)
+            message = self._ft_call_limit_message(
+                task, employee, existing, line.unit_amount)
+            if message:
+                return {'warning': {
+                    'title': _('Call task hour limit'),
+                    'message': message,
+                }}
+        return None
 
     def _get_task_time_limit(self):
         return float(
@@ -292,6 +478,9 @@ class AccountAnalyticLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Hours already accepted earlier in this batch, per (task, employee):
+        # they are not in the table yet, so the call-task cap must add them.
+        pending_call_hours = {}
         for vals in vals_list:
             # Stamp the trainee from the employee's job position AT THE TIME OF
             # ENTRY, then leave it alone for good. Decided on creation rather
@@ -310,6 +499,26 @@ class AccountAnalyticLine(models.Model):
             if vals.get('task_id'):
                 task = self.env['project.task'].browse(vals['task_id'])
                 self._ft_check_task_not_completed(task)
+                # After the completed-task check, before the project/billable
+                # filters below: both rules apply to every project.
+                employee = self._ft_vals_employee(vals)
+                # Fallback owner when the employee has no linked user: the
+                # explicit user_id, else the creator — but only when no
+                # employee was named either (hr_timesheet's own default).
+                if vals.get('user_id'):
+                    owner_user = self.env['res.users'].browse(vals['user_id'])
+                elif not vals.get('employee_id'):
+                    owner_user = self.env.user
+                else:
+                    owner_user = self.env['res.users']
+                self._ft_check_task_assignee(task, employee, owner_user)
+                call_key = (task.id, employee.id)
+                unit_amount = vals.get('unit_amount') or 0.0
+                self._ft_check_call_task_limit(
+                    task, employee, unit_amount,
+                    pending=pending_call_hours.get(call_key, 0.0))
+                pending_call_hours[call_key] = (
+                    pending_call_hours.get(call_key, 0.0) + unit_amount)
             project_id = vals.get('project_id')
             if not project_id:
                 continue
@@ -349,6 +558,31 @@ class AccountAnalyticLine(models.Model):
                     if 'task_id' in vals else line.task_id
                 )
                 self._ft_check_task_not_completed(target_task)
+            # Content edits only: approval stamps and other bookkeeping writes
+            # must not be refused over a line's historical assignee.
+            if any(field in vals for field in FT_TIMESHEET_CONTENT_FIELDS):
+                target_task = (
+                    self.env['project.task'].browse(vals['task_id'])
+                    if 'task_id' in vals else line.task_id
+                )
+                target_employee = (
+                    self.env['hr.employee'].browse(vals['employee_id'])
+                    if 'employee_id' in vals else line.employee_id
+                )
+                target_user = (
+                    self.env['res.users'].browse(vals['user_id'])
+                    if vals.get('user_id') else line.user_id
+                )
+                self._ft_check_task_assignee(
+                    target_task, target_employee, target_user)
+            if 'unit_amount' in vals or 'task_id' in vals or 'employee_id' in vals:
+                self._ft_check_call_task_limit(
+                    (self.env['project.task'].browse(vals['task_id'])
+                     if 'task_id' in vals else line.task_id),
+                    (self.env['hr.employee'].browse(vals['employee_id'])
+                     if 'employee_id' in vals else line.employee_id),
+                    vals.get('unit_amount', line.unit_amount) or 0.0,
+                    exclude_line=line)
             project = (
                 self.env['project.project'].browse(vals['project_id'])
                 if 'project_id' in vals

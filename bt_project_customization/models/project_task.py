@@ -1,12 +1,18 @@
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
+
+import pytz
+from markupsafe import Markup
 
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError, UserError
+from odoo.exceptions import AccessError, ValidationError, UserError
+from odoo.tools.misc import format_datetime
 
 # The one list of names the Discovery stage may go by, shared with the Task
 # Source band logic so the "Planned" rule below and the automatic default can
 # never disagree about which stage Discovery is.
-from .project_project import DISCOVERY_STAGE_NAMES
+# PM_JOB_NAMES (Project Manager / Project Coordinator) is the job list that may
+# reopen a completed task, alongside the project's own PM (project.user_id).
+from .project_project import DISCOVERY_STAGE_NAMES, PM_JOB_NAMES
 
 # Minimum number of characters required in a task title.
 TASK_TITLE_MIN_LEN = 20
@@ -41,7 +47,11 @@ COMPLETED_STAGE_NAMES = ('Completed',)
 # role source used throughout the PMS (task creation, dashboard role hours and
 # timesheet classification). Technical/Testing leads belong to the same working
 # role as the people they lead.
-DEVELOPER_JOB_NAMES = ('software developer', 'technical lead')
+DEVELOPER_JOB_NAMES = (
+    'software developer',
+    'trainee software developer',
+    'technical lead',
+)
 
 # QA roles: the people who sign a User Story off. Every seniority level tests,
 # so juniors and leads sit in the same bucket as a Software Tester - the grade
@@ -56,6 +66,7 @@ DEVELOPER_JOB_NAMES = ('software developer', 'technical lead')
 TESTER_JOB_NAMES = (
     'software tester',
     'junior software tester',
+    'trainee software tester',
     'testing lead',
     'tester lead',
 )
@@ -97,6 +108,23 @@ TICKET_REQUIRED_SOURCES = ('change_request', 'enhancement')
 # saved and its Deadline.
 USER_STORY_MIN_DEADLINE_HOURS = 24
 
+# Task types that keep a free deadline. Every OTHER type (Internal Call,
+# External Call, PM Activity, TL Activity, ...) is same-day work: its Deadline
+# defaults to today 23:59:59 local time and, on create, must fall on today.
+# 'testing' is added to the selection by ft_pms_planning_workflow and runs on a
+# one-week cycle of its own, so it is exempt like a User Story.
+SAME_DAY_DEADLINE_EXEMPT_TYPES = ('user_story', 'testing')
+
+# Context keys of the "Reopen for Rework" wizard (wizard/task_reopen_wizard.py).
+# Honoured by write() ONLY together with env.su: the wizard performs its write
+# as sudo after its own permission check, and an RPC client can put anything in
+# a context but can never obtain su. A forged key on a plain write therefore
+# neither bypasses the reopen block nor forges Worked By.
+FT_REOPEN_CTX_KEY = 'ft_reopen_via_wizard'
+FT_REAL_UID_CTX_KEY = 'ft_real_uid'
+# Read by ft_pms_planning_workflow's deadline change log (task_week_move.py).
+FT_DEADLINE_REASON_CTX_KEY = 'ft_deadline_change_reason'
+
 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
@@ -111,7 +139,8 @@ class ProjectTask(models.Model):
         tracking=True,
         help="How many times this task was sent back for rework. For User "
              "Stories this is Testing to Working; other task types retain the "
-             "Completed-to-open rule. Drives the Rework Rate. "
+             "Completed-to-open rule, and every task type counts a "
+             "'Reopen for Rework' (Completed to Working). Drives the Rework Rate. "
              "Counted from the day this feature was installed onwards, so tasks "
              "reopened before then read 0.",
     )
@@ -138,7 +167,7 @@ class ProjectTask(models.Model):
         readonly=True,
         copy=False,
         tracking=True,
-        help='User who most recently moved the task into Working.',
+        help='User who most recently changed the task\'s status (stage).',
     )
     # First in, last out. The pair is meant to be read together as the span
     # over which this task was worked, so the start is the FIRST time work
@@ -172,6 +201,13 @@ class ProjectTask(models.Model):
         tracking=True,
         help='Date and time the task LAST entered Completed. Each completion '
              'overwrites it, so after rework it holds the final one.',
+    )
+    # Drives the "Reopen for Rework" header button. Unstored: it only answers
+    # for the record on screen, and _ft_final_stage_ids is the one definition
+    # of "final" (folded, or named Completed) shared with every metric.
+    ft_is_in_final_stage = fields.Boolean(
+        string='In Final Stage',
+        compute='_compute_ft_is_in_final_stage',
     )
     ft_completed_by_id = fields.Many2one(
         'res.users',
@@ -229,7 +265,17 @@ class ProjectTask(models.Model):
         ('user_story', 'User Story'),
         ('internal_call', 'Internal Call'),
         ('external_call', 'External Call'),
+        # Same-day, non-User-Story work like the two call types: free
+        # assignee count, no Task Source requirement, no 24-hour notice, and a
+        # Deadline defaulted to (and on create held to) today.
+        ('pm_activity', 'PM Activity'),
+        ('tl_activity', 'TL Activity'),
     ], string='Task Type', default='user_story', required=True)
+    # Form only: readonly flag of the Deadline. True for a saved same-day task
+    # whose Task Type is unchanged; a change of type unlocks the field so the
+    # new Deadline can be chosen (_compute_ft_deadline_locked).
+    ft_deadline_locked = fields.Boolean(
+        compute='_compute_ft_deadline_locked', string='Deadline Locked')
     # The project's type, on the task, so the form can tell whether the Task
     # Source rules apply to it. Related and unstored: it is read for `required`
     # attributes and for _check_task_source_rules below, never searched or
@@ -339,6 +385,22 @@ class ProjectTask(models.Model):
         # create tasks. Superuser and system administrators bypass the check so
         # data imports, automation and mail-to-task keep working.
         self._check_task_create_permission()
+        # Same-day task types (everything but User Story and Testing) default
+        # their Deadline to today 23:59:59 local. Copies, so the caller's dicts
+        # are not mutated behind its back.
+        vals_list = [dict(vals) for vals in vals_list]
+        default_type = None
+        for vals in vals_list:
+            if 'task_type' in vals:
+                task_type = vals['task_type']
+            else:
+                if default_type is None:
+                    default_type = self.default_get(['task_type']).get(
+                        'task_type') or False
+                task_type = default_type
+            if (not vals.get('date_deadline')
+                    and self._ft_requires_same_day_deadline(task_type)):
+                vals['date_deadline'] = self._ft_today_end_utc()
         tasks = super().create(vals_list)
         tasks._check_planned_creation_permission()
         tasks._check_task_source_rules()
@@ -352,6 +414,9 @@ class ProjectTask(models.Model):
         # automation are unaffected.
         tasks._check_estimated_required()
         tasks._check_deadline_required()
+        # Create-only: an existing task's deadline follows the normal rules and
+        # the reopen workflow, so this is never re-run by write().
+        tasks._check_same_day_deadline()
         # Same reason as the two above: @api.constrains only validates fields
         # PRESENT in the values, so a create that never mentions user_ids would
         # skip this one. It cannot currently produce two assignees without
@@ -369,9 +434,67 @@ class ProjectTask(models.Model):
         )
         if born_done:
             born_done.sudo().write({'state': '1_done'})
+        tasks._ft_stamp_born_stage(final_ids)
         return tasks
 
+    def _ft_stamp_born_stage(self, final_ids):
+        """Stage audit for tasks CREATED directly in Working/Completed.
+
+        write() stamps these on every stage ENTRY, but creating a task already
+        in a stage is an entry that never passes through write()'s stage
+        branch, so First Time stayed empty for a task raised straight into
+        Working until it happened to leave and re-enter it. Only empty fields
+        are filled, so an import that carries its own values keeps them.
+        """
+        actor = self._ft_actor_id()
+        now = fields.Datetime.now()
+        for task in self:
+            stage_name = (task.stage_id.name or '').strip().lower()
+            vals = {}
+            if stage_name == 'working':
+                if not task.ft_worked_by_id:
+                    vals['ft_worked_by_id'] = actor
+                if not task.ft_work_start_date:
+                    vals['ft_work_start_date'] = now
+            elif task.stage_id.id in final_ids and task.state != '1_canceled':
+                if not task.ft_completed_by_id:
+                    vals['ft_completed_by_id'] = actor
+                if not task.ft_work_end_date:
+                    vals['ft_work_end_date'] = now
+            if vals:
+                task.sudo().write(vals)
+
     def write(self, vals):
+        # Same-day Deadline lock and Task Type change rules. First, before the
+        # generic deadline checks below, so a locked same-day deadline is
+        # refused with its own message rather than a "must be future" one.
+        # ft_sprint_management depends on this module, so its write() wraps
+        # this one: a week move (sprint_id) has already had the week's Sunday
+        # injected as date_deadline by the time it gets here.
+        if self._ft_same_day_rules_apply() and 'task_type' in vals:
+            new_type = vals['task_type']
+            changing = self.filtered(lambda task: task.task_type != new_type)
+            if (changing and changing != self
+                    and 'date_deadline' not in vals
+                    and self._ft_requires_same_day_deadline(new_type)):
+                # The auto-set deadline belongs to the tasks whose type is
+                # actually changing; the rest keep theirs. Split the write so
+                # each half gets the right values.
+                res = (self - changing).write(vals)
+                changing.write(vals)
+                return res
+            prepared = changing._ft_prepare_task_type_change(vals)
+            if 'date_deadline' in prepared and 'date_deadline' not in vals:
+                # The today deadline was added here, below the overrides that
+                # react to a deadline change (ft_sprint_management re-syncs the
+                # Week only for a date_deadline in ITS vals). Re-enter through
+                # the full write() chain so they see it; the re-entry carries
+                # date_deadline, so it does not come back to this branch.
+                return self.write(prepared)
+            vals = prepared
+        if self._ft_same_day_rules_apply() and 'date_deadline' in vals:
+            self._ft_check_same_day_deadline_lock(vals)
+
         deadline_changed = self.env['project.task']
         if 'date_deadline' in vals:
             new_deadline = (
@@ -395,8 +518,16 @@ class ProjectTask(models.Model):
                 lambda task: bool(task.date_deadline)
                 and task.date_deadline != new_deadline
             )
+            # A completed task's deadline is the PM's to move, and normally
+            # through "Reopen for Rework". Without this, anyone could re-date a
+            # delivered task and turn an Overdue completion into On Time.
+            self._check_final_stage_deadline_change(new_deadline)
 
         if 'stage_id' in vals:
+            # First, before any other stage rule: leaving a final stage is only
+            # possible through the reopen wizard, so the user is pointed at it
+            # rather than at a role rule that would not help them.
+            self._check_reopen_via_wizard(vals['stage_id'])
             self._check_planned_stage_write(vals['stage_id'])
             self._check_user_story_stage_move(vals['stage_id'])
 
@@ -428,6 +559,11 @@ class ProjectTask(models.Model):
                    and (t.stage_id.name or '').strip().lower() == 'testing')
             for t in self
         }
+        was_stage = {t.id: t.stage_id.id for t in self}
+        via_reopen_wizard = self._ft_is_reopen_wizard_call()
+        # The acting user for every audit stamp below. Normally env.user; on
+        # the wizard's sudo write, the user who confirmed the wizard.
+        actor = self._ft_actor_id()
         res = super().write(vals)
         for task in deadline_changed:
             task.sudo().write({
@@ -438,6 +574,8 @@ class ProjectTask(models.Model):
             lambda t: (not was_working.get(t.id)
                        and (t.stage_id.name or '').strip().lower() == 'working')
         )
+        stage_changed = self.filtered(
+            lambda t: t.stage_id.id != was_stage.get(t.id))
         completed = self.filtered(
             lambda t: (not was_final.get(t.id)
                        and t.stage_id.id in final_ids
@@ -454,6 +592,13 @@ class ProjectTask(models.Model):
                 or (t.task_type != 'user_story'
                     and was_final.get(t.id)
                     and t.stage_id.id not in final_ids)
+                # "Reopen for Rework" counts for EVERY task type, User Story
+                # included (its Completed -> Working is otherwise not a
+                # reopen). A filter, so a non-User-Story task matching both
+                # clauses is still counted once.
+                or (via_reopen_wizard
+                    and was_final.get(t.id)
+                    and t.stage_id.id not in final_ids)
             )
         )
         # A return to Working starts a fresh execution/rework cycle. sudo is
@@ -466,7 +611,7 @@ class ProjectTask(models.Model):
         # write in two is what lets the two kinds of field disagree.
         if moved_to_working:
             moved_to_working.sudo().write({
-                'ft_worked_by_id': self.env.user.id,
+                'ft_worked_by_id': actor,
                 'ft_completed_by_id': False,
             })
             # ft_work_end_date is deliberately NOT cleared here. It holds the
@@ -477,6 +622,11 @@ class ProjectTask(models.Model):
                 lambda t: not t.ft_work_start_date)
             if first_working:
                 first_working.sudo().write({'ft_work_start_date': now})
+        # Worked By names whoever last changed the task's status, on EVERY
+        # stage change (Working, Testing, Completed, reopen...), not only on
+        # entry to Working.
+        if stage_changed:
+            stage_changed.sudo().write({'ft_worked_by_id': actor})
         # date_end is Odoo's standard Completed Date. Core only stamps it for
         # folded stages, while this PMS also treats a stage named "Completed"
         # as final, so fill it for those (unfolded) stages too. Capture the same
@@ -484,7 +634,7 @@ class ProjectTask(models.Model):
         if completed:
             completed.sudo().write({
                 'date_end': now,
-                'ft_completed_by_id': self.env.user.id,
+                'ft_completed_by_id': actor,
                 'ft_work_end_date': now,
                 # Core's `state` is what Odoo means by closed: is_closed, the
                 # Open and Closed filters, the subtask counters and the rotting
@@ -525,6 +675,458 @@ class ProjectTask(models.Model):
             })
         self._ft_validate_written(vals)
         return res
+
+    # ------------------------------------------------------------------
+    # Same-day deadline (every type except User Story and Testing)
+    # ------------------------------------------------------------------
+    @api.model
+    def _ft_requires_same_day_deadline(self, task_type):
+        """Whether ``task_type`` is same-day work (deadline = today)."""
+        return bool(task_type) and task_type not in SAME_DAY_DEADLINE_EXEMPT_TYPES
+
+    @api.model
+    def _ft_user_tz(self):
+        try:
+            return pytz.timezone(
+                self.env.context.get('tz') or self.env.user.tz or 'UTC')
+        except pytz.UnknownTimeZoneError:
+            return pytz.utc
+
+    @api.model
+    def _ft_today_end_utc(self):
+        """Today 23:59:59 in the user's timezone, as a naive UTC datetime.
+
+        The same conversion as ft_sprint_management's week_utils
+        .local_day_bounds(end_of_day=True), restated here because this module
+        cannot depend on that one. "Today" is the user's local day, the same
+        calendar _ft_local_date judges deadlines by.
+        """
+        tz = self._ft_user_tz()
+        today = datetime.now(pytz.utc).astimezone(tz).date()
+        return tz.localize(datetime.combine(today, time(23, 59, 59))).astimezone(
+            pytz.utc).replace(tzinfo=None)
+
+    @api.model
+    def _ft_type_label(self, task_type):
+        return dict(
+            self._fields['task_type']._description_selection(self.env)
+        ).get(task_type, task_type or '')
+
+    def _ft_task_type_label(self):
+        self.ensure_one()
+        return self._ft_type_label(self.task_type)
+
+    def _ft_same_day_rules_apply(self):
+        """Whether write() enforces the same-day lock / type-change rules.
+
+        Superuser is exempt (crons, migrations, the reopen wizard's sudo write,
+        which validates its own deadline in _ft_validate_reopen_deadline), as
+        is an explicit skip_ft_deadline_validation context.
+        """
+        return not (self.env.su
+                    or self.env.context.get('skip_ft_deadline_validation'))
+
+    @staticmethod
+    def _ft_deadline_value(value):
+        """A date_deadline write value as a naive datetime, seconds precision."""
+        value = fields.Datetime.to_datetime(value) if value else False
+        return value.replace(microsecond=0) if value else False
+
+    def _ft_check_same_day_deadline_lock(self, vals):
+        """A same-day task's Deadline is fixed once the task exists.
+
+        Applies to every task whose RESULTING type (the type in ``vals``, else
+        its current one) is same-day, unless the write also changes its type:
+        a change of type is governed by _ft_prepare_task_type_change instead.
+        This also refuses a week move (ft_sprint_management injects the week's
+        Sunday as the deadline), which is intended: same-day work does not
+        move between weeks.
+        """
+        new_deadline = self._ft_deadline_value(vals['date_deadline'])
+        for task in self:
+            resulting_type = vals.get('task_type', task.task_type)
+            if not self._ft_requires_same_day_deadline(resulting_type):
+                continue
+            if 'task_type' in vals and vals['task_type'] != task.task_type:
+                continue
+            if new_deadline != self._ft_deadline_value(task.date_deadline):
+                raise UserError(_(
+                    "%(type)s tasks are due on the day they are created; the "
+                    "deadline cannot be changed.\n\nTask: %(task)s\n\n"
+                    "This also means a %(type)s task cannot be moved to "
+                    "another week.",
+                    type=self._ft_type_label(resulting_type),
+                    task=task.name or '',
+                ))
+
+    def _ft_prepare_task_type_change(self, vals):
+        """Validate (and complete) ``vals`` for tasks whose Task Type changes.
+
+        ``self`` is only the tasks whose type actually changes, so an unrelated
+        edit that merely repeats the current type checks nothing. Runs BEFORE
+        super().write(), so a refused change leaves nothing half-saved.
+        Returns the values to write (a copy when a deadline is added).
+
+        - To a same-day type: no deadline in ``vals`` -> today 23:59:59 local
+          is set (refused for a completed task, whose deadline is the PM's and
+          moves only through "Reopen for Rework"); a deadline in ``vals`` must
+          fall on today (local).
+        - To User Story: the resulting deadline (``vals`` or current) must be
+          in the future and, for a non-Administrator, at least
+          USER_STORY_MIN_DEADLINE_HOURS ahead.
+        - Testing keeps ft_pms_planning_workflow's own week rules only.
+
+        The form (_onchange_task_type_ft_deadline) clears the Deadline on any
+        change of type and has the user choose it, so from the form ``vals``
+        normally carries date_deadline; the today default here is for RPC
+        callers that change only the type.
+        """
+        if not self:
+            return vals
+        new_type = vals['task_type']
+        type_label = self._ft_type_label(new_type)
+        if self._ft_requires_same_day_deadline(new_type):
+            if 'date_deadline' not in vals:
+                final_ids = set(self._ft_final_stage_ids())
+                completed = self.filtered(
+                    lambda task: task.stage_id.id in final_ids)
+                if completed:
+                    raise UserError(_(
+                        "%(type)s tasks are due on the day they are created, "
+                        "so changing a task to %(type)s sets its Deadline to "
+                        "today. A completed task's deadline cannot be moved: "
+                        "use 'Reopen for Rework' first.\n\nTask: %(task)s",
+                        type=type_label, task=completed[0].name or '',
+                    ))
+                return dict(vals, date_deadline=self._ft_today_end_utc())
+            new_deadline = self._ft_deadline_value(vals['date_deadline'])
+            today = self._ft_local_date(fields.Datetime.now())
+            if not new_deadline or self._ft_local_date(new_deadline) != today:
+                raise UserError(_(
+                    "%(type)s tasks are due on the day they are created. When "
+                    "changing the Task Type to %(type)s, the Deadline must be "
+                    "today.",
+                    type=type_label,
+                ))
+            return vals
+        if new_type == 'user_story':
+            now = fields.Datetime.now()
+            is_admin = self.env.user.has_group('base.group_system')
+            minimum = now + timedelta(hours=USER_STORY_MIN_DEADLINE_HOURS)
+            for task in self:
+                deadline = (self._ft_deadline_value(vals['date_deadline'])
+                            if 'date_deadline' in vals else task.date_deadline)
+                if (not deadline or deadline <= now
+                        or (not is_admin and deadline < minimum)):
+                    raise UserError(_(
+                        "User Story tasks need a deadline at least %(hours)s "
+                        "hours ahead. Set a new Deadline when changing the "
+                        "Task Type to User Story.\n\nTask: %(task)s",
+                        hours=USER_STORY_MIN_DEADLINE_HOURS,
+                        task=task.name or '',
+                    ))
+        return vals
+
+    def _check_same_day_deadline(self):
+        """On CREATE, a same-day task's Deadline must fall on today (local).
+
+        Called from create() only. After create the deadline is locked by
+        write() (_ft_check_same_day_deadline_lock), and a change of Task Type
+        is checked by _ft_prepare_task_type_change. Superuser (imports,
+        automation) is exempt.
+        """
+        if self.env.su:
+            return
+        today = self._ft_local_date(fields.Datetime.now())
+        for task in self:
+            if not self._ft_requires_same_day_deadline(task.task_type):
+                continue
+            if (not task.date_deadline
+                    or self._ft_local_date(task.date_deadline) != today):
+                raise UserError(_("%s tasks must be due today.")
+                                % task._ft_task_type_label())
+
+    @api.depends('task_type')
+    def _compute_ft_deadline_locked(self):
+        """Whether the form's Deadline is readonly (see the form view).
+
+        A saved same-day task's Deadline is locked by write()
+        (_ft_check_same_day_deadline_lock) for as long as its Task Type stays
+        what was saved. A change of Task Type unlocks it: the onchange below
+        clears the Deadline and the user chooses the new one, which
+        _ft_prepare_task_type_change validates (today for a same-day type).
+        ``_origin`` is the saved record both inside an onchange (where ``id``
+        is a NewId) and outside it (where it is the record itself).
+        """
+        for task in self:
+            origin = task._origin
+            task.ft_deadline_locked = bool(
+                origin.id
+                and self._ft_requires_same_day_deadline(task.task_type)
+                and origin.task_type == task.task_type)
+
+    @api.model
+    def _ft_new_deadline_hint(self, task_type):
+        """The rule the new Deadline must satisfy for ``task_type``, as text."""
+        type_label = self._ft_type_label(task_type)
+        if self._ft_requires_same_day_deadline(task_type):
+            return _(
+                "%(type)s tasks are due today: choose a Deadline later today "
+                "(by 23:59).", type=type_label)
+        if task_type == 'user_story':
+            return _(
+                "Choose a Deadline at least %(hours)s hours ahead for a "
+                "User Story.", hours=USER_STORY_MIN_DEADLINE_HOURS)
+        return _("Choose a new Deadline for %(type)s.", type=type_label)
+
+    @api.onchange('task_type')
+    def _onchange_task_type_ft_deadline(self):
+        """Keep the form's Deadline in step with the Task Type.
+
+        On a SAVED task, EVERY change of Task Type clears the Deadline and asks
+        for a new one (ft_deadline_locked unlocks the field for it): onto a
+        same-day type a time later today, onto User Story at least 24 hours
+        ahead, onto Testing its own week rules. write() validates the choice
+        in _ft_prepare_task_type_change. Choosing the saved type again
+        restores the saved deadline, the locked one for a same-day type.
+
+        On a NEW task a same-day type prefills today 23:59:59 local, and moving
+        off a same-day type clears that default so a real deadline is chosen.
+
+        A COMPLETED task is left alone: its Deadline is readonly in the form
+        and moves only through "Reopen for Rework"; write() rules on the type
+        change itself.
+        """
+        if self._origin.id:
+            if (self._origin.task_type == self.task_type
+                    or self._origin.ft_is_in_final_stage):
+                self.date_deadline = self._origin.date_deadline
+                return
+            self.date_deadline = False
+            return {'warning': {
+                'title': _("Choose a new Deadline"),
+                'message': self._ft_new_deadline_hint(self.task_type),
+            }}
+        if self._ft_requires_same_day_deadline(self.task_type):
+            today_end = self._ft_today_end_utc()
+            if self.date_deadline != today_end:
+                self.date_deadline = today_end
+            return
+        from_same_day = bool(self.date_deadline) and (
+            self._ft_deadline_value(self.date_deadline)
+            == self._ft_today_end_utc())
+        if not from_same_day:
+            return
+        self.date_deadline = False
+        return {'warning': {
+            'title': _("Choose a new Deadline"),
+            'message': self._ft_new_deadline_hint(self.task_type),
+        }}
+
+    # ------------------------------------------------------------------
+    # Reopen for Rework
+    # ------------------------------------------------------------------
+    @api.depends('stage_id', 'stage_id.fold', 'stage_id.name')
+    def _compute_ft_is_in_final_stage(self):
+        final_ids = set(self._ft_final_stage_ids())
+        for task in self:
+            task.ft_is_in_final_stage = task.stage_id.id in final_ids
+
+    def _ft_is_reopen_wizard_call(self):
+        """True only for the reopen wizard's own (sudo) write."""
+        return bool(self.env.su and self.env.context.get(FT_REOPEN_CTX_KEY))
+
+    def _ft_actor_id(self):
+        """The user to stamp in the Worked By / Testing / Completed audit.
+
+        env.user, unless this is a sudo write that names the real user in its
+        context (the reopen wizard). Ignored without su so that a client
+        cannot put somebody else's name on a stage move.
+        """
+        real_uid = self.env.context.get(FT_REAL_UID_CTX_KEY)
+        if real_uid and self.env.su:
+            return int(real_uid)
+        return self.env.user.id
+
+    def _ft_user_can_reopen(self, user=None):
+        """The project's PM, a PM / Project Coordinator job, or an admin.
+
+        project.user_id counts on its own, so a PM by project who carries no
+        Project Manager job title is still the PM for this purpose.
+        """
+        self.ensure_one()
+        user = user or self.env.user
+        if user.has_group('base.group_system'):
+            return True
+        if self.project_id and self.project_id.sudo().user_id == user:
+            return True
+        employee = user.sudo().employee_id
+        job_name = (employee.job_id.name or '').strip().lower() if employee else ''
+        return job_name in PM_JOB_NAMES
+
+    def _ft_check_reopen_permission(self):
+        for task in self:
+            if not task._ft_user_can_reopen():
+                raise AccessError(_(
+                    "Only the Project Manager can reopen a completed task and "
+                    "set its new deadline."
+                ))
+
+    def _check_reopen_via_wizard(self, target_stage_id):
+        """Block every move out of a final stage except the reopen wizard's.
+
+        Moving INTO a final stage is untouched (ft_task_hours_tracker's
+        auto-complete cron, ordinary completions). Superuser is exempt: the
+        wizard writes as sudo after its own permission and deadline checks,
+        and system code relies on the same exemption everywhere else here.
+        """
+        if self.env.su:
+            return
+        final_ids = set(self._ft_final_stage_ids())
+        if target_stage_id and target_stage_id in final_ids:
+            return
+        if any(task.stage_id.id in final_ids for task in self):
+            raise UserError(_(
+                "Use 'Reopen for Rework' to reopen a completed task: the "
+                "Project Manager must set a new future deadline."
+            ))
+
+    def _check_final_stage_deadline_change(self, new_deadline):
+        """Only the PM may change the deadline of a task in a final stage."""
+        if self.env.su:
+            return
+        final_ids = set(self._ft_final_stage_ids())
+        for task in self:
+            if (task.stage_id.id in final_ids
+                    and task.date_deadline != new_deadline
+                    and not task._ft_user_can_reopen()):
+                raise UserError(_(
+                    "Only the Project Manager can change the deadline of a "
+                    "completed task. Use 'Reopen for Rework' to send it back "
+                    "with a new deadline."
+                ))
+
+    def _ft_validate_reopen_deadline(self, new_deadline):
+        """The reopen wizard's deadline rules, checked before anything is written.
+
+        The same rules as _check_deadline_required, which the wizard's sudo
+        write would otherwise skip: a future date and time, for a same-day
+        type a time later TODAY (local), and for a User Story the 24-hour
+        notice unless the user is an Administrator.
+        """
+        self.ensure_one()
+        new_deadline = fields.Datetime.to_datetime(new_deadline)
+        now = fields.Datetime.now()
+        if not new_deadline:
+            raise UserError(_("A new deadline is required to reopen the task."))
+        if new_deadline <= now:
+            raise UserError(_(
+                "The new deadline must be a future date and time.\n\n"
+                "Select a Deadline later than the current date and time."
+            ))
+        # A same-day type is reopened for TODAY: its deadline is otherwise
+        # locked to the day it was created, and a reopen must not be a way
+        # to push it to another day.
+        if (self._ft_requires_same_day_deadline(self.task_type)
+                and self._ft_local_date(new_deadline)
+                != self._ft_local_date(now)):
+            raise UserError(_(
+                "%(type)s tasks are due on the day they are worked on: the new "
+                "deadline must be later today (by 23:59).\n\nTask: %(task)s",
+                type=self._ft_task_type_label(), task=self.name or '',
+            ))
+        if (self.task_type == 'user_story'
+                and not self.env.user.has_group('base.group_system')
+                and new_deadline < now + timedelta(
+                    hours=USER_STORY_MIN_DEADLINE_HOURS)):
+            raise UserError(_(
+                "Deadline must be at least %s hours from the current time "
+                "for User Story tasks.\n\nTask: %s"
+            ) % (USER_STORY_MIN_DEADLINE_HOURS, self.name or ''))
+
+    def _ft_working_stage(self):
+        """The Working stage the task is reopened into.
+
+        The stage named Working linked to the task's project, falling back to
+        ft_sprint_management's shared Working stage when that module is
+        installed.
+        """
+        self.ensure_one()
+        Stage = self.env['project.task.type'].sudo()
+        stage = Stage.browse()
+        if self.project_id:
+            stage = Stage.search([
+                ('project_ids', 'in', self.project_id.id),
+                ('name', '=ilike', 'working'),
+            ], order='sequence, id', limit=1)
+        if not stage:
+            stage = self.env.ref('ft_sprint_management.task_stage_working',
+                                 raise_if_not_found=False) or Stage.browse()
+            stage = stage.sudo().exists()
+        return stage
+
+    def action_ft_open_reopen_wizard(self):
+        """Header button: open "Reopen for Rework" for a completed task."""
+        self.ensure_one()
+        self._ft_check_reopen_permission()
+        if not self.ft_is_in_final_stage:
+            raise UserError(_("Only a completed task can be reopened."))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Reopen for Rework'),
+            'res_model': 'ft.task.reopen.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_task_id': self.id},
+        }
+
+    def _ft_reopen_for_rework(self, new_deadline, reason=None):
+        """Reopen this completed task into Working with a new deadline.
+
+        Permission and deadline are checked first, so nothing is written on
+        failure. The write itself is ONE sudo write of stage + deadline:
+        the user-story role rules are not what governs a reopen (the PM rule
+        above is), and a PM must not meet a "Testers only" error halfway.
+        The real user is carried in the context for the audit stamps.
+        ``reason`` is optional (the wizard no longer asks for one); when
+        given it is logged in the chatter note and the deadline change log.
+        """
+        self.ensure_one()
+        self._ft_check_reopen_permission()
+        if not self.ft_is_in_final_stage:
+            raise UserError(_("Only a completed task can be reopened."))
+        reason = (reason or '').strip()
+        self._ft_validate_reopen_deadline(new_deadline)
+        working = self._ft_working_stage()
+        if not working:
+            raise UserError(_(
+                "No Working stage was found for project %s.") % (
+                self.project_id.display_name or ''))
+        log_reason = 'Reopened for rework'
+        if reason:
+            log_reason = '%s: %s' % (log_reason, reason)
+        self.sudo().with_context(**{
+            FT_REOPEN_CTX_KEY: True,
+            FT_REAL_UID_CTX_KEY: self.env.uid,
+            FT_DEADLINE_REASON_CTX_KEY: log_reason,
+        }).write({
+            'stage_id': working.id,
+            'date_deadline': new_deadline,
+        })
+        body = Markup('<p><b>%s</b></p><p>%s: %s</p>') % (
+            _('Reopened for rework'),
+            _('New deadline'),
+            format_datetime(self.env, new_deadline),
+        )
+        if reason:
+            body += Markup('<p>%s: %s</p>') % (_('Reason'), reason)
+        self.sudo().message_post(
+            body=body,
+            author_id=self.env.user.partner_id.id,
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )
+        return True
 
     def _ft_validate_written(self, vals):
         """Re-run the required-field rules for whatever this write touched.

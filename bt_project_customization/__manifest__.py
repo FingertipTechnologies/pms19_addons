@@ -166,7 +166,30 @@
     # against the UAT Start Date, and so on, and only once that date has
     # passed. Regression joins the check with its Regression Date. Python
     # only, nothing stored, no migration.
-    'version': '19.0.1.24.0',
+    # 19.0.1.25.0 (meeting 22 Oct 2026): Task Types PM Activity and TL
+    # Activity; same-day Deadline (default today 23:59 local, enforced on
+    # create) for every type except User Story and Testing; Worked By now
+    # names whoever last changed the task's status (every stage change);
+    # First Time / Worked By also stamped for tasks created straight into
+    # Working; and the "Reopen for Rework" wizard (ft.task.reopen.wizard) as
+    # the only way out of a final stage, reserved to the PM, with a new
+    # future deadline. No migration.
+    # 19.0.1.26.0 locks the same-day Deadline after create: an Internal Call,
+    # External Call, PM Activity or TL Activity task cannot have its deadline
+    # changed (which also blocks moving it to another week), and its form
+    # field is readonly once saved. Any change of Task Type on a saved task
+    # clears the Deadline in the form and asks for a new one (the field is
+    # unlocked for it, ft_deadline_locked); write() validates the change
+    # before anything is written: onto a same-day type the deadline must be
+    # today (defaulted to today 23:59:59 when absent, refused for a completed
+    # task), onto User Story at least 24 hours ahead. "Reopen for Rework" of a same-day task requires a
+    # deadline later today. Superuser and skip_ft_deadline_validation are
+    # exempt. The reopen wizard no longer asks for a reason, and the form's
+    # Deadline is readonly and not required on a completed task, so an old
+    # completed task without one is reopened (and dated) through the button
+    # only.
+    # Python/view only, no migration.
+    'version': '19.0.1.26.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',
@@ -174,10 +197,12 @@
     'data': [
         'security/ir.model.access.csv',
         'security/project_timesheet_group.xml',
+        'wizard/task_reopen_wizard_views.xml',
         'views/project_project_views.xml',
         'views/project_milestone_views.xml',
         'views/project_task_views.xml',
         'views/module_views.xml',
+        'data/system_partner_data.xml',
     ],
     'assets': {
         'web.assets_backend': [
