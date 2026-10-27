@@ -90,6 +90,9 @@ class HrEmployeePublic(models.Model):
     image_1920 = fields.Image(
         "Image", related='employee_id.image_1920', compute_sudo=True,
         readonly=False)
+    work_phone = fields.Char(
+        "Work Phone", related='employee_id.work_phone', compute_sudo=True,
+        readonly=False)
 
     def _avatar_generate_svg(self):
         """Do not generate initial-letter avatar if image is not provided.
@@ -275,7 +278,9 @@ class HrEmployeePublic(models.Model):
         }
         has_image = 'image_1920' in vals
         image = vals.pop('image_1920', False)
-        if detail_vals or line_vals or has_image:
+        has_work_phone = 'work_phone' in vals
+        work_phone = vals.pop('work_phone', False)
+        if detail_vals or line_vals or has_image or has_work_phone:
             # ACL + record rules (own record for employees, all for HR/admin) ...
             self.check_access('write')
             # ... and an explicit ownership check, independent of the rules.
@@ -295,6 +300,8 @@ class HrEmployeePublic(models.Model):
                     PUBLIC_TO_EMPLOYEE_FIELDS[fname]: value
                     for fname, value in detail_vals.items()
                 })
+            if has_work_phone:
+                employee_vals['work_phone'] = work_phone
             if has_image:
                 employee_vals['image_1920'] = image
 

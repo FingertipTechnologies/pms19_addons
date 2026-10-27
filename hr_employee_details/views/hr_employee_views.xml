@@ -19,7 +19,7 @@
                 <field name="state" options="{'no_create': True, 'no_open': True}" required="is_residing_with == 'no'"
                        invisible="is_residing_with != 'no'"/>
                 <field name="district" required="is_residing_with == 'no'" invisible="is_residing_with != 'no'"/>
-                <field name="phone" required="1"/>
+                <field name="phone" required="relation != 'kid'"/>
             </list>
         </field>
     </record>
@@ -44,7 +44,7 @@
                                    required="is_residing_with == 'no'" invisible="is_residing_with != 'no'"/>
                             <field name="district" required="is_residing_with == 'no'"
                                    invisible="is_residing_with != 'no'"/>
-                            <field name="phone" required="1"/>
+                            <field name="phone" required="relation != 'kid'"/>
                         </group>
                     </group>
                 </sheet>

@@ -23,6 +23,12 @@
                  where the server would refuse the write anyway. -->
             <xpath expr="//field[@name='image_1920']" position="attributes">
                 <attribute name="readonly">not can_access_personal_details</attribute>
+                <attribute name="required">can_access_personal_details</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='work_phone']" position="attributes">
+                <attribute name="readonly">not can_access_personal_details</attribute>
+                <attribute name="required">can_access_personal_details</attribute>
             </xpath>
 
             <xpath expr="//page[@name='work_information']" position="after">
@@ -119,7 +125,7 @@
 
                     <!-- S.No 13: Family Particulars -->
                     <separator string="Family Particulars"/>
-                    <field name="family_ids" widget="one2many" readonly="not can_access_personal_details"/>
+                    <field name="family_ids" widget="one2many" readonly="not can_access_personal_details" required="can_access_personal_details"/>
 
                     <!-- S.No 14: Bank Account Details -->
                     <separator string="Bank Account Details"/>

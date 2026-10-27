@@ -204,6 +204,7 @@
         'views/project_task_user_group_views.xml',
         'views/module_views.xml',
         'data/system_partner_data.xml',
+        'data/hr_job_data.xml',
     ],
     'assets': {
         'web.assets_backend': [

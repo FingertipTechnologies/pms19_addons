@@ -319,6 +319,31 @@ class HrEmployee(models.Model):
                 if not is_trainee and not rec.date_of_joining:
                     raise ValidationError(_("DOJ (Payroll) is mandatory."))
 
+    @api.constrains('image_1920', 'aadhar_no', 'pan_no')
+    def _check_image_1920_mandatory(self):
+        if not self._is_employee_self_service():
+            return
+        for rec in self:
+            if not rec._has_real_image() and (rec.aadhar_no or rec.pan_no):
+                raise ValidationError(_("Profile photo is mandatory."))
+
+    @api.constrains('work_phone', 'aadhar_no', 'pan_no')
+    def _check_work_phone_mandatory(self):
+        if not self._is_employee_self_service():
+            return
+        for rec in self:
+            if not (rec.work_phone or '').strip() and (rec.aadhar_no or rec.pan_no):
+                raise ValidationError(_("Work Phone is mandatory."))
+
+    @api.constrains('family_ids', 'aadhar_no', 'pan_no')
+    def _check_family_ids_mandatory(self):
+        if not self._is_employee_self_service():
+            return
+        for rec in self:
+            has_family = bool(rec.family_ids) or bool(self.env['hr.employee.family'].search_count([('employee_id', '=', rec.id)]))
+            if not has_family and (rec.aadhar_no or rec.pan_no):
+                raise ValidationError(_("Family Particulars must contain at least 1 record."))
+
     @api.constrains('aadhar_no')
     def _check_aadhar_no(self):
         for rec in self:

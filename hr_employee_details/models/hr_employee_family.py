@@ -54,14 +54,19 @@ class HrEmployeeFamily(models.Model):
                     "Family Particulars - District for '%s' must contain letters only.",
                     rec.name))
 
-    @api.constrains('phone')
+    @api.constrains('relation', 'phone')
     def _check_phone(self):
         for rec in self:
-            if not v.is_phone(rec.phone, 10, 13):
+            phone = (rec.phone or '').strip()
+            if rec.relation != 'kid' and not phone:
+                raise ValidationError(_(
+                    "Family Particulars - Phone Number is mandatory for '%s'.",
+                    rec.name or rec.relation or ''))
+            if phone and not v.is_phone(phone, 10, 13):
                 raise ValidationError(_(
                     "Family Particulars - Phone Number for '%s' is not valid. Use numbers "
                     "only (10 to 13 digits, an optional leading +); letters are not allowed.",
-                    rec.name))
+                    rec.name or ''))
 
     @api.constrains('employee_id', 'relation', 'date_of_birth')
     def _check_parent_birth_date(self):
@@ -108,3 +113,20 @@ class HrEmployeeFamily(models.Model):
                     "Only one %s is allowed for an employee.",
                     relation_label,
                 ))
+
+    def unlink(self):
+        if not self.env.user.has_group('hr.group_hr_user'):
+            employees_to_check = self.mapped('employee_id').filtered(
+                lambda emp: emp.aadhar_no or emp.pan_no
+            )
+            for emp in employees_to_check:
+                remaining = self.search_count([
+                    ('employee_id', '=', emp.id),
+                    ('id', 'not in', self.ids),
+                ])
+                if remaining < 1:
+                    raise ValidationError(_(
+                        "Family Particulars must contain at least 1 record for employee '%s'.",
+                        emp.name,
+                    ))
+        return super().unlink()

@@ -24,6 +24,7 @@ TASK_CREATE_JOBS = {
     'project manager',
     'project coordinator',
     'project cordinator',   # legacy typo present in source data
+    'digital marketing manager',
 }
 
 # Task stage names that mean the work is delivered even when the Kanban "Folded
@@ -89,6 +90,7 @@ PLANNED_CREATE_JOB_NAMES = (
     'technical lead',
     'project coordinator',
     'project cordinator',
+    'digital marketing manager',
 )
 UNPLANNED_REASON_MIN_LEN = 20
 
@@ -1358,8 +1360,8 @@ class ProjectTask(models.Model):
         )
         if job_name not in PLANNED_CREATE_JOB_NAMES:
             raise UserError(_(
-                "Only a Project Manager, Project Coordinator, Technical Lead "
-                "or Administrator can create a task in Planned status."
+                "Only a Project Manager, Project Coordinator, Technical Lead, "
+                "Digital Marketing Manager or Administrator can create a task in Planned status."
             ))
 
     def _check_planned_stage_write(self, target_stage_id):
@@ -1480,7 +1482,7 @@ class ProjectTask(models.Model):
         if job_name not in TASK_CREATE_JOBS:
             raise UserError(_(
                 "You are not allowed to create tasks. Only a Technical Lead, "
-                "Project Manager or Project Coordinator can create tasks."
+                "Project Manager, Project Coordinator or Digital Marketing Manager can create tasks."
             ))
 
     # Estimate and deadline are required on every task from here on. They are
