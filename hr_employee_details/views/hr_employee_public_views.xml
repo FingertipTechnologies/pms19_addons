@@ -77,9 +77,10 @@
                             <field name="father_name" required="can_access_personal_details" readonly="not can_access_personal_details"/>
                             <field name="sex" required="can_access_personal_details" readonly="not can_access_personal_details" options="{'max_date': 'today'}"/>
                             <field name="details_birthday" required="can_access_personal_details" readonly="not can_access_personal_details" options="{'max_date': 'today'}"/>
-                            <field name="details_marital" required="can_access_personal_details" readonly="not can_access_personal_details"/>
-                            <field name="date_of_joining" required="can_access_personal_details" readonly="not can_access_personal_details"/>
                             <field name="details_job_title" required="can_access_personal_details" readonly="not can_access_personal_details"/>
+                            <field name="is_trainee" invisible="1"/>
+                            <field name="doj_training" string="Date of Joining (Training)" required="can_access_personal_details and is_trainee" readonly="not can_access_personal_details"/>
+                            <field name="date_of_joining" string="Date of Joining (Payroll)" required="can_access_personal_details and not is_trainee" readonly="not can_access_personal_details"/>
                         </group>
                     </group>
 

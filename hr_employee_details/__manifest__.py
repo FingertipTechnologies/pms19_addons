@@ -1,9 +1,8 @@
 {
     'name': 'HR Employee Details',
-    # 19.0.1.4.0: every employee can change their own profile photo on their
-    #   public employee profile (Employees app); it also updates their user
-    #   avatar. Python/view only, no migration.
-    'version': '19.0.1.4.0',
+    # 19.0.1.5.0: prevent auto-generating initial letter SVG avatars when photo is not provided;
+    #   keep image empty.
+    'version': '19.0.1.5.0',
     'category': 'Human Resources',
     'summary': 'Extended Employee Details - Aadhar, PAN, Family, Bank, References',
     'description': """

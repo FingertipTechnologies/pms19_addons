@@ -140,8 +140,10 @@
                             <field name="birthday" options="{'max_date': 'today'}"/>
                             <field name="sex"/>
                             <field name="marital"/>
-                            <field name="date_of_joining"/>
                             <field name="job_title"/>
+                            <field name="is_trainee" invisible="1"/>
+                            <field name="doj_training" string="Date of Joining (Training)"/>
+                            <field name="date_of_joining" string="Date of Joining (Payroll)"/>
                         </group>
                     </group>
 

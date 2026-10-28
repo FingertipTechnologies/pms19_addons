@@ -30,6 +30,7 @@ PUBLIC_TO_EMPLOYEE_FIELDS = {
     'details_birthday': 'birthday',
     'details_marital': 'marital',
     'date_of_joining': 'date_of_joining',
+    'doj_training': 'doj_training',
     'details_job_title': 'job_title',
     'present_address': 'present_address',
     'present_state': 'present_state',
@@ -90,6 +91,11 @@ class HrEmployeePublic(models.Model):
         "Image", related='employee_id.image_1920', compute_sudo=True,
         readonly=False)
 
+    def _avatar_generate_svg(self):
+        """Do not generate initial-letter avatar if image is not provided.
+        Returns False so the image remains empty."""
+        return False
+
     can_access_personal_details = fields.Boolean(
         compute='_compute_can_access_personal_details',
         help="True when the current user is this employee, an HR Officer or an administrator.")
@@ -108,7 +114,23 @@ class HrEmployeePublic(models.Model):
     details_birthday = _details_field(fields.Date, string='Date of Birth')
     details_marital = _details_field(
         fields.Selection, selection='_get_details_marital_selection', string='Marital Status')
-    date_of_joining = _details_field(fields.Date, string='Date of Joining (DOJ)')
+    is_trainee = fields.Boolean(
+        string='Is Trainee',
+        compute='_compute_is_trainee',
+    )
+
+    @api.depends('employee_id.is_trainee', 'details_job_title')
+    def _compute_is_trainee(self):
+        for rec in self:
+            if rec.details_job_title:
+                rec.is_trainee = 'trainee' in rec.details_job_title.lower()
+            elif rec.employee_id:
+                rec.is_trainee = rec.employee_id.sudo().is_trainee
+            else:
+                rec.is_trainee = False
+
+    doj_training = _details_field(fields.Date, string='DOJ (Training)')
+    date_of_joining = _details_field(fields.Date, string='DOJ (Payroll)')
     details_job_title = _details_field(fields.Char, string='Job Title')
     sex = _details_field(
         fields.Selection,
