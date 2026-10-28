@@ -115,6 +115,13 @@ USER_STORY_MIN_DEADLINE_HOURS = 24
 # one-week cycle of its own, so it is exempt like a User Story.
 SAME_DAY_DEADLINE_EXEMPT_TYPES = ('user_story', 'testing')
 
+SINGLE_ASSIGNEE_TASK_TYPES = {
+    'user_story': 'User Story',
+    'testing': 'Testing',
+    'pm_activity': 'PM Activity',
+    'tl_activity': 'TL Activity',
+}
+
 # Context keys of the "Reopen for Rework" wizard (wizard/task_reopen_wizard.py).
 # Honoured by write() ONLY together with env.su: the wizard performs its write
 # as sudo after its own permission check, and an RPC client can put anything in
@@ -272,7 +279,21 @@ class ProjectTask(models.Model):
     @api.onchange('assignee_group_id')
     def _onchange_assignee_group_id(self):
         if self.assignee_group_id:
-            self.user_ids = self.user_ids | self.assignee_group_id.user_ids
+            self.user_ids = self.assignee_group_id.user_ids
+
+    @api.onchange('user_ids', 'task_type')
+    def _onchange_single_assignee_check(self):
+        if self.task_type in SINGLE_ASSIGNEE_TASK_TYPES and len(self.user_ids) > 1:
+            type_label = SINGLE_ASSIGNEE_TASK_TYPES[self.task_type]
+            return {
+                'warning': {
+                    'title': _("Single Assignee Required"),
+                    'message': _(
+                        "A %s can have only one assignee. Please leave only a single assignee.",
+                        type_label,
+                    ),
+                }
+            }
 
     task_type = fields.Selection([
         ('user_story', 'User Story'),
@@ -1538,28 +1559,25 @@ class ProjectTask(models.Model):
 
     @api.constrains('task_type', 'user_ids')
     def _check_user_story_single_assignee(self):
-        """A User Story is owned by one person.
+        """A User Story, Testing, PM Activity, or TL Activity task can have only one assignee.
 
-        Only User Stories. Internal and external calls are routinely worked by
-        a pair and are left alone.
-
-        Superuser is exempt for the same reason the other checks exempt it —
-        imports and automation must not be blocked — but note this fires on
-        WRITE as well as create, so the rule reaches the tasks that already
-        exist: reassigning one of them means bringing it down to a single
-        assignee at the same time.
+        Internal and external calls are routinely worked by multiple people and are exempt.
         """
-        if self.env.su:
+        if self.env.context.get('install_mode') or self.env.context.get('import_file'):
             return
         for task in self:
-            if task.task_type == 'user_story' and len(task.user_ids) > 1 and not task.assignee_group_id:
+            if task.task_type in SINGLE_ASSIGNEE_TASK_TYPES and len(task.user_ids) > 1:
+                type_label = SINGLE_ASSIGNEE_TASK_TYPES.get(task.task_type, 'Task')
                 raise ValidationError(_(
-                    "A User Story can have only one assignee.\n\n"
-                    "Task: %s\n"
-                    "Currently assigned to: %s\n\n"
-                    "Leave a single assignee, assign a user group, or change the Task Type if this "
-                    "work really is shared."
-                ) % (task.name or '', ', '.join(task.user_ids.mapped('name'))))
+                    "A %(type_label)s can have only one assignee.\n\n"
+                    "Task: %(name)s\n"
+                    "Currently assigned to: %(assignees)s\n\n"
+                    "Please leave a single assignee, or change the Task Type if this work is shared."
+                ) % {
+                    'type_label': type_label,
+                    'name': task.name or '',
+                    'assignees': ', '.join(task.user_ids.mapped('name')),
+                })
 
     @api.constrains('name', 'project_id')
     def _check_task_title_length(self):

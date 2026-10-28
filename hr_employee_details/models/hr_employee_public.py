@@ -280,17 +280,31 @@ class HrEmployeePublic(models.Model):
             self.check_access('write')
             # ... and an explicit ownership check, independent of the rules.
             self._check_personal_details_access()
-            if detail_vals:
-                employee_vals = {
-                    PUBLIC_TO_EMPLOYEE_FIELDS[fname]: value
-                    for fname, value in detail_vals.items()
-                }
-                # sudo: access checked above; hr.employee constraints still apply.
-                self.env['hr.employee'].sudo().browse(self.ids).write(employee_vals)
+            # 1. Process line_vals (family_ids, reference_ids) FIRST so the records exist
+            # in the database before hr.employee constraints validate mandatory lines!
             for fname, commands in line_vals.items():
                 self._write_personal_detail_lines(fname, commands)
+
+            # Invalidate family/reference lines cache on hr.employee so constraints see the new lines
+            self.env['hr.employee'].sudo().browse(self.ids).invalidate_recordset(['family_ids', 'reference_ids'])
+
+            # 2. Combine all employee field updates into a single write call so all constraints validate together
+            employee_vals = {}
+            if detail_vals:
+                employee_vals.update({
+                    PUBLIC_TO_EMPLOYEE_FIELDS[fname]: value
+                    for fname, value in detail_vals.items()
+                })
             if has_image:
-                self._write_profile_image(image)
+                employee_vals['image_1920'] = image
+
+            if employee_vals:
+                self.env['hr.employee'].sudo().browse(self.ids).write(employee_vals)
+                if has_image:
+                    own = self.filtered(lambda emp: emp.user_id and emp.user_id == self.env.user)
+                    if own:
+                        own.user_id.sudo().write({'image_1920': image})
+
             self.invalidate_recordset()
         if vals:
             return super().write(vals)
