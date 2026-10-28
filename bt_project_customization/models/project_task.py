@@ -280,6 +280,8 @@ class ProjectTask(models.Model):
     def _onchange_assignee_group_id(self):
         if self.assignee_group_id:
             self.user_ids = self.assignee_group_id.user_ids
+        else:
+            self.user_ids = False
 
     @api.onchange('user_ids', 'task_type')
     def _onchange_single_assignee_check(self):
