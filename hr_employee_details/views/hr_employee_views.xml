@@ -100,39 +100,34 @@
                     <separator string="Document Numbers &amp; Copies"/>
                     <group>
                         <group>
-                            <field name="aadhar_no" required="1"/>
-                            <field name="pan_no" required="1"/>
+                            <field name="aadhar_no"/>
+                            <field name="pan_no"/>
                             <field name="uan_pf_no" placeholder="If you have one, enter it here"/>
-                            <!--                            <field name="father_name" required="1"/>-->
-                            <!--                            <field name="birthday" required="1" options="{'max_date': 'today'}"/>-->
-                            <!--                            <field name="marital" required="1"/>-->
-                            <!--                            <field name="date_of_joining" required="1"/>-->
-                            <!--                            <field name="job_title" required="1"/>-->
                         </group>
                         <group>
                             <field name="aadhar_copy_filename" invisible="1"/>
                             <label for="aadhar_copy"/>
                             <div class="o_row">
-                                <field name="aadhar_copy" nolabel="1" required="1" filename="aadhar_copy_filename"/>
+                                <field name="aadhar_copy" nolabel="1" filename="aadhar_copy_filename"/>
                                 <button name="action_view_aadhar_copy" type="object" string="View"
-                                        icon="fa-eye" class="btn-link" groups="hr.group_hr_user"
-                                        invisible="not aadhar_copy or not id"/>
+                                         icon="fa-eye" class="btn-link" groups="hr.group_hr_user"
+                                         invisible="not aadhar_copy or not id"/>
                             </div>
                             <field name="pan_copy_filename" invisible="1"/>
                             <label for="pan_copy"/>
                             <div class="o_row">
-                                <field name="pan_copy" nolabel="1" required="1" filename="pan_copy_filename"/>
+                                <field name="pan_copy" nolabel="1" filename="pan_copy_filename"/>
                                 <button name="action_view_pan_copy" type="object" string="View"
-                                        icon="fa-eye" class="btn-link" groups="hr.group_hr_user"
-                                        invisible="not pan_copy or not id"/>
+                                         icon="fa-eye" class="btn-link" groups="hr.group_hr_user"
+                                         invisible="not pan_copy or not id"/>
                             </div>
                             <field name="bank_copy_filename" invisible="1"/>
                             <label for="bank_copy"/>
                             <div class="o_row">
-                                <field name="bank_copy" nolabel="1" required="1" filename="bank_copy_filename"/>
+                                <field name="bank_copy" nolabel="1" filename="bank_copy_filename"/>
                                 <button name="action_view_bank_copy" type="object" string="View"
-                                        icon="fa-eye" class="btn-link" groups="hr.group_hr_user"
-                                        invisible="not bank_copy or not id"/>
+                                         icon="fa-eye" class="btn-link" groups="hr.group_hr_user"
+                                         invisible="not bank_copy or not id"/>
                             </div>
 
                         </group>
@@ -141,12 +136,12 @@
                     <separator string="Basic Details"/>
                     <group>
                         <group>
-                            <field name="father_name" required="1"/>
-                            <field name="birthday" required="1" options="{'max_date': 'today'}"/>
-                            <field name="sex" required="1"/>
-                            <field name="marital" required="1"/>
-                            <field name="date_of_joining" required="1"/>
-                            <field name="job_title" required="1"/>
+                            <field name="father_name"/>
+                            <field name="birthday" options="{'max_date': 'today'}"/>
+                            <field name="sex"/>
+                            <field name="marital"/>
+                            <field name="date_of_joining"/>
+                            <field name="job_title"/>
                         </group>
                     </group>
 
@@ -154,15 +149,15 @@
                     <separator string="Present Address"/>
                     <group>
                         <group>
-                            <field name="present_address" required="1"/>
-                            <field name="present_state" required="1" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="present_district" required="1"/>
-                            <field name="present_pin_code" required="1"/>
+                            <field name="present_address"/>
+                            <field name="present_state" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="present_district"/>
+                            <field name="present_pin_code"/>
                         </group>
                         <group>
-                            <field name="present_mobile" required="1"/>
-                            <field name="present_email" required="1"/>
-                            <field name="emergency_contact_no" placeholder="Not same as Mobile No" required="1"/>
+                            <field name="present_mobile"/>
+                            <field name="present_email"/>
+                            <field name="emergency_contact_no" placeholder="Not same as Mobile No"/>
                         </group>
                     </group>
 
@@ -172,20 +167,20 @@
                     <group>
                         <group>
                             <field name="permanent_same_as_present"/>
-                            <field name="permanent_address" required="1" readonly="permanent_same_as_present"
+                            <field name="permanent_address" readonly="permanent_same_as_present"
                                    force_save="1"/>
-                            <field name="permanent_state" required="1" readonly="permanent_same_as_present"
+                            <field name="permanent_state" readonly="permanent_same_as_present"
                                    force_save="1" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="permanent_district" required="1" readonly="permanent_same_as_present"
+                            <field name="permanent_district" readonly="permanent_same_as_present"
                                    force_save="1"/>
-                            <field name="permanent_pin_code" required="1" readonly="permanent_same_as_present"
+                            <field name="permanent_pin_code" readonly="permanent_same_as_present"
                                    force_save="1"/>
                         </group>
                         <group>
                             <field name="permanent_phone"/>
-                            <field name="permanent_mobile" required="1" readonly="permanent_same_as_present"
+                            <field name="permanent_mobile" readonly="permanent_same_as_present"
                                    force_save="1"/>
-                            <field name="permanent_email" required="1" readonly="permanent_same_as_present"
+                            <field name="permanent_email" readonly="permanent_same_as_present"
                                    force_save="1"/>
                         </group>
                     </group>
@@ -198,13 +193,13 @@
                     <separator string="Bank Account Details"/>
                     <group>
                         <group>
-                            <field name="bank_account_number" required="1"/>
-                            <field name="bank_account_type" required="1"/>
-                            <field name="bank_name" required="1"/>
+                            <field name="bank_account_number"/>
+                            <field name="bank_account_type"/>
+                            <field name="bank_name"/>
                         </group>
                         <group>
-                            <field name="bank_branch" required="1"/>
-                            <field name="bank_ifsc" required="1"/>
+                            <field name="bank_branch"/>
+                            <field name="bank_ifsc"/>
                             <field name="bank_micr" required="0"/>
                         </group>
                     </group>

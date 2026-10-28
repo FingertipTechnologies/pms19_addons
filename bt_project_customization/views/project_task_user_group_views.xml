@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_project_task_user_group_tree" model="ir.ui.view">
+        <field name="name">project.task.user.group.list</field>
+        <field name="model">project.task.user.group</field>
+        <field name="arch" type="xml">
+            <list string="Task Assignee Groups">
+                <field name="name"/>
+                <field name="user_ids" widget="many2many_tags"/>
+                <field name="user_count" string="Members Count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_project_task_user_group_form" model="ir.ui.view">
+        <field name="name">project.task.user.group.form</field>
+        <field name="model">project.task.user.group</field>
+        <field name="arch" type="xml">
+            <form string="Task Assignee Group">
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" string="Group Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. QA Team, Frontend Developers..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="user_ids" widget="many2many_tags"
+                                   placeholder="Select users to include in this group..."
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1" placeholder="Optional notes about this team or group..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_project_task_user_group_search" model="ir.ui.view">
+        <field name="name">project.task.user.group.search</field>
+        <field name="model">project.task.user.group</field>
+        <field name="arch" type="xml">
+            <search string="Task Assignee Groups">
+                <field name="name"/>
+                <field name="user_ids"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_project_task_user_group" model="ir.actions.act_window">
+        <field name="name">Assignee Groups</field>
+        <field name="res_model">project.task.user.group</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_project_task_user_group_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Task Assignee Group
+            </p>
+            <p>
+                Define groups of users (e.g. QA Team, Dev Team) that can be assigned to tasks with a single click.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menuitem under Project -> Configuration -->
+    <menuitem id="menu_project_task_user_group"
+              name="Assignee Groups"
+              parent="project.menu_project_config"
+              action="action_project_task_user_group"
+              sequence="25"/>
+
+</odoo>

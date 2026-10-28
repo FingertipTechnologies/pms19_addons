@@ -65,6 +65,11 @@
             <xpath expr="//field[@name='date_deadline']" position="before">
                 <field name="ft_deadline_locked" invisible="1"/>
             </xpath>
+            <xpath expr="//field[@name='user_ids']" position="before">
+                <field name="assignee_group_id"
+                       placeholder="Select or create a user group..."
+                       options="{'no_open': False, 'no_create_edit': False}"/>
+            </xpath>
             <!-- Keep the long Text field in the wider left-hand details group;
                  the nested custom group on the right compresses Text widgets. -->
             <xpath expr="//field[@name='user_ids']" position="after">

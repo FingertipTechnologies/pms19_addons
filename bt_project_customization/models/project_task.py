@@ -261,6 +261,19 @@ class ProjectTask(models.Model):
              "field can be filtered against it.",
     )
     wc_id = fields.Char(string='Wc Id')
+    assignee_group_id = fields.Many2one(
+        'project.task.user.group',
+        string='Assignee Group',
+        help="Select a predefined user group / team to automatically populate assignees.",
+        copy=True,
+        tracking=True,
+    )
+
+    @api.onchange('assignee_group_id')
+    def _onchange_assignee_group_id(self):
+        if self.assignee_group_id:
+            self.user_ids = self.user_ids | self.assignee_group_id.user_ids
+
     task_type = fields.Selection([
         ('user_story', 'User Story'),
         ('internal_call', 'Internal Call'),
@@ -1539,12 +1552,12 @@ class ProjectTask(models.Model):
         if self.env.su:
             return
         for task in self:
-            if task.task_type == 'user_story' and len(task.user_ids) > 1:
+            if task.task_type == 'user_story' and len(task.user_ids) > 1 and not task.assignee_group_id:
                 raise ValidationError(_(
                     "A User Story can have only one assignee.\n\n"
                     "Task: %s\n"
                     "Currently assigned to: %s\n\n"
-                    "Leave a single assignee, or change the Task Type if this "
+                    "Leave a single assignee, assign a user group, or change the Task Type if this "
                     "work really is shared."
                 ) % (task.name or '', ', '.join(task.user_ids.mapped('name'))))
 

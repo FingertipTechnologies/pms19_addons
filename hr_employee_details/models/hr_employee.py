@@ -97,8 +97,15 @@ class HrEmployee(models.Model):
         selection='_get_marital_status_selection',
         string='Marital Status',
         groups="hr.group_hr_user",
-        required=True,
+        required=False,
         tracking=True)
+
+    def _is_employee_self_service(self):
+        """Returns True if the operation is initiated by an employee self-service action,
+        or by a non-HR user. Returns False when an HR user/admin is directly managing records."""
+        if self.env.context.get('employee_self_service'):
+            return True
+        return not self.env.user.has_group(HR_GROUP)
 
     @api.model
     def _get_marital_status_selection(self):

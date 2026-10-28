@@ -201,6 +201,7 @@
         'views/project_project_views.xml',
         'views/project_milestone_views.xml',
         'views/project_task_views.xml',
+        'views/project_task_user_group_views.xml',
         'views/module_views.xml',
         'data/system_partner_data.xml',
     ],
