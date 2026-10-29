@@ -6,3 +6,4 @@ access_ft_pms_stage_approval_admin,ft.pms.stage.approval admin,model_ft_pms_stag
 access_ft_pms_amc_reject_wizard_user,ft.pms.amc.reject.wizard user,model_ft_pms_amc_reject_wizard,base.group_user,1,1,1,0
 access_ft_pms_stage_approval_reject_wizard,ft.pms.stage.approval.reject.wizard admin,model_ft_pms_stage_approval_reject_wizard,base.group_system,1,1,1,0
 access_ft_timesheet_reject_wizard_user,ft.timesheet.reject.wizard user,model_ft_timesheet_reject_wizard,base.group_user,1,1,1,0
+access_project_project_qa_group_write,project.project QA Group write,project.model_project_project,bt_project_customization.group_qa_group,1,1,0,0

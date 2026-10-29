@@ -5,7 +5,12 @@
     # 19.0.1.22.0: AMC "To Approve" task filter lists only completed tasks.
     # 19.0.1.23.0: a timesheet reviewer may approve / reject their own lines
     #   (a PM logs time on their own project); the self-review block is gone.
-    'version': '19.0.1.23.0',
+    # 19.0.1.23.1: QA Group members get WRITE access on projects (access rule,
+    #   no create / delete): the project form opens editable for them, so the
+    #   SRV block's Current Status / Open Issues can be typed inline; the
+    #   stage, lifecycle dates, finance clearances and lock stay guarded
+    #   server-side.
+    'version': '19.0.1.23.1',
     'summary': 'Project Planner, weekly Task Planner, Avg. Daily Effort and '
                'gated project stage workflow with approvals and notifications.',
     'description': """
