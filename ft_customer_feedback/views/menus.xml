@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- menu visibility changes -->
 <odoo>
     <menuitem id="menu_ft_feedback_root"
-              name="Customer Feedback"
-              web_icon="ft_customer_feedback,static/img/app_icon.png"
-              sequence="66"/>
+            name="Customer Feedback"
+            web_icon="ft_customer_feedback,static/img/app_icon.png"
+            sequence="66"/>
 
     <record id="menu_ft_feedback_root" model="ir.ui.menu">
         <field name="group_ids"
@@ -15,6 +16,26 @@
               parent="menu_ft_feedback_root"
               action="action_ft_feedback_response"
               sequence="10"/>
+
+    <!-- Monthly feedback requests (one per project per month) and the
+         per-contact delivery status of each channel. -->
+    <menuitem id="menu_ft_feedback_monthly_requests_root"
+              name="Monthly Requests"
+              parent="menu_ft_feedback_root"
+              groups="ft_customer_feedback.group_feedback_user"
+              sequence="15"/>
+
+    <menuitem id="menu_ft_feedback_monthly_requests"
+              name="Requests"
+              parent="menu_ft_feedback_monthly_requests_root"
+              action="action_ft_feedback_request"
+              sequence="10"/>
+
+    <menuitem id="menu_ft_feedback_request_recipients"
+              name="Delivery Status"
+              parent="menu_ft_feedback_monthly_requests_root"
+              action="action_ft_feedback_request_recipient"
+              sequence="20"/>
 
     <menuitem id="menu_ft_feedback_reporting"
               name="Reporting"
@@ -76,5 +97,14 @@
           action="ft_customer_feedback.action_ft_feedback_response"
           groups="ft_customer_feedback.group_feedback_user"
           sequence="85"/>
+
+    <!-- Sibling of "Feedbacks" in the Project app (not a child: a child menu
+         would turn the existing "Feedbacks" entry into a dropdown). -->
+    <menuitem id="menu_pms_feedback_monthly_requests"
+          name="Monthly Feedback Requests"
+          parent="project.menu_main_pm"
+          action="ft_customer_feedback.action_ft_feedback_request"
+          groups="ft_customer_feedback.group_feedback_manager"
+          sequence="86"/>
 
 </odoo>

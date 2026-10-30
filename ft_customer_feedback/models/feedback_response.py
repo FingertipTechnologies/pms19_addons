@@ -68,6 +68,33 @@ class FeedbackResponse(models.Model):
         help="The project this feedback relates to.",
     )
     
+    request_id = fields.Many2one(
+        "ft.feedback.request",
+        string="Feedback Request",
+        ondelete="set null",
+        index=True,
+        readonly=True,
+        copy=False,
+        help="Monthly feedback request (project and month) this response "
+        "answers.",
+    )
+    feedback_period_start = fields.Date(
+        related="request_id.period_start",
+        string="Feedback Month Start",
+        store=True,
+    )
+    feedback_month = fields.Char(
+        related="request_id.period_label",
+        string="Feedback Month",
+        store=True,
+    )
+
+    # One response per contact per monthly request (portal also checks).
+    _request_partner_unique = models.UniqueIndex(
+        "(request_id, partner_id) WHERE request_id IS NOT NULL",
+        "This contact has already answered this feedback request.",
+    )
+
     user_id = fields.Many2one(
         "res.users",
         string="Submitted By",
@@ -152,13 +179,60 @@ class FeedbackResponse(models.Model):
                 "Please archive it instead."
             ))
 
+    @api.constrains("request_id", "project_id")
+    def _check_request_project(self):
+        for response in self:
+            if (
+                response.request_id
+                and response.project_id != response.request_id.project_id
+            ):
+                raise ValidationError(_(
+                    "The project of the response must be the project of its "
+                    "feedback request (%(project)s).",
+                    project=response.request_id.project_id.display_name,
+                ))
+
+    def _check_request_duplicates(self, vals_list):
+        """One response per contact per monthly feedback request."""
+        seen = set()
+        for vals in vals_list:
+            if not vals.get("request_id") or not vals.get("partner_id"):
+                continue
+            key = (vals["request_id"], vals["partner_id"])
+            if key in seen or self.sudo().with_context(active_test=False).search_count([
+                ("request_id", "=", key[0]),
+                ("partner_id", "=", key[1]),
+            ]):
+                raise ValidationError(_(
+                    "This contact has already answered this feedback request."
+                ))
+            seen.add(key)
+
+    def _link_request_recipients(self):
+        """Mark the recipient row of the contact as answered."""
+        Recipient = self.env["ft.feedback.request.recipient"].sudo()
+        for response in self.filtered("request_id"):
+            recipient = Recipient.search([
+                ("request_id", "=", response.request_id.id),
+                ("partner_id", "=", response.partner_id.id),
+                ("response_id", "=", False),
+            ], limit=1)
+            if recipient:
+                recipient.response_id = response
+
     @api.model_create_multi
     def create(self, vals_list):
         defaults = self.default_get(["state"])
         prepared = []
         states = []
 
+        Request = self.env["ft.feedback.request"].sudo()
         for incoming in vals_list:
+            if incoming.get("request_id") and not incoming.get("project_id"):
+                incoming = dict(incoming)
+                incoming["project_id"] = Request.browse(
+                    incoming["request_id"]
+                ).project_id.id
             vals = dict(incoming)
             states.append(vals.get("state", defaults.get("state", "draft")))
             vals["state"] = "draft"
@@ -171,6 +245,7 @@ class FeedbackResponse(models.Model):
 
             prepared.append(vals)
 
+        self._check_request_duplicates(prepared)
         responses = super().create(prepared)
 
         for response, state in zip(responses, states):
@@ -187,6 +262,7 @@ class FeedbackResponse(models.Model):
             if state != "draft":
                 response.write({"state": state})
 
+        responses._link_request_recipients()
         return responses
 
 

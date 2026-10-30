@@ -170,6 +170,14 @@
                     <p class="fw-bold mb-0 ft-fb-intro" t-out="intro_text"/>
                 </div>
 
+                <div t-if="feedback_request" class="ft-fb-request-header alert alert-light border mb-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fa fa-calendar-check-o me-2"/>Feedback for
+                        <t t-out="feedback_request.project_id.name"/> —
+                        <t t-out="feedback_request.period_label"/>
+                    </h5>
+                </div>
+
                 <div t-if="error_message" class="alert alert-danger" role="alert">
                     <i class="fa fa-exclamation-triangle me-2"/><t t-out="error_message"/>
                 </div>
@@ -187,6 +195,9 @@
                     <input type="hidden"
                         name="submission_token"
                         t-att-value="submission_token"/>
+                    <input t-if="feedback_request" type="hidden"
+                        t-att-name="request_param"
+                        t-att-value="feedback_request.access_token"/>
 
                     <t t-foreach="question_groups" t-as="group">
                         <t t-set="section" t-value="group[0]"/>
@@ -220,6 +231,11 @@
                 </div>
                 <h3 class="fw-bold mb-2">Feedback Submitted</h3>
                 <p class="ft-fb-intro mb-1" t-out="thanks_text"/>
+                <p t-if="response.project_id or response.feedback_month" class="fw-semibold mb-1">
+                    <t t-if="response.project_id"><i class="fa fa-folder-open-o me-1"/><t t-out="response.project_id.name"/></t>
+                    <t t-if="response.project_id and response.feedback_month"> · </t>
+                    <t t-if="response.feedback_month"><i class="fa fa-calendar me-1"/><t t-out="response.feedback_month"/></t>
+                </p>
                 <p class="text-muted small mb-4">
                     Reference <strong t-out="response.name"/> ·
                     <span t-field="response.date" t-options="{'widget': 'datetime'}"/>
@@ -263,6 +279,8 @@
                             <tr>
                                 <th>Reference</th>
                                 <th>Date</th>
+                                <th>Project</th>
+                                <th>Feedback Month</th>
                                 <th>Given By</th>
                                 <th>Overall</th>
                                 <th class="text-end"></th>
@@ -272,6 +290,14 @@
                             <tr t-foreach="responses" t-as="r">
                                 <td><a t-attf-href="/my/feedbacks/#{r.id}" class="fw-semibold" t-out="r.name"/></td>
                                 <td><span t-field="r.date" t-options="{'widget': 'datetime'}"/></td>
+                                <td>
+                                    <t t-if="r.project_id" t-out="r.project_id.name"/>
+                                    <span t-else="" class="text-muted">-</span>
+                                </td>
+                                <td>
+                                    <t t-if="r.feedback_month" t-out="r.feedback_month"/>
+                                    <span t-else="" class="text-muted">-</span>
+                                </td>
                                 <td t-out="r.partner_id.name"/>
                                 <td>
                                     <span t-if="r.rating_label" class="badge text-bg-light border" t-out="r.rating_label"/>
@@ -304,6 +330,16 @@
                         <div class="text-muted small">
                             <span t-field="response.date" t-options="{'widget': 'datetime'}"/>
                             · <t t-out="response.partner_id.name"/>
+                        </div>
+                        <div t-if="response.project_id or response.feedback_month" class="small mt-1">
+                            <span t-if="response.project_id" class="me-3">
+                                <i class="fa fa-folder-open-o me-1"/>Project:
+                                <strong t-out="response.project_id.name"/>
+                            </span>
+                            <span t-if="response.feedback_month">
+                                <i class="fa fa-calendar me-1"/>Feedback month:
+                                <strong t-out="response.feedback_month"/>
+                            </span>
                         </div>
                     </div>
                     <span t-if="response.rating_label" class="badge text-bg-light border fs-6">
@@ -355,22 +391,49 @@
     </template>
     
     <template id="portal_feedback_already_submitted"
-          name="Feedback Already Submitted">
-    <t t-call="portal.portal_layout">
-        <div class="container py-5">
-            <div class="alert alert-info" role="alert">
-                <h4>Feedback already submitted</h4>
-                <p class="mb-0">
-                    You have already submitted your feedback.
-                    Only one submission is allowed per login.
-                </p>
-            </div>
+              name="Feedback Already Submitted">
+        <t t-call="portal.portal_layout">
+            <div class="container py-5">
+                <div class="alert alert-info" role="alert">
+                    <h4>Feedback already submitted</h4>
+                    <p t-if="feedback_request" class="mb-1">
+                        Feedback for
+                        <strong t-out="feedback_request.project_id.name"/> —
+                        <strong t-out="feedback_request.period_label"/>
+                        has already been submitted
+                        <t t-if="response">
+                            (reference <strong t-out="response.name"/>,
+                            <span t-field="response.date" t-options="{'widget': 'datetime'}"/>)</t>.
+                    </p>
+                    <p class="mb-0">
+                        <t t-if="feedback_request">Only one submission is allowed per contact for each month.</t>
+                        <t t-else="">You have already submitted your feedback.
+                        Only one submission is allowed per login.</t>
+                    </p>
+                </div>
 
-            <a href="/my/feedbacks" class="btn btn-primary">
-                View Feedback
-            </a>
-        </div>
-    </t>
-</template>
+                <a t-att-href="response_url or '/my/feedbacks'" class="btn btn-primary">
+                    View Feedback
+                </a>
+            </div>
+        </t>
+    </template>
+
+    <!-- Generic page for an unknown feedback link or a link that belongs
+         to another customer (never says which). -->
+    <template id="portal_feedback_request_unavailable"
+                name="Feedback Request Not Available">
+        <t t-call="portal.portal_layout">
+            <div class="container py-5">
+               
+                <a href="/my/feedback" class="btn btn-primary me-2">
+                    <i class="fa fa-smile-o me-1"/> Give Feedback
+                </a>
+                <a href="/my/feedbacks" class="btn btn-outline-secondary">
+                    <i class="fa fa-comments-o me-1"/> My Feedbacks
+                </a>
+            </div>
+        </t>
+    </template>
 
 </odoo>

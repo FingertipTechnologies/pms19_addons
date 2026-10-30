@@ -95,8 +95,9 @@ class MailChannel(models.Model):
         strict=True,
         **kwargs,
     ):
+        # ``message`` is positional-only in Odoo 19 (see mail_thread.py).
         res = super()._message_update_content(
-            message=message,
+            message,
             body=body,
             attachment_ids=attachment_ids,
             partner_ids=partner_ids,

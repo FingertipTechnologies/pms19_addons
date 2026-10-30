@@ -112,8 +112,11 @@ class MailThread(models.AbstractModel):
         strict=True,
         **kwargs,
     ):
+        # Odoo 19 declares ``message`` positional-only (``message, /, *, body``):
+        # passing it as a keyword raised "missing 1 required positional
+        # argument: 'message'" whenever a log note was edited.
         result = super()._message_update_content(
-            message=message,
+            message,
             body=body,
             attachment_ids=attachment_ids,
             partner_ids=partner_ids,

@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         Feedback Request Recipient (per contact / per channel status)
+         ================================================================ -->
+    <record id="view_ft_feedback_request_recipient_list" model="ir.ui.view">
+        <field name="name">ft.feedback.request.recipient.list</field>
+        <field name="model">ft.feedback.request.recipient</field>
+        <field name="arch" type="xml">
+            <list string="Feedback Request Recipients" create="0" edit="0">
+                <field name="request_id" optional="show"/>
+                <field name="project_id" optional="show"/>
+                <field name="period_label" string="Month" optional="show"/>
+                <field name="partner_id"/>
+                <field name="email" optional="show"/>
+                <field name="email_state" widget="badge"
+                       decoration-muted="email_state in ('pending', 'skipped')"
+                       decoration-info="email_state == 'queued'"
+                       decoration-success="email_state == 'sent'"
+                       decoration-danger="email_state == 'failed'"/>
+                <field name="email_error" optional="hide"/>
+                <field name="email_sent_on" optional="hide"/>
+                <field name="response_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_request_recipient_form" model="ir.ui.view">
+        <field name="name">ft.feedback.request.recipient.form</field>
+        <field name="model">ft.feedback.request.recipient</field>
+        <field name="arch" type="xml">
+            <form string="Feedback Request Recipient" create="0" edit="0">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="partner_id" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="request_id" readonly="1"/>
+                            <field name="project_id"/>
+                            <field name="period_label" string="Month"/>
+                            <field name="response_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="feedback_url" widget="CopyClipboardChar" readonly="1"/>
+                        </group>
+                    </group>
+                    <group name="ft_channels">
+                        <group string="Email" name="ft_email">
+                            <field name="email" readonly="1"/>
+                            <field name="email_state" widget="badge" readonly="1"
+                                   decoration-info="email_state == 'queued'"
+                                   decoration-success="email_state == 'sent'"
+                                   decoration-danger="email_state == 'failed'"/>
+                            <field name="email_sent_on" readonly="1"/>
+                            <field name="mail_id" readonly="1" groups="base.group_no_one"/>
+                            <field name="email_error" readonly="1" invisible="not email_error"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_request_recipient_search" model="ir.ui.view">
+        <field name="name">ft.feedback.request.recipient.search</field>
+        <field name="model">ft.feedback.request.recipient</field>
+        <field name="arch" type="xml">
+            <search string="Feedback Request Recipients">
+                <field name="partner_id"/>
+                <field name="request_id"/>
+                <field name="project_id"/>
+                <field name="email"/>
+                <filter name="email_failed" string="Email Failed"
+                        domain="[('email_state', '=', 'failed')]"/>
+                <separator/>
+                <filter name="skipped" string="Skipped"
+                        domain="[('email_state', '=', 'skipped')]"/>
+                <filter name="pending" string="Pending"
+                        domain="[('email_state', '=', 'pending')]"/>
+                <separator/>
+                <filter name="responded" string="Responded"
+                        domain="[('response_id', '!=', False)]"/>
+                <filter name="not_responded" string="Not Responded"
+                        domain="[('response_id', '=', False)]"/>
+                <group>
+                    <filter name="group_request" string="Request" context="{'group_by': 'request_id'}"/>
+                    <filter name="group_partner" string="Contact" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_email_state" string="Email Status" context="{'group_by': 'email_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ft_feedback_request_recipient" model="ir.actions.act_window">
+        <field name="name">Delivery Status</field>
+        <field name="res_model">ft.feedback.request.recipient</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_ft_feedback_request_recipient_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No feedback request has been sent yet</p>
+            <p>Each contact of a monthly feedback request appears here with the delivery status of each channel.</p>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Feedback Request (one per project per month)
+         ================================================================ -->
+    <record id="view_ft_feedback_request_list" model="ir.ui.view">
+        <field name="name">ft.feedback.request.list</field>
+        <field name="model">ft.feedback.request</field>
+        <field name="arch" type="xml">
+            <list string="Monthly Feedback Requests" create="0"
+                  default_order="period_start desc, id desc">
+                <field name="name"/>
+                <field name="period_start" column_invisible="True"/>
+                <field name="period_label" string="Month"/>
+                <field name="project_id"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="response_count" string="Responses"/>
+                <field name="last_run" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state == 'sent'"
+                       decoration-warning="state == 'partial'"
+                       decoration-danger="state == 'failed'"
+                       decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_request_form" model="ir.ui.view">
+        <field name="name">ft.feedback.request.form</field>
+        <field name="model">ft.feedback.request</field>
+        <field name="arch" type="xml">
+            <form string="Monthly Feedback Request" create="0">
+                <header>
+                    <button name="action_send_now" string="Send Now" type="object"
+                            class="oe_highlight"
+                            groups="ft_customer_feedback.group_feedback_manager,base.group_system"
+                            confirm="Send the pending messages of this request now? Channels already sent are never resent."/>
+                    <button name="action_retry_failed" string="Retry Failed" type="object"
+                            invisible="state not in ('partial', 'failed')"
+                            groups="ft_customer_feedback.group_feedback_manager,base.group_system"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="project_id" readonly="1"/>
+                            <field name="partner_id" string="Customer" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="period_label" string="Month" readonly="1"/>
+                            <field name="period_start" readonly="1"/>
+                            <field name="period_end" readonly="1"/>
+                            <field name="last_run" readonly="1"/>
+                            <field name="response_count" string="Responses"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="feedback_url" widget="CopyClipboardChar" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Recipients" name="recipients">
+                            <field name="recipient_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="partner_id"/>
+                                    <field name="email"/>
+                                    <field name="email_state" widget="badge"
+                                           decoration-muted="email_state in ('pending', 'skipped')"
+                                           decoration-info="email_state == 'queued'"
+                                           decoration-success="email_state == 'sent'"
+                                           decoration-danger="email_state == 'failed'"/>
+                                    <field name="email_error" optional="show"/>
+                                    <field name="response_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Responses" name="responses">
+                            <field name="response_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="partner_id"/>
+                                    <field name="rating_label"/>
+                                    <field name="line_count" string="Answers"/>
+                                    <field name="state" widget="badge"
+                                           decoration-muted="state == 'draft'"
+                                           decoration-success="state == 'submitted'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_request_search" model="ir.ui.view">
+        <field name="name">ft.feedback.request.search</field>
+        <field name="model">ft.feedback.request</field>
+        <field name="arch" type="xml">
+            <search string="Monthly Feedback Requests">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="partner_id" string="Customer" filter_domain="[('partner_id', 'child_of', self)]"/>
+                <field name="period_label" string="Month"/>
+                <filter name="state_draft" string="Not Sent" domain="[('state', '=', 'draft')]"/>
+                <filter name="state_sent" string="Sent" domain="[('state', '=', 'sent')]"/>
+                <filter name="state_partial" string="Partially Sent" domain="[('state', '=', 'partial')]"/>
+                <filter name="state_failed" string="Failed" domain="[('state', '=', 'failed')]"/>
+                <filter name="state_done" string="Done" domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter name="filter_period_start" string="Month" date="period_start"/>
+                <group>
+                    <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_partner" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_month" string="Month" context="{'group_by': 'period_start:month'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ft_feedback_request" model="ir.actions.act_window">
+        <field name="name">Monthly Feedback Requests</field>
+        <field name="res_model">ft.feedback.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_ft_feedback_request_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No monthly feedback request yet</p>
+            <p>Requests are created automatically early every month for each active project
+               that has "Monthly Customer Feedback" enabled (Project &gt; Customer Feedback tab).</p>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Feedback Response: link to the monthly request
+         ================================================================ -->
+    <record id="view_ft_feedback_response_list_request" model="ir.ui.view">
+        <field name="name">ft.feedback.response.list.request</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="inherit_id" ref="ft_customer_feedback.view_ft_feedback_response_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="feedback_month" optional="show"/>
+                <field name="request_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_response_form_request" model="ir.ui.view">
+        <field name="name">ft.feedback.response.form.request</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="inherit_id" ref="ft_customer_feedback.view_ft_feedback_response_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date']" position="after">
+                <field name="request_id" readonly="1" invisible="not request_id"/>
+                <field name="feedback_month" invisible="not feedback_month"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_ft_feedback_response_search_request" model="ir.ui.view">
+        <field name="name">ft.feedback.response.search.request</field>
+        <field name="model">ft.feedback.response</field>
+        <field name="inherit_id" ref="ft_customer_feedback.view_ft_feedback_response_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="feedback_month"/>
+                <field name="request_id"/>
+            </xpath>
+            <xpath expr="//filter[@name='draft']" position="after">
+                <separator/>
+                <filter name="from_monthly_request" string="From Monthly Request"
+                        domain="[('request_id', '!=', False)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='group_date']" position="after">
+                <filter name="group_feedback_month" string="Feedback Month"
+                        context="{'group_by': 'feedback_period_start:month'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Project form: Customer Feedback tab + smart button
+         ================================================================ -->
+    <record id="view_project_form_ft_feedback" model="ir.ui.view">
+        <field name="name">project.project.form.ft.feedback</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object"
+                        name="action_view_ft_feedback_requests"
+                        icon="fa-comments-o"
+                        invisible="not ft_feedback_monthly_enabled and not ft_feedback_request_count"
+                        groups="ft_customer_feedback.group_feedback_manager,base.group_system">
+                    <field name="ft_feedback_request_count" widget="statinfo" string="Feedback Requests"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Customer Feedback" name="ft_customer_feedback"
+                      invisible="is_template"
+                      groups="ft_customer_feedback.group_feedback_manager,base.group_system">
+                    <group>
+                        <group>
+                            <field name="ft_feedback_monthly_enabled" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="ft_feedback_contact_ids" widget="many2many_tags"
+                               required="ft_feedback_monthly_enabled"
+                               readonly="not partner_id"
+                               domain="[('commercial_partner_id', 'any', [('id', 'parent_of', partner_id)])]"
+                               context="{'default_parent_id': partner_id}"
+                               options="{'no_create': True}"
+                               placeholder="Contacts of the project customer..."/>
+                    </group>
+                    <div class="text-muted">
+                        When enabled, a feedback request for the previous month is sent early every month
+                        to the contacts above. Requests stop automatically when the project is closed, on hold or
+                        archived. Contacts must belong to the project customer.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

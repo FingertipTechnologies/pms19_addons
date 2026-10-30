@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Runs on the 1st of every month at 03:30 UTC (09:00 Asia/Kolkata,
+         the default company time zone). Creates the previous month's
+         feedback request of every enabled active customer project and sends
+         the channels still pending. If the scheduler was down on the 1st,
+         Odoo runs the job as soon as it is back (the next call is in the
+         past) and then re-aligns it on the 1st of the following month, so a
+         missed 1st is still caught up. Duplicates are impossible (one
+         request per project and month, one recipient per contact,
+         per-channel states). The time of day must stay early enough that
+         the 1st has already started in every company time zone.
+         Email statuses (Queued -> Sent / Failed) are updated by the mail
+         queue itself when it sends the email (models/mail_mail.py), so no
+         other cron is needed. -->
+    <record id="cron_monthly_feedback_requests" model="ir.cron">
+        <field name="name">Customer Feedback: Monthly Feedback Requests</field>
+        <field name="model_id" ref="model_ft_feedback_request"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_monthly_feedback_requests()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="nextcall" eval="(DateTime.now() + relativedelta(day=1, months=1)).strftime('%Y-%m-%d 03:30:00')"/>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

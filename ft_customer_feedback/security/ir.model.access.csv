@@ -13,3 +13,9 @@ access_ft_feedback_response_line_manager,ft.feedback.response.line manager,model
 access_ft_feedback_response_line_portal,ft.feedback.response.line portal,model_ft_feedback_response_line,base.group_portal,1,0,0,0
 access_ft_feedback_report_user,ft.feedback.report user,model_ft_feedback_report,group_feedback_user,1,0,0,0
 access_ft_feedback_report_manager,ft.feedback.report manager,model_ft_feedback_report,group_feedback_manager,1,0,0,0
+access_ft_feedback_request_user,ft.feedback.request user,model_ft_feedback_request,group_feedback_user,1,1,0,0
+access_ft_feedback_request_manager,ft.feedback.request manager,model_ft_feedback_request,group_feedback_manager,1,1,1,1
+access_ft_feedback_request_system,ft.feedback.request system,model_ft_feedback_request,base.group_system,1,1,1,1
+access_ft_feedback_request_recipient_user,ft.feedback.request.recipient user,model_ft_feedback_request_recipient,group_feedback_user,1,0,0,0
+access_ft_feedback_request_recipient_manager,ft.feedback.request.recipient manager,model_ft_feedback_request_recipient,group_feedback_manager,1,1,1,1
+access_ft_feedback_request_recipient_system,ft.feedback.request.recipient system,model_ft_feedback_request_recipient,base.group_system,1,1,1,1

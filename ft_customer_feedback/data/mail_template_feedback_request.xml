@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sent to each feedback contact by
+             ft.feedback.request.recipient._ft_send_email(); the recipient
+             address is passed through email_values. -->
+        <record id="mail_template_monthly_feedback_request" model="mail.template">
+            <field name="name">Customer Feedback: Monthly Feedback Request</field>
+            <field name="model_id" ref="model_ft_feedback_request_recipient"/>
+            <field name="subject">We Value Your Feedback | {{ object.project_id.name }} – {{ object.period_label }}</field>
+            <field name="email_from">{{ (object.request_id.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="description">Monthly request asking a customer contact for feedback on a project for the previous month.</field>
+            <field name="body_html" type="html">
+<div style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#333333;">
+    <p style="margin:0 0 12px 0;">Dear <t t-out="object.partner_id.name or 'Customer'"/>,</p>
+    <p style="margin:0 0 12px 0;">Thank you for choosing to work with us on <b t-out="object.project_id.name or ''"/>.
+        We truly value our partnership and appreciate the opportunity to support your business.</p>
+    <p style="margin:0 0 12px 0;">As part of our commitment to continuously improving our services, we would love to hear
+        about your experience with our team during <b t-out="object.period_label or ''"/>.
+        Your feedback helps us understand what we're doing well and identify areas where we can serve you better.</p>
+    <p style="margin:16px 0 4px 0;font-weight:bold;">Project Feedback Details</p>
+    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 16px 0;font-size:14px;">
+        <tr>
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Project:</td>
+            <td style="padding:4px 0;" t-out="object.project_id.name or '-'"/>
+        </tr>
+        <tr>
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Review Period:</td>
+            <td style="padding:4px 0;" t-out="object.period_label or '-'"/>
+        </tr>
+    </table>
+    <p style="margin:16px 0;">
+        <a t-att-href="object.feedback_url"
+           style="background-color:#f47c20;padding:10px 20px;color:#ffffff;text-decoration:none;border-radius:4px;font-weight:bold;display:inline-block;">Give Your Feedback</a>
+    </p>
+    <p style="margin:0 0 12px 0;">It will only take a minute, and your feedback is valuable to us.</p>
+    <p style="margin:0 0 12px 0;font-size:12px;color:#666666;">If the feedback link does not open, please copy and paste the following URL into your browser:<br/>
+        <a t-att-href="object.feedback_url" t-out="object.feedback_url or ''"/></p>
+    <p style="margin:0 0 12px 0;"><b>Note:</b> You will be asked to sign in to the customer portal to submit your feedback.</p>
+    <p style="margin:0 0 12px 0;">Thank you for your continued trust and support. We look forward to strengthening our
+        partnership and delivering an even better experience.</p>
+    <p style="margin:0 0 12px 0;">Best regards,<br/><t t-out="object.request_id.company_id.name or ''"/></p>
+</div>
+            </field>
+            <field name="auto_delete" eval="False"/>
+        </record>
+    </data>
+</odoo>

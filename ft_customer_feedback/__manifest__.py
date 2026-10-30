@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FT Customer Feedback",
-    "version": "19.0.1.2.0",
+    "version": "19.0.2.3.1",
     "category": "Services/Helpdesk",
     "summary": "Configurable customer feedback survey on the customer portal "
                "with smiley ratings, 0-10 scores and free text answers.",
@@ -26,6 +26,28 @@ FT Customer Feedback
 - Reporting menu: customer-wise feedback, question-wise analysis, average
   ratings and monthly trends. All figures are averages over submitted
   responses only; 1-5 ratings and 0-10 scores are never mixed.
+- Monthly feedback requests: one request per enabled project and month,
+  sent by email to the project's feedback contacts with a project-specific
+  link (single cron on the 1st of every month, per-contact channel status,
+  Send Now / Retry Failed). The email status of each contact is updated by
+  the mail queue when the email is sent.
+  WhatsApp sending is in the separate module ft_customer_feedback_whatsapp.
+
+Changelog
+---------
+- 19.0.2.3.1: no daily cron any more; the email status (Queued -> Sent /
+  Failed) is updated by the mail queue when it sends the email. Migration
+  removes the "Synchronise Request Status" cron.
+- 19.0.2.3.0: the monthly feedback request cron now runs on the 1st of every
+  month (03:30 UTC / 09:00 IST) instead of daily. Migration updates the
+  existing cron record.
+- 19.0.2.1.0: WhatsApp moved to the new module ft_customer_feedback_whatsapp
+  (no more dependency on mail_gateway_whatsapp / ft_message_tracking); this
+  module now sends the monthly requests by email only and exposes channel
+  hooks on ft.feedback.request.recipient (_ft_send_channels,
+  _ft_channel_states, _ft_channel_done_states, _ft_sync_channel_states,
+  _ft_cron_sync_channel_states).
+- 19.0.2.0.0: monthly customer feedback requests (email + WhatsApp).
 """,
     "author": "Fingertip",
     "website": "https://www.fingertiptech.com",
@@ -35,18 +57,20 @@ FT Customer Feedback
         "mail",
         "project",
         "ft_helpdesk_portal",
-       
     ],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",
         "data/ir_config_parameter.xml",
-        "data/feedback_question_data.xml",
+        "data/mail_template_feedback_request.xml",
+        "data/feedback_request_cron.xml",
+        # "data/feedback_question_data.xml",
         "views/feedback_question_views.xml",
         "views/feedback_response_views.xml",
         "views/feedback_report_views.xml",
         "views/res_config_settings_views.xml",
+        "views/feedback_request_views.xml",
         "views/menus.xml",
         "views/portal_templates.xml",
     ],

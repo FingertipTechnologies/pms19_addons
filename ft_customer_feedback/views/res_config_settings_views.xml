@@ -15,6 +15,13 @@
                             <field name="feedback_thanks_text" nolabel="1" placeholder="Thank you for your feedback."/>
                         </setting>
                     </block>
+                    <block title="Monthly Feedback Requests" name="ft_feedback_monthly_requests">
+                        <setting id="ft_feedback_monthly_start_month"
+                                 string="First Month to Request"
+                                 help="Monthly requests are only created for months starting on or after this date (the request for a month is sent early the following month). Leave empty to start with the previous month on the next run.">
+                            <field name="ft_feedback_monthly_start_month" nolabel="1"/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

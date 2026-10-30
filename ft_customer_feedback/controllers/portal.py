@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+import hmac
 import logging
 
 from odoo import http, _
+from odoo.exceptions import ValidationError
 from odoo.http import request
 from odoo.addons.ft_helpdesk_portal.controllers.portal import HelpdeskPortal
 from uuid import uuid4, UUID
@@ -18,6 +20,11 @@ _logger = logging.getLogger(__name__)
 
 # Form field name prefix; the question id follows it (q_12).
 FIELD_PREFIX = "q_"
+
+# Name of the query/form parameter carrying a monthly request's token.
+REQUEST_PARAM = "request"
+# access_token values are uuid4 strings; anything longer is never valid.
+REQUEST_TOKEN_MAX_LEN = 128
 
 
 class CustomerFeedbackPortal(HelpdeskPortal):
@@ -40,7 +47,7 @@ class CustomerFeedbackPortal(HelpdeskPortal):
                 groups.append((section, [question]))
         return groups
 
-    def _feedback_page_values(self, answers=None, errors=None):
+    def _feedback_page_values(self, answers=None, errors=None, feedback_request=None):
         values = self._get_support_tab_values("feedback")
         values.pop("project_ids", None)
         values.pop("ticket_domain", None)
@@ -69,8 +76,109 @@ class CustomerFeedbackPortal(HelpdeskPortal):
             "answers": answers or {},
             "errors": errors or {},
             "field_prefix": FIELD_PREFIX,
+            # Monthly feedback request (ft.feedback.request, sudo) or None.
+            "feedback_request": feedback_request,
+            "request_param": REQUEST_PARAM,
         })
         return values
+
+    # ------------------------------------------------------------------
+    # monthly feedback request helpers
+    # ------------------------------------------------------------------
+
+    def _feedback_find_request(self, token):
+        """Return the ft.feedback.request (sudo) whose access token equals
+        ``token`` exactly, or an empty recordset."""
+        FeedbackRequest = request.env["ft.feedback.request"].sudo()
+        if (
+            not isinstance(token, str)
+            or not token
+            or len(token) > REQUEST_TOKEN_MAX_LEN
+        ):
+            return FeedbackRequest
+        feedback_request = FeedbackRequest.with_context(active_test=False).search(
+            [("access_token", "=", token)], limit=1,
+        )
+        if not feedback_request or not hmac.compare_digest(
+            (feedback_request.access_token or "").encode(),
+            token.encode(),
+        ):
+            return FeedbackRequest
+        return feedback_request
+
+    def _feedback_request_unavailable(self, status):
+        """Generic page used both for unknown tokens (404) and for requests
+        of another customer (403), so the page never reveals whether a
+        token belongs to someone else."""
+        values = self._feedback_page_values()
+        return request.render(
+            "ft_customer_feedback.portal_feedback_request_unavailable",
+            values,
+            status=status,
+        )
+
+    def _feedback_resolve_request(self, token):
+        """Validate a request token for the logged-in user.
+
+        Returns ``(feedback_request, error_response)``; exactly one of the
+        two is set."""
+        feedback_request = self._feedback_find_request(token)
+        if not feedback_request:
+            return None, self._feedback_request_unavailable(404)
+        partner = request.env.user.partner_id
+        if (
+            partner.commercial_partner_id
+            != feedback_request.partner_id.commercial_partner_id
+        ):
+            return None, self._feedback_request_unavailable(403)
+        return feedback_request, None
+
+    def _feedback_request_existing_response(self, feedback_request, partner):
+        """The response this contact already gave for a monthly request."""
+        return request.env["ft.feedback.response"].sudo().with_context(
+            active_test=False,
+        ).search([
+            ("request_id", "=", feedback_request.id),
+            ("partner_id", "=", partner.id),
+        ], order="id desc", limit=1)
+
+    def _feedback_already_submitted(self, feedback_request, response=None):
+        """Render the 'already submitted' page for a monthly request."""
+        values = self._feedback_page_values(feedback_request=feedback_request)
+        response_url = "/my/feedbacks"
+        if (
+            response
+            and response.active
+            and response.state == "submitted"
+            and response in self._feedback_own_responses()
+        ):
+            response_url = "/my/feedbacks/%s" % response.id
+        values.update({
+            "response": response or request.env["ft.feedback.response"].sudo(),
+            "response_url": response_url,
+        })
+        return request.render(
+            "ft_customer_feedback.portal_feedback_already_submitted", values,
+        )
+
+    def _feedback_link_recipient(self, feedback_request, partner, response):
+        """Store the submitted response on the matching recipient row.
+        Never blocks the submission itself."""
+        Recipient = request.env["ft.feedback.request.recipient"].sudo()
+        recipient = Recipient.search([
+            ("request_id", "=", feedback_request.id),
+            ("partner_id", "=", partner.id),
+        ], limit=1)
+        if not recipient or recipient.response_id:
+            return
+        try:
+            with request.env.cr.savepoint():
+                recipient.write({"response_id": response.id})
+        except Exception:  # pylint: disable=broad-except
+            _logger.exception(
+                "Could not link feedback %s to request recipient %s",
+                response.name, recipient.id,
+            )
 
     def _feedback_parse_answers(self, questions, post):
         """Turn the posted form into {question_id: value} plus an error dict.
@@ -106,10 +214,21 @@ class CustomerFeedbackPortal(HelpdeskPortal):
     # routes
     # ------------------------------------------------------------------
 
-  
     @http.route("/my/feedback", type="http", auth="user", website=True)
     def portal_feedback_form(self, **kw):
-        values = self._feedback_page_values()
+        feedback_request = None
+        if kw.get(REQUEST_PARAM):
+            feedback_request, error_response = self._feedback_resolve_request(
+                kw.get(REQUEST_PARAM)
+            )
+            if error_response:
+                return error_response
+            existing = self._feedback_request_existing_response(
+                feedback_request, request.env.user.partner_id,
+            )
+            if existing:
+                return self._feedback_already_submitted(feedback_request, existing)
+        values = self._feedback_page_values(feedback_request=feedback_request)
         return request.render(
             "ft_customer_feedback.portal_feedback_form", values
         )
@@ -119,10 +238,20 @@ class CustomerFeedbackPortal(HelpdeskPortal):
     def portal_feedback_submit(self, **post):
         token = post.get("submission_token", "")
 
+        # Monthly request: only the token is trusted, everything else
+        # (project, customer) is read from the request record itself.
+        feedback_request = None
+        if post.get(REQUEST_PARAM):
+            feedback_request, error_response = self._feedback_resolve_request(
+                post.get(REQUEST_PARAM)
+            )
+            if error_response:
+                return error_response
+
         try:
             token = str(UUID(token))
         except (ValueError, TypeError, AttributeError):
-            values = self._feedback_page_values()
+            values = self._feedback_page_values(feedback_request=feedback_request)
             values["error_message"] = _(
                 "Please submit your feedback using this form."
             )
@@ -141,11 +270,20 @@ class CustomerFeedbackPortal(HelpdeskPortal):
                 "/my/feedback/thanks/%s" % existing.id
             )
 
+        if feedback_request:
+            already = self._feedback_request_existing_response(
+                feedback_request, request.env.user.partner_id,
+            )
+            if already:
+                return self._feedback_already_submitted(feedback_request, already)
+
         questions = request.env["ft.feedback.question"].sudo()._get_portal_questions()
         answers, errors = self._feedback_parse_answers(questions, post)
 
         if errors or not questions:
-            values = self._feedback_page_values(answers=answers, errors=errors)
+            values = self._feedback_page_values(
+                answers=answers, errors=errors, feedback_request=feedback_request,
+            )
             values["submission_token"] = token
             if not questions:
                 values["error_message"] = _("No feedback questions are configured yet.")
@@ -168,27 +306,51 @@ class CustomerFeedbackPortal(HelpdeskPortal):
                 line["rating_value"] = answers.get(question.id) if answered else 0
             lines.append((0, 0, line))
 
-        
+        response_vals = {
+            "state": "submitted",
+            "partner_id": user.partner_id.id,
+            "user_id": user.id,
+            "company_id": user.company_id.id or request.env.company.id,
+            "line_ids": lines,
+            "submission_token": token,
+        }
+        if feedback_request:
+            response_vals.update({
+                "request_id": feedback_request.id,
+                "project_id": feedback_request.project_id.id,
+            })
 
         try:
             with request.env.cr.savepoint():
-                response = Response.create({
-                    "state": "submitted",
-                    "partner_id": user.partner_id.id,
-                    "user_id": user.id,
-                    "company_id": user.company_id.id or request.env.company.id,
-                    "line_ids": lines,
-                    "submission_token": token,
-                })
+                response = Response.create(response_vals)
         except UniqueViolation as error:
             if (
                 error.diag.constraint_name
-                != "ft_feedback_response_submission_token_unique"
+                == "ft_feedback_response_submission_token_unique"
             ):
+                # A simultaneous request already saved this submission.
+                return request.redirect("/my/feedbacks")
+            if not feedback_request:
                 raise
+            # One response per contact per monthly request (unique index).
+            return self._feedback_already_submitted(
+                feedback_request,
+                self._feedback_request_existing_response(
+                    feedback_request, user.partner_id,
+                ),
+            )
+        except ValidationError:
+            if not feedback_request:
+                raise
+            already = self._feedback_request_existing_response(
+                feedback_request, user.partner_id,
+            )
+            if not already:
+                raise
+            return self._feedback_already_submitted(feedback_request, already)
 
-            # A simultaneous request already saved this submission.
-            return request.redirect("/my/feedbacks")
+        if feedback_request:
+            self._feedback_link_recipient(feedback_request, user.partner_id, response)
 
         _logger.info(
             "Customer feedback %s submitted by %s",
@@ -197,7 +359,7 @@ class CustomerFeedbackPortal(HelpdeskPortal):
         )
         return request.redirect(
             "/my/feedback/thanks/%s" % response.id
-        )   
+        )
 
     def _feedback_own_responses(self):
         """Submitted responses of the logged-in customer's company."""
