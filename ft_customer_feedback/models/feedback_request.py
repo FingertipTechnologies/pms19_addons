@@ -404,6 +404,7 @@ class FeedbackRequest(models.Model):
                 ("active", "=", True),
                 ("ft_feedback_monthly_enabled", "=", True),
                 ("partner_id", "!=", False),
+                ("ft_feedback_contact_ids", "!=", False),
             ] + company_domain, order="id")
             for project in projects:
                 try:

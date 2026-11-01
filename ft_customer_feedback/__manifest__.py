@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "FT Customer Feedback",
-    "version": "19.0.2.3.1",
+    "version": "19.0.2.4.1",
     "category": "Services/Helpdesk",
     "summary": "Configurable customer feedback survey on the customer portal "
                "with smiley ratings, 0-10 scores and free text answers.",

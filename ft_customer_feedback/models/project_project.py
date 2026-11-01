@@ -8,7 +8,7 @@ class ProjectProject(models.Model):
 
     ft_feedback_monthly_enabled = fields.Boolean(
         string="Monthly Customer Feedback",
-        default=False,
+        default=True,
         copy=False,
         help="On the 1st of every month, request feedback for the previous "
         "month from the feedback contacts.",
@@ -19,7 +19,11 @@ class ProjectProject(models.Model):
         "project_id",
         "partner_id",
         string="Feedback Contacts",
-        help="Customer contacts who receive the monthly feedback request.",
+        compute="_compute_ft_feedback_contact_ids",
+        store=True,
+        readonly=False,
+        help="Customer contacts who receive the monthly feedback request. "
+        "Defaults to the project customer.",
     )
     ft_feedback_request_ids = fields.One2many(
         "ft.feedback.request", "project_id", string="Feedback Requests"
@@ -28,6 +32,17 @@ class ProjectProject(models.Model):
         string="Feedback Requests",
         compute="_compute_ft_feedback_request_count",
     )
+
+    @api.depends("partner_id")
+    def _compute_ft_feedback_contact_ids(self):
+        # Default to the project customer; keep contacts that still belong
+        # to the customer, drop the others when the customer changes.
+        for project in self:
+            customer = project.partner_id.commercial_partner_id
+            contacts = project.ft_feedback_contact_ids.filtered(
+                lambda p: customer and p.commercial_partner_id == customer
+            )
+            project.ft_feedback_contact_ids = contacts or project.partner_id
 
     def _compute_ft_feedback_request_count(self):
         # sudo: the count is shown to project users who may not have access
@@ -39,23 +54,13 @@ class ProjectProject(models.Model):
         for project in self:
             project.ft_feedback_request_count = counts.get(project.id, 0)
 
-    @api.constrains("ft_feedback_monthly_enabled", "ft_feedback_contact_ids", "partner_id")
+    # Enabled by default on every project: a project without a customer or
+    # feedback contacts is simply skipped by the monthly cron, so neither is
+    # required to switch it on.
+    @api.constrains("ft_feedback_contact_ids", "partner_id")
     def _check_ft_feedback_contacts(self):
         for project in self:
             customer = project.partner_id.commercial_partner_id
-            if project.ft_feedback_monthly_enabled:
-                if not customer:
-                    raise ValidationError(_(
-                        "Project %(project)s: set a customer before enabling "
-                        "monthly customer feedback.",
-                        project=project.display_name,
-                    ))
-                if not project.ft_feedback_contact_ids:
-                    raise ValidationError(_(
-                        "Project %(project)s: select at least one feedback "
-                        "contact to enable monthly customer feedback.",
-                        project=project.display_name,
-                    ))
             wrong = project.ft_feedback_contact_ids.filtered(
                 lambda p: p.commercial_partner_id != customer
             )
