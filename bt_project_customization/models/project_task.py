@@ -468,7 +468,8 @@ class ProjectTask(models.Model):
         final_ids = set(tasks._ft_final_stage_ids())
         born_done = tasks.filtered(
             lambda task: task.stage_id.id in final_ids
-            and task.state not in ('1_done', '1_canceled')
+            # 1_deployed: Deployed, ft_amc_payment_milestone, counts as done
+            and task.state not in ('1_done', '1_deployed', '1_canceled')
         )
         if born_done:
             born_done.sudo().write({'state': '1_done'})
@@ -700,7 +701,8 @@ class ProjectTask(models.Model):
         reopened_state = self.filtered(
             lambda t: (was_final.get(t.id)
                        and t.stage_id.id not in final_ids
-                       and t.state == '1_done')
+                       # 1_deployed: Deployed, ft_amc_payment_milestone, counts as done
+                       and t.state in ('1_done', '1_deployed'))
         )
         if reopened_state:
             reopened_state.sudo().write({'state': '01_in_progress'})

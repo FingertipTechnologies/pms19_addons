@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Multi-company hygiene: a line is visible in the companies the
+             user has enabled, like the project it belongs to (core's
+             project_comp_rule also lets a company-less project through, so
+             False is allowed here for the same reason). company_id is the
+             stored related of project_id.company_id. -->
+        <record id="ft_project_stage_line_comp_rule" model="ir.rule">
+            <field name="name">Implementation Stage Line: multi-company</field>
+            <field name="model_id" ref="model_ft_project_stage_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+        </record>
+
+    </data>
+</odoo>

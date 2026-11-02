@@ -25,12 +25,17 @@
         <field name="arch" type="xml">
             <xpath expr="/list/*[1]" position="before">
                 <header>
+                    <!-- Here ft_project_type / pwf_amc_approval are the
+                         SELECTION summary built by static/src/list_header_buttons. -->
                     <button name="action_pwf_amc_approve" type="object"
-                            string="Approve" class="btn-primary"/>
+                            string="Approve" class="btn-primary"
+                            invisible="ft_project_type != 'amc' or pwf_amc_approval == 'approved'"/>
                     <button name="action_pwf_amc_reject" type="object"
-                            string="Reject"/>
+                            string="Reject"
+                            invisible="ft_project_type != 'amc' or pwf_amc_approval == 'rejected'"/>
                     <button name="action_pwf_amc_reset" type="object"
-                            string="Reset Approval"/>
+                            string="Reset Approval"
+                            invisible="ft_project_type != 'amc' or not pwf_amc_approval"/>
                 </header>
             </xpath>
             <xpath expr="//field[@name='stage_id']" position="after">
@@ -146,9 +151,9 @@
                             ('project_id.stage_id.name', '!=', 'CLOSED')
                         ]"/>
                 <filter string="Approved" name="pwf_amc_approved"
-                        domain="[('pwf_amc_approval', '=', 'approved')]"/>
+                        domain="[('pwf_amc_approval', '=', 'approved'), ('project_id.ft_project_type', '=', 'amc')]"/>
                 <filter string="Rejected" name="pwf_amc_rejected"
-                        domain="[('pwf_amc_approval', '=', 'rejected')]"/>
+                        domain="[('pwf_amc_approval', '=', 'rejected'), ('project_id.ft_project_type', '=', 'amc')]"/>
             </filter>
             <filter name="stage" position="after">
                 <filter string="Approval" name="groupby_pwf_amc_approval"

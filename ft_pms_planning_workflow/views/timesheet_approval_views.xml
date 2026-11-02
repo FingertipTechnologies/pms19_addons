@@ -225,18 +225,51 @@
         </field>
     </record>
 
-    <!-- Task form > Timesheets tab: approval badge per line. -->
+    <!-- Task form > Timesheets tab: approval badge per line, a per-line
+         Approve / Reject / Reset button and "Approve All Pending" /
+         "Reject All Pending" for the whole task. The buttons are shown to
+         the users who may review the task's timesheets
+         (ft_can_review_timesheets: Administrator, PM / Team Lead job
+         position, Project Manager of the project); the backend checks the
+         rights again on every click. A line button saves the task first,
+         then acts on that one line; the task buttons act on every Pending
+         line of the task. -->
     <record id="view_task_form_ft_timesheet_approval_tab" model="ir.ui.view">
         <field name="name">project.task.form.ft.timesheet.approval.tab</field>
         <field name="model">project.task</field>
         <field name="inherit_id" ref="hr_timesheet.view_task_form2_inherited"/>
         <field name="arch" type="xml">
+            <xpath expr="//page[@name='page_timesheets']//field[@name='timesheet_ids']" position="before">
+                <field name="ft_can_review_timesheets" invisible="1"/>
+                <field name="ft_pending_timesheet_count" invisible="1"/>
+                <div name="ft_timesheet_approval_toolbar"
+                     class="d-flex align-items-center flex-wrap gap-2 mb-2"
+                     invisible="not id or not ft_can_review_timesheets or not ft_pending_timesheet_count">
+                    <button name="action_ft_timesheet_approve_all" type="object"
+                            string="Approve All Pending" class="btn btn-primary btn-sm"
+                            icon="fa-check"
+                            help="Approve every timesheet of this task that is still Pending."/>
+                    <button name="action_ft_timesheet_reject_all" type="object"
+                            string="Reject All Pending" class="btn btn-secondary btn-sm"
+                            icon="fa-times"
+                            help="Reject every timesheet of this task that is still Pending (a reason is asked)."/>
+                </div>
+            </xpath>
             <xpath expr="//page[@name='page_timesheets']//field[@name='timesheet_ids']/list" position="inside">
                 <field name="ft_approval_state" string="Approval" widget="badge"
                        readonly="1" optional="show"
                        decoration-info="ft_approval_state == 'pending'"
                        decoration-success="ft_approval_state == 'approved'"
                        decoration-danger="ft_approval_state == 'rejected'"/>
+                <button name="action_ft_timesheet_approve" type="object"
+                        icon="fa-check" title="Approve" class="text-success"
+                        invisible="ft_approval_state == 'approved' or not parent.ft_can_review_timesheets"/>
+                <button name="action_ft_timesheet_reject" type="object"
+                        icon="fa-times" title="Reject" class="text-danger"
+                        invisible="ft_approval_state == 'rejected' or not parent.ft_can_review_timesheets"/>
+                <button name="action_ft_timesheet_reset" type="object"
+                        icon="fa-undo" title="Reset to Pending"
+                        invisible="ft_approval_state == 'pending' or not parent.ft_can_review_timesheets"/>
             </xpath>
         </field>
     </record>

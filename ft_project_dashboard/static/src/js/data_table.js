@@ -26,7 +26,18 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
  *  - groupLabel : string (optional) — noun for the group count, e.g. "resources"
  *  - emptyText  : string (optional)
  *  - defaultSort: { key, dir } (optional) — initial sort
+ *  - onRowClick : function(row) (optional) — makes body rows clickable
+ *  - paginate   : boolean (optional, default true) — false renders every
+ *                 row in the scrolling body (sticky header) with no pager
  *  - Named slot "tools" renders in the header (search inputs live there).
+ *
+ * Optional per-column hooks (both default off, so existing tables are
+ * unaffected):
+ *  - render : function(row) -> string. Replaces the default display text for
+ *             that cell. Sorting still uses the raw row[col.key] value, so a
+ *             column can show "6d" and sort on 6.
+ *  - badge  : boolean. When the raw value is non-empty the cell text is wrapped
+ *             in a red pill (<span class="ftpd_badge ftpd_badge--danger">).
  */
 export class DataTable extends Component {
     static template = "ft_project_dashboard.DataTable";
@@ -38,6 +49,8 @@ export class DataTable extends Component {
         groupLabel: { type: String, optional: true },
         emptyText: { type: String, optional: true },
         defaultSort: { type: Object, optional: true },
+        onRowClick: { type: Function, optional: true },
+        paginate: { type: Boolean, optional: true },
         slots: { type: Object, optional: true },
     };
 
@@ -103,16 +116,24 @@ export class DataTable extends Component {
     }
 
     // ---- pagination --------------------------------------------------
+    get paginate() {
+        return this.props.paginate !== false;
+    }
+    /** Rows per page; every row when the table scrolls instead of paging. */
+    get effectivePageSize() {
+        // Not Infinity: 0 * Infinity is NaN and slice(NaN) returns nothing.
+        return this.paginate ? this.state.pageSize : Math.max(1, this.props.rows.length);
+    }
     get pageCount() {
-        return Math.max(1, Math.ceil(this.sortedRows.length / this.state.pageSize));
+        return Math.max(1, Math.ceil(this.sortedRows.length / this.effectivePageSize));
     }
     get currentPage() {
         return Math.min(Math.max(this.state.page, 0), this.pageCount - 1);
     }
     get pagedRows() {
-        const start = this.currentPage * this.state.pageSize;
+        const start = this.currentPage * this.effectivePageSize;
         const rows = this.sortedRows
-            .slice(start, start + this.state.pageSize)
+            .slice(start, start + this.effectivePageSize)
             .map((r) => ({ ...r }));
         // Grouping flags are computed per page, so each page is self-contained
         // (a group split across pages simply re-shows its label at the top).
@@ -139,10 +160,10 @@ export class DataTable extends Component {
         return arr;
     }
     get rangeStart() {
-        return this.sortedRows.length ? this.currentPage * this.state.pageSize + 1 : 0;
+        return this.sortedRows.length ? this.currentPage * this.effectivePageSize + 1 : 0;
     }
     get rangeEnd() {
-        return Math.min(this.sortedRows.length, (this.currentPage + 1) * this.state.pageSize);
+        return Math.min(this.sortedRows.length, (this.currentPage + 1) * this.effectivePageSize);
     }
     get groupCount() {
         if (!this.props.groupKey) return 0;
@@ -191,9 +212,33 @@ export class DataTable extends Component {
     }
     cellValue(row, col) {
         if (col.group && !row.__first) return "";
+        if (typeof col.render === "function") return col.render(row);
         const v = row[col.key];
         if (col.date) return this._isEmpty(v) ? "" : this._fmtDate(v);
         if (this._isEmpty(v)) return col.numeric ? "—" : "";
         return v;
+    }
+    /** Whether this cell's text is wrapped in the danger pill: only badge
+     *  columns, and only when there is a value to show — an empty "—" must
+     *  never light up red. */
+    showBadge(row, col) {
+        return !!col.badge && !this._isEmpty(row[col.key]);
+    }
+
+    // ---- row interaction --------------------------------------------
+    get rowsClickable() {
+        return typeof this.props.onRowClick === "function";
+    }
+    rowClass(row) {
+        return {
+            ftpd_group_child: !row.__first,
+            ftpd_group_mid: row.__mid,
+            ftpd_row_clickable: this.rowsClickable,
+        };
+    }
+    onRowClick(row) {
+        if (this.rowsClickable) {
+            this.props.onRowClick(row);
+        }
     }
 }

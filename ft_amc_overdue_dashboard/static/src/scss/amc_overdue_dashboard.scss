@@ -1,0 +1,25 @@
+// AMC Task Overdue table (a section of the Project Dashboard).
+//
+// The table is a ft_project_dashboard DataTable in a ftpd_chart_row, so the
+// card, head, search box, toggles, count badges, red pills and pager all come
+// from that module's dashboard.scss. Everything below is only what this
+// section adds on top: the summary line and the refresh spinner that sit in
+// the table's tools strip.
+.ftao_row {
+    // "12 tasks · 7 overdue · 93 overdue days · as of 2026-10-28": the figures
+    // the KPI tiles used to show, muted so the toggles and search stay the
+    // controls the eye lands on.
+    .ftao_summary {
+        margin-right: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ftpd-muted);
+        white-space: nowrap;
+    }
+
+    // Shown while a toggle's refetch is in flight. The rows stay on screen
+    // meanwhile (no unmount/flash), so this is the only sign of activity.
+    .ftao_spin {
+        color: var(--ftpd-muted);
+    }
+}

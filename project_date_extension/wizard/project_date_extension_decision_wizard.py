@@ -28,7 +28,7 @@ class ProjectDateExtensionDecisionWizard(models.TransientModel):
         readonly=True,
     )
     requested_date = fields.Date(
-        string="Approved New Date",
+        string="Approved Rescheduled Date",
         help="Date to set upon approval. You can keep the requested date or set a different date.",
     )
     comment = fields.Text(
@@ -57,7 +57,7 @@ class ProjectDateExtensionDecisionWizard(models.TransientModel):
                 raise ValidationError(_("Please specify the approved new date."))
             if self.current_date and self.requested_date == self.current_date:
                 raise ValidationError(
-                    _("The approved new date must be different from the current date.")
+                    _("The approved rescheduled date must be different from the current date.")
                 )
             self.request_id._do_approve(
                 new_date=self.requested_date,

@@ -52,6 +52,14 @@ class TestPmsStageWorkflow(TransactionCase):
             cls.env, 'pwf_finance',
             groups='base.group_user,project.group_project_user,'
                    'ft_pms_planning_workflow.group_pms_finance')
+        # project_date_extension lets only its approvers set the lifecycle
+        # dates; the admin creates projects with dates in these tests.
+        approver = cls.env.ref(
+            'project_date_extension.group_project_date_extension_approver',
+            raise_if_not_found=False)
+        if approver:
+            gfield = 'group_ids' if 'group_ids' in cls.admin._fields else 'groups_id'
+            cls.admin.write({gfield: [Command.link(approver.id)]})
         Employee = cls.env['hr.employee']
         for user, user_job in ((cls.admin, cls.job_pm), (cls.pm, cls.job_pm),
                                (cls.qa, cls.job_tester), (cls.pc, cls.job_pc),
@@ -85,8 +93,11 @@ class TestPmsStageWorkflow(TransactionCase):
             'uat_start_date': today + timedelta(days=5),
             'pl_data_upload_date': today + timedelta(days=6),
             'ft_training_date': today + timedelta(days=7),
-            'support_start_date': today + timedelta(days=8),
-            'go_live_date': today + timedelta(days=9),
+            # project_date_extension: the lifecycle dates must move forward
+            # in step order (Go Live before Support Start / End).
+            'go_live_date': today + timedelta(days=8),
+            'support_start_date': today + timedelta(days=9),
+            'pl_support_end_date': today + timedelta(days=10),
             'date': today + timedelta(days=60),
         }
         Project = self.env['project.project']
@@ -100,15 +111,34 @@ class TestPmsStageWorkflow(TransactionCase):
             partner_id=self.customer.id,
             user_id=self.pm.id,
             privacy_visibility='employees',
+            # Every forward move needs a milestone; DEV needs a module.
+            module_ids=[Command.create({'name': 'PWF Module'})],
+            milestone_ids=[Command.create({'name': 'Go Live'})],
         ))
 
-    def _attach(self, project, name='evidence.png'):
-        return self.env['ir.attachment'].create({
+    def _disc_docs(self, project):
+        """The three Discovery deliverables required to leave DISC."""
+        return {
+            'pwf_schema_design_attachment_ids': [
+                Command.set(self._attach(project, 'schema.xlsx'))],
+            'pwf_components_attachment_ids': [
+                Command.set(self._attach(project, 'components.xlsx'))],
+            'pwf_process_flow_attachment_ids': [
+                Command.set(self._attach(project, 'flow.pdf'))],
+        }
+
+    def _attach(self, project, name='evidence.png', mimetype=None):
+        """Ids of a fresh attachment. Without ``mimetype`` ir.attachment
+        derives it from the file name, as an upload through the form does."""
+        vals = {
             'name': name,
             'datas': base64.b64encode(b'evidence'),
             'res_model': 'project.project',
             'res_id': project.id,
-        }).ids
+        }
+        if mimetype:
+            vals['mimetype'] = mimetype
+        return self.env['ir.attachment'].create(vals).ids
 
     def _finance(self, project, *keys, value=True, user=None):
         """Finance ticks (or unticks) the payment clearance of stage ``keys``."""
@@ -122,6 +152,11 @@ class TestPmsStageWorkflow(TransactionCase):
             'pwf_reg_open_issues': '<p>None</p>',
         })
         project.with_user(self.qa).action_pwf_reg_signoff()
+        self._fill_code_review(project)
+
+    def _fill_code_review(self, project):
+        project.write({
+            'pwf_code_review_attachment_ids': [Command.set(self._attach(project, 'review.xlsx'))]})
 
     def _fill_up_to_srv(self, project):
         project.write({'pwf_brd_signoff_attachment_ids': [Command.set(self._attach(project))]})
@@ -141,7 +176,9 @@ class TestPmsStageWorkflow(TransactionCase):
         self._fill_up_to_srv(project)
         self._move(project, 'reg')
         self._move(project, 'srv')
-        project.write({'pwf_sandbox_review_attachment_ids': [Command.set(self._attach(project))]})
+        project.write({
+            'pwf_sandbox_review_attachment_ids': [Command.set(self._attach(project))],
+        })
         self._finance(project, 'uat')
 
     def _reach_uat(self, project):
@@ -203,6 +240,7 @@ class TestPmsStageWorkflow(TransactionCase):
     # ------------------------------------------------------------------
     def test_dev_gate(self):
         project = self._make_project('disc')
+        project.write(self._disc_docs(project))
         # Neither BRD nor finance clearance: both are reported.
         with self.assertRaises(UserError) as caught:
             self._move(project, 'dev')
@@ -213,6 +251,8 @@ class TestPmsStageWorkflow(TransactionCase):
                       "'%s':\n" % (project.display_name, stage, stage), message)
         self.assertIn('1. BRD Sign-off: Upload a screenshot', message)
         self.assertIn('2. Finance Payment Clearance: Finance must confirm', message)
+        self.assertNotIn('DISC', message)
+        self.assertNotIn('Modules', message)
         # A single stage is crossed: no stage prefix on the items.
         self.assertNotIn('DEV %s' % DASH, message)
         # BRD alone is not enough.
@@ -233,10 +273,276 @@ class TestPmsStageWorkflow(TransactionCase):
         })
         self.assertEqual(project.stage_id, self.stage['dev'])
 
+    def test_dev_gate_requires_disc_deliverables_and_modules(self):
+        """DISC -> DEV needs the three Discovery documents and a module."""
+        project = self._make_project('disc')
+        project.write({'pwf_brd_signoff_attachment_ids': [Command.set(self._attach(project))]})
+        self._finance(project, 'dev')
+        project.write({'module_ids': [Command.clear()]})
+        with self.assertRaises(UserError) as caught:
+            self._move(project, 'dev')
+        message = str(caught.exception)
+        self.assertIn('1. Schema Design (DISC): Upload the Schema Design document '
+                      '(Excel, .xlsx/.xls).', message)
+        self.assertIn('2. Components and Their Relationships (DISC): Upload the '
+                      'Components and Their Relationships document (Excel, .xlsx/.xls).',
+                      message)
+        self.assertIn('3. Process Flow Chart (DISC): Upload the Process Flow Chart (PDF).',
+                      message)
+        self.assertIn("4. Project Modules: Add all the project's modules (at least one) "
+                      "in the Modules tab.", message)
+        self.assertNotIn('5.', message)
+        self.assertEqual(project.stage_id, self.stage['disc'])
+        # Two of the three documents: only the third is reported.
+        docs = self._disc_docs(project)
+        project.write({k: v for k, v in docs.items() if k != 'pwf_process_flow_attachment_ids'})
+        with self.assertRaises(UserError) as caught:
+            self._move(project, 'dev')
+        message = str(caught.exception)
+        self.assertIn('1. Process Flow Chart (DISC)', message)
+        self.assertIn('2. Project Modules', message)
+        self.assertNotIn('Schema Design', message)
+        # The last document and the module supplied in the same write count.
+        project.with_user(self.pm).write({
+            'stage_id': self.stage['dev'].id,
+            'pwf_process_flow_attachment_ids': docs['pwf_process_flow_attachment_ids'],
+            'module_ids': [Command.create({'name': 'Sales'})],
+        })
+        self.assertEqual(project.stage_id, self.stage['dev'])
+
+    def test_disc_deliverables_only_for_implementation(self):
+        """AMC / General projects are not asked for Discovery documents."""
+        today = fields.Date.today()
+        project = self.env['project.project'].with_user(self.admin).create({
+            'name': 'PWF AMC', 'ft_project_type': 'amc',
+            'date_start': today, 'date': today + timedelta(days=30),
+            'partner_id': self.customer.id, 'user_id': self.pm.id,
+        })
+        self.assertFalse(project.pwf_next_stage_missing)
+        working = self.env.ref('ft_project_lifecycle.stage_working')
+        project.with_user(self.pm).write({'stage_id': working.id})
+        self.assertEqual(project.stage_id, working)
+
+    def test_create_requires_milestone(self):
+        """An Implementation project cannot be created without a milestone."""
+        today = fields.Date.today()
+        vals = {
+            'name': 'PWF No Milestone', 'ft_project_type': 'implementation',
+            'stage_id': self.stage['disc'].id, 'partner_id': self.customer.id,
+            'date_start': today, 'date': today + timedelta(days=60),
+            'kick_start_meeting_date': today, 'brd_approval_date': today,
+            'ft_regression_date': today, 'sandbox_review_date': today,
+            'uat_start_date': today, 'pl_data_upload_date': today,
+            'ft_training_date': today, 'support_start_date': today,
+            'go_live_date': today, 'pl_support_end_date': today,
+        }
+        with self.assertRaisesRegex(ValidationError, 'At least one milestone'):
+            self.env['project.project'].with_user(self.admin).create(vals)
+        # A core milestone or a custom one (when installed) both satisfy it.
+        project = self.env['project.project'].with_user(self.admin).create(dict(
+            vals, milestone_ids=[Command.create({'name': 'Kick-off'})]))
+        self.assertEqual(project.stage_id, self.stage['disc'])
+        if 'custom_milestone_ids' in project._fields:
+            project = self.env['project.project'].with_user(self.admin).create(dict(
+                vals, custom_milestone_ids=[Command.create({'name': 'Phase 1'})]))
+            self.assertTrue(project._pwf_has_milestones({}))
+        # Superuser creates (install, migrations, sale orders) are not held to it.
+        self.env['project.project'].sudo().create(vals)
+
+    def test_forward_move_requires_milestone(self):
+        """A project without a milestone must add one before its next stage
+        transition, gated stage or not; backward moves stay free."""
+        self.project.write({'milestone_ids': [Command.clear()]})
+        with self.assertRaises(UserError) as caught:
+            self._move(self.project, 'reg')
+        message = str(caught.exception)
+        self.assertIn("before moving the project to '%s':" % self.stage['reg'].name, message)
+        self.assertIn('1. Milestones: Add at least one milestone in the Milestones tab.',
+                      message)
+        self.assertNotIn('2.', message)
+        self.assertEqual(self.project.stage_id, self.stage['dev'])
+        # Listed after the stage's own gate items (SRV without a REG sign-off).
+        with self.assertRaises(UserError) as caught:
+            self._move(self.project, 'srv', user=self.admin)
+        message = str(caught.exception)
+        self.assertIn('1. REG Sign-off by QA', message)
+        self.assertIn('2. Milestones:', message)
+        # Supplied in the same write counts.
+        self.project.with_user(self.pm).write({
+            'stage_id': self.stage['reg'].id,
+            'milestone_ids': [Command.create({'name': 'Regression done'})],
+        })
+        self.assertEqual(self.project.stage_id, self.stage['reg'])
+        self.project.write({'milestone_ids': [Command.clear()]})
+        self._move(self.project, 'dev')  # backward: ungated
+        self.assertEqual(self.project.stage_id, self.stage['dev'])
+
+    def test_srv_entry_requires_code_review_document(self):
+        """The project cannot move to SRV without the Code Review Document."""
+        self.project.write({'pwf_brd_signoff_attachment_ids': [Command.set(self._attach(self.project))]})
+        self._finance(self.project, 'dev')
+        self._move(self.project, 'reg')
+        self.project.with_user(self.qa).action_pwf_reg_signoff()
+        with self.assertRaises(UserError) as caught:
+            self._move(self.project, 'srv')
+        message = str(caught.exception)
+        self.assertIn('1. Code Review Document (SRV): Upload the Code Review Document',
+                      message)
+        self.assertNotIn('REG Sign-off', message)
+        self.assertIn('Code Review Document', self.project.pwf_next_stage_missing)
+        self._fill_code_review(self.project)
+        self.assertNotIn('Code Review Document', self.project.pwf_next_stage_missing or '')
+        self._move(self.project, 'srv')
+        self.assertEqual(self.project.stage_id, self.stage['srv'])
+
+    # ------------------------------------------------------------------
+    # document formats
+    # ------------------------------------------------------------------
+    def test_code_review_document_must_be_excel(self):
+        """A PDF in the Code Review field is refused; .xls / .xlsx pass."""
+        project = self.project
+        with self.assertRaises(ValidationError) as caught:
+            project.with_user(self.pm).write({
+                'pwf_code_review_attachment_ids': [
+                    Command.set(self._attach(project, 'review.pdf'))]})
+        self.assertEqual(
+            caught.exception.args[0],
+            'Code Review Document: "review.pdf" is not an Excel file. Please '
+            'upload the Code Review Document as .xlsx or .xls.')
+        self.assertFalse(project.pwf_code_review_attachment_ids)
+        # Command.link, as the many2many_binary widget sends it, is checked too.
+        with self.assertRaisesRegex(ValidationError, 'review.docx'):
+            project.with_user(self.pm).write({
+                'pwf_code_review_attachment_ids': [
+                    Command.link(self._attach(project, 'review.docx')[0])]})
+        self.assertFalse(project.pwf_code_review_attachment_ids)
+        # .xls and .xlsx are accepted.
+        xls = self._attach(project, 'review.xls')
+        project.with_user(self.pm).write({
+            'pwf_code_review_attachment_ids': [Command.set(xls)]})
+        self.assertEqual(project.pwf_code_review_attachment_ids.ids, xls)
+        xlsx = self._attach(project, 'review.xlsx')
+        project.with_user(self.pm).write({
+            'pwf_code_review_attachment_ids': [Command.link(xlsx[0])]})
+        self.assertEqual(set(project.pwf_code_review_attachment_ids.ids), set(xls + xlsx))
+        # The extension decides even when the mimetype was not recognised.
+        project.with_user(self.pm).write({
+            'pwf_code_review_attachment_ids': [Command.link(self._attach(
+                project, 'review2.xlsx', mimetype='application/octet-stream')[0])]})
+        # Without an extension the sniffed / given mimetype is the fallback.
+        project.with_user(self.pm).write({
+            'pwf_code_review_attachment_ids': [Command.link(self._attach(
+                project, 'review-no-ext', mimetype='application/vnd.ms-excel')[0])]})
+        with self.assertRaisesRegex(ValidationError, 'review-no-ext-pdf'):
+            project.with_user(self.pm).write({
+                'pwf_code_review_attachment_ids': [Command.link(self._attach(
+                    project, 'review-no-ext-pdf', mimetype='application/pdf')[0])]})
+
+    def test_disc_document_formats(self):
+        """Schema / Components are Excel, the Process Flow Chart is PDF; every
+        offending file of one write is listed; create is checked too."""
+        project = self._make_project('disc')
+        with self.assertRaises(ValidationError) as caught:
+            project.with_user(self.pm).write({
+                'pwf_process_flow_attachment_ids': [
+                    Command.set(self._attach(project, 'flow.xlsx'))]})
+        self.assertEqual(
+            caught.exception.args[0],
+            'Process Flow Chart: "flow.xlsx" is not a PDF file. Please upload '
+            'the Process Flow Chart as .pdf.')
+        with self.assertRaises(ValidationError) as caught:
+            project.with_user(self.pm).write({
+                'pwf_schema_design_attachment_ids': [
+                    Command.set(self._attach(project, 'schema.pdf'))],
+                'pwf_components_attachment_ids': [
+                    Command.set(self._attach(project, 'components.png'))],
+                'pwf_process_flow_attachment_ids': [
+                    Command.set(self._attach(project, 'flow.pdf'))],
+            })
+        message = caught.exception.args[0]
+        self.assertIn('Schema Design: "schema.pdf" is not an Excel file.', message)
+        self.assertIn('Components and Their Relationships: "components.png" is not '
+                      'an Excel file.', message)
+        self.assertNotIn('Process Flow Chart', message)
+        self.assertFalse(project.pwf_schema_design_attachment_ids)
+        self.assertFalse(project.pwf_process_flow_attachment_ids)
+        # The right formats go through and satisfy the DEV gate as before.
+        project.with_user(self.pm).write(self._disc_docs(project))
+        self.assertNotIn('DISC', project.pwf_next_stage_missing or '')
+        # Checked on create as well.
+        today = fields.Date.today()
+        with self.assertRaisesRegex(ValidationError, 'schema.pdf'):
+            self.env['project.project'].with_user(self.admin).create({
+                'name': 'PWF Bad Schema', 'ft_project_type': 'implementation',
+                'stage_id': self.stage['disc'].id, 'partner_id': self.customer.id,
+                'date_start': today, 'date': today + timedelta(days=60),
+                'milestone_ids': [Command.create({'name': 'Kick-off'})],
+                'pwf_schema_design_attachment_ids': [
+                    Command.set(self._attach(project, 'schema.pdf'))],
+            })
+
+    def test_legacy_wrong_format_does_not_block_unrelated_writes(self):
+        """A wrong-format file already linked (legacy data, placed under
+        sudo like a migration would) blocks neither an unrelated save nor the
+        form's re-statement of the stored ids; a new wrong file still does."""
+        project = self.project
+        legacy = self._attach(project, 'review.pdf')
+        project.sudo().write({'pwf_code_review_attachment_ids': [Command.set(legacy)]})
+        self.assertEqual(project.pwf_code_review_attachment_ids.ids, legacy)
+        project.with_user(self.pm).write({'description': '<p>unrelated</p>'})
+        project.with_user(self.pm).write({
+            'pwf_code_review_attachment_ids': [Command.set(legacy)]})
+        good = self._attach(project, 'review.xlsx')
+        project.with_user(self.pm).write({
+            'pwf_code_review_attachment_ids': [Command.set(legacy + good)]})
+        self.assertEqual(set(project.pwf_code_review_attachment_ids.ids), set(legacy + good))
+        with self.assertRaisesRegex(ValidationError, 'review2.pdf'):
+            project.with_user(self.pm).write({
+                'pwf_code_review_attachment_ids': [
+                    Command.set(legacy + good + self._attach(project, 'review2.pdf'))]})
+        self.assertEqual(set(project.pwf_code_review_attachment_ids.ids), set(legacy + good))
+
+    def test_gate_message_mentions_document_format(self):
+        """The missing-document items say which file format is expected."""
+        project = self._make_project('disc')
+        hint = project.pwf_next_stage_missing
+        self.assertIn('Upload the Schema Design document (Excel, .xlsx/.xls).', hint)
+        self.assertIn('Upload the Components and Their Relationships document '
+                      '(Excel, .xlsx/.xls).', hint)
+        self.assertIn('Upload the Process Flow Chart (PDF).', hint)
+        self.project.write({'pwf_brd_signoff_attachment_ids': [Command.set(self._attach(self.project))]})
+        self._finance(self.project, 'dev')
+        self._move(self.project, 'reg')
+        self.assertIn('Code Review Document (SRV): Upload the Code Review Document '
+                      '(Excel, .xlsx/.xls); the project cannot move to SRV without it.',
+                      self.project.pwf_next_stage_missing)
+
+    def test_next_stage_missing_hint(self):
+        """The form hint lists the same items as the server refusal."""
+        project = self._make_project('disc')
+        hint = project.pwf_next_stage_missing
+        self.assertIn('1. Schema Design (DISC)', hint)
+        self.assertIn('BRD Sign-off', hint)
+        self.assertIn('Finance Payment Clearance', hint)
+        self.assertNotIn('Milestones', hint)
+        project.write({'milestone_ids': [Command.clear()]})
+        self.assertIn('Milestones: Add at least one milestone', project.pwf_next_stage_missing)
+        project.write(dict(self._disc_docs(project),
+                           milestone_ids=[Command.create({'name': 'Go Live'})],
+                           pwf_brd_signoff_attachment_ids=[Command.set(self._attach(project))]))
+        self._finance(project, 'dev')
+        self.assertFalse(project.pwf_next_stage_missing)
+        self._move(project, 'dev')
+        self.assertIn('REG', project.pwf_next_stage_id.name)
+        self.assertFalse(project.pwf_next_stage_missing)
+
     def test_create_into_gated_stage_refused(self):
         """Create / copy / import straight into a gated stage is gated too."""
-        with self.assertRaisesRegex(UserError, 'signed BRD'):
+        with self.assertRaises(UserError) as caught:
             self._make_project('dev', user=self.admin)
+        message = str(caught.exception)
+        self.assertIn('Schema Design (DISC)', message)
+        self.assertIn('signed BRD', message)
 
     def test_type_switch_cannot_bypass_closed_gate(self):
         with self.assertRaisesRegex(UserError, '(?i)retrospective|went well'):
@@ -260,6 +566,7 @@ class TestPmsStageWorkflow(TransactionCase):
         # QA may sign off with every REG text field empty.
         self.project.with_user(self.qa).action_pwf_reg_signoff()
         self.assertEqual(self.project.pwf_reg_signed_by_id, self.qa)
+        self._fill_code_review(self.project)
         self._move(self.project, 'srv')
         self.assertEqual(self.project.stage_id, self.stage['srv'])
 
@@ -406,6 +713,7 @@ class TestPmsStageWorkflow(TransactionCase):
         # Several stages crossed: every item names its stage.
         self.assertIn('1. SRV %s REG Sign-off by QA' % DASH, message)
         self.assertNotIn('REG Current Status', message)
+        self.assertIn('SRV %s Code Review Document (SRV)' % DASH, message)
         self.assertIn('UAT %s Sandbox Review' % DASH, message)
         self.assertIn('UAT %s Finance Payment Clearance' % DASH, message)
         self.assertIn('UAT %s Admin Approval' % DASH, message)
@@ -550,6 +858,46 @@ class TestPmsStageWorkflow(TransactionCase):
         self._fill_reg(self.project)
         self.assertEqual(self.project.pwf_reg_signed_by_id, self.qa)
         self.project.with_user(self.admin).write({'pwf_reg_open_issues': '<p>One minor</p>'})
+
+    def test_reg_fields_qa_group_member_without_project_write_access(self):
+        """A member of the QA Group (bt_project_customization) counts as QA
+        whatever their job position, and may fill in and sign off the REG
+        block from the form although they hold no write access on the
+        project (project user only): the sign-off-only write is elevated
+        once the QA rule has passed."""
+        qa_group = self.env.ref('bt_project_customization.group_qa_group')
+        member = new_test_user(
+            self.env, 'pwf_qa_group_member',
+            groups='base.group_user,project.group_project_user')
+        gfield = 'group_ids' if 'group_ids' in member._fields else 'groups_id'
+        member.write({gfield: [Command.link(qa_group.id)]})
+        # A developer job: QA by group membership only.
+        self.env['hr.employee'].create({
+            'name': member.name, 'user_id': member.id, 'job_id': self.job_dev.id})
+        project = self.project.with_user(member)
+        # The QA Group carries write access on projects (so the form opens
+        # editable); the REG rule is independent of it.
+        self.assertTrue(project.has_access('write'))
+        self.assertTrue(project.pwf_can_edit_reg)
+        project.write({
+            'pwf_reg_current_status': '<p>Regression run 2: all pass</p>',
+            'pwf_reg_open_issues': '<p>None</p>',
+        })
+        self.assertIn('all pass', self.project.pwf_reg_current_status)
+        project.action_pwf_reg_signoff()
+        self.assertEqual(self.project.pwf_reg_signed_by_id, member)
+        self.assertTrue(self.project.pwf_reg_signed_on)
+        # Write access does not open the guarded fields: the stage still
+        # needs a Project Manager, the lifecycle dates an approver.
+        with self.assertRaises((AccessError, UserError)):
+            project.write({'stage_id': self.env.ref('ft_project_lifecycle.stage_disc').id})
+        with self.assertRaises(AccessError):
+            project.write({'brd_approval_date': project.brd_approval_date})
+        # A sign-off-only write from QA by job WITHOUT the group (no write
+        # access) is still elevated.
+        self.assertFalse(self.project.with_user(self.qa).has_access('write'))
+        self.project.with_user(self.qa).write({'pwf_reg_open_issues': '<p>One</p>'})
+        self.assertIn('One', self.project.pwf_reg_open_issues)
 
     # ------------------------------------------------------------------
     # approvals
@@ -848,7 +1196,11 @@ class TestPmsStageWorkflow(TransactionCase):
     def test_overdue_locks_and_unlocks_when_extended(self):
         project = self.project
         today = fields.Date.today()
+        # Start Date first: the lifecycle dates must move forward step by
+        # step (project_date_extension / ft_project_stage_dates), and the
+        # project was created with today's Start Date.
         project.sudo().write({
+            'date_start': today - timedelta(days=45),
             'kick_start_meeting_date': today - timedelta(days=40),
             'brd_approval_date': today - timedelta(days=30),
         })
@@ -885,6 +1237,119 @@ class TestPmsStageWorkflow(TransactionCase):
         self._move(project, 'reg')
         self.assertFalse(project.pwf_manual_unlock)
         self.assertTrue(project.pwf_locked)
+
+    # ------------------------------------------------------------------
+    # overdue: no stage change until the date is extended
+    # ------------------------------------------------------------------
+    def _make_overdue(self, project):
+        """Leave the project (on DEV) overdue for REG: its Regression Date
+        passed five days ago. Earlier dates are pulled back too, so the
+        lifecycle dates stay in step order (project_date_extension)."""
+        today = fields.Date.today()
+        project.sudo().write({
+            'date_start': today - timedelta(days=45),
+            'kick_start_meeting_date': today - timedelta(days=40),
+            'brd_approval_date': today - timedelta(days=30),
+            'ft_regression_date': today - timedelta(days=5),
+        })
+        self.assertEqual(project.stage_id, self.stage['dev'])
+        self.assertTrue(project.ft_is_overdue)
+        self.assertIn('Regression Date', project.ft_overdue_reason)
+        return project
+
+    def test_overdue_blocks_every_stage_change(self):
+        """PM (the project's user) and Administrator alike: neither forward
+        (REG) nor backward (DISC), with the overdue reason in the message."""
+        project = self._make_overdue(self.project)
+        self.assertTrue(project.pwf_locked)
+        for user in (self.pm, self.admin):
+            for key in ('reg', 'disc'):
+                with self.assertRaisesRegex(UserError, 'while it is overdue'):
+                    self._move(project, key, user=user)
+                self.assertEqual(project.stage_id, self.stage['dev'])
+        with self.assertRaises(UserError) as caught:
+            self._move(project, 'reg')
+        message = str(caught.exception)
+        self.assertIn(
+            "Project '%s' cannot be moved to '%s' while it is overdue: %s."
+            % (project.display_name, self.stage['reg'].name, project.ft_overdue_reason),
+            message)
+        self.assertIn('Submit a Date Extension Request', message)
+        # Re-stating the current stage in an unrelated write is not a move.
+        project.with_user(self.pm).write({
+            'stage_id': self.stage['dev'].id, 'comments': 'still here'})
+        self.assertEqual(project.comments, 'still here')
+
+    def test_overdue_stage_change_allowed_after_extension(self):
+        """An approved Date Extension writes the new date (sudo in the
+        approval flow; the admin is an approver here): overdue clears and the
+        very same move goes through."""
+        project = self._make_overdue(self.project)
+        with self.assertRaisesRegex(UserError, 'while it is overdue'):
+            self._move(project, 'reg')
+        project.with_user(self.admin).write(
+            {'ft_regression_date': fields.Date.today() + timedelta(days=3)})
+        self.assertFalse(project.ft_is_overdue)
+        self.assertFalse(project.pwf_locked)
+        self._move(project, 'reg')
+        self.assertEqual(project.stage_id, self.stage['reg'])
+
+    def test_overdue_stage_change_sudo_exempt(self):
+        """Superuser writes (crons, migrations, the approval flow) pass."""
+        project = self._make_overdue(self.project)
+        project.sudo().write({'stage_id': self.stage['reg'].id})
+        self.assertEqual(project.stage_id, self.stage['reg'])
+        # Reaching REG settles the missed Regression Date.
+        self.assertFalse(project.ft_is_overdue)
+
+    def test_overdue_stage_block_survives_manual_unlock(self):
+        """The admin unlock frees tasks and timesheets, not the stage."""
+        project = self._make_overdue(self.project)
+        self.assertTrue(project.pwf_locked)
+        project.with_user(self.admin).write({'pwf_locked': False})
+        # pwf_locked False is what frees tasks and timesheets (their guards
+        # read the flag); creating a task here would only exercise the
+        # task-source rules of bt_project_customization, not the lock.
+        self.assertFalse(project.pwf_locked)
+        self.assertTrue(project.pwf_manual_unlock)
+        for user in (self.pm, self.admin):
+            with self.assertRaisesRegex(UserError, 'while it is overdue'):
+                self._move(project, 'reg', user=user)
+        self.assertEqual(project.stage_id, self.stage['dev'])
+        self.assertTrue(project.pwf_manual_unlock)
+
+    def test_overdue_stage_block_only_for_implementation(self):
+        """AMC / General projects carry no dated milestone: even a stray past
+        milestone date on one never freezes its stages."""
+        today = fields.Date.today()
+        project = self.env['project.project'].with_user(self.admin).create({
+            'name': 'PWF AMC Overdue', 'ft_project_type': 'amc',
+            'date_start': today, 'date': today + timedelta(days=30),
+            'partner_id': self.customer.id, 'user_id': self.pm.id,
+        })
+        project.sudo().with_context(skip_date_sequence_check=True).write(
+            {'uat_start_date': today - timedelta(days=5)})
+        working = self.env.ref('ft_project_lifecycle.stage_working')
+        project.with_user(self.pm).write({'stage_id': working.id})
+        self.assertEqual(project.stage_id, working)
+        self.assertFalse(project.pwf_next_stage_missing)
+
+    def test_overdue_hint_in_next_stage_missing(self):
+        """The form's "Missing for Next Stage" list names the freeze first."""
+        project = self.project
+        self.assertNotIn('Overdue:', project.pwf_next_stage_missing or '')
+        self._make_overdue(project)
+        project.invalidate_recordset(['pwf_next_stage_missing'])
+        hint = project.pwf_next_stage_missing
+        self.assertTrue(hint)
+        first = hint.split('\n')[0]
+        self.assertEqual(
+            first, 'Overdue: %s. Extend the date first.' % project.ft_overdue_reason)
+        # Extending the date drops the line again.
+        project.with_user(self.admin).write(
+            {'ft_regression_date': fields.Date.today() + timedelta(days=3)})
+        project.invalidate_recordset(['pwf_next_stage_missing'])
+        self.assertNotIn('Overdue:', project.pwf_next_stage_missing or '')
 
     # ------------------------------------------------------------------
     # testing task

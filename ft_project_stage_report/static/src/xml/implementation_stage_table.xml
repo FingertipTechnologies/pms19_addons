@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ================== IMPLEMENTATION STAGES MATRIX ================== -->
+    <!-- Same card / head / tools / wrap / table markup and ftpd_* classes as
+         ft_project_dashboard's DataTable, hand-rendered because the columns
+         are the stages of the payload and every cell colours itself. Only
+         what DataTable has no notion of (the stats strip, the pill filling a
+         cell, the two-line Project / Total cells, the footer note) carries
+         an ftpsr_ class of its own (see the scss). -->
+    <t t-name="ft_project_stage_report.ImplementationStageTable">
+        <div class="ftpd_chart_row ftpsr_stage_row">
+            <div class="ftpd_chart_card ftpd_chart_card--full">
+                <div class="ftpd_chart_head ftpd_table_head">
+                    <h3 class="ftpd_chart_title">Implementation Stages</h3>
+                    <div class="ftpd_table_tools">
+                        <div class="ftpd_search">
+                            <i class="fa fa-search"/>
+                            <input type="text" placeholder="Search project or manager…"
+                                   t-att-value="state.search"
+                                   t-on-input="onSearch"/>
+                        </div>
+                        <!-- Days Worked / Overdue Days: the former two menus,
+                             now one switch that changes the number in each
+                             cell. -->
+                        <div class="ftpd_periods ftpsr_view_switch" role="group"
+                             title="Choose which number the stage cells show">
+                            <t t-foreach="views" t-as="v" t-key="v.id">
+                                <button class="ftpd_period_btn"
+                                        t-att-class="{ 'ftpd_period_btn--active': state.view === v.id }"
+                                        t-on-click="() => this.onViewChange(v.id)">
+                                    <t t-esc="v.label"/>
+                                </button>
+                            </t>
+                        </div>
+                        <label class="ftpd_table_toggle"
+                               title="Also list projects in the CLOSED stage and archived projects, hidden by default">
+                            <input type="checkbox"
+                                   t-att-checked="state.includeClosed"
+                                   t-on-change="onIncludeClosed"/>
+                            <span>Include closed</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Summary of the rows SHOWN (the search narrows it too). -->
+                <div class="ftpsr_stats">
+                    <div class="ftpsr_stat">
+                        <span class="ftpsr_stat_label">Projects:</span>
+                        <span class="ftpsr_stat_value"><t t-esc="stats.projects"/></span>
+                    </div>
+                    <div class="ftpsr_stat">
+                        <span class="ftpsr_stat_label"><t t-esc="stats.totalLabel"/>:</span>
+                        <span class="ftpsr_stat_value"
+                              t-att-class="{ 'ftpsr_stat_value--danger': stats.totalDanger }">
+                            <t t-esc="stats.totalValue"/>
+                        </span>
+                    </div>
+                    <div class="ftpsr_stat">
+                        <span class="ftpsr_stat_label">Projects overdue:</span>
+                        <span class="ftpsr_stat_value"
+                              t-att-class="{ 'ftpsr_stat_value--danger': stats.projectsOverdue > 0 }">
+                            <t t-esc="stats.projectsOverdue"/>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="ftpd_table_wrap ftpd_table_scroll ftpsr_matrix_wrap">
+                    <table class="ftpd_table ftpsr_matrix">
+                        <thead>
+                            <tr>
+                                <!-- The only sortable header: a click flips
+                                     the name order. -->
+                                <th class="ftpd_sortable ftpd_sort_active ftpsr_col_project"
+                                    title="Sort by project name"
+                                    t-on-click="onSortToggle">
+                                    Project
+                                    <i class="fa ftpd_sort_ico" t-att-class="sortIcon"/>
+                                </th>
+                                <t t-foreach="state.stages" t-as="stage" t-key="stage.id">
+                                    <th class="ftpd_num ftpsr_col_stage" t-att-title="stage.name">
+                                        <t t-esc="stage.name"/>
+                                    </th>
+                                </t>
+                                <th class="ftpd_num ftpsr_col_total">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="rows" t-as="project" t-key="project.project_id">
+                                <tr class="ftpd_row_clickable"
+                                    t-att-class="{ 'ftpsr_row--closed': project.project_closed }"
+                                    t-on-click="() => this.openProject(project)">
+                                    <td class="ftpsr_col_project">
+                                        <div class="ftpsr_project_name"><t t-esc="project.project_name"/></div>
+                                        <div class="ftpsr_project_pm" t-if="project.manager_name">
+                                            <t t-esc="project.manager_name"/>
+                                        </div>
+                                    </td>
+                                    <t t-foreach="state.stages" t-as="stage" t-key="stage.id">
+                                        <t t-set="cell" t-value="cellFor(project, stage)"/>
+                                        <td class="ftpd_num ftpsr_cell" t-att-title="cellTitle(cell, stage)">
+                                            <span class="ftpsr_cell_val" t-att-class="cellClass(cell)">
+                                                <t t-esc="cellText(cell)"/>
+                                                <i t-if="cellFlag(cell)" class="fa fa-exclamation-circle ftpsr_cell_flag" title="Overdue"/>
+                                            </span>
+                                        </td>
+                                    </t>
+                                    <td class="ftpd_num ftpsr_col_total" t-att-title="totalTitle(project)">
+                                        <div class="ftpsr_total"
+                                             t-att-class="{ 'ftpsr_total--danger': totalDanger(project) }">
+                                            <t t-esc="totalText(project)"/>
+                                        </div>
+                                        <div class="ftpsr_total_sub" t-if="totalSub(project)"
+                                             t-att-class="{ 'ftpsr_total_sub--danger': project.is_overdue }">
+                                            <t t-esc="totalSub(project)"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </t>
+                            <tr t-if="!rows.length">
+                                <td t-att-colspan="state.stages.length + 2" class="ftpd_table_empty">
+                                    <t t-esc="emptyText"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="ftpd_table_foot ftpsr_foot">
+                    <i class="fa fa-info-circle"/>
+                    <span>Red indicates an overdue stage. In Days Worked mode, red means the stage is overdue. In Overdue Days mode, red shows the approved Date Extension days of the stage.</span>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- Drop the table into the Project Dashboard right after the Project
+         Performance row (and before whatever another module puts in front
+         of Resource Status). The attribute value carries its own quotes
+         because the title is an OWL expression, hence the &quot; literal. -->
+    <t t-name="ft_project_stage_report.ProjectDashboard"
+       t-inherit="ft_project_dashboard.ProjectDashboard"
+       t-inherit-mode="extension">
+        <xpath expr="//DataTable[@title=&quot;'Project Performance'&quot;]/.." position="after">
+            <ImplementationStageTable projectId="state.projectId"
+                                      managerId="state.managerId"
+                                      reloadToken="state.data"/>
+        </xpath>
+    </t>
+
+</templates>

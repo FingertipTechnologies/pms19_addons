@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_amc_overdue_dashboard_system,ft.amc.overdue.dashboard administrator,model_ft_amc_overdue_dashboard,base.group_system,1,1,1,1
+access_ft_amc_overdue_dashboard_amc_manager,ft.amc.overdue.dashboard amc manager,model_ft_amc_overdue_dashboard,ft_amc_monthly_timesheet.group_amc_manager,1,0,0,0
+access_ft_amc_overdue_dashboard_project_manager,ft.amc.overdue.dashboard project manager,model_ft_amc_overdue_dashboard,project.group_project_manager,1,0,0,0

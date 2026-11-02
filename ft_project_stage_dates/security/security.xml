@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Technical Architect: may edit the PLANNED lifecycle dates of an
+             Implementation project directly, but only while the project is
+             still early (KICKOFF or DISC). From DEV onwards the dates are a
+             commitment and every change goes through a Date Extension
+             Request, exactly as for everybody else; the Date Extension
+             Approver (Admin) keeps its unrestricted right. The server enforces
+             this (project.project._check_date_edit_permission); the form only
+             mirrors it (ft_can_edit_project_dates).
+
+             Sits under the Project privilege so it is offered beside User /
+             Administrator on the user form. Members are added by hand
+             (Settings > Users > Project > Technical Architect). -->
+        <record id="group_technical_architect" model="res.groups">
+            <field name="name">Technical Architect</field>
+            <field name="sequence">15</field>
+            <field name="privilege_id" ref="project.res_groups_privilege_project"/>
+            <field name="implied_ids" eval="[(4, ref('project.group_project_user'))]"/>
+            <field name="comment">
+                May edit the planned lifecycle dates of an Implementation
+                project directly while it is in KICKOFF or DISC. Later stages
+                require a Date Extension Request, as for every other user.
+            </field>
+        </record>
+
+    </data>
+</odoo>

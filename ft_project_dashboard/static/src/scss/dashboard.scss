@@ -616,6 +616,14 @@
         .ftpd_num {
             text-align: right;
         }
+        // Long free text (task names): wrap inside a bounded column instead
+        // of stretching the row across the screen.
+        td.ftpd_wrap {
+            white-space: normal;
+            min-width: 280px;
+            max-width: 560px;
+            line-height: 1.35;
+        }
         // Consolidated resource groups: rows after the first for a resource have
         // a blank name/role cell, and rows within a group drop the divider so
         // consecutive projects for one person read as a single entry.
@@ -625,10 +633,34 @@
         .ftpd_res_name {
             font-weight: 600;
         }
+        // Rows given an onRowClick handler (DataTable prop). The hover is a
+        // shade stronger than the plain row hover so a clickable table reads
+        // differently from a read-only one.
+        tbody tr.ftpd_row_clickable {
+            cursor: pointer;
+            &:hover { background: rgba(79, 70, 229, 0.09); }
+        }
         .ftpd_table_empty {
             text-align: center;
             color: var(--ftpd-muted);
             padding: 18px;
+        }
+    }
+
+    // Pill badge for a cell value that must stand out (DataTable col.badge).
+    // Only the danger variant exists so far: "6d overdue" in bold red on a
+    // light red ground.
+    .ftpd_badge {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 18px;
+
+        &--danger {
+            color: #b91c1c;
+            background: #fee2e2;
         }
     }
 

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Days Worked and Overdue Days of the CURRENT stage grow by one
+             every day without anything on the project changing, so the lines
+             are rebuilt nightly (01:00 server time, UTC). Everything else is
+             rebuilt at once by the project / request write triggers. -->
+        <record id="ir_cron_refresh_stage_report" model="ir.cron">
+            <field name="name">Implementation stage report: refresh days</field>
+            <field name="model_id" ref="model_ft_project_stage_line"/>
+            <field name="state">code</field>
+            <field name="code">model._rebuild_for_projects()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 01:00:00')"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="active" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

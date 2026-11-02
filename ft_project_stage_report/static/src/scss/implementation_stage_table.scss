@@ -1,0 +1,193 @@
+// Implementation Stages matrix (inside the Project Dashboard).
+//
+// The card, head, tools, search, toggle, scroll wrapper and table are the
+// ft_project_dashboard (ftpd_*) classes, so the section reads as one more
+// DataTable of the board. Only what DataTable has no notion of is styled
+// here: the borrowed period pills sized down to the control strip, the stats
+// strip, the red pill filling a stage cell, the current-stage mark, the
+// two-line Project / Total cells, the sticky first column and the footer note.
+.ftpd_dashboard .ftpsr_stage_row {
+    // The header's period switch is taller than the search box and the
+    // Include-closed toggle it sits beside; size it to theirs so the three
+    // read as one control strip rather than a header control dropped in.
+    .ftpsr_view_switch {
+        padding: 2px;
+        .ftpd_period_btn {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+    }
+
+    // ---------------- Summary strip ----------------
+    // Three "Label: value" figures between the head and the grid. Inline,
+    // not KPI cards: they describe THIS table's rows, not the board.
+    .ftpsr_stats {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 32px;
+        padding: 2px 0 12px;
+    }
+    .ftpsr_stat {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+    }
+    .ftpsr_stat_label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ftpd-muted);
+    }
+    .ftpsr_stat_value {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ftpd-text);
+
+        // Same red as .ftpd_badge--danger: an overdue total is a warning.
+        &--danger { color: #b91c1c; }
+    }
+
+    // ---------------- Grid ----------------
+    // Ten stage columns plus Project and Total do not fit a laptop width:
+    // .ftpd_table_wrap already scrolls horizontally and .ftpd_table_scroll
+    // caps the height with a sticky header; the first column is pinned on
+    // the left so a row never loses its name while scrolling sideways.
+    .ftpsr_matrix {
+        // Stage columns are all the same kind of number: give them equal
+        // room so the pills line up down a column.
+        th.ftpsr_col_stage, td.ftpsr_cell {
+            text-align: center;
+            min-width: 92px;
+        }
+        th.ftpsr_col_total, td.ftpsr_col_total {
+            min-width: 84px;
+        }
+        // Rows carry two lines (name + PM, total + caption): a touch more
+        // vertical padding than DataTable's single-line rows.
+        tbody td {
+            padding-top: 8px;
+            padding-bottom: 8px;
+            vertical-align: middle;
+        }
+
+        // Sticky first column. thead th is already sticky-top with z-index 1
+        // (dashboard.scss); the corner cell must sit above both the other
+        // headers and the pinned body cells, hence 3 over 2.
+        th.ftpsr_col_project, td.ftpsr_col_project {
+            position: sticky;
+            left: 0;
+            min-width: 180px;
+            max-width: 260px;
+        }
+        th.ftpsr_col_project {
+            z-index: 3;
+        }
+        td.ftpsr_col_project {
+            z-index: 2;
+            // Opaque: the cells scrolling underneath must not show through.
+            background: var(--ftpd-card);
+            // Hairline on the right so the pinned column reads as pinned once
+            // the stage cells slide under it.
+            box-shadow: inset -1px 0 0 var(--ftpd-border);
+        }
+        // The row hover is a translucent tint on the <tr>; the pinned cell is
+        // opaque, so it needs the same tint pre-blended over white.
+        tbody tr:hover td.ftpsr_col_project {
+            background: #f1f1fd;
+        }
+
+        .ftpsr_project_name {
+            font-weight: 600;
+            color: var(--ftpd-text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ftpsr_project_pm {
+            margin-top: 1px;
+            font-size: 11.5px;
+            color: var(--ftpd-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        // A closed / archived project ("Include closed" on): dimmed so it is
+        // told apart from the running ones without another column.
+        tbody tr.ftpsr_row--closed td {
+            color: var(--ftpd-muted);
+            .ftpsr_project_name { color: var(--ftpd-muted); }
+        }
+
+        // ---------------- Stage cells ----------------
+        // Plain "6d" / "—" text by default; an overdue stage becomes a pill
+        // in .ftpd_badge--danger's colours, but filling the cell (a block
+        // with a modest radius) rather than the badge's tight capsule, so a
+        // run of overdue stages reads as a red band across the row.
+        .ftpsr_cell_val {
+            display: inline-block;
+            min-width: 44px;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 18px;
+            color: var(--ftpd-text);
+
+            &--pill {
+                color: #b91c1c;
+                background: #fee2e2;
+                font-weight: 700;
+            }
+            // Overdue stage kept neutral (Days Worked "0d"): small red mark.
+            .ftpsr_cell_flag {
+                color: #b91c1c;
+                font-size: 11px;
+                margin-left: 4px;
+                vertical-align: middle;
+            }
+            // The project's current stage: bold with an indigo dot (the
+            // board's accent) so it stands out whether or not the cell is
+            // red, and is never confused with the red of an overdue one.
+            &--current {
+                font-weight: 700;
+
+                &::after {
+                    content: "";
+                    display: inline-block;
+                    width: 6px;
+                    height: 6px;
+                    margin-left: 6px;
+                    border-radius: 50%;
+                    background: #4f46e5;
+                    vertical-align: middle;
+                }
+            }
+        }
+
+        // ---------------- Total column ----------------
+        .ftpsr_total {
+            font-weight: 700;
+            color: var(--ftpd-text);
+
+            &--danger { color: #b91c1c; }
+        }
+        .ftpsr_total_sub {
+            margin-top: 1px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--ftpd-muted);
+
+            &--danger { color: #b91c1c; }
+        }
+    }
+
+    // ---------------- Footer note ----------------
+    // .ftpd_table_foot right-aligns a pager; a legend reads from the left.
+    .ftpsr_foot {
+        justify-content: flex-start;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--ftpd-muted);
+
+        i { color: #4f46e5; }
+    }
+}

@@ -189,7 +189,16 @@
     # completed task without one is reopened (and dated) through the button
     # only.
     # Python/view only, no migration.
-    'version': '19.0.1.26.0',
+    # 19.0.1.27.0 adds the 'kickoff' stage key to FT_STAGE_MARKERS so the
+    # KICKOFF stage (ft_project_stage_dates) classifies ahead of DISC; no date
+    # requirement, no migration.
+    # 19.0.1.28.0 treats Status '1_deployed' (Deployed, the value
+    # ft_amc_payment_milestone adds after Done) like '1_done' in the two
+    # places that mean "finished": a task created straight into a final stage
+    # is not re-stamped Done over Deployed, and leaving a final stage returns
+    # a Deployed task to In Progress exactly as it does a Done one. Two
+    # one-line edits, no migration.
+    'version': '19.0.1.28.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',

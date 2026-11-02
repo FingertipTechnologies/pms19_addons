@@ -1,6 +1,7 @@
 {
     'name': 'FT Project Dashboard',
-    'version': '19.0.1.5.1',
+    # 1.5.2: DataTable gains optional onRowClick / col.render / col.badge (for ft_amc_overdue_dashboard).
+    'version': '19.0.1.5.2',
     'category': 'Project',
     'summary': 'Executive Project Dashboard — KPI cards & Chart.js analytics (OWL)',
     'description': """

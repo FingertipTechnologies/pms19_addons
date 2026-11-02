@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- List: grouped by project by default (action context), one row
+             per stage in pipeline order. Read-only: the rows are rebuilt by
+             the system. The Refresh button (always shown, selection ignored)
+             rebuilds every Implementation project and reloads the list. -->
+        <record id="view_ft_project_stage_line_list" model="ir.ui.view">
+            <field name="name">ft.project.stage.line.list</field>
+            <field name="model">ft.project.stage.line</field>
+            <field name="arch" type="xml">
+                <list string="Implementation Stage Report"
+                      create="false" edit="false" delete="false" expand="1"
+                      decoration-success="is_current"
+                      decoration-danger="overdue_days > 0 and not is_current"
+                      decoration-bf="is_current">
+                    <header>
+                        <button name="action_refresh" type="object"
+                                string="Refresh" display="always"
+                                class="btn-secondary" icon="fa-refresh"
+                                title="Rebuild the report for every Implementation project"/>
+                    </header>
+                    <field name="project_id" optional="show"/>
+                    <field name="sequence" column_invisible="True"/>
+                    <field name="stage_id"/>
+                    <field name="stage_key" column_invisible="True"/>
+                    <field name="planned_date"
+                           help="Date by which the project must reach this stage, after approved Date Extensions"/>
+                    <field name="actual_entry_date"/>
+                    <field name="actual_exit_date"/>
+                    <field name="days_worked" sum="Total Days Worked"/>
+                    <field name="overdue_days" sum="Total Overdue Days"/>
+                    <field name="extension_days" sum="Total Extension Days"/>
+                    <field name="is_current" widget="boolean"/>
+                    <field name="company_id" column_invisible="True"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form: read-only detail of one line (opened from the list). -->
+        <record id="view_ft_project_stage_line_form" model="ir.ui.view">
+            <field name="name">ft.project.stage.line.form</field>
+            <field name="model">ft.project.stage.line</field>
+            <field name="arch" type="xml">
+                <form string="Implementation Stage Line" create="false" edit="false" delete="false">
+                    <sheet>
+                        <group>
+                            <group name="stage">
+                                <field name="project_id"/>
+                                <field name="stage_id"/>
+                                <field name="is_current"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                            </group>
+                            <group name="dates">
+                                <field name="planned_date"/>
+                                <field name="actual_entry_date"/>
+                                <field name="actual_exit_date"/>
+                            </group>
+                            <group name="days">
+                                <field name="days_worked"/>
+                                <field name="overdue_days"/>
+                                <field name="extension_days"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Pivot: projects down, stages across. The default measure is
+             days_worked; each action overrides it through pivot_measures. -->
+        <record id="view_ft_project_stage_line_pivot" model="ir.ui.view">
+            <field name="name">ft.project.stage.line.pivot</field>
+            <field name="model">ft.project.stage.line</field>
+            <field name="arch" type="xml">
+                <pivot string="Implementation Stage Report" sample="1">
+                    <field name="project_id" type="row"/>
+                    <field name="stage_id" type="col"/>
+                    <field name="days_worked" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- Graph: bars per project, one per stage. -->
+        <record id="view_ft_project_stage_line_graph" model="ir.ui.view">
+            <field name="name">ft.project.stage.line.graph</field>
+            <field name="model">ft.project.stage.line</field>
+            <field name="arch" type="xml">
+                <graph string="Implementation Stage Report" type="bar" stacked="0" sample="1">
+                    <field name="project_id"/>
+                    <field name="stage_id"/>
+                    <field name="days_worked" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <record id="view_ft_project_stage_line_search" model="ir.ui.view">
+            <field name="name">ft.project.stage.line.search</field>
+            <field name="model">ft.project.stage.line</field>
+            <field name="arch" type="xml">
+                <search string="Implementation Stage Report">
+                    <field name="project_id"/>
+                    <field name="stage_id"/>
+                    <filter name="filter_current" string="Current Stage Only"
+                            domain="[('is_current', '=', True)]"/>
+                    <filter name="filter_overdue" string="Overdue Stages"
+                            domain="[('overdue_days', '>', 0)]"/>
+                    <filter name="filter_extended" string="Extended Stages"
+                            domain="[('extension_days', '>', 0)]"/>
+                    <separator/>
+                    <filter name="filter_entered" string="Entered Stages"
+                            domain="[('actual_entry_date', '!=', False)]"/>
+                    <group>
+                        <filter name="group_project" string="Project"
+                                context="{'group_by': 'project_id'}"/>
+                        <filter name="group_stage" string="Stage"
+                                context="{'group_by': 'stage_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Two actions on the same model and views; the context switches
+             the default measures: "Days Worked" vs "Overdue & Extensions". -->
+        <record id="action_ft_project_stage_report_days" model="ir.actions.act_window">
+            <field name="name">Stage Days Worked</field>
+            <field name="res_model">ft.project.stage.line</field>
+            <field name="view_mode">list,pivot,graph,form</field>
+            <field name="search_view_id" ref="view_ft_project_stage_line_search"/>
+            <field name="context">{'search_default_group_project': 1, 'pivot_measures': ['days_worked'], 'graph_measure': 'days_worked'}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_empty_folder">
+                    No stage lines yet
+                </p>
+                <p>
+                    Lines are built for every Implementation project when it is
+                    created or moved between stages, nightly, and by the
+                    Refresh button. Days Worked is the number of calendar days a
+                    project spent in each stage, from its actual entry to the
+                    entry of the next stage (or today for the current stage).
+                    Planned Date is the date by which the project must reach
+                    the stage, after approved Date Extensions.
+                </p>
+            </field>
+        </record>
+
+        <record id="action_ft_project_stage_report_delays" model="ir.actions.act_window">
+            <field name="name">Stage Overdue &amp; Extensions</field>
+            <field name="res_model">ft.project.stage.line</field>
+            <field name="view_mode">list,pivot,graph,form</field>
+            <field name="search_view_id" ref="view_ft_project_stage_line_search"/>
+            <field name="context">{'search_default_group_project': 1, 'pivot_measures': ['overdue_days', 'extension_days'], 'graph_measure': 'overdue_days'}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_empty_folder">
+                    No stage lines yet
+                </p>
+                <p>
+                    Planned Date: the date by which the project must reach
+                    the stage, as it stands after approved Date Extensions.
+                    Overdue Days: how many days late the project reached the
+                    stage (actual entry minus planned date), or, for the next
+                    stage not yet reached, how many days past its planned
+                    date the project is. Extension Days: the delay days of
+                    the approved Date Extension Requests that targeted the
+                    stage; later stages shifted by that request are not
+                    counted again.
+                </p>
+            </field>
+        </record>
+
+        <!-- No menu of its own since 19.0.1.1.0: the rows are shown INSIDE
+             the Project Dashboard (Dashboards > Project) as the
+             "Implementation Stages" table, with the Days Worked / Overdue -
+             Delays switch in the table itself. The two actions above stay:
+             the project form's Stage Report smart button opens the first one
+             scoped to the project (action_view_stage_report), and both keep
+             the list / pivot / graph reachable for anyone who links them. -->
+
+    </data>
+</odoo>

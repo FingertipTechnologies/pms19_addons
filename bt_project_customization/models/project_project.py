@@ -39,7 +39,15 @@ UAT_STAGE_NAMES = ('user acceptance', 'user acceptance testing', 'uat')
 # single-word marker is tested as a whole word, so the short code "dev" matches
 # "DEV - Development" while never matching the middle of an unrelated word.
 # Order is most-specific first for the names that could otherwise collide.
+#
+# 'kickoff' (ft_project_stage_dates' KICKOFF stage, ahead of DISC) carries no
+# single-word 'kick' marker on purpose: "KICKOFF" normalises to the one word
+# "kickoff", and "Kick-off" / "Kick off meeting" to the phrase "kick off", so
+# the two markers below cover every spelling without "kick" ever matching the
+# middle of another name. It has no FT_STAGE_DATE_REQUIREMENTS entry: a
+# project enters KICKOFF at creation, before any date is known.
 FT_STAGE_MARKERS = (
+    ('kickoff', ('kick off', 'kickoff')),
     ('data', ('data upload', 'data')),
     ('disc', ('discovery', 'disc')),
     ('dev', ('development', 'dev')),

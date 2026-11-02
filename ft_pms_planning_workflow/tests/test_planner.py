@@ -203,8 +203,12 @@ class TestPlannerRecords(TransactionCase):
         cls.r_task = task('PWF task on closed project R', cls.project_r,
                           cls.st_working, cls.week_cur, 5.0, cls.user_b)
 
-        closed = cls.env['project.project.stage'].create(
-            {'name': 'Closed', 'sequence': 999})
+        # ft_project_lifecycle only lets a General project enter a stage
+        # flagged for its workflow, so flag the fixture stage when installed.
+        closed_vals = {'name': 'Closed', 'sequence': 999}
+        if 'pl_for_general' in cls.env['project.project.stage']._fields:
+            closed_vals['pl_for_general'] = True
+        closed = cls.env['project.project.stage'].create(closed_vals)
         # sudo: skip the stage gates; only "closed projects still show" is
         # under test.
         cls.project_r.sudo().write({'stage_id': closed.id})

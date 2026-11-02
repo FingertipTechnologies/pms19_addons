@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Inherits ft_pms_planning_workflow's extension of project.edit_project
+         rather than project.edit_project itself, so this arch is always
+         applied after it (and after ft_project_lifecycle's, which pwf's own
+         xpaths already need): the five lifecycle date fields and the
+         ft_dates / pwf_dates_col2 groups exist by then, wherever pwf has
+         moved them. -->
+    <record id="view_project_form_stage_dates" model="ir.ui.view">
+        <field name="name">project.project.form.ft.stage.dates</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="ft_pms_planning_workflow.ft_pms_project_form_stage_gates"/>
+        <field name="priority">95</field>
+        <field name="arch" type="xml">
+
+            <!-- The five dates ft_project_lifecycle slots into the Dates
+                 group were the only ones without the readonly that
+                 ft_task_hours_tracker puts on the rest. Same rule for all
+                 twelve now: editable only when the server would accept the
+                 edit (approver, administrator, or a Technical Architect on an
+                 early-stage Implementation project). -->
+            <xpath expr="//group[@name='ft_dates']//field[@name='ft_regression_date']" position="attributes">
+                <attribute name="readonly">not ft_can_edit_project_dates</attribute>
+            </xpath>
+            <xpath expr="//group[@name='ft_dates']//field[@name='pl_data_upload_date']" position="attributes">
+                <attribute name="readonly">not ft_can_edit_project_dates</attribute>
+            </xpath>
+            <xpath expr="//group[@name='ft_dates']//field[@name='ft_training_date']" position="attributes">
+                <attribute name="readonly">not ft_can_edit_project_dates</attribute>
+            </xpath>
+            <xpath expr="//group[@name='ft_dates']//field[@name='go_live_date']" position="attributes">
+                <attribute name="readonly">not ft_can_edit_project_dates</attribute>
+            </xpath>
+            <xpath expr="//group[@name='ft_dates']//field[@name='pl_support_end_date']" position="attributes">
+                <attribute name="readonly">not ft_can_edit_project_dates</attribute>
+            </xpath>
+
+            <!-- Actual stage dates: when the project really entered each
+                 stage, as opposed to the planned dates above. Implementation
+                 only; read-only (the server refuses a direct write too). Two
+                 columns in pipeline order, read down the left then the right,
+                 KICKOFF to CLOSED. -->
+            <xpath expr="//group[@name='ft_dates']" position="after">
+                <group string="Actual Stage Dates" name="pl_actual_dates"
+                       invisible="ft_project_type != 'implementation'">
+                    <group name="pl_actual_dates_col1">
+                        <field name="pl_actual_kickoff_date" readonly="1"/>
+                        <field name="pl_actual_disc_date" readonly="1"/>
+                        <field name="pl_actual_dev_date" readonly="1"/>
+                        <field name="pl_actual_reg_date" readonly="1"/>
+                        <field name="pl_actual_srv_date" readonly="1"/>
+                    </group>
+                    <group name="pl_actual_dates_col2">
+                        <field name="pl_actual_uat_date" readonly="1"/>
+                        <field name="pl_actual_data_date" readonly="1"/>
+                        <field name="pl_actual_tra_date" readonly="1"/>
+                        <field name="pl_actual_support_date" readonly="1"/>
+                        <field name="pl_actual_closed_date" readonly="1"/>
+                    </group>
+                    <div colspan="2" class="text-muted small" name="pl_actual_dates_note">
+                        Recorded automatically on entry; first entry is kept.
+                    </div>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

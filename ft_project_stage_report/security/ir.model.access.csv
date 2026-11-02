@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_project_stage_line_user,ft.project.stage.line.user,model_ft_project_stage_line,project.group_project_user,1,0,0,0
+access_ft_project_stage_line_system,ft.project.stage.line.system,model_ft_project_stage_line,base.group_system,1,1,1,1

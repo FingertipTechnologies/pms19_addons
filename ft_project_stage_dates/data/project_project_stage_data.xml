@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- KICKOFF: the first Implementation stage, ahead of DISC (sequence 10).
+
+         ft_project_lifecycle.create() homes a new project onto the FIRST
+         stage of its Project Type by sequence (_pl_allowed_stages_for_type)
+         whenever the stage given does not belong to that type - and the
+         creation form gives none - so every new Implementation project lands
+         here on its own. Nothing moves an EXISTING project: the stage_id of
+         every project already on DISC or beyond is untouched by this data
+         file, the post_init_hook and the upgrade.
+
+         Classified as key 'kickoff' by bt_project_customization
+         (FT_STAGE_MARKERS). The key carries no entry date requirement and no
+         ft_pms_planning_workflow gate, so leaving it needs only what DISC
+         always needed: the Kick-off Date (FT_STAGE_DATE_REQUIREMENTS) and a
+         milestone (every forward move of an Implementation project). -->
+    <record id="stage_kickoff" model="project.project.stage">
+        <field name="name">KICKOFF</field>
+        <field name="sequence">5</field>
+        <field name="fold" eval="False"/>
+        <field name="pl_for_implementation" eval="True"/>
+    </record>
+
+</odoo>

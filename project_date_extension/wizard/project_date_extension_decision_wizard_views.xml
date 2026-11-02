@@ -9,7 +9,7 @@
                 <field name="request_id" invisible="1"/>
                 <group invisible="decision != 'approve'">
                     <field name="current_date" readonly="1"/>
-                    <field name="requested_date" required="decision == 'approve'" string="Approved New Date"/>
+                    <field name="requested_date" required="decision == 'approve'" string="Approved Rescheduled Date"/>
                 </group>
                 <group>
                     <label for="comment" string="Approval Comment" invisible="decision != 'approve'"/>

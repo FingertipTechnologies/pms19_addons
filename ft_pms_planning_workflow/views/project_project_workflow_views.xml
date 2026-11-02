@@ -71,13 +71,57 @@
                                readonly="1" options="{'no_open': True}"
                                invisible="not pwf_next_stage_id"/>
                     </group>
+                    <!-- Live checklist: what the move to the next stage still
+                         needs, in the same words as the server's refusal. -->
+                    <div colspan="2" class="alert alert-warning mb-3" role="alert"
+                         name="pwf_req_missing" invisible="not pwf_next_stage_missing">
+                        <strong>Still missing before the next stage:</strong>
+                        <field name="pwf_next_stage_missing" readonly="1" nolabel="1"/>
+                    </div>
 
-                    <!-- DEV -->
+                    <!-- DISC: what the project needs while in Discovery -->
+                    <separator string="DISC – Discovery" colspan="2"/>
+                    <group name="pwf_req_disc" colspan="2">
+                        <div colspan="2" class="text-muted small" name="pwf_req_disc_note">
+                            <strong>Milestones:</strong> the milestone plan must be complete and
+                            validated at 100% (percentages in the Milestones tab add up to 100%,
+                            at least one milestone).
+                            <br/>
+                            <strong>Dates:</strong> the stage dates are mandatory: the Kick-off Date
+                            to be in DISC, the BRD Approval Date to move on to DEV, and each later
+                            stage's date before entering it.
+                        </div>
+                    </group>
+
+                    <!-- DEV: Discovery deliverables (documents) are required to
+                         ENTER Development, so they are listed here and checked
+                         on DISC -> DEV. -->
                     <separator string="DEV – Development" colspan="2"/>
                     <group name="pwf_req_dev" colspan="2">
+                        <!-- accepted_file_extensions only narrows the browser's
+                             file picker; the server refuses a wrong format whatever
+                             the client sends (PWF_DOCUMENT_FORMATS). -->
+                        <group string="Documents" name="pwf_req_disc_docs">
+                            <field name="pwf_schema_design_attachment_ids" widget="many2many_binary"
+                                   string="Schema Design (Excel)"
+                                   options="{'accepted_file_extensions': '.xlsx,.xls'}"/>
+                            <field name="pwf_components_attachment_ids" widget="many2many_binary"
+                                   string="Components and Their Relationships (Excel)"
+                                   options="{'accepted_file_extensions': '.xlsx,.xls'}"/>
+                            <field name="pwf_process_flow_attachment_ids" widget="many2many_binary"
+                                   string="Process Flow Chart (PDF)"
+                                   options="{'accepted_file_extensions': '.pdf'}"/>
+                        </group>
                         <group string="Evidence" name="pwf_req_dev_evidence">
                             <field name="pwf_brd_signoff_attachment_ids" widget="many2many_binary"
                                    string="Signed BRD E-mail Screenshot"/>
+                            <div colspan="2" class="text-muted small" name="pwf_req_dev_note">
+                                All three documents (Schema Design and Components and Their
+                                Relationships as Excel .xlsx/.xls, Process Flow Chart as PDF), the
+                                signed BRD, the project's Modules (all of them, at least one, in the
+                                Modules tab), the 100% milestone plan and the BRD Approval Date are
+                                required before the project can move from DISC to DEV.
+                            </div>
                         </group>
                         <group string="Finance" name="pwf_req_dev_finance">
                             <field name="pwf_fin_clear_dev" string="Finance Payment Clearance"
@@ -106,24 +150,60 @@
                         No evidence required to move to REG.
                     </div>
 
-                    <!-- SRV: regression sign-off by QA -->
+                    <!-- SRV: regression sign-off by QA.
+                         pwf_req_srv holds two groups, so it is an OUTER group:
+                         Odoo renders no label for a field placed directly in
+                         an outer group, and hides an empty read-only field in
+                         edit mode. The sign-off fields therefore sit in their
+                         own inner group (labels back), and Signed Off By / On
+                         keep a "Not signed off yet" text while empty so the
+                         rows never disappear. Current Status / Open Issues
+                         are editable by QA (pwf_can_edit_reg: QA Group,
+                         tester job position or Administrator); the backend
+                         checks the same rule on every write and lets a QA
+                         user without write access on the project save a
+                         sign-off-only change. -->
                     <separator string="SRV – Regression Sign-Off" colspan="2"/>
                     <group name="pwf_req_srv" colspan="2">
-                        <div colspan="2" class="text-muted small" name="pwf_req_srv_hint"
-                             invisible="pwf_can_edit_reg">
-                            Only QA can fill in and sign off the regression results.
-                        </div>
-                        <field name="pwf_reg_current_status" string="Current Status" readonly="not pwf_can_edit_reg"
-                               placeholder="Current regression status..."/>
-                        <field name="pwf_reg_open_issues" string="Open Issues" readonly="not pwf_can_edit_reg"
-                               placeholder="Open issues found during regression..."/>
-                        <field name="pwf_reg_signed_by_id" string="Signed Off By" readonly="1"/>
-                        <field name="pwf_reg_signed_on" string="Signed Off On" readonly="1"/>
-                        <div colspan="2" name="pwf_req_srv_sign" invisible="not pwf_can_edit_reg">
-                            <button name="action_pwf_reg_signoff" type="object"
-                                    string="QA Sign Off" class="btn-secondary"
-                                    icon="fa-check"/>
-                        </div>
+                        <group name="pwf_req_srv_signoff" colspan="2">
+                            <div colspan="2" class="text-muted small" name="pwf_req_srv_hint"
+                                 invisible="pwf_can_edit_reg">
+                                Only QA (QA Group members or a tester job position) can fill in
+                                and sign off the regression results.
+                            </div>
+                            <field name="pwf_reg_current_status" string="Current Status"
+                                   readonly="not pwf_can_edit_reg"
+                                   placeholder="Current regression status..."/>
+                            <field name="pwf_reg_open_issues" string="Open Issues"
+                                   readonly="not pwf_can_edit_reg"
+                                   placeholder="Open issues found during regression..."/>
+                            <label for="pwf_reg_signed_by_id" string="Signed Off By"/>
+                            <div name="pwf_req_srv_signed_by">
+                                <field name="pwf_reg_signed_by_id" readonly="1"
+                                       invisible="not pwf_reg_signed_by_id"/>
+                                <span class="text-muted" invisible="pwf_reg_signed_by_id">Not signed off yet</span>
+                            </div>
+                            <label for="pwf_reg_signed_on" string="Signed Off On"/>
+                            <div name="pwf_req_srv_signed_on">
+                                <field name="pwf_reg_signed_on" readonly="1"
+                                       invisible="not pwf_reg_signed_on"/>
+                                <span class="text-muted" invisible="pwf_reg_signed_on">Not signed off yet</span>
+                            </div>
+                            <div colspan="2" name="pwf_req_srv_sign" invisible="not pwf_can_edit_reg">
+                                <button name="action_pwf_reg_signoff" type="object"
+                                        string="QA Sign Off" class="btn-secondary"
+                                        icon="fa-check"/>
+                            </div>
+                        </group>
+                        <group string="Code Review" name="pwf_req_srv_code_review" colspan="2">
+                            <field name="pwf_code_review_attachment_ids" widget="many2many_binary"
+                                   string="Code Review Document (Excel)"
+                                   options="{'accepted_file_extensions': '.xlsx,.xls'}"/>
+                            <div colspan="2" class="text-muted small" name="pwf_req_srv_code_review_note">
+                                Excel file (.xlsx/.xls). Required, with the QA sign-off, before the
+                                project can move to SRV.
+                            </div>
+                        </group>
                     </group>
 
                     <!-- UAT -->

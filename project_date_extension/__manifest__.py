@@ -10,7 +10,25 @@
     # the 150px LABEL column of its group — an inner group spans two grid
     # columns and a field marked nolabel is not bumped across both, so the
     # reason wrapped after three words. View change only, no migration.
-    "version": "19.0.1.5.0",
+    # 19.0.1.6.0 simplifies the request for PMs: pick the "Stage to be
+    # Extended" (dropdown of the project's stages from the current one on;
+    # the stage's planned date is selected automatically), give the
+    # "Rescheduled Date", and the Extension Days (signed), a Preponement
+    # flag, the Delay Days reports sum and a preview of the later dates
+    # that will move are all computed. A preponement moves only the
+    # selected date (never shifts later dates backwards) and must keep the
+    # step order. Approval now measures the shift against the project's
+    # LIVE date, not the one frozen when the request was raised. Migration
+    # back-fills the stage on existing requests from their lifecycle date.
+    # 19.0.1.7.0 fixes WHICH date a stage extends: the date by which the
+    # project must have REACHED the stage (its own date, as named on the
+    # project form and as the Overdue flag reads it - REG: Regression Date,
+    # SRV: Sandbox Review Date, ...), not the next stage's date, which is
+    # what 1.6.0 paired it with ("planned end"), so the request screen showed
+    # REG's date under DEV. STAGE_PLANNED_DATE_FIELD now mirrors
+    # bt_project_customization.FT_OVERDUE_MILESTONES. Migration re-derives
+    # the stage of every existing request from the date it actually moves.
+    "version": "19.0.1.7.0",
     "category": "Project",
     "summary": "Approval workflow to request and control milestone date extensions on Projects",
     "description": """

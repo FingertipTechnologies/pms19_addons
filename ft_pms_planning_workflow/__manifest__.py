@@ -5,12 +5,38 @@
     # 19.0.1.22.0: AMC "To Approve" task filter lists only completed tasks.
     # 19.0.1.23.0: a timesheet reviewer may approve / reject their own lines
     #   (a PM logs time on their own project); the self-review block is gone.
-    # 19.0.1.23.1: QA Group members get WRITE access on projects (access rule,
+    # 19.0.1.24.0: DISC deliverables (Schema Design, Components and Their
+    #   Relationships, Process Flow Chart) + at least one module gate DISC ->
+    #   DEV; the Code Review Document gates leaving SRV; at least one
+    #   milestone is required to create an Implementation project and before
+    #   every forward stage move; the form lists what the next move still needs.
+    # 19.0.1.25.0: gate documents have a required file format: Schema Design,
+    #   Components and Their Relationships and Code Review Document are Excel
+    #   (.xlsx/.xls), the Process Flow Chart is PDF; wrong formats are refused.
+    # 19.0.1.26.0: an overdue Implementation project cannot change stage at
+    #   all (any direction, any user, admin included; sudo exempt) until a
+    #   Date Extension is approved - on top of the task / timesheet lock; the
+    #   form's "Missing for Next Stage" hint names the overdue reason first.
+    # 19.0.1.27.0: timesheets can be reviewed from inside the task: the task
+    #   form's Timesheets tab gets a per-line Approve / Reject / Reset button
+    #   and "Approve All Pending" / "Reject All Pending" for the task (same
+    #   rights and actions as the Timesheet Approvals list).
+    # 19.0.1.28.0: SRV - Regression Sign-Off block of the project form shows
+    #   its labels again (Current Status, Open Issues, Signed Off By, Signed
+    #   Off On - lost when the Code Review group was nested inside it) and
+    #   "Not signed off yet" while unsigned; the hint names who counts as QA
+    #   (QA Group members or a tester job position).
+    # 19.0.1.29.0: QA Group members get WRITE access on projects (access rule,
     #   no create / delete): the project form opens editable for them, so the
     #   SRV block's Current Status / Open Issues can be typed inline; the
-    #   stage, lifecycle dates, finance clearances and lock stay guarded
-    #   server-side.
-    'version': '19.0.1.23.1',
+    #   stage, lifecycle dates, finance clearances, lock and locked milestones
+    #   stay guarded server-side.
+    # 19.0.1.30.0: the Code Review Document gates ENTERING SRV (with the QA
+    #   sign-off), no longer leaving it; the task list's Approve / Reject /
+    #   Reset Approval buttons follow the selection; the Approved / Rejected
+    #   task filters are AMC-only and stale approvals on non-AMC tasks are
+    #   cleared.
+    'version': '19.0.1.30.0',
     'summary': 'Project Planner, weekly Task Planner, Avg. Daily Effort and '
                'gated project stage workflow with approvals and notifications.',
     'description': """
@@ -22,9 +48,16 @@ PMS Planning & Stage Workflow
   not started / working / completed ordering, estimated / open / completed
   totals, week moves with a mandatory reason that never change the deadline.
 * Projects list: Estimated Time, Actual Hours, Avg. Daily Effort.
-* Stage gates (Implementation projects): evidence per stage, QA-only REG
-  sign-off, admin approval for UAT, closing feedback and retrospective.
-* Stage-change e-mails, project lock, Testing task type.
+* Stage gates (Implementation projects): evidence per stage (DISC design
+  documents, modules and a milestone before DEV; Code Review Document and
+  QA REG sign-off before SRV), admin approval for UAT, closing
+  feedback and retrospective. Gate documents have a required file format
+  (Excel for the design documents and the code review, PDF for the process
+  flow chart).
+
+* Stage-change e-mails, project lock (overdue projects: tasks and timesheets
+  locked and no stage change by anyone until a Date Extension is approved),
+  Testing task type.
 """,
     'category': 'Project',
     'author': 'Fingertip',
@@ -66,6 +99,7 @@ PMS Planning & Stage Workflow
             'ft_pms_planning_workflow/static/src/task_planner/task_planner.scss',
             'ft_pms_planning_workflow/static/src/control_panel_buttons/control_panel_buttons.js',
             'ft_pms_planning_workflow/static/src/control_panel_buttons/control_panel_buttons.xml',
+            'ft_pms_planning_workflow/static/src/list_header_buttons/list_header_buttons.js',
         ],
     },
     'uninstall_hook': 'uninstall_hook',

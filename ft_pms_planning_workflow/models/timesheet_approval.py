@@ -11,6 +11,12 @@ project.task._pwf_amc_is_global_approver) or the Project Manager of the
 line's project (project_id.user_id). Nobody but an Administrator may approve
 or reject their own lines.
 
+Where: the bulk buttons of every timesheet list (PMS > Timesheets >
+Timesheet Approvals and the plain timesheet lists), and the task form's
+Timesheets tab (a per-line Approve / Reject / Reset button and "Approve All
+Pending" / "Reject All Pending" for the task), so a Project Manager can review
+the timesheets of one task without leaving it.
+
 The approval fields are only ever written through the action_ft_timesheet_*
 methods (validated as the real user, then written via sudo so the project
 lock guard and the other content guards do not block an approval-only write).
@@ -281,3 +287,52 @@ class ProjectTask(models.Model):
             task.ft_approved_hours = totals['approved']
             task.ft_rejected_hours = totals['rejected']
             task.ft_pending_hours = totals['pending']
+    # Task form > Timesheets tab: review from inside the task.
+    ft_can_review_timesheets = fields.Boolean(
+        string='Can Review Timesheets', compute='_compute_ft_can_review_timesheets',
+        help="The current user may approve / reject the timesheets of this task: "
+             "an Administrator, a Project Manager / Team Lead job position, or "
+             "the Project Manager of the task's project.")
+    ft_pending_timesheet_count = fields.Integer(
+        string='Timesheets Pending Approval',
+        compute='_compute_ft_pending_timesheet_count',
+        help="Timesheet lines of this task still waiting for the weekly review.")
+
+    @api.depends_context('uid')
+    @api.depends('project_id.user_id')
+    def _compute_ft_can_review_timesheets(self):
+        # Same rule as _ft_check_timesheet_approval_rights, evaluated once for
+        # the user: the buttons are hidden from everybody else (the backend
+        # check still runs on every click).
+        is_global = self._pwf_amc_is_global_approver()
+        user = self.env.user
+        for task in self:
+            project = task.sudo().project_id
+            task.ft_can_review_timesheets = bool(project) and (
+                is_global or project.user_id == user)
+
+    @api.depends('timesheet_ids.ft_approval_state')
+    def _compute_ft_pending_timesheet_count(self):
+        for task in self:
+            task.ft_pending_timesheet_count = len(task.timesheet_ids.filtered(
+                lambda l: l.ft_approval_state == 'pending'))
+
+    def _ft_pending_timesheets(self):
+        """The Pending lines of this task (sub-tasks keep their own), or a
+        clear refusal when there is nothing left to review."""
+        self.ensure_one()
+        lines = self.timesheet_ids.filtered(lambda l: l.ft_approval_state == 'pending')
+        if not lines:
+            raise UserError(_("No timesheet of this task is pending approval."))
+        return lines
+
+    def action_ft_timesheet_approve_all(self):
+        """Task form > Timesheets tab: approve every Pending timesheet of the
+        task (rights checked per line, all-or-nothing). Reviewed lines are
+        left as they are; use the per-line buttons to change one."""
+        return self._ft_pending_timesheets().action_ft_timesheet_approve()
+
+    def action_ft_timesheet_reject_all(self):
+        """Task form > Timesheets tab: reject every Pending timesheet of the
+        task through the reason wizard."""
+        return self._ft_pending_timesheets().action_ft_timesheet_reject()

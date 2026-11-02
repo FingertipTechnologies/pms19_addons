@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ======================= AMC TASK OVERDUE TABLE ======================= -->
+    <!-- A section of the Project Dashboard, not a page: it is the same
+         full-width DataTable in the same ftpd_chart_row the board's other
+         tables use, so it needs no layout of its own. Only what is specific
+         to this table (the summary line) carries an ftao_ class. -->
+    <t t-name="ft_amc_overdue_dashboard.AmcOverdueTable">
+        <!-- Sorted by Overdue Days (desc) so the worst offenders are on top;
+             a row click opens the task form. Overdue Days counts from the
+             Original Deadline column, never the Current one. -->
+        <div class="ftpd_chart_row ftao_row">
+            <DataTable title="'AMC Task Overdue'"
+                       columns="columns"
+                       rows="rows"
+                       emptyText="'No AMC tasks match the current filters.'"
+                       defaultSort="{ key: 'overdue_days', dir: 'desc' }"
+                       paginate="false"
+                       onRowClick="(row) => this.openTask(row)">
+                <t t-set-slot="tools">
+                    <!-- The counts the KPI tiles used to carry, as one muted
+                         line: enough to read the table's size without a row
+                         of cards above a table that is itself the point. -->
+                    <span class="ftao_summary" t-if="summary" t-esc="summary"/>
+                    <i class="fa fa-circle-o-notch fa-spin ftao_spin" t-if="state.loading"
+                       title="Refreshing…"/>
+                    <div class="ftpd_search">
+                        <i class="fa fa-search"/>
+                        <input type="text" placeholder="Search project or task…"
+                               t-att-value="state.search"
+                               t-on-input="onSearch"/>
+                    </div>
+                    <label class="ftpd_table_toggle"
+                           title="Only tasks past their original deadline">
+                        <input type="checkbox"
+                               t-att-checked="state.overdueOnly"
+                               t-on-change="(ev) => this.onToggle('overdueOnly', ev)"/>
+                        <span>Overdue only</span>
+                        <!-- How many of the listed tasks are overdue: the same
+                             count badge Project Performance's toggles wear. -->
+                        <span class="ftpd_toggle_count" t-if="kpis.overdue_tasks">
+                            <t t-esc="kpis.overdue_tasks"/>
+                        </span>
+                    </label>
+                    <label class="ftpd_table_toggle"
+                           title="Also list completed tasks with the overdue days frozen on the day they were completed (cancelled tasks are never listed)">
+                        <input type="checkbox"
+                               t-att-checked="state.includeClosed"
+                               t-on-change="(ev) => this.onToggle('includeClosed', ev)"/>
+                        <span>Include completed</span>
+                    </label>
+                </t>
+            </DataTable>
+        </div>
+    </t>
+
+    <!-- ===================== PROJECT DASHBOARD EXTENSION ==================== -->
+    <!-- Slot the table into the Project Dashboard right before the Resource
+         Status row. Another module (ft_project_stage_report) inserts its
+         Implementation Stages section AFTER the Project Performance row, so
+         anchoring on Resource Status rather than on Project Performance gives
+         the intended order whichever module's extension is applied first:
+         Project Performance → Implementation Stages → AMC Task Overdue →
+         Resource Status.
+
+         `state` is the dashboard's own reactive state: its header Project and
+         Project Manager pickers scope this table like every other section,
+         and `state.data` is replaced on every refetch, so passing it as the
+         reload token keeps the table in step with the board. -->
+    <t t-name="ft_amc_overdue_dashboard.ProjectDashboard"
+       t-inherit="ft_project_dashboard.ProjectDashboard"
+       t-inherit-mode="extension">
+        <xpath expr="//DataTable[@title=&quot;'Resource Status'&quot;]/.." position="before">
+            <AmcOverdueTable projectId="state.projectId"
+                             managerId="state.managerId"
+                             reloadToken="state.data"/>
+        </xpath>
+    </t>
+
+</templates>

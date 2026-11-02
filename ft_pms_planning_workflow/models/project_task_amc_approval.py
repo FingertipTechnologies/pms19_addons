@@ -277,7 +277,17 @@ class ProjectTask(models.Model):
         }
 
     def action_pwf_amc_approve(self):
-        tasks = self._pwf_amc_apply('approved')
+        # Already approved tasks in the selection are left as they are: the
+        # list header button cannot hide itself per selected row.
+        pending = self.filtered(lambda t: t.pwf_amc_approval != 'approved')
+        if not pending:
+            return self._pwf_amc_notification(_("The selected task(s) are already approved."))
+        tasks = pending._pwf_amc_apply('approved')
+        skipped = len(self) - len(pending)
+        if skipped:
+            return self._pwf_amc_notification(_(
+                "%(done)s task(s) approved; %(skipped)s already approved, left unchanged.",
+                done=len(tasks), skipped=skipped))
         return self._pwf_amc_notification(_("%s task(s) approved.", len(tasks)))
 
     def action_pwf_amc_reset(self):

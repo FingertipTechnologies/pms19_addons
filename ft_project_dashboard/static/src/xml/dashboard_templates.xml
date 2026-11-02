@@ -116,9 +116,17 @@
                     </thead>
                     <tbody>
                         <t t-foreach="pagedRows" t-as="row" t-key="row_index">
-                            <tr t-att-class="{ 'ftpd_group_child': !row.__first, 'ftpd_group_mid': row.__mid }">
+                            <tr t-att-class="rowClass(row)" t-on-click="() => this.onRowClick(row)">
                                 <t t-foreach="props.columns" t-as="col" t-key="col.key">
-                                    <td t-att-class="cellClass(col)"><t t-esc="cellValue(row, col)"/></td>
+                                    <td t-att-class="cellClass(col)">
+                                        <!-- Badge columns (col.badge) wrap a non-empty
+                                             value in a red pill; everything else
+                                             renders exactly as before. -->
+                                        <t t-if="showBadge(row, col)">
+                                            <span class="ftpd_badge ftpd_badge--danger"><t t-esc="cellValue(row, col)"/></span>
+                                        </t>
+                                        <t t-else=""><t t-esc="cellValue(row, col)"/></t>
+                                    </td>
                                 </t>
                             </tr>
                         </t>
@@ -130,7 +138,10 @@
                     </tbody>
                 </table>
             </div>
-            <div class="ftpd_table_foot ftpd_pager" t-if="props.rows.length">
+            <div class="ftpd_table_foot" t-if="props.rows.length and !paginate">
+                <span class="ftpd_table_count"><t t-esc="sortedRows.length"/> rows (scroll inside the table)</span>
+            </div>
+            <div class="ftpd_table_foot ftpd_pager" t-if="props.rows.length and paginate">
                 <div class="ftpd_pager_left">
                     <span class="ftpd_table_count">
                         Showing <t t-esc="rangeStart"/>–<t t-esc="rangeEnd"/> of <t t-esc="sortedRows.length"/>

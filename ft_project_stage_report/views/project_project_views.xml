@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Inherits ft_project_stage_dates' form extension so the Actual
+             Stage Dates group (pl_actual_dates) exists when this arch is
+             applied. -->
+        <record id="view_project_form_stage_report" model="ir.ui.view">
+            <field name="name">project.project.form.ft.stage.report</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="ft_project_stage_dates.view_project_form_stage_dates"/>
+            <field name="priority">96</field>
+            <field name="arch" type="xml">
+
+                <!-- Total Extension Days: sum of the approved Date Extension
+                     Requests' delay days, under the actual stage dates. -->
+                <xpath expr="//div[@name='pl_actual_dates_note']" position="before">
+                    <group name="pl_extension_total" colspan="2">
+                        <field name="pl_total_extension_days" readonly="1"
+                               string="Total Extension Days"/>
+                    </group>
+                </xpath>
+
+                <!-- Smart button: the project's stage report lines. -->
+                <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                    <button name="action_view_stage_report" type="object"
+                            class="oe_stat_button" icon="fa-bar-chart"
+                            invisible="ft_project_type != 'implementation'">
+                        <field name="ft_stage_line_count" widget="statinfo"
+                               string="Stage Report"/>
+                    </button>
+                </xpath>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>

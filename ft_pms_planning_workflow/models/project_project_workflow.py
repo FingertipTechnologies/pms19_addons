@@ -12,9 +12,10 @@ existing Stage Validation Framework of bt_project_customization the gates are
 skipped under ``env.su`` (migrations, server actions, crons).
 """
 import logging
+import os
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.fields import Command
 from odoo.tools import format_datetime, is_html_empty
 from odoo.tools.mail import email_normalize
@@ -66,6 +67,42 @@ PWF_STAGE_REPLY_TO = 'support@fingertipplus.com'
 PWF_GATED_KEYS = ('dev', 'srv', 'uat', 'data', 'tra', 'support', 'closed')
 # Gates whose evidence must be present for DATA and every later stage.
 PWF_POST_UAT_KEYS = ('data', 'tra', 'support', 'closed')
+# Where a project's milestones live, first match wins. The PMS form shows the
+# custom milestones (project.custom.milestone, qa_testapp's Milestones tab);
+# the core project.milestone records count as well so neither flavour is
+# refused. Resolved at run time, so this module does not depend on qa_testapp.
+PWF_MILESTONE_FIELDS = ('custom_milestone_ids', 'milestone_ids')
+# Required file format of the stage-gate documents, by field. The gate only
+# asks for the document to be there; this says what kind of file it must be
+# (the design documents and the code review are spreadsheets, the process
+# flow is a chart exported to PDF).
+PWF_DOCUMENT_FORMATS = {
+    'pwf_schema_design_attachment_ids': 'excel',
+    'pwf_components_attachment_ids': 'excel',
+    'pwf_process_flow_attachment_ids': 'pdf',
+    'pwf_code_review_attachment_ids': 'excel',
+}
+# What each format accepts. The file extension is checked first (it is what
+# the user sees and what ir.attachment derives the mimetype from); the
+# mimetype is a fallback for a file uploaded without an extension, whose
+# content ir.attachment sniffed instead. A file passes when either says so.
+PWF_FORMAT_RULES = {
+    'excel': {
+        'extensions': ('.xlsx', '.xls'),
+        'mimetypes': (
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            # Older / non-standard aliases some clients send for .xls.
+            'application/excel',
+            'application/x-excel',
+            'application/x-msexcel',
+        ),
+    },
+    'pdf': {
+        'extensions': ('.pdf',),
+        'mimetypes': ('application/pdf',),
+    },
+}
 
 
 def _pwf_job_names(user):
@@ -82,6 +119,31 @@ class ProjectProject(models.Model):
     # ------------------------------------------------------------------
     # Evidence / sign-off fields
     # ------------------------------------------------------------------
+    # DISC deliverables (gate of DEV): the three design documents produced
+    # during Discovery. Required, with at least one project module and one
+    # milestone, before an Implementation project moves from DISC to DEV.
+    pwf_schema_design_attachment_ids = fields.Many2many(
+        'ir.attachment', 'pwf_project_schema_design_attachment_rel',
+        'project_id', 'attachment_id',
+        string='Schema Design', copy=False,
+        help='Schema Design document produced during Discovery (Excel: .xlsx '
+             'or .xls). Required before the project can move from DISC to DEV.',
+    )
+    pwf_components_attachment_ids = fields.Many2many(
+        'ir.attachment', 'pwf_project_components_attachment_rel',
+        'project_id', 'attachment_id',
+        string='Components and Their Relationships', copy=False,
+        help='Components and Their Relationships document produced during '
+             'Discovery (Excel: .xlsx or .xls). Required before the project '
+             'can move from DISC to DEV.',
+    )
+    pwf_process_flow_attachment_ids = fields.Many2many(
+        'ir.attachment', 'pwf_project_process_flow_attachment_rel',
+        'project_id', 'attachment_id',
+        string='Process Flow Chart', copy=False,
+        help='Process Flow Chart produced during Discovery (PDF). Required '
+             'before the project can move from DISC to DEV.',
+    )
     pwf_brd_signoff_attachment_ids = fields.Many2many(
         'ir.attachment', 'pwf_project_brd_signoff_attachment_rel',
         'project_id', 'attachment_id',
@@ -102,6 +164,19 @@ class ProjectProject(models.Model):
         string='REG Signed Off On', copy=False, tracking=True)
     pwf_can_edit_reg = fields.Boolean(
         string='Can Edit REG Sign-off', compute='_compute_pwf_can_edit_reg')
+    # Gate of SRV: the project cannot enter SRV without it.
+    pwf_code_review_attachment_ids = fields.Many2many(
+        'ir.attachment', 'pwf_project_code_review_attachment_rel',
+        'project_id', 'attachment_id',
+        string='Code Review Document', copy=False,
+        help='Code Review Document of the Sandbox Review (SRV) stage (Excel: '
+             '.xlsx or .xls). Required before the project can move to SRV.',
+    )
+    # Everything still missing for the move to the next stage, as a numbered
+    # list, so the form says what to do before the server has to refuse.
+    pwf_next_stage_missing = fields.Text(
+        string='Missing for Next Stage',
+        compute='_compute_pwf_next_stage_missing')
 
     # UAT gate
     pwf_sandbox_review_attachment_ids = fields.Many2many(
@@ -302,13 +377,44 @@ class ProjectProject(models.Model):
             project.pwf_uat_request_decided_by_id = latest.decided_by_id if latest else False
             project.pwf_uat_request_reason = latest.rejection_reason if latest else False
 
+    @api.depends(
+        'stage_id', 'ft_project_type', 'pwf_next_stage_id', 'module_ids',
+        'milestone_ids',
+        'pwf_schema_design_attachment_ids', 'pwf_components_attachment_ids',
+        'pwf_process_flow_attachment_ids', 'pwf_brd_signoff_attachment_ids',
+        'pwf_reg_signed_by_id', 'pwf_reg_signed_on',
+        'pwf_code_review_attachment_ids', 'pwf_sandbox_review_attachment_ids',
+        'pwf_uat_signoff_attachment_ids', 'pwf_internal_feedback_attachment_ids',
+        'pwf_external_feedback_attachment_ids', 'pwf_retro_went_well',
+        'pwf_retro_went_wrong', 'pwf_retro_to_correct', *PWF_FIN_FLAG_FIELDS,
+    )
+    def _compute_pwf_next_stage_missing(self):
+        """Numbered list of what the move to the next stage still needs, read
+        from the stored values (plus unsaved x2many lines in the form), or
+        False when nothing is missing / the project is not Implementation."""
+        stage_map = self.env['project.project.stage']._ft_lifecycle_stage_map()
+        for project in self:
+            nxt = project.pwf_next_stage_id
+            if project.ft_project_type != 'implementation' or not nxt:
+                project.pwf_next_stage_missing = False
+                continue
+            keys = project._pwf_crossed_keys(nxt, stage_map)
+            items = project._pwf_transition_missing(keys, {}, nxt)
+            project.pwf_next_stage_missing = '\n'.join(
+                '%d. %s' % (index, item) for index, item in enumerate(items, 1)
+            ) if items else False
+
     # ------------------------------------------------------------------
     # Gate evaluation
     # ------------------------------------------------------------------
     def _pwf_x2m_ids(self, fname, vals):
-        """Ids the x2many ``fname`` will hold once ``vals`` is written."""
+        """Ids the x2many ``fname`` will hold once ``vals`` is written.
+
+        ``_ids`` rather than ``ids``: on the unsaved form record the lines
+        just added (a module, a milestone) only have a NewId, and they must
+        count so the Missing-for-Next-Stage hint follows what is typed."""
         self.ensure_one()
-        ids = list(self[fname].ids)
+        ids = list(self[fname]._ids)
         if fname not in vals:
             return ids
         commands = vals[fname] or []
@@ -346,6 +452,88 @@ class ProjectProject(models.Model):
                 return value
             return comodel.browse(value).exists() if value else comodel
         return value
+
+    # ------------------------------------------------------------------
+    # Document formats
+    # ------------------------------------------------------------------
+    def _pwf_new_documents(self, fname, vals):
+        """``(name, mimetype)`` of every attachment ``vals`` links to ``fname``
+        for the first time, creates in it, or renames in it.
+
+        Attachments already linked are left out on purpose: a legacy file of
+        the wrong format must never block an unrelated save (a SET re-stating
+        the stored ids is what the form sends on every save)."""
+        commands = vals.get(fname) or []
+        # ``mapped`` rather than ``self[fname]``: a multi-record write.
+        linked = set(self.mapped(fname).ids) if self else set()
+        Attachment = self.env['ir.attachment'].sudo()  # may belong to another user
+        new_ids, inline = [], []
+        for command in commands:
+            if isinstance(command, int):  # plain id list = SET
+                new_ids.append(command)
+                continue
+            if not isinstance(command, (list, tuple)) or not command:
+                continue
+            code = command[0]
+            if code == Command.CREATE:
+                inline.append((None, command[2] or {}))
+            elif code == Command.UPDATE:
+                inline.append((command[1], command[2] or {}))
+            elif code == Command.LINK:
+                new_ids.append(command[1])
+            elif code == Command.SET:
+                new_ids.extend(command[2] or [])
+        documents = []
+        seen = set()
+        for att_id in new_ids:
+            if att_id in linked or att_id in seen:
+                continue
+            seen.add(att_id)
+            attachment = Attachment.browse(att_id).exists()
+            if attachment:
+                documents.append((attachment.name or '', attachment.mimetype or ''))
+        for att_id, values in inline:
+            if att_id and not ({'name', 'mimetype'} & set(values)):
+                continue  # an update that keeps the file as it is
+            attachment = Attachment.browse(att_id).exists() if att_id else Attachment
+            name = values.get('name', attachment.name) or ''
+            mimetype = values.get('mimetype') or (
+                Attachment._compute_mimetype(dict(values, name=name))
+                if 'name' in values or not att_id else attachment.mimetype)
+            documents.append((name, mimetype or ''))
+        return documents
+
+    @api.model
+    def _pwf_document_format_ok(self, fmt, name, mimetype):
+        """True when the file ``name`` / ``mimetype`` is of format ``fmt``."""
+        rule = PWF_FORMAT_RULES[fmt]
+        extension = os.path.splitext(name or '')[1].lower()
+        return (extension in rule['extensions']
+                or (mimetype or '').lower() in rule['mimetypes'])
+
+    def _pwf_check_document_formats(self, vals):
+        """Refuse a stage-gate document of the wrong file format, for every
+        attachment ``vals`` newly puts into one of the PWF_DOCUMENT_FORMATS
+        fields. One ValidationError lists every offending file."""
+        problems = []
+        for fname, fmt in PWF_DOCUMENT_FORMATS.items():
+            if fname not in vals:
+                continue
+            rule = PWF_FORMAT_RULES[fmt]
+            label = self._fields[fname].string
+            for name, mimetype in self._pwf_new_documents(fname, vals):
+                if self._pwf_document_format_ok(fmt, name, mimetype):
+                    continue
+                problems.append(_(
+                    '%(document)s: "%(file)s" is not %(an_format)s file. Please '
+                    'upload the %(document)s as %(extensions)s.',
+                    document=label,
+                    file=name or _("(unnamed file)"),
+                    an_format=_("an Excel") if fmt == 'excel' else _("a PDF"),
+                    extensions=_(" or ").join(rule['extensions']),
+                ))
+        if problems:
+            raise ValidationError('\n'.join(problems))
 
     def _pwf_crossed_keys(self, target, stage_map, from_start=False):
         """Gated stage keys between the current stage (excl.) and ``target``
@@ -418,6 +606,21 @@ class ProjectProject(models.Model):
         uat_signoff_listed = False
         for key in keys:
             if key == 'dev':
+                # Discovery deliverables and project setup come first: they
+                # are what DISC produces, before the BRD is signed off.
+                need(self._pwf_value('pwf_schema_design_attachment_ids', vals), key,
+                     _("Schema Design (DISC): Upload the Schema Design document "
+                       "(Excel, .xlsx/.xls)."))
+                need(self._pwf_value('pwf_components_attachment_ids', vals), key,
+                     _("Components and Their Relationships (DISC): Upload the "
+                       "Components and Their Relationships document "
+                       "(Excel, .xlsx/.xls)."))
+                need(self._pwf_value('pwf_process_flow_attachment_ids', vals), key,
+                     _("Process Flow Chart (DISC): Upload the Process Flow Chart "
+                       "(PDF)."))
+                need(self._pwf_value('module_ids', vals), key,
+                     _("Project Modules: Add all the project's modules "
+                       "(at least one) in the Modules tab."))
                 need(self._pwf_value('pwf_brd_signoff_attachment_ids', vals), key,
                      _("BRD Sign-off: Upload a screenshot of the client e-mail "
                        "confirming the signed BRD."))
@@ -427,6 +630,10 @@ class ProjectProject(models.Model):
                      and self._pwf_value('pwf_reg_signed_on', vals), key,
                      _("REG Sign-off by QA: QA must sign off the regression "
                        "(REG Signed Off By / On)."))
+                need(self._pwf_value('pwf_code_review_attachment_ids', vals), key,
+                     _("Code Review Document (SRV): Upload the Code Review "
+                       "Document (Excel, .xlsx/.xls); the project cannot move "
+                       "to SRV without it."))
             elif key == 'uat':
                 need(self._pwf_value('pwf_sandbox_review_attachment_ids', vals), key,
                      _("Sandbox Review: Upload the evidence of the client "
@@ -465,6 +672,49 @@ class ProjectProject(models.Model):
                 need(filled('pwf_retro_to_correct'), key,
                      _("Retrospective - What Needs to Be Corrected"))
         return missing
+
+    def _pwf_has_milestones(self, vals):
+        """True when the project holds at least one milestone (custom or core)
+        once ``vals`` is written."""
+        self.ensure_one()
+        return any(
+            self._pwf_value(fname, vals)
+            for fname in PWF_MILESTONE_FIELDS if fname in self._fields
+        )
+
+    @api.model
+    def _pwf_milestone_item(self):
+        return _("Milestones: Add at least one milestone in the Milestones tab.")
+
+    def _pwf_is_forward_move(self, target):
+        """True when ``target`` lies after the current stage (or there is none)."""
+        self.ensure_one()
+        Stage = self.env['project.project.stage']
+        return (not self.stage_id
+                or Stage._ft_stage_sort_key(target) > Stage._ft_stage_sort_key(self.stage_id))
+
+    def _pwf_transition_missing(self, keys, vals, target, check_approval=True,
+                                require_milestone=True):
+        """Everything missing to move this project to ``target``: the gates of
+        the crossed stages ``keys`` plus, for every forward move, at least one
+        milestone (projects that predate the rule must add one before their
+        next stage transition)."""
+        self.ensure_one()
+        missing = (self._pwf_gate_missing(keys, vals, target, check_approval=check_approval)
+                   if keys else [])
+        if (require_milestone and self._pwf_is_forward_move(target)
+                and not self._pwf_has_milestones(vals)):
+            missing.append(self._pwf_milestone_item())
+        return missing
+
+    def _pwf_check_creation_milestones(self):
+        """An Implementation project needs at least one milestone to be created."""
+        missing = self.filtered(lambda p: not p._pwf_has_milestones({}))
+        if missing:
+            raise ValidationError(_(
+                "At least one milestone is required to create an Implementation "
+                "project. Please add a milestone in the Milestones tab.\n\n"
+                "Project: %s", ', '.join(missing.mapped('display_name'))))
 
     @api.model
     def _pwf_gate_message(self, project, stage, missing, placed=False):
@@ -516,10 +766,11 @@ class ProjectProject(models.Model):
                 keys = project._pwf_crossed_keys(target, stage_map, from_start=True)
             else:
                 keys = project._pwf_crossed_keys(target, stage_map)
-            if not keys:
-                continue
-            missing = project._pwf_gate_missing(
-                keys, vals, target, check_approval=check_approval)
+            # A milestone is required for every forward move of an
+            # Implementation project, gated stage or not (DEV -> REG included).
+            missing = project._pwf_transition_missing(
+                keys, vals, target, check_approval=check_approval,
+                require_milestone=(new_type == 'implementation'))
             if missing:
                 problems.append(self._pwf_gate_message(project, target, missing))
         if problems:
@@ -565,15 +816,20 @@ class ProjectProject(models.Model):
                     "Only Finance can set a Finance payment clearance."))
         for vals in vals_list:
             self._pwf_stamp_finance(vals)
+            if not self.env.su:
+                # Same exemption as the gates: migrations / server actions
+                # re-homing legacy files are not held to the file formats.
+                self._pwf_check_document_formats(vals)
         projects = super().create(vals_list)
         if not self.env.su:
             # Checked on the created records, after ft_project_lifecycle has
             # homed each one onto a stage valid for its type. No approval can
             # exist for a record that did not exist yet, so creating straight
             # into UAT or beyond is refused.
-            projects.filtered(
-                lambda p: p.ft_project_type == 'implementation'
-            )._pwf_check_resting_stage_gates({})
+            implementation = projects.filtered(
+                lambda p: p.ft_project_type == 'implementation')
+            implementation._pwf_check_creation_milestones()
+            implementation._pwf_check_resting_stage_gates({})
         return projects
 
     def _pwf_fin_changed(self, vals):
@@ -624,6 +880,9 @@ class ProjectProject(models.Model):
                 del vals[flag]
         if not self.env.su:
             self._pwf_check_write_rights(vals)
+            # Only the files this write adds are checked, so a legacy file of
+            # the wrong format never blocks an unrelated save.
+            self._pwf_check_document_formats(vals)
         self._pwf_stamp_finance(vals)
 
         if target and not self.env.su:

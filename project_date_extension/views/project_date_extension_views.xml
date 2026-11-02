@@ -32,15 +32,48 @@
                                 <field name="name" readonly="1"/>
                             </h1>
                         </div>
+                        <!-- Preponement: the rescheduled date is EARLIER than
+                             the current one. Only the selected date moves;
+                             later dates are never pulled backwards and it
+                             never counts as a delay. -->
+                        <div class="alert alert-info mb-3" role="alert"
+                             invisible="not is_preponement">
+                            <b>Preponement.</b> The rescheduled date is earlier than the
+                            current planned date. Only the selected stage date will move;
+                            later planned dates stay where they are and no delay is counted.
+                        </div>
                         <group>
                             <group>
                                 <field name="project_id" options="{'no_create': True}"
                                        readonly="state != 'draft'"/>
-                                <field name="stage_id"/>
+                                <field name="stage_id" readonly="1"/>
+                                <field name="allowed_stage_ids" invisible="1"/>
                                 <field name="allowed_date_ids" invisible="1"/>
+                                <!-- The stage dropdown: the project's lifecycle
+                                     stages from the current one onward that have
+                                     a planned date set. Picking one fills the
+                                     (hidden) Date to Extend and the Current
+                                     Date with the stage's OWN date - the one the
+                                     project must have reached it by, as named
+                                     on the project form (REG: Regression Date,
+                                     SRV: Sandbox Review Date, ...) and as the
+                                     Overdue flag reads it - never the next
+                                     stage's date (STAGE_PLANNED_DATE_FIELD). -->
+                                <field name="stage_to_extend_id" options="{'no_create': True}"
+                                       readonly="state != 'draft'"/>
+                                <!-- The field approval actually moves. Filled in
+                                     from the stage above and read-only while a
+                                     stage is chosen; picked by hand otherwise.
+                                     Always shown, not only for AMC / General
+                                     projects: Go Live and Support End belong to
+                                     no stage (1.7.0), so an Implementation
+                                     project can reschedule them only here, with
+                                     the stage left empty. -->
                                 <field name="date_to_extend_id" options="{'no_create': True}"
                                        context="{'ld_project_id': project_id}"
-                                       readonly="state != 'draft'" required="1"/>
+                                       required="not stage_to_extend_id"
+                                       readonly="stage_to_extend_id or state != 'draft'"/>
+                                <field name="milestone_id" invisible="1"/>
                                 <field name="is_approver" invisible="1"/>
                                 <field name="can_submit" invisible="1"/>
                                 <field name="requester_id"
@@ -50,6 +83,12 @@
                             <group>
                                 <field name="current_date" readonly="1"/>
                                 <field name="requested_date" readonly="state not in ('draft', 'request') or (state == 'request' and not is_approver)"/>
+                                <field name="extension_days" readonly="1"
+                                       decoration-danger="extension_days > 0"
+                                       decoration-info="extension_days &lt; 0"/>
+                                <field name="is_preponement" readonly="1"
+                                       invisible="not is_preponement"/>
+                                <field name="delay_days" invisible="1"/>
                             </group>
                         </group>
                         <group string="Reason">
@@ -76,6 +115,12 @@
                                     placeholder="Explain why this date extension is requested..."
                                     readonly="state != 'draft'"/>
                         </group>
+                        <!-- Preview of what approval will do to the later
+                             planned dates (same iteration as the approval
+                             itself, so they always agree). -->
+                        <group string="Impact on later dates" invisible="not date_to_extend_id or not requested_date">
+                            <field name="downstream_impact" nolabel="1" colspan="2" readonly="1"/>
+                        </group>
                         <group string="Extension History" invisible="state == 'draft'">
                             <field name="approver_id" readonly="1"/>
                             <field name="decision_date" readonly="1"/>
@@ -97,10 +142,16 @@
                       decoration-danger="state == 'rejected'" decoration-muted="state == 'draft'">
                     <field name="name"/>
                     <field name="project_id"/>
-                    <field name="stage_id"/>
-                    <field name="date_to_extend_id"/>
+                    <field name="stage_id" optional="hide"/>
+                    <field name="stage_to_extend_id"/>
+                    <field name="date_to_extend_id" optional="hide"/>
                     <field name="current_date"/>
                     <field name="requested_date"/>
+                    <field name="extension_days" sum="Total"
+                           decoration-danger="extension_days > 0"
+                           decoration-info="extension_days &lt; 0"/>
+                    <field name="is_preponement" optional="hide"/>
+                    <field name="delay_days" optional="hide" sum="Delay"/>
                     <field name="requester_id"/>
                     <field name="approver_id" optional="hide"/>
                     <field name="decision_date" optional="hide"/>
@@ -120,6 +171,7 @@
                 <search string="Search Date Extension Requests">
                     <field name="name"/>
                     <field name="project_id"/>
+                    <field name="stage_to_extend_id"/>
                     <field name="date_to_extend_id"/>
                     <field name="requester_id"/>
                     <separator/>
@@ -127,7 +179,15 @@
                     <filter string="Approved" name="filter_approved" domain="[('state', '=', 'approved')]"/>
                     <filter string="Rejected" name="filter_rejected" domain="[('state', '=', 'rejected')]"/>
                     <separator/>
+                    <filter string="Extensions" name="filter_extensions" domain="[('extension_days', '>', 0)]"/>
+                    <filter string="Preponements" name="filter_preponements" domain="[('is_preponement', '=', True)]"/>
+                    <separator/>
                     <filter string="My Requests" name="filter_my_requests" domain="[('requester_id', '=', uid)]"/>
+                    <group>
+                        <filter string="Project" name="group_project" context="{'group_by': 'project_id'}"/>
+                        <filter string="Stage to be Extended" name="group_stage" context="{'group_by': 'stage_to_extend_id'}"/>
+                        <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    </group>
                 </search>
             </field>
         </record>
@@ -144,9 +204,11 @@
                     Create a Date Extension Request
                 </p>
                 <p>
-                    Request an extension of a Project milestone date. Once
-                    approved by an authorized Admin, the milestone date on
-                    the Project is updated automatically.
+                    Pick the stage to be extended and the rescheduled date.
+                    Once approved by an authorized Admin, the stage's planned
+                    date on the Project (the date the stage must be reached
+                    by) is updated automatically and every later planned
+                    date moves by the same number of days.
                 </p>
             </field>
         </record>

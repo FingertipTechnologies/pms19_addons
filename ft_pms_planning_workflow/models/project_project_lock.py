@@ -16,11 +16,20 @@ Administrator overrides:
 The lock is re-evaluated after every create / write touching the stage, the
 hold flag, the project type or any date field, and by the daily cron (the
 overdue state depends on today's date).
+
+Overdue stage freeze: while an Implementation project is overdue (a milestone
+date has passed and the project has not reached that milestone's stage), its
+stage cannot be changed at all - forward or backward, by anyone, administrators
+included - until a Date Extension Request moves the missed date forward. The
+approval flow (project_date_extension) writes the extended date under sudo,
+which clears ``ft_is_overdue`` and with it the freeze. Only superuser / sudo
+writes (crons, migrations, server actions) are exempt. The administrator's
+manual unlock frees tasks and timesheets only; it never frees the stage.
 """
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -44,7 +53,9 @@ class ProjectProjectLock(models.Model):
     pwf_manual_unlock = fields.Boolean(
         string='Unlocked by Administrator', copy=False,
         help='Set when an Administrator unlocks the project: it then stays '
-             'unlocked until its stage changes.',
+             'unlocked until its stage changes. The unlock frees tasks and '
+             'timesheets only: an overdue project still cannot change stage '
+             'until its missed date is extended (Date Extension Request).',
     )
     pwf_manual_lock = fields.Boolean(
         string='Locked by Administrator', copy=False,
@@ -104,6 +115,57 @@ class ProjectProjectLock(models.Model):
         ):
             raise AccessError(_("Only an Administrator can lock or unlock a project."))
 
+    def _pwf_check_overdue_stage_change(self, vals):
+        """Refuse a stage change of an overdue Implementation project.
+
+        "If UAT date is 20-10-2026 no one can move any stage on the 21st
+        without a date extension": the overdue state is read from the record
+        as it stands BEFORE the write, so a date slipped into the same write
+        as the stage never lifts the freeze - the extension is applied by the
+        approval flow in a write of its own (sudo, exempt here), after which
+        the next stage move passes. Every direction and every user is held to
+        it, administrators and the manual unlock included; only superuser /
+        sudo writes (crons, migrations, the approval flow) go through.
+
+        Implementation projects only: the milestone dates belong to that
+        lifecycle, and an AMC / General project (whose stages carry no dated
+        milestone) must never be frozen by a stray date on it.
+        """
+        if self.env.su or 'stage_id' not in vals:
+            return
+        target_id = vals['stage_id'] or False
+        target = self.env['project.project.stage'].browse(target_id).exists()
+        for project in self:
+            if project.stage_id.id == target_id:
+                # An unrelated write re-stating the stage is not a move.
+                continue
+            if project.ft_project_type != 'implementation' or not project.ft_is_overdue:
+                continue
+            raise UserError(_(
+                "Project '%(project)s' cannot be moved to '%(stage)s' while it "
+                "is overdue: %(reason)s. Submit a Date Extension Request and "
+                "have it approved first; stage changes stay blocked until the "
+                "overdue date is extended.",
+                project=project.display_name,
+                stage=target.name or '-',
+                reason=project.ft_overdue_reason,
+            ))
+
+    # ------------------------------------------------------------------
+    # Form hint
+    # ------------------------------------------------------------------
+    @api.depends('ft_is_overdue', 'ft_overdue_reason')
+    def _compute_pwf_next_stage_missing(self):
+        """Prepend the overdue freeze to the "Missing for Next Stage" list, so
+        the form says why a move will be refused before the user tries it."""
+        super()._compute_pwf_next_stage_missing()
+        for project in self:
+            if project.ft_project_type != 'implementation' or not project.ft_is_overdue:
+                continue
+            line = _("Overdue: %s. Extend the date first.", project.ft_overdue_reason)
+            project.pwf_next_stage_missing = '\n'.join(
+                part for part in (line, project.pwf_next_stage_missing) if part)
+
     # ------------------------------------------------------------------
     # ORM
     # ------------------------------------------------------------------
@@ -121,6 +183,10 @@ class ProjectProjectLock(models.Model):
             return super().write(vals)
         vals = dict(vals)
         self._pwf_check_lock_rights(vals)
+        # Before anything is written. This class is registered after the
+        # workflow class (models/__init__.py), so its write runs first and the
+        # overdue reason is what the user sees, ahead of any stage-gate message.
+        self._pwf_check_overdue_stage_change(vals)
         is_admin = self.env.su or self.env.user.has_group('base.group_system')
         if 'pwf_locked' in vals and not is_admin:
             # Unchanged (the rights check passed): a no-op from a non-admin
