@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Milestones tab of the PMS project form (qa_testapp's page): the
+         plan total, the 100% warning and the percentage column. A new
+         Implementation project already holds every Milestone Template at
+         0% (models/project_project.py). Inherits qa_testapp's view so the xpaths see the
+         page and its inline list. -->
+    <record id="view_project_form_inherit_ft_milestone_plan" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.ft.milestone.plan</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="qa_testapp.view_project_form_inherit_qa_tabs"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='qa_milestones']/field[@name='custom_milestone_ids']" position="before">
+                <field name="ft_milestone_plan_editable" invisible="1"/>
+                <field name="ft_milestone_plan_locked" invisible="1"/>
+                <field name="ft_milestone_plan_ok" invisible="1"/>
+                <!-- Implementation projects only: AMC / General projects keep
+                     the plain milestone list. -->
+                <div name="ft_milestone_plan_bar" class="d-flex align-items-center flex-wrap gap-3 mb-2"
+                     invisible="ft_project_type != 'implementation'">
+                    <span>
+                        Plan total:
+                        <field name="ft_milestone_percentage_total" class="oe_inline fw-bold" readonly="1"/>%
+                    </span>
+                    <span class="d-flex align-items-center gap-1">
+                        <field name="ft_milestone_completion_email" widget="boolean_toggle"
+                               class="oe_inline"/>
+                        <label for="ft_milestone_completion_email" class="mb-0"
+                               string="E-mail customer when a milestone is completed"/>
+                    </span>
+                </div>
+                <div class="alert alert-warning py-1 mb-2" role="alert"
+                     invisible="ft_project_type != 'implementation' or ft_milestone_plan_ok">
+                    Enter the agreed percentage of each milestone: they must add up to
+                    100% before the project can move to the next stage.
+                </div>
+                <div class="text-muted small mb-2"
+                     invisible="ft_project_type != 'implementation' or not ft_milestone_plan_locked">
+                    The milestone plan is locked: the project has left KICKOFF. Names,
+                    percentages, amounts and due dates change through a Milestone Change
+                    Request (Milestones &gt; Milestone Change Requests); status, paid
+                    amount, hours and attachments stay editable.
+                </div>
+            </xpath>
+
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='name']" position="after">
+                <field name="ft_milestone_plan_locked" column_invisible="1"/>
+                <field name="percentage" string="%" sum="Total %" readonly="ft_milestone_plan_locked"
+                       column_invisible="parent.ft_project_type != 'implementation'"/>
+            </xpath>
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='name']" position="attributes">
+                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+            </xpath>
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='amount']" position="attributes">
+                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- Stat button: the project's Milestone Change Requests, beside the
+         Date Extensions one. -->
+    <record id="view_project_form_inherit_ft_milestone_change_button" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.ft.milestone.change.button</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_ft_view_milestone_change_requests" type="object"
+                        class="oe_stat_button" icon="fa-exchange"
+                        invisible="ft_project_type != 'implementation'">
+                    <field name="ft_milestone_change_request_count" widget="statinfo"
+                           string="Milestone Changes"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Daily. Ensures the CURRENT month's AMC milestone for every eligible
+         AMC project: on the 1st it creates them (requirement 36), every later
+         run is a no-op for projects that already have one and a catch-up for
+         projects that became eligible mid-month. -->
+    <record id="ir_cron_ft_amc_create_monthly_milestones" model="ir.cron">
+        <field name="name">AMC: Create Monthly Payment Milestones</field>
+        <field name="model_id" ref="project.model_project_project"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_ft_amc_create_monthly_milestones()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <!-- Daily. From the send day (settings, default 7) completes - which
+         attaches the task Excel and e-mails the month - the AMC milestones of
+         the months that are over that are still Not Started with their send
+         switch on. Switch off: left alone (manual flow). -->
+    <record id="ir_cron_ft_amc_send_monthly_milestones" model="ir.cron">
+        <field name="name">AMC: Send Monthly Milestone Timesheets</field>
+        <field name="model_id" ref="project_custom_milestone.model_project_custom_milestone"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_ft_amc_send_monthly_milestones()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

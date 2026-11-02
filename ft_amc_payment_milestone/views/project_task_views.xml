@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- All Tasks list: the bulk Mark Deployed / Undo Deployed buttons go INSIDE
+         the one <header> ft_pms_planning_workflow adds (a second header would
+         not render), plus a Deployment badge column on AMC rows. -->
+    <record id="view_task_all_list_ft_amc_deploy" model="ir.ui.view">
+        <field name="name">project.task.all.list.ft.amc.deploy</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="ft_pms_planning_workflow.view_task_all_list_pwf_amc_approval"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_ft_mark_deployed" type="object"
+                        string="Mark Deployed" class="btn-secondary"/>
+                <button name="action_ft_reset_deployed" type="object"
+                        string="Undo Deployed"/>
+            </xpath>
+            <xpath expr="//field[@name='pwf_amc_approval']" position="after">
+                <field name="ft_deployed" column_invisible="1"/>
+                <field name="ft_deploy_state" string="Deployment" widget="badge"
+                       readonly="1" optional="show"
+                       invisible="ft_project_type != 'amc'"
+                       decoration-success="ft_deploy_state == 'deployed'"
+                       decoration-warning="ft_deploy_state == 'to_deploy'"/>
+                <field name="ft_deployed_date" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Task form: header buttons beside Approve / Reject, and a Deployment
+         group inside the AMC Approval section. -->
+    <record id="view_task_form_ft_amc_deploy" model="ir.ui.view">
+        <field name="name">project.task.form.ft.amc.deploy</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="ft_pms_planning_workflow.view_task_form_pwf_amc_approval"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="ft_can_deploy" invisible="1"/>
+                <field name="pwf_amc_is_completed" invisible="1"/>
+                <button name="action_ft_mark_deployed" type="object"
+                        string="Mark Deployed" class="btn-secondary"
+                        invisible="not ft_can_deploy or ft_project_type != 'amc' or ft_deployed or not pwf_amc_is_completed or state == '1_canceled'"/>
+                <button name="action_ft_reset_deployed" type="object"
+                        string="Undo Deployed"
+                        confirm="Undo the deployment of this task? It is detached from its payment milestone while that milestone is still open."
+                        invisible="not ft_can_deploy or ft_project_type != 'amc' or not ft_deployed"/>
+            </xpath>
+            <xpath expr="//group[@name='pwf_amc_approval_section']" position="inside">
+                <group string="Deployment" name="ft_amc_deployment">
+                    <field name="ft_deploy_state" widget="badge" readonly="1"
+                           decoration-success="ft_deploy_state == 'deployed'"
+                           decoration-warning="ft_deploy_state == 'to_deploy'"/>
+                    <field name="ft_deployed_date" readonly="1" invisible="not ft_deployed"/>
+                    <field name="ft_deployed_by_id" readonly="1" widget="many2one_avatar_user"
+                           invisible="not ft_deployed"/>
+                    <field name="ft_deployed" invisible="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Search: Deployed / To Deploy filters next to the approval ones. -->
+    <record id="view_task_search_ft_amc_deploy" model="ir.ui.view">
+        <field name="name">project.task.search.ft.amc.deploy</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="ft_pms_planning_workflow.view_task_search_pwf_amc_approval"/>
+        <field name="arch" type="xml">
+            <filter name="pwf_amc_rejected" position="after">
+                <separator/>
+                <!-- Deployed = Status 1_deployed (equivalent to ft_deployed = True). -->
+                <filter string="Deployed" name="ft_amc_deployed" domain="[('state', '=', '1_deployed')]"/>
+                <!-- To Deploy = AMC, approved, completed, not yet deployed. -->
+                <filter string="To Deploy" name="ft_amc_to_deploy"
+                        domain="[
+                            ('project_id.ft_project_type', '=', 'amc'),
+                            ('pwf_amc_approval', '=', 'approved'),
+                            ('pwf_amc_is_completed', '=', True),
+                            ('ft_deployed', '=', False)
+                        ]"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- AMC Reports > AMC Tasks to Deploy: the All Tasks list (bulk buttons)
+         filtered on approved, completed, not deployed AMC tasks. -->
+    <record id="action_ft_amc_tasks_to_deploy" model="ir.actions.act_window">
+        <field name="name">AMC Tasks to Deploy</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('project_id.ft_project_type', '=', 'amc')]</field>
+        <field name="context">{'search_default_ft_amc_to_deploy': 1}</field>
+        <field name="search_view_id" ref="project.view_task_search_form"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No AMC task waiting for deployment</p>
+            <p>Approved, completed AMC tasks appear here until they are marked Deployed.
+               A deployed task is billed in the payment milestone of its deployment month.</p>
+        </field>
+    </record>
+
+    <record id="action_ft_amc_tasks_to_deploy_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="10"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="project.open_view_all_tasks_list_view"/>
+        <field name="act_window_id" ref="action_ft_amc_tasks_to_deploy"/>
+    </record>
+
+    <record id="action_ft_amc_tasks_to_deploy_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="20"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="project.view_task_form2"/>
+        <field name="act_window_id" ref="action_ft_amc_tasks_to_deploy"/>
+    </record>
+
+    <menuitem id="menu_ft_amc_tasks_to_deploy" name="AMC Tasks to Deploy"
+              parent="ft_amc_monthly_timesheet.menu_amc_root"
+              action="action_ft_amc_tasks_to_deploy" sequence="25"/>
+
+</odoo>

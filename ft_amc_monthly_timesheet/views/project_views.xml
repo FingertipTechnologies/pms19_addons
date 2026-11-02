@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_project_form_amc_monthly" model="ir.ui.view">
+        <field name="name">project.project.form.amc.monthly.timesheet</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_amc_reports" type="object" class="oe_stat_button"
+                        icon="fa-file-text-o" invisible="ft_project_type != 'amc'"
+                        groups="ft_amc_monthly_timesheet.group_amc_manager,base.group_system,project.group_project_manager">
+                    <field name="amc_report_count" widget="statinfo" string="AMC Reports"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="AMC Monthly Timesheet" name="amc_monthly_timesheet"
+                      invisible="ft_project_type != 'amc'"
+                      groups="ft_amc_monthly_timesheet.group_amc_manager,base.group_system,project.group_project_manager">
+                    <group>
+                        <group>
+                            <field name="amc_report_enabled"/>
+                            <field name="amc_recipient_ids" widget="many2many_tags"/>
+                        </group>
+                        <group>
+                            <div class="text-muted" colspan="2">
+                                The report goes to the project's Customer e-mail (required), the POC e-mail
+                                and the additional recipients; the Project Manager is in CC.
+                                It lists the month's timesheets of tasks that are completed and
+                                approved (Approve button on the task list), and the previous month is sent
+                                automatically on/after the 5th while the project start/end dates cover that month.
+                                Use "Generate Month (Preview)" to build any covered month without sending it.
+                            </div>
+                        </group>
+                    </group>
+                    <!-- Opens a month picker: the previous month is proposed
+                         when the contract covers it, else the current one. -->
+                    <button name="action_amc_open_generate_wizard" type="object"
+                            string="Generate Month (Preview)" class="btn-secondary"
+                            invisible="not id"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

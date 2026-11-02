@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_amc_monthly" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.amc.monthly.timesheet</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="project.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='project']" position="inside">
+                <block title="AMC Monthly Timesheet" name="amc_monthly_timesheet">
+                    <setting id="amc_report_email_from" string="Report Sender"
+                             help="Sender (and reply-to) of the monthly AMC timesheet e-mail.">
+                        <field name="amc_report_email_from"
+                               placeholder="e.g. Support Fingertip &lt;support@fingertipplus.com&gt;"/>
+                    </setting>
+                    <setting id="amc_report_start_month" string="First Reporting Month"
+                             help="First day of the first month to report, e.g. 2026-10-01 means the first e-mail is sent on 5 Nov 2026. Earlier months are never sent automatically. Leave empty for no limit.">
+                        <field name="amc_report_start_month"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_amc_report_manager,AMC report manager,model_ft_amc_monthly_report,group_amc_manager,1,1,1,1
+access_amc_report_system,AMC report administrator,model_ft_amc_monthly_report,base.group_system,1,1,1,1
+access_amc_report_project_manager,AMC report project manager,model_ft_amc_monthly_report,project.group_project_manager,1,1,1,1
+access_amc_report_line_manager,AMC report line manager,model_ft_amc_monthly_report_line,group_amc_manager,1,1,1,1
+access_amc_report_line_system,AMC report line administrator,model_ft_amc_monthly_report_line,base.group_system,1,1,1,1
+access_amc_report_line_project_manager,AMC report line project manager,model_ft_amc_monthly_report_line,project.group_project_manager,1,1,1,1

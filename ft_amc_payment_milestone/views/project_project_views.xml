@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Milestones tab of the PMS project form (qa_testapp's page). For AMC
+         projects the tab shows Name, Hours (hours_spent mirrors the approved
+         hours on AMC monthly rows) and Status only: Amount, Due Date and
+         Attachments are hidden there and keep showing on every other project
+         type. The billing period, task count and send switch live on the
+         milestone form and the central list instead. column_invisible of a
+         sub-list is evaluated in the sub-list's eval context, which exposes
+         the parent record as `parent` (Odoo 19 StaticList.evalContext), so
+         the project's type is reachable. -->
+    <record id="view_project_form_inherit_amc_milestone_tab" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.amc.payment.milestone</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="qa_testapp.view_project_form_inherit_qa_tabs"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='hours_spent']" position="before">
+                <field name="is_amc_monthly" column_invisible="1"/>
+            </xpath>
+            <!-- Hours Spent mirrors the approved hours on AMC monthly rows and
+                 is computed there; manual on every other milestone. -->
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='hours_spent']" position="attributes">
+                <attribute name="readonly">is_amc_monthly</attribute>
+                <attribute name="widget">float_time</attribute>
+            </xpath>
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='status']" position="attributes">
+                <attribute name="readonly">is_amc_monthly</attribute>
+            </xpath>
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='amount']" position="attributes">
+                <attribute name="column_invisible">parent.ft_project_type == 'amc'</attribute>
+            </xpath>
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='due_date']" position="attributes">
+                <attribute name="column_invisible">parent.ft_project_type == 'amc'</attribute>
+            </xpath>
+            <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='attachment_ids']" position="attributes">
+                <attribute name="column_invisible">parent.ft_project_type == 'amc'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- AMC Monthly Timesheet tab (ft_amc_monthly_timesheet): create / open
+         this month's milestone by hand (the cron does it on the 1st). -->
+    <record id="view_project_form_amc_milestone_button" model="ir.ui.view">
+        <field name="name">project.project.form.amc.payment.milestone.button</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="ft_amc_monthly_timesheet.view_project_form_amc_monthly"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='amc_monthly_timesheet']/button[@name='action_amc_open_generate_wizard']" position="after">
+                <button name="action_ft_amc_create_current_milestone" type="object"
+                        string="Create This Month's Milestone" class="btn-secondary"
+                        icon="fa-flag-checkered" invisible="not id"
+                        groups="ft_amc_monthly_timesheet.group_amc_manager,base.group_system,project.group_project_manager"/>
+                <div class="text-muted small mt-2">
+                    A payment milestone "Support Services for Month Year" is created automatically on
+                    the 1st of every month covered by the contract (Milestones tab). Approved tasks
+                    marked Deployed are billed in the milestone of their deployment month with their
+                    approved timesheet hours; marking the milestone Completed attaches the Excel of
+                    those tasks and e-mails it with the month's timesheet when the milestone's
+                    "Send e-mail to customer" switch is on (default: the switch above).
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

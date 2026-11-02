@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_milestone_template_user,ft.milestone.template.user,model_ft_milestone_template,project.group_project_user,1,0,0,0
+access_ft_milestone_template_manager,ft.milestone.template.manager,model_ft_milestone_template,project.group_project_manager,1,1,1,1
+access_ft_milestone_template_system,ft.milestone.template.system,model_ft_milestone_template,base.group_system,1,1,1,1
+access_ft_milestone_change_request_user,ft.milestone.change.request.user,model_ft_milestone_change_request,project.group_project_user,1,1,1,0
+access_ft_milestone_change_request_approver,ft.milestone.change.request.approver,model_ft_milestone_change_request,project_date_extension.group_project_date_extension_approver,1,1,1,1
+access_ft_milestone_change_request_system,ft.milestone.change.request.system,model_ft_milestone_change_request,base.group_system,1,1,1,1
+access_ft_milestone_change_reject_wizard_user,ft.milestone.change.reject.wizard.user,model_ft_milestone_change_reject_wizard,base.group_user,1,1,1,1

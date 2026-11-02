@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Requirement 53: the milestones every Implementation project starts
+         with. One record per milestone (no parent plan, no percentage: the
+         percentages are agreed per project during KICKOFF). Edit the set in
+         Milestones > Milestone Templates. noupdate: an upgrade never
+         overwrites what was edited; archive a template to stop adding it. -->
+    <data noupdate="1">
+
+        <record id="milestone_template_advance" model="ft.milestone.template">
+            <field name="sequence">10</field>
+            <field name="name">Advance</field>
+            <field name="stage_key">kickoff</field>
+            <field name="description">Advance payment on project kick-off</field>
+        </record>
+
+        <record id="milestone_template_brd" model="ft.milestone.template">
+            <field name="sequence">20</field>
+            <field name="name">BRD Approval</field>
+            <field name="stage_key">disc</field>
+            <field name="description">On the customer's sign-off of the BRD</field>
+        </record>
+
+        <record id="milestone_template_sandbox" model="ft.milestone.template">
+            <field name="sequence">30</field>
+            <field name="name">After Sandbox Review</field>
+            <field name="stage_key">srv</field>
+            <field name="description">After the sandbox review with the customer</field>
+        </record>
+
+        <record id="milestone_template_before_uat" model="ft.milestone.template">
+            <field name="sequence">40</field>
+            <field name="name">Before UAT</field>
+            <field name="stage_key">uat</field>
+            <field name="description">Before user acceptance testing starts</field>
+        </record>
+
+        <record id="milestone_template_after_uat" model="ft.milestone.template">
+            <field name="sequence">50</field>
+            <field name="name">After UAT</field>
+            <field name="stage_key">data</field>
+            <field name="description">After the customer's UAT sign-off</field>
+        </record>
+
+        <record id="milestone_template_onboarding" model="ft.milestone.template">
+            <field name="sequence">60</field>
+            <field name="name">Before First User Onboarding</field>
+            <field name="stage_key">tra</field>
+            <field name="description">Before the first users are onboarded (training / go-live)</field>
+        </record>
+
+        <record id="milestone_template_handover" model="ft.milestone.template">
+            <field name="sequence">70</field>
+            <field name="name">Final Project Handover</field>
+            <field name="stage_key">closed</field>
+            <field name="description">On the final handover of the project</field>
+        </record>
+
+    </data>
+</odoo>

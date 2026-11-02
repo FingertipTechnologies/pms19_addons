@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Standalone milestone views (Milestones > Project Milestones and the
+         pop-up form opened from the project's Milestones tab): the agreed
+         plan fields follow the lock. The server enforces it either way. -->
+    <record id="view_project_custom_milestone_list_ft_plan" model="ir.ui.view">
+        <field name="name">project.custom.milestone.list.ft.plan</field>
+        <field name="model">project.custom.milestone</field>
+        <field name="inherit_id" ref="project_custom_milestone.view_project_custom_milestone_list"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="percentage" string="%" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Inherits project_date_extension's extension of the milestone form
+         (not the base form) so the button box it adds is guaranteed to be
+         there when the stat button below is placed in it. -->
+    <record id="view_project_custom_milestone_form_ft_plan" model="ir.ui.view">
+        <field name="name">project.custom.milestone.form.ft.plan</field>
+        <field name="model">project.custom.milestone</field>
+        <field name="inherit_id" ref="project_date_extension.view_project_custom_milestone_form_date_extension"/>
+        <field name="arch" type="xml">
+            <field name="name" position="before">
+                <field name="ft_milestone_plan_locked" invisible="1"/>
+            </field>
+            <field name="name" position="attributes">
+                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+            </field>
+            <field name="project_id" position="attributes">
+                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+            </field>
+            <field name="amount" position="attributes">
+                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+            </field>
+            <field name="percentage" position="attributes">
+                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+            </field>
+            <field name="percentage" position="after">
+                <div colspan="2" class="text-muted small" invisible="not ft_milestone_plan_locked">
+                    The plan is locked (the project has left KICKOFF): use
+                    <button name="action_ft_request_change" type="object"
+                            string="Request a Change" class="btn btn-link p-0 align-baseline"/>.
+                </div>
+            </field>
+            <!-- project_date_extension adds the button box with the Date
+                 Extensions stat button; the change requests sit beside it. -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_ft_view_change_requests" type="object"
+                        class="oe_stat_button" icon="fa-exchange">
+                    <field name="ft_change_request_count" widget="statinfo"
+                           string="Change Requests"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

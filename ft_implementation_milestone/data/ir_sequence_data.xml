@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_ft_milestone_change_request" model="ir.sequence">
+            <field name="name">Milestone Change Request</field>
+            <field name="code">ft.milestone.change.request</field>
+            <field name="prefix">MCR/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

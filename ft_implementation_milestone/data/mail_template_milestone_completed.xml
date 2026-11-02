@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sent to the project's customer when a payment milestone of an
+             Implementation project is marked Completed
+             (project.custom.milestone._ft_milestone_send_completion_email). -->
+        <record id="mail_template_milestone_completed" model="mail.template">
+            <field name="name">Implementation: Milestone Completed</field>
+            <field name="model_id" ref="project_custom_milestone.model_project_custom_milestone"/>
+            <field name="subject">Milestone completed | {{ object.project_id.name }} – {{ object.name }}</field>
+            <field name="email_from">{{ (object.project_id.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="lang">{{ object.project_id.partner_id.lang }}</field>
+            <field name="description">Tells the customer that a payment milestone of their Implementation project has been completed.</field>
+            <field name="body_html" type="html">
+<div style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#333333;">
+    <p style="margin:0 0 12px 0;">Dear <t t-out="object.project_id.partner_id.name or 'Customer'"/>,</p>
+    <p style="margin:0 0 12px 0;">We are pleased to inform you that the following milestone of
+        <b t-out="object.project_id.name or ''"/> has been completed.</p>
+    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 16px 0;font-size:14px;">
+        <tr>
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Milestone:</td>
+            <td style="padding:4px 0;"><b t-out="object.name or '-'"/></td>
+        </tr>
+        <tr>
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Project:</td>
+            <td style="padding:4px 0;" t-out="object.project_id.name or '-'"/>
+        </tr>
+        <tr t-if="object.percentage">
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Share of contract:</td>
+            <td style="padding:4px 0;"><t t-out="('%.2f' % object.percentage).rstrip('0').rstrip('.')"/>%</td>
+        </tr>
+        <tr t-if="object.amount">
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Amount:</td>
+            <td style="padding:4px 0;"><t t-out="object.project_id.company_id.currency_id.symbol or ''"/> <t t-out="'%.2f' % object.amount"/></td>
+        </tr>
+        <tr t-if="object.due_date">
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Due date:</td>
+            <td style="padding:4px 0;" t-out="format_date(object.due_date)"/>
+        </tr>
+        <tr t-if="object.project_id.user_id">
+            <td style="padding:4px 24px 4px 0;color:#666666;white-space:nowrap;">Project Manager:</td>
+            <td style="padding:4px 0;" t-out="object.project_id.user_id.name or ''"/>
+        </tr>
+    </table>
+    <p style="margin:0 0 12px 0;" t-if="object.description">
+        <span style="color:#666666;">Details:</span> <t t-out="object.description"/>
+    </p>
+    <p style="margin:0 0 12px 0;">Thank you for your continued trust and support.</p>
+    <p style="margin:0 0 12px 0;">Best regards,<br/><t t-out="object.project_id.company_id.name or ''"/></p>
+</div>
+            </field>
+            <field name="auto_delete" eval="False"/>
+        </record>
+    </data>
+</odoo>

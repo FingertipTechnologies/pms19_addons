@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Runs daily. Sends the previous month's report for every active AMC
+         project on/after the 5th of the month (company time zone); later
+         daily runs catch up a missed 5th and retry failed reports. -->
+    <record id="cron_amc_monthly_reports" model="ir.cron">
+        <field name="name">AMC: Send Monthly Timesheet Reports</field>
+        <field name="model_id" ref="model_ft_amc_monthly_report"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send_monthly_reports()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

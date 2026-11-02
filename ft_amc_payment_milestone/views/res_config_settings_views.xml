@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lives in ft_amc_monthly_timesheet's "AMC Monthly Timesheet" settings
+         block, next to the report sender and the first reporting month. -->
+    <record id="res_config_settings_view_form_amc_milestone" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.amc.payment.milestone</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="ft_amc_monthly_timesheet.res_config_settings_view_form_amc_monthly"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='amc_monthly_timesheet']" position="inside">
+                <setting id="amc_milestone_send_day" string="Milestone E-mail Day"
+                         help="Day of the month (1-28) on which the previous month's AMC payment milestones that are still Not Started (send switch on) are marked Completed, their task Excel attached and the month e-mailed to the customer. Default: 7.">
+                    <field name="amc_milestone_send_day"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Milestone form. Inherits project_date_extension's extension of the
+         base form (the same base ft_implementation_milestone inherits), so the
+         button box it adds is there. The base form has no <header>: one is
+         added before the sheet with the status bar and the AMC buttons. The
+         status bar stays clickable for ordinary milestones (today's free
+         editing); for AMC monthly milestones it is read-only and the buttons
+         drive the sequence:
+         Not Started -> Completed -> Client Approved -> Invoice Raised
+         -> Part Paid -> Paid. -->
+    <record id="view_project_custom_milestone_form_amc" model="ir.ui.view">
+        <field name="name">project.custom.milestone.form.amc.payment</field>
+        <field name="model">project.custom.milestone</field>
+        <field name="inherit_id" ref="project_date_extension.view_project_custom_milestone_form_date_extension"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <field name="is_amc_monthly" invisible="1"/>
+                    <field name="amc_can_manage" invisible="1"/>
+                    <button name="action_amc_mark_completed" type="object"
+                            string="Mark Completed &amp; Send" class="btn-primary"
+                            confirm="This marks the milestone Completed, attaches the Excel of its deployed tasks and, when 'Send e-mail to customer' is on, e-mails the month's timesheet and that Excel to the customer. Continue?"
+                            invisible="not is_amc_monthly or status != 'not_started' or not amc_can_manage"/>
+                    <button name="action_amc_customer_approved" type="object"
+                            string="Client Approved" class="btn-primary"
+                            invisible="not is_amc_monthly or status != 'completed'"/>
+                    <button name="action_amc_invoice_raised" type="object"
+                            string="Invoice Raised" class="btn-primary"
+                            invisible="not is_amc_monthly or status != 'customer_approved'"/>
+                    <button name="action_amc_partially_paid" type="object"
+                            string="Part Paid"
+                            invisible="not is_amc_monthly or status != 'invoice_raised'"/>
+                    <button name="action_amc_paid" type="object"
+                            string="Paid" class="btn-primary"
+                            invisible="not is_amc_monthly or status not in ('invoice_raised', 'partially_paid')"/>
+                    <button name="action_amc_generate_task_excel" type="object"
+                            string="Generate Task Excel" icon="fa-file-excel-o"
+                            invisible="not is_amc_monthly or not amc_can_manage"/>
+                    <button name="action_amc_reset_not_started" type="object"
+                            string="Reset to Not Started"
+                            confirm="Reset this milestone to Not Started?"
+                            invisible="not is_amc_monthly or not amc_can_manage or status in ('not_started', 'invoice_raised', 'partially_paid', 'paid')"/>
+                    <field name="status" widget="statusbar" options="{'clickable': '1'}"
+                           readonly="is_amc_monthly"/>
+                </header>
+            </xpath>
+            <!-- The plain Status field in the sheet: read-only on AMC monthly
+                 milestones (the header buttons drive it), editable elsewhere. -->
+            <xpath expr="//sheet//field[@name='status']" position="attributes">
+                <attribute name="readonly">is_amc_monthly</attribute>
+            </xpath>
+            <xpath expr="//sheet//field[@name='hours_spent']" position="attributes">
+                <attribute name="readonly">is_amc_monthly</attribute>
+                <attribute name="widget">float_time</attribute>
+            </xpath>
+            <!-- AMC block after the first (two-column) group. -->
+            <xpath expr="//sheet/group[1]" position="after">
+                <group string="AMC Support Milestone" name="amc_monthly" invisible="not is_amc_monthly">
+                    <group>
+                        <field name="amc_period_label"/>
+                        <field name="amc_period_start"/>
+                        <field name="amc_period_end"/>
+                        <field name="amc_task_count"/>
+                        <field name="amc_hours" widget="float_time"/>
+                    </group>
+                    <group>
+                        <field name="amc_send_email" widget="boolean_toggle"/>
+                        <field name="amc_sent_on"/>
+                        <field name="amc_task_excel_id" invisible="not amc_task_excel_id"/>
+                        <field name="amc_report_id" invisible="not amc_report_id"/>
+                        <button name="action_amc_open_report" type="object"
+                                string="Open Timesheet Report" icon="fa-file-text-o"
+                                class="btn btn-link p-0" colspan="2"
+                                invisible="not amc_report_id"
+                                groups="ft_amc_monthly_timesheet.group_amc_manager,base.group_system,project.group_project_manager"/>
+                    </group>
+                </group>
+            </xpath>
+            <!-- The base form has no notebook: the Tasks page gets one, after
+                 the Attachments group, AMC monthly milestones only. The
+                 columns are the ones of the task Excel. -->
+            <xpath expr="//sheet/group[last()]" position="after">
+                <notebook invisible="not is_amc_monthly">
+                    <page string="Tasks" name="amc_tasks">
+                        <field name="amc_billing_task_ids" readonly="1">
+                            <list create="0" delete="0">
+                                <field name="name"/>
+                                <field name="stage_id"/>
+                                <field name="state" string="Status" widget="badge"
+                                       decoration-success="state == '1_deployed'"
+                                       decoration-info="state == '1_done'"
+                                       decoration-danger="state == '1_canceled'"/>
+                                <field name="pwf_amc_approval" widget="badge"
+                                       decoration-success="pwf_amc_approval == 'approved'"/>
+                                <field name="pwf_amc_approved_by_id" string="Approved By"/>
+                                <field name="ft_deployed_date"/>
+                                <field name="ft_approved_hours" widget="float_time" sum="Total"/>
+                                <field name="ft_billable_hours" widget="float_time" sum="Total"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Central milestone list (Milestones > Project Milestones): AMC columns
+         and a read-only status on AMC monthly rows. -->
+    <record id="view_project_custom_milestone_list_amc" model="ir.ui.view">
+        <field name="name">project.custom.milestone.list.amc.payment</field>
+        <field name="model">project.custom.milestone</field>
+        <field name="inherit_id" ref="project_custom_milestone.view_project_custom_milestone_list"/>
+        <field name="arch" type="xml">
+            <field name="status" position="before">
+                <field name="is_amc_monthly" column_invisible="1"/>
+                <field name="amc_period_start" string="Billing Period" optional="show"/>
+                <field name="amc_hours" string="Approved Hours" widget="float_time" optional="show"/>
+                <field name="amc_task_count" string="Tasks" optional="show"/>
+            </field>
+            <field name="hours_spent" position="attributes">
+                <attribute name="widget">float_time</attribute>
+            </field>
+            <field name="status" position="attributes">
+                <attribute name="readonly">is_amc_monthly</attribute>
+                <attribute name="widget">badge</attribute>
+                <attribute name="decoration-success">status in ('completed', 'customer_approved', 'paid')</attribute>
+                <attribute name="decoration-warning">status in ('invoice_raised', 'partially_paid')</attribute>
+            </field>
+            <field name="status" position="after">
+                <field name="amc_send_email" string="E-mail Customer" optional="hide" widget="boolean_toggle"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- The base action has no search view; this one adds the AMC filters and
+         Group By options and is attached to the existing action below. -->
+    <record id="view_project_custom_milestone_search_amc" model="ir.ui.view">
+        <field name="name">project.custom.milestone.search.amc.payment</field>
+        <field name="model">project.custom.milestone</field>
+        <field name="arch" type="xml">
+            <search string="Milestones">
+                <field name="name"/>
+                <field name="milestone_id"/>
+                <field name="project_id"/>
+                <filter string="AMC Monthly" name="amc_monthly" domain="[('is_amc_monthly', '=', True)]"/>
+                <filter string="To Send" name="amc_to_send"
+                        domain="[('is_amc_monthly', '=', True), ('status', '=', 'not_started')]"/>
+                <filter string="Sent / Completed" name="amc_sent"
+                        domain="[('is_amc_monthly', '=', True), ('status', '!=', 'not_started')]"/>
+                <separator/>
+                <filter string="Overdue" name="overdue" domain="[('is_overdue', '=', True)]"/>
+                <group>
+                    <filter string="Project" name="groupby_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="Status" name="groupby_status" context="{'group_by': 'status'}"/>
+                    <filter string="Billing Period" name="groupby_period"
+                            context="{'group_by': 'amc_period_start:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="project_custom_milestone.action_project_custom_milestone" model="ir.actions.act_window">
+        <field name="search_view_id" ref="view_project_custom_milestone_search_amc"/>
+    </record>
+
+</odoo>

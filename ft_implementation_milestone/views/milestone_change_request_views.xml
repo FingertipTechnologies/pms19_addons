@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_ft_milestone_change_request_list" model="ir.ui.view">
+        <field name="name">ft.milestone.change.request.list</field>
+        <field name="model">ft.milestone.change.request</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'rejected'" decoration-success="state == 'approved'">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="change_type"/>
+                <field name="milestone_id"/>
+                <field name="current_percentage" string="Current %" optional="show"/>
+                <field name="new_percentage" string="New %" optional="show"/>
+                <field name="requester_id" widget="many2one_avatar_user"/>
+                <field name="create_date" string="Requested On" optional="show"/>
+                <field name="approver_id" optional="hide"/>
+                <field name="decision_date" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'request'"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ft_milestone_change_request_form" model="ir.ui.view">
+        <field name="name">ft.milestone.change.request.form</field>
+        <field name="model">ft.milestone.change.request</field>
+        <field name="arch" type="xml">
+            <form string="Milestone Change Request">
+                <header>
+                    <button name="action_submit_request" string="Submit for Approval"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft' or not can_submit"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary"
+                            invisible="state != 'request' or not is_approver"
+                            confirm="Approve this change and apply it to the project milestones?"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            class="btn-danger"
+                            invisible="state != 'request' or not is_approver"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object"
+                            invisible="state != 'rejected' or not is_approver"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,request,approved"/>
+                </header>
+                <sheet>
+                    <field name="is_approver" invisible="1"/>
+                    <field name="can_submit" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group name="request">
+                            <field name="project_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="change_type" readonly="state != 'draft'"/>
+                            <field name="milestone_id" readonly="state != 'draft'"
+                                   invisible="change_type == 'add'"
+                                   required="change_type != 'add'"
+                                   options="{'no_create': True}"/>
+                            <field name="requester_id" readonly="not is_approver"
+                                   widget="many2one_avatar_user"/>
+                        </group>
+                        <group name="totals">
+                            <field name="resulting_percentage_total"
+                                   decoration-danger="resulting_percentage_total != 100"
+                                   decoration-success="resulting_percentage_total == 100"/>
+                            <div colspan="2" class="text-muted small"
+                                 invisible="resulting_percentage_total == 100">
+                                The plan must still add up to 100% after the change, or
+                                the request cannot be approved.
+                            </div>
+                        </group>
+                    </group>
+                    <group>
+                        <group name="current" string="Current" invisible="change_type == 'add'">
+                            <field name="current_name"/>
+                            <field name="current_percentage"/>
+                            <field name="current_amount"/>
+                            <field name="current_due_date"/>
+                        </group>
+                        <group name="new" string="Requested" invisible="change_type == 'remove'">
+                            <field name="new_name" readonly="state != 'draft'"
+                                   required="change_type == 'add'"/>
+                            <field name="new_percentage" readonly="state != 'draft'"/>
+                            <field name="new_amount" readonly="state != 'draft'"/>
+                            <field name="new_due_date" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <group name="reason_group">
+                        <field name="reason" nolabel="1" colspan="2"
+                               placeholder="Why does the agreed plan have to change?"
+                               readonly="state != 'draft'"/>
+                    </group>
+                    <group name="decision" string="Decision" invisible="state == 'draft'">
+                        <group>
+                            <field name="approver_id" widget="many2one_avatar_user"/>
+                            <field name="decision_date"/>
+                        </group>
+                        <group>
+                            <field name="approval_comment"
+                                   readonly="state != 'request' or not is_approver"
+                                   invisible="state == 'rejected'"/>
+                            <field name="rejection_reason" readonly="1"
+                                   invisible="state != 'rejected'"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ft_milestone_change_request_search" model="ir.ui.view">
+        <field name="name">ft.milestone.change.request.search</field>
+        <field name="model">ft.milestone.change.request</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="milestone_id"/>
+                <field name="requester_id"/>
+                <filter name="mine" string="My Requests"
+                        domain="[('requester_id', '=', uid)]"/>
+                <filter name="to_approve" string="To Approve"
+                        domain="[('state', '=', 'request')]"/>
+                <separator/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <filter name="rejected" string="Rejected" domain="[('state', '=', 'rejected')]"/>
+                <group>
+                    <filter name="group_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ft_milestone_change_request" model="ir.actions.act_window">
+        <field name="name">Milestone Change Requests</field>
+        <field name="res_model">ft.milestone.change.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_to_approve': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Raise a milestone change request</p>
+            <p>Once an Implementation project has left KICKOFF its payment milestones are
+               locked; changes to names, percentages, amounts and dates go through an
+               approved request.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_ft_milestone_change_request"
+              name="Milestone Change Requests"
+              parent="project_custom_milestone.menu_project_custom_milestone_root"
+              action="action_ft_milestone_change_request"
+              sequence="20"/>
+
+</odoo>

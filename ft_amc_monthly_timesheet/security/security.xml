@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_amc_manager" model="res.groups">
+        <field name="name">AMC Reporting Manager</field>
+        <field name="implied_ids" eval="[(4, ref('project.group_project_user'))]"/>
+    </record>
+
+    <record id="report_company_rule" model="ir.rule">
+        <field name="name">AMC monthly reports: allowed companies</field>
+        <field name="model_id" ref="model_ft_amc_monthly_report"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="report_line_company_rule" model="ir.rule">
+        <field name="name">AMC monthly report lines: allowed companies</field>
+        <field name="model_id" ref="model_ft_amc_monthly_report_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>
