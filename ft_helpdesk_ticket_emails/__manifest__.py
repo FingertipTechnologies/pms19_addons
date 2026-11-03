@@ -11,21 +11,24 @@
     # (Settings > Ticket Emails > Assignee, on by default). On creation that
     # mail replaces the core "you've been assigned" mail; reassignments still
     # send it. New company field - upgrade the module.
-    'version': '19.0.1.5.0',
+    # 19.0.1.6.0: Email-to-Ticket Automation: processes incoming support emails,
+    # extracts ticket numbers from subject (e.g. [TKT-000123]), updates existing
+    # Chatter threads without duplicates, or creates new tickets when no reference
+    # or an invalid reference is provided.
+    'version': '19.0.1.6.0',
     'category': 'Services/Helpdesk',
-    'summary': 'One notification email per ticket event, everyone in Cc',
+    'summary': 'One notification email per ticket event and Email-to-Ticket incoming automation',
     'description': """
         FingertipTech Helpdesk Ticket Emails
         =====================================
-        Sends a single notification email when a ticket is created, escalated,
-        closed/cancelled, changes stage, or receives a customer-visible reply.
-
-        - Configured under Settings > FT Helpdesk > Ticket Emails
-        - Recipients: Project Manager (PM), Team Lead, Assignee, Customer and a list of
-          internal users, each independently switchable
-        - Exactly one email per event with every recipient in Cc - never one
-          email per person
-        - Adds a Project Manager (PM) field on the helpdesk team
+        - Sends a single notification email when a ticket is created, escalated,
+          closed/cancelled, changes stage, or receives a customer-visible reply.
+        - Email-to-Ticket automation:
+          * Automatically processes emails sent to the support email address.
+          * Checks subject for valid ticket number (e.g. [TKT-000123]).
+          * Updates existing ticket's Chatter with email body, sender, and attachments.
+          * Automatically creates new support tickets when no or invalid ticket reference exists.
+          * Prevents duplicate messages and duplicate tickets.
     """,
     'author': 'FingertipTech',
     'website': 'https://www.fingertiptech.com',
@@ -34,6 +37,7 @@
         'ft_helpdesk_core',
     ],
     'data': [
+        'data/mail_alias_data.xml',
         'data/mail_template.xml',
         'views/team_views.xml',
         'views/res_config_settings_views.xml',

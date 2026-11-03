@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Default incoming mail alias for support tickets -->
+        <record id="mail_alias_support_ticket" model="mail.alias">
+            <field name="alias_name">support</field>
+            <field name="alias_model_id" ref="ft_helpdesk_core.model_ft_helpdesk_ticket"/>
+            <field name="alias_contact">everyone</field>
+            <field name="alias_defaults">{'channel': 'email'}</field>
+        </record>
+    </data>
+</odoo>

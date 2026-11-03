@@ -131,8 +131,6 @@ class HelpdeskTicket(models.Model):
                     # Cc, as configured.
                     'email_to': company.email or HELPDESK_EMAIL_FROM,
                     'email_cc': ', '.join(recipients),
-                    'model': 'ft.helpdesk.ticket',
-                    'res_id': ticket.id,
                     'auto_delete': True,
                 })
             except Exception:
@@ -266,6 +264,9 @@ class HelpdeskTicket(models.Model):
             self.message_subscribe(partner_ids=partner.ids)
 
     def message_post(self, **kwargs):
+        # Preserve original incoming email_from if provided and not the legacy admin address
+        original_email_from = kwargs.get('email_from')
+
         # ft_helpdesk_core reopens a pending_customer ticket when the customer
         # replies. That nested write must not also fire a status email - the
         # conversation email sent below already reports the new status, and one
@@ -274,6 +275,12 @@ class HelpdeskTicket(models.Model):
             HelpdeskTicket,
             self.with_context(ft_skip_ticket_event_email=True),
         ).message_post(**kwargs)
+
+        if original_email_from and original_email_from not in (LEGACY_EMAIL_FROM, HELPDESK_EMAIL_FROM):
+            # Restore the sender's actual email address if core overwrote it
+            if message.email_from != original_email_from:
+                message.sudo().write({'email_from': original_email_from})
+
         # Customer conversation only, so internal notes, status notifications
         # and the creation confirmation are all left out.
         public_reply = self.env.ref(
@@ -298,3 +305,99 @@ class HelpdeskTicket(models.Model):
                     sender_name or _('Unknown')),
             )
         return message
+
+    @api.model
+    def message_new(self, msg_dict, custom_values=None):
+        """Create a new support ticket from an incoming email.
+
+        Maps:
+        - Ticket Subject: Incoming email subject
+        - Customer: Found or created from sender email address
+        - Description: Email body
+        - Attachments: Incoming email attachments (handled by mail gateway)
+        - Channel: 'email'
+        - Status: 'new'
+        - Ticket Number: Generated automatically using sequence configuration
+        """
+        if custom_values is None:
+            custom_values = {}
+
+        subject = msg_dict.get('subject') or self.env._('No Subject')
+        email_from = msg_dict.get('email_from') or ''
+        author_id = msg_dict.get('author_id')
+        partner = False
+
+        if author_id:
+            partner = self.env['res.partner'].browse(author_id)
+        elif email_from:
+            partners = self.env['mail.thread']._mail_find_partner_from_emails(
+                [email_from], force_create=True
+            )
+            partner = partners[0] if partners else False
+
+        if not partner:
+            # Fallback partner creation for unknown sender
+            email_address = tools.email_split(email_from)
+            email_clean = email_address[0] if email_address else email_from
+            name_tuples = tools.email_split_tuples(email_from)
+            partner_name = (
+                name_tuples[0][0]
+                if name_tuples and name_tuples[0][0]
+                else email_clean or self.env._('Customer')
+            )
+            partner = self.env['res.partner'].create({
+                'name': partner_name,
+                'email': email_clean,
+            })
+
+        body = msg_dict.get('body') or ''
+
+        # Auto-assign team from customer's configured Support Team (referring to portal ticket creation pattern).
+        # Fall back to system default team if configured.
+        customer_team = (
+            partner.commercial_partner_id.sudo().helpdesk_team_id
+            or partner.sudo().helpdesk_team_id
+        ) if partner else False
+
+        team_id = False
+        if customer_team:
+            team_id = customer_team.id
+        elif not custom_values.get('team_id'):
+            default_team = self.env['ir.config_parameter'].sudo().get_param(
+                'ft_helpdesk.default_team_id')
+            if default_team:
+                try:
+                    team_id = int(default_team)
+                except (ValueError, TypeError):
+                    pass
+
+        defaults = {
+            'name': subject,
+            'description': body,
+            'customer_id': partner.id,
+            'channel': 'email',
+            'state': 'new',
+        }
+        if team_id:
+            defaults['team_id'] = team_id
+            if customer_team and customer_team.auto_assign_mode == 'manual' and customer_team.default_assignee_id:
+                defaults['assigned_user_id'] = customer_team.default_assignee_id.id
+
+        defaults.update(custom_values)
+
+        return super(HelpdeskTicket, self.with_context(
+            mail_create_nolog=True,
+        )).message_new(msg_dict, custom_values=defaults)
+
+    def message_update(self, msg_dict, update_vals=None):
+        """Update existing ticket from an incoming email reply."""
+        if update_vals is None:
+            update_vals = {}
+        now = fields.Datetime.now()
+        for ticket in self:
+            # Reopen ticket if customer replies while pending or resolved
+            if ticket.state in ('pending_customer', 'resolved'):
+                update_vals.setdefault('state', 'open')
+            update_vals['last_customer_reply_at'] = now
+            ticket.write(update_vals)
+        return True

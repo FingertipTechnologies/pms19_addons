@@ -3,3 +3,4 @@ from . import res_config_settings
 from . import team
 from . import ticket
 from . import mail_message
+from . import mail_thread

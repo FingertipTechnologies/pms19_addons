@@ -108,6 +108,54 @@ class ResUsers(models.Model):
                     user.login, exc_info=True,
                 )
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'group_ids' in res:
+            # When creating a user, 'Administrator' (Timesheets) and 'User: all timesheets'
+            # must be unticked.
+            unwanted_xmlids = [
+                'hr_timesheet.group_timesheet_manager',
+                'hr_timesheet.group_hr_timesheet_approver',
+                'project.group_project_manager',
+            ]
+            unwanted_ids = set()
+            for xmlid in unwanted_xmlids:
+                grp = self.env.ref(xmlid, raise_if_not_found=False)
+                if grp:
+                    unwanted_ids.add(grp.id)
+            if unwanted_ids and res.get('group_ids'):
+                cleaned_groups = []
+                for item in res['group_ids']:
+                    if isinstance(item, (list, tuple)) and len(item) == 3 and item[0] in (6, Command.SET):
+                        cleaned_ids = [gid for gid in item[2] if gid not in unwanted_ids]
+                        cleaned_groups.append((item[0], item[1], cleaned_ids))
+                    elif isinstance(item, int):
+                        if item not in unwanted_ids:
+                            cleaned_groups.append(item)
+                    else:
+                        cleaned_groups.append(item)
+                res['group_ids'] = cleaned_groups
+        return res
+
+    @api.model
+    def _register_hook(self):
+        super()._register_hook()
+        # Keep base.default_user_group cleaned of timesheet manager/approver and project manager
+        # so any database upgrade or restart automatically maintains them un-ticked by default.
+        try:
+            self.env.cr.execute("""
+                DELETE FROM res_groups_implied_rel 
+                WHERE gid = (SELECT res_id FROM ir_model_data WHERE module = 'base' AND name = 'default_user_group')
+                  AND hid IN (
+                      SELECT res_id FROM ir_model_data WHERE module = 'hr_timesheet' AND name IN ('group_timesheet_manager', 'group_hr_timesheet_approver')
+                      UNION
+                      SELECT res_id FROM ir_model_data WHERE module = 'project' AND name = 'group_project_manager'
+                  );
+            """)
+        except Exception:
+            _logger.exception("Could not clean default_user_group implied relations")
+
     @api.model_create_multi
     def create(self, vals_list):
         """Provision the employee for a tester created with the group already

@@ -338,6 +338,34 @@ class HelpdeskTicket(models.Model):
         return [key for key, _ in TICKET_STATES]
 
     # =====================
+    # Onchange Handlers
+    # =====================
+
+    @api.onchange('customer_id')
+    def _onchange_customer_id(self):
+        if self.customer_id:
+            customer_team = (
+                self.customer_id.commercial_partner_id.sudo().helpdesk_team_id
+                or self.customer_id.sudo().helpdesk_team_id
+            )
+            if customer_team:
+                self.team_id = customer_team
+            elif not self.team_id:
+                default_team = self.env['ir.config_parameter'].sudo().get_param(
+                    'ft_helpdesk.default_team_id')
+                if default_team:
+                    try:
+                        self.team_id = int(default_team)
+                    except (ValueError, TypeError):
+                        pass
+
+    @api.onchange('team_id')
+    def _onchange_team_id(self):
+        if self.team_id and not self.assigned_user_id:
+            if self.team_id.auto_assign_mode == 'manual' and self.team_id.default_assignee_id:
+                self.assigned_user_id = self.team_id.default_assignee_id
+
+    # =====================
     # CRUD Overrides
     # =====================
 
@@ -350,24 +378,32 @@ class HelpdeskTicket(models.Model):
             # Auto-assign team from the customer's configured Support Team.
             # This takes priority over the ticket type's default team.
             if not vals.get('team_id') and vals.get('customer_id'):
-                partner = self.env['res.partner'].browse(vals['customer_id'])
+                partner = self.env['res.partner'].sudo().browse(vals['customer_id'])
                 customer_team = (
-                    partner.commercial_partner_id.helpdesk_team_id
-                    or partner.helpdesk_team_id
+                    partner.commercial_partner_id.sudo().helpdesk_team_id
+                    or partner.sudo().helpdesk_team_id
                 )
                 if customer_team:
                     vals['team_id'] = customer_team.id
             # Auto-assign team from type (fallback when the customer has no team)
             if not vals.get('team_id') and vals.get('type_id'):
-                ticket_type = self.env['ft.helpdesk.ticket.type'].browse(vals['type_id'])
+                ticket_type = self.env['ft.helpdesk.ticket.type'].sudo().browse(vals['type_id'])
                 if ticket_type.default_team_id:
                     vals['team_id'] = ticket_type.default_team_id.id
-
+            # Fallback to system default team if configured
+            if not vals.get('team_id'):
+                default_team = self.env['ir.config_parameter'].sudo().get_param(
+                    'ft_helpdesk.default_team_id')
+                if default_team:
+                    try:
+                        vals['team_id'] = int(default_team)
+                    except (ValueError, TypeError):
+                        pass
 
         # Apply the team's default assignee before creating the ticket.
         for vals in vals_list:
             if vals.get('team_id') and not vals.get('assigned_user_id'):
-                team = self.env['ft.helpdesk.team'].browse(vals['team_id'])
+                team = self.env['ft.helpdesk.team'].sudo().browse(vals['team_id'])
                 if (
                     team.auto_assign_mode == 'manual'
                     and team.default_assignee_id
