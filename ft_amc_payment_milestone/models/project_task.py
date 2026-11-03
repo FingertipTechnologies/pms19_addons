@@ -65,7 +65,7 @@ FT_DEPLOYED_STATE = '1_deployed'
 # selection, however, was built from the dict when core's class body ran -
 # before this module was imported - so the value still has to be added to
 # the field with selection_add below.
-CLOSED_STATES.setdefault(FT_DEPLOYED_STATE, 'Deployed')
+CLOSED_STATES.setdefault(FT_DEPLOYED_STATE, 'Billable')
 
 
 class ProjectTask(models.Model):
@@ -78,25 +78,25 @@ class ProjectTask(models.Model):
     # uninstalling this module must map the value back to something core
     # knows: Done.
     state = fields.Selection(
-        selection_add=[('1_done',), (FT_DEPLOYED_STATE, 'Deployed'), ('1_canceled',)],
+        selection_add=[('1_done',), (FT_DEPLOYED_STATE, 'Billable'), ('1_canceled',)],
         ondelete={FT_DEPLOYED_STATE: lambda recs: recs.write({'state': '1_done'})})
 
     ft_deployed = fields.Boolean(
-        string='Deployed', tracking=True, copy=False, index=True,
+        string='Billable', tracking=True, copy=False, index=True,
         help="The completed work is live at the customer (AMC projects). Set "
-             "with 'Mark Deployed'; an approved, deployed task is billed in "
-             "the AMC milestone of the month it was deployed in.")
-    ft_deployed_date = fields.Datetime(string='Deployed On', readonly=True, copy=False)
+             "with 'Mark Billable'; an approved, billable task is billed in "
+             "the AMC milestone of the month it was marked billable in.")
+    ft_deployed_date = fields.Datetime(string='Marked Billable On', readonly=True, copy=False)
     ft_deployed_by_id = fields.Many2one(
-        'res.users', string='Deployed By', readonly=True, copy=False)
+        'res.users', string='Marked Billable By', readonly=True, copy=False)
     ft_deploy_state = fields.Selection([
-        ('deployed', 'Deployed'),
-        ('to_deploy', 'To Deploy'),
-    ], string='Deployment', compute='_compute_ft_deploy_state',
-        help="Deployed, or To Deploy (AMC-approved and completed but not yet deployed).")
+        ('deployed', 'Billable'),
+        ('to_deploy', 'To Bill'),
+    ], string='Billable', compute='_compute_ft_deploy_state',
+        help="Billable, or To Bill (AMC-approved and completed but not yet marked billable).")
     ft_can_deploy = fields.Boolean(
-        string='Can Mark Deployed', compute='_compute_ft_can_deploy',
-        help="The current user may mark / undo deployment on this task: it "
+        string='Can Mark Billable', compute='_compute_ft_can_deploy',
+        help="The current user may mark / undo billable status on this task: it "
              "belongs to an AMC project and the user is an AMC approver or "
              "the project's Project Manager.")
 
@@ -140,7 +140,7 @@ class ProjectTask(models.Model):
         non_amc = tasks.filtered(lambda t: not t.project_id or t.project_id.ft_project_type != 'amc')
         if non_amc:
             raise UserError(_(
-                "Deployment status is only used on tasks of AMC projects.\n\n"
+                "Billable status is only used on tasks of AMC projects.\n\n"
                 "Not on an AMC project:\n%s", _pwf_amc_task_lines(non_amc)))
         if not global_approver:
             foreign = tasks.filtered(lambda t: t.project_id.user_id != self.env.user)
@@ -148,7 +148,7 @@ class ProjectTask(models.Model):
                 raise AccessError(_(
                     "Only the Project Manager of the project, a Project Manager / "
                     "Project Coordinator, a Team Lead or an Administrator can mark "
-                    "tasks as Deployed.\n\nNot allowed for:\n%s", _pwf_amc_task_lines(foreign)))
+                    "tasks as Billable.\n\nNot allowed for:\n%s", _pwf_amc_task_lines(foreign)))
         problems = []
         for task in tasks:
             reasons = []
@@ -158,18 +158,18 @@ class ProjectTask(models.Model):
                 if task.state == '1_canceled':
                     reasons.append(_("cancelled"))
                 if task.ft_deployed:
-                    reasons.append(_("already marked Deployed"))
+                    reasons.append(_("already marked Billable"))
             elif not task.ft_deployed:
-                reasons.append(_("not marked Deployed"))
+                reasons.append(_("not marked Billable"))
             if reasons:
                 problems.append('- %s (#%s): %s' % (task.display_name or task.name or '',
                                                     task.id, ', '.join(reasons)))
         if problems:
-            verb = _("marked Deployed") if action == 'deploy' else _("reset")
+            verb = _("marked Billable") if action == 'deploy' else _("reset")
             raise UserError(_(
                 "Nothing was changed: the following task(s) cannot be %(verb)s. "
                 "Only completed (final stage), not cancelled AMC tasks can be "
-                "deployed.\n\n%(tasks)s", verb=verb, tasks='\n'.join(problems)))
+                "billable.\n\n%(tasks)s", verb=verb, tasks='\n'.join(problems)))
 
     @api.model
     def _ft_amc_refuse_deploy_write(self, vals):
@@ -179,8 +179,8 @@ class ProjectTask(models.Model):
         if self.env.su:
             return
         error = AccessError(_(
-            "The deployment status is set with the 'Mark Deployed' / "
-            "'Undo Deployed' buttons and cannot be edited directly."))
+            "The billable status is set with the 'Mark Billable' / "
+            "'Undo Billable' buttons and cannot be edited directly."))
         if vals.get('state') == FT_DEPLOYED_STATE:
             raise error
         # The task form carries the deployment fields (invisible / read-only)
@@ -250,7 +250,7 @@ class ProjectTask(models.Model):
             if vals['ft_deployed']:
                 self.sudo()._ft_amc_link_milestone()
             else:
-                self.sudo()._ft_amc_unlink_milestone(_("the deployment was undone"))
+                self.sudo()._ft_amc_unlink_milestone(_("the billable status was undone"))
         if 'pwf_amc_approval' in vals:
             # Approval arriving after deployment attaches the task; a reset /
             # rejection detaches it (while the milestone is still open).
@@ -324,7 +324,7 @@ class ProjectTask(models.Model):
                 milestone = project._amc_ensure_monthly_milestone(period_start)
             if moved_from and not milestone:
                 task.message_post(body=_(
-                    "Deployed and approved, but NOT attached: payment milestone "
+                    "Billable and approved, but NOT attached: payment milestone "
                     "'%s' is already %s and the project has no later open AMC "
                     "milestone. Please check the contract dates.",
                     moved_from.display_name, moved_from._amc_status_label()),
@@ -334,7 +334,7 @@ class ProjectTask(models.Model):
                 _logger.info("Task %s: no AMC milestone for %s (project %s not eligible).",
                              task.id, period_start.strftime('%Y-%m'), project.id)
                 task.message_post(body=_(
-                    "Deployed and approved, but not attached to a payment milestone: "
+                    "Billable and approved, but not attached to a payment milestone: "
                     "project '%(project)s' is not eligible for an AMC milestone in "
                     "%(period)s (closed, on hold, or contract dates not covering it).",
                     project=project.display_name,
@@ -347,13 +347,13 @@ class ProjectTask(models.Model):
             touched |= milestone
             if moved_from:
                 task.message_post(body=_(
-                    "Attached to payment milestone '%(to)s': the month of "
-                    "deployment ('%(month)s') is already %(status)s.",
+                    "Attached to payment milestone '%(to)s': the billable "
+                    "month ('%(month)s') is already %(status)s.",
                     to=milestone.display_name, month=moved_from.display_name,
                     status=moved_from._amc_status_label()), subtype_xmlid='mail.mt_note')
             else:
                 task.message_post(body=_(
-                    "Attached to payment milestone '%s' (month of deployment).",
+                    "Attached to payment milestone '%s' (billable month).",
                     milestone.display_name), subtype_xmlid='mail.mt_note')
             if milestone.status not in AMC_OPEN_STATUSES:
                 # The customer already received this month's list: say so
@@ -413,7 +413,7 @@ class ProjectTask(models.Model):
             if still_deployed:
                 still_deployed.write({'state': state})
         for task in self:
-            task.message_post(body=_("Deployment status cleared: %s.", reason),
+            task.message_post(body=_("Billable status cleared: %s.", reason),
                               subtype_xmlid='mail.mt_note')
 
     # ------------------------------------------------------------------
@@ -425,7 +425,7 @@ class ProjectTask(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _("Deployment"),
+                'title': _("Billable Status"),
                 'message': message,
                 'type': kind,
                 'sticky': False,
@@ -449,8 +449,8 @@ class ProjectTask(models.Model):
         })
         actor = self.env.user.name or ''
         for task in tasks.sudo():
-            task.message_post(body=_("Marked Deployed by %s.", actor), subtype_xmlid='mail.mt_note')
-        return self._ft_amc_notification(_("%s task(s) marked Deployed.", len(tasks)))
+            task.message_post(body=_("Marked Billable by %s.", actor), subtype_xmlid='mail.mt_note')
+        return self._ft_amc_notification(_("%s task(s) marked Billable.", len(tasks)))
 
     def action_ft_reset_deployed(self):
         tasks = self.exists()
@@ -459,4 +459,4 @@ class ProjectTask(models.Model):
         tasks._ft_amc_check_deploy_rules('undo')
         actor = self.env.user.name or ''
         tasks.sudo()._ft_amc_clear_deployed(_("undone by %s", actor))
-        return self._ft_amc_notification(_("Deployment undone on %s task(s).", len(tasks)), 'warning')
+        return self._ft_amc_notification(_("Billable Status undone on %s task(s).", len(tasks)), 'warning')

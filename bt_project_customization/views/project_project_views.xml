@@ -50,6 +50,11 @@
                     <attribute name="options">
                         {'no_create': True, 'no_create_edit': True}
                     </attribute>
+                    <attribute name="domain">
+                        [('project_id', '=', project_id),
+                        ('stage_id.name', 'in', ['Planned', 'Working', 'Testing']),
+                        ('state', 'not in', ['1_done', '1_canceled', '1_deployed'])]
+                    </attribute>
                     <!-- Required whenever a project is set, which is what makes
                          the line a timesheet. Conditional rather than flat, so
                          an analytic line with no project stays valid. -->
@@ -111,6 +116,11 @@
                 <xpath expr="//field[@name='task_id']" position="attributes">
                     <attribute name="options">
                         {'no_create': True, 'no_create_edit': True}
+                    </attribute>
+                    <attribute name="domain">
+                        [('project_id', '=', project_id),
+                        ('stage_id.name', 'in', ['Planned', 'Working', 'Testing']),
+                        ('state', 'not in', ['1_done', '1_canceled', '1_deployed'])]
                     </attribute>
                     <!-- Required whenever a project is set, which is what makes
                          the line a timesheet. Conditional rather than flat, so

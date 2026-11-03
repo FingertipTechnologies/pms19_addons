@@ -11,13 +11,13 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="action_ft_mark_deployed" type="object"
-                        string="Mark Deployed" class="btn-secondary"/>
+                        string="Mark Billable" class="btn-secondary"/>
                 <button name="action_ft_reset_deployed" type="object"
-                        string="Undo Deployed"/>
+                        string="Undo Billable"/>
             </xpath>
             <xpath expr="//field[@name='pwf_amc_approval']" position="after">
                 <field name="ft_deployed" column_invisible="1"/>
-                <field name="ft_deploy_state" string="Deployment" widget="badge"
+                <field name="ft_deploy_state" string="Billable" widget="badge"
                        readonly="1" optional="show"
                        invisible="ft_project_type != 'amc'"
                        decoration-success="ft_deploy_state == 'deployed'"
@@ -38,15 +38,15 @@
                 <field name="ft_can_deploy" invisible="1"/>
                 <field name="pwf_amc_is_completed" invisible="1"/>
                 <button name="action_ft_mark_deployed" type="object"
-                        string="Mark Deployed" class="btn-secondary"
+                        string="Mark Billable" class="btn-secondary"
                         invisible="not ft_can_deploy or ft_project_type != 'amc' or ft_deployed or not pwf_amc_is_completed or state == '1_canceled'"/>
                 <button name="action_ft_reset_deployed" type="object"
-                        string="Undo Deployed"
-                        confirm="Undo the deployment of this task? It is detached from its payment milestone while that milestone is still open."
+                        string="Undo Billable"
+                        confirm="Undo the billable status of this task? It is detached from its payment milestone while that milestone is still open."
                         invisible="not ft_can_deploy or ft_project_type != 'amc' or not ft_deployed"/>
             </xpath>
             <xpath expr="//group[@name='pwf_amc_approval_section']" position="inside">
-                <group string="Deployment" name="ft_amc_deployment">
+                <group string="Billable Status" name="ft_amc_deployment">
                     <field name="ft_deploy_state" widget="badge" readonly="1"
                            decoration-success="ft_deploy_state == 'deployed'"
                            decoration-warning="ft_deploy_state == 'to_deploy'"/>
@@ -68,9 +68,9 @@
             <filter name="pwf_amc_rejected" position="after">
                 <separator/>
                 <!-- Deployed = Status 1_deployed (equivalent to ft_deployed = True). -->
-                <filter string="Deployed" name="ft_amc_deployed" domain="[('state', '=', '1_deployed')]"/>
+                <filter string="Billable" name="ft_amc_deployed" domain="[('state', '=', '1_deployed')]"/>
                 <!-- To Deploy = AMC, approved, completed, not yet deployed. -->
-                <filter string="To Deploy" name="ft_amc_to_deploy"
+                <filter string="To Bill" name="ft_amc_to_deploy"
                         domain="[
                             ('project_id.ft_project_type', '=', 'amc'),
                             ('pwf_amc_approval', '=', 'approved'),
@@ -84,16 +84,16 @@
     <!-- AMC Reports > AMC Tasks to Deploy: the All Tasks list (bulk buttons)
          filtered on approved, completed, not deployed AMC tasks. -->
     <record id="action_ft_amc_tasks_to_deploy" model="ir.actions.act_window">
-        <field name="name">AMC Tasks to Deploy</field>
+        <field name="name">AMC Tasks to Bill</field>
         <field name="res_model">project.task</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('project_id.ft_project_type', '=', 'amc')]</field>
         <field name="context">{'search_default_ft_amc_to_deploy': 1}</field>
         <field name="search_view_id" ref="project.view_task_search_form"/>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">No AMC task waiting for deployment</p>
-            <p>Approved, completed AMC tasks appear here until they are marked Deployed.
-               A deployed task is billed in the payment milestone of its deployment month.</p>
+            <p class="o_view_nocontent_smiling_face">No AMC task waiting to be marked billable</p>
+            <p>Approved, completed AMC tasks appear here until they are marked Billable.
+               A billable task is billed in the payment milestone of its billable month.</p>
         </field>
     </record>
 
@@ -111,7 +111,7 @@
         <field name="act_window_id" ref="action_ft_amc_tasks_to_deploy"/>
     </record>
 
-    <menuitem id="menu_ft_amc_tasks_to_deploy" name="AMC Tasks to Deploy"
+    <menuitem id="menu_ft_amc_tasks_to_deploy" name="AMC Tasks to Bill"
               parent="ft_amc_monthly_timesheet.menu_amc_root"
               action="action_ft_amc_tasks_to_deploy" sequence="25"/>
 

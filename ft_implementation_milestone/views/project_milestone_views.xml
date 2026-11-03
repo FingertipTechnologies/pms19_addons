@@ -25,20 +25,37 @@
         <field name="arch" type="xml">
             <field name="name" position="before">
                 <field name="ft_milestone_plan_locked" invisible="1"/>
+                <field name="ft_milestone_done_locked" invisible="1"/>
             </field>
             <field name="name" position="attributes">
-                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+                <attribute name="readonly">ft_milestone_plan_locked or ft_milestone_done_locked</attribute>
             </field>
             <field name="project_id" position="attributes">
-                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+                <attribute name="readonly">ft_milestone_plan_locked or ft_milestone_done_locked</attribute>
             </field>
             <field name="amount" position="attributes">
-                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+                <attribute name="readonly">ft_milestone_plan_locked or ft_milestone_done_locked</attribute>
             </field>
             <field name="percentage" position="attributes">
-                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+                <attribute name="readonly">ft_milestone_plan_locked or ft_milestone_done_locked</attribute>
+            </field>
+            <field name="due_date" position="attributes">
+                <attribute name="readonly">not is_date_extension_approver or ft_milestone_done_locked</attribute>
+            </field>
+            <field name="description" position="attributes">
+                <attribute name="readonly">ft_milestone_done_locked</attribute>
+            </field>
+            <field name="hours_spent" position="attributes">
+                <attribute name="readonly">ft_milestone_done_locked</attribute>
+            </field>
+            <field name="attachment_ids" position="attributes">
+                <attribute name="readonly">ft_milestone_done_locked</attribute>
             </field>
             <field name="percentage" position="after">
+                <div colspan="2" class="text-muted small" invisible="not ft_milestone_done_locked">
+                    This milestone is Completed and locked: only the status and
+                    paid amount can still be updated.
+                </div>
                 <div colspan="2" class="text-muted small" invisible="not ft_milestone_plan_locked">
                     The plan is locked (the project has left KICKOFF): use
                     <button name="action_ft_request_change" type="object"

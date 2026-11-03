@@ -33,6 +33,10 @@ CHANGE_APPROVAL_CONTEXT_KEY = 'ft_milestone_change_approval'
 # plan and moves KICKOFF -> DISC in one save must not be refused because the
 # new stage is already in the cache when the milestone lines are written.
 LOCK_SNAPSHOT_CONTEXT_KEY = 'ft_milestone_lock_snapshot'
+# Once a milestone is Completed (or any later status) it is frozen: only the
+# status may move forward and the paid amount be recorded; the chatter and
+# activities stay usable. Only the superuser (system jobs) bypasses it.
+FT_DONE_EDITABLE_FIELDS = ('status', 'paid_amount')
 # The agreed plan: everything a change request may alter. Status, paid
 # amount, hours, attachments and description stay editable after lock.
 LOCKED_FIELDS = ('name', 'percentage', 'amount', 'due_date', 'project_id')
@@ -42,6 +46,10 @@ COMPLETION_TEMPLATE_XMLID = 'ft_implementation_milestone.mail_template_milestone
 class ProjectCustomMilestone(models.Model):
     _inherit = 'project.custom.milestone'
 
+    ft_milestone_done_locked = fields.Boolean(
+        string='Completed (Locked)', compute='_compute_ft_milestone_done_locked',
+        help='Technical: True once the milestone is Completed or later; it '
+             'can then no longer be changed (only status and paid amount).')
     ft_milestone_plan_locked = fields.Boolean(
         string='Plan Locked', compute='_compute_ft_milestone_plan_locked',
         help='Technical: True when this user may not change the name, '
@@ -79,6 +87,43 @@ class ProjectCustomMilestone(models.Model):
             or self.env.context.get(CHANGE_APPROVAL_CONTEXT_KEY)
             or self.env.user.has_group(APPROVER_GROUP)
         )
+
+    @api.depends('status')
+    def _compute_ft_milestone_done_locked(self):
+        for milestone in self:
+            milestone.ft_milestone_done_locked = milestone._ft_is_done()
+
+    def _ft_is_done(self):
+        self.ensure_one()
+        return bool(self.status) and self.status != 'not_started'
+
+    def _ft_check_done_lock(self, vals=None):
+        """Refuse any change to a Completed (or later) milestone, and its
+        deletion (vals=None). Status may only move forward, never back to
+        Not Started; the paid amount and the chatter stay editable."""
+        if self.env.su:
+            return
+        done = self.filtered(lambda m: m._ft_is_done())
+        if not done:
+            return
+        if vals is not None:
+            blocked = [
+                f for f in vals
+                if f not in FT_DONE_EDITABLE_FIELDS
+                and not f.startswith(('message_', 'activity_'))
+            ]
+            if vals.get('status') == 'not_started':
+                blocked.append('status')
+            if not blocked:
+                return
+            action = _("changed")
+        else:
+            action = _("deleted")
+        raise UserError(_(
+            "Completed milestones cannot be %(action)s: %(names)s.\n\n"
+            "Once a milestone is Completed only its status (forward) and "
+            "paid amount can be updated.",
+            action=action, names=', '.join(done.mapped('display_name'))))
 
     @api.depends('project_id.ft_milestone_plan_locked')
     @api.depends_context('uid', CHANGE_APPROVAL_CONTEXT_KEY)
@@ -210,6 +255,7 @@ class ProjectCustomMilestone(models.Model):
         completing = self.browse()
         if vals.get('status') == 'completed':
             completing = self.filtered(lambda m: m.status != 'completed')
+        self._ft_check_done_lock(vals)
         res = self._ft_write_locked(vals)
         if completing:
             completing._ft_milestone_completion_candidates()._ft_milestone_send_completion_email()
@@ -230,6 +276,7 @@ class ProjectCustomMilestone(models.Model):
         return super(ProjectCustomMilestone, self).write(vals)
 
     def unlink(self):
+        self._ft_check_done_lock()
         if not self._ft_milestone_user_may_bypass():
             self._ft_check_plan_lock(self.mapped('project_id'), 'unlink')
         return super().unlink()

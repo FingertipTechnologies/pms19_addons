@@ -403,11 +403,11 @@ class TestAmcPaymentMilestone(TransactionCase):
                 ._description_selection(self.env)]
         self.assertIn('1_deployed', keys)
         self.assertEqual(keys.index('1_deployed'), keys.index('1_done') + 1)
-        self.assertEqual(CLOSED_STATES.get('1_deployed'), 'Deployed')
+        self.assertEqual(CLOSED_STATES.get('1_deployed'), 'Billable')
         self.assertNotIn('1_deployed', self.env['project.task'].OPEN_STATES)
 
     def test_mark_deployed_sets_status_and_keeps_stage_and_date_end(self):
-        task = self._task('APM status deployed after done')
+        task = self._task('APM status billable after done')
         self.assertEqual(task.state, '1_done')  # stamped by the final stage
         date_end = task.date_end
         self._deploy(task)
@@ -433,7 +433,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         self.assertEqual(task.stage_id, self.completed)
 
     def test_reopen_returns_status_to_in_progress(self):
-        task = self._task('APM status reopened after deployment')
+        task = self._task('APM status reopened after billable status')
         self._deploy(task)
         self.assertEqual(task.state, '1_deployed')
         task.write({'stage_id': self.working.id})
@@ -457,7 +457,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         self.assertFalse(task.ft_deployed)
         with self.assertRaises(AccessError):
             self.env['project.task'].with_user(self.coord).create({
-                'name': 'APM task created already deployed',
+                'name': 'APM task created already billable',
                 'project_id': self.amc.id,
                 'stage_id': self.completed.id,
                 'task_type': 'internal_call',
@@ -499,7 +499,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         # same local day in any zone), completed 18 Oct: 8 days late, frozen
         # on completion.
         task = self.env['project.task'].create({
-            'name': 'APM deployed task on the overdue board',
+            'name': 'APM billable task on the overdue board',
             'project_id': self.amc.id,
             'stage_id': self.working.id,
             'task_type': 'internal_call',
@@ -533,7 +533,7 @@ class TestAmcPaymentMilestone(TransactionCase):
     # link and hours (42, 48, 49)
     # ------------------------------------------------------------------
     def test_all_hours_go_to_deployment_month(self):
-        task = self._task('APM task worked Oct and Nov deployed Dec',
+        task = self._task('APM task worked Oct and Nov billable Dec',
                           hours=((date(2026, 10, 10), 2.0), (date(2026, 11, 5), 3.0)))
         self._deploy(task, when='2026-12-10 06:00:00')
         december = self._milestone(self.amc, DEC)
@@ -572,7 +572,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         self.assertAlmostEqual(october.amc_hours, 2.0)
 
     def test_approval_after_deployment_links_and_reset_unlinks(self):
-        task = self._task('APM task deployed before approval', approval=False)
+        task = self._task('APM task billable before approval', approval=False)
         self._deploy(task)
         self.assertTrue(task.ft_deployed)
         self.assertFalse(task.custom_milestone_id)
@@ -653,7 +653,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         self.assertEqual(info.get('Milestone status'), 'Not Started')
         self.assertIn('October 2026', info.get('Billing period') or '')
         header_index = next(i for i, row in enumerate(sheet) if row and row[0] == 'Task')
-        self.assertEqual(sheet[header_index][:6], ['Task', 'Stage', 'Deployed On', 'Approved By',
+        self.assertEqual(sheet[header_index][:6], ['Task', 'Stage', 'Marked Billable On', 'Approved By',
                                                    'Approved Hours', 'Billable Hours'])
         first, second, total = sheet[header_index + 1], sheet[header_index + 2], sheet[header_index + 3]
         self.assertEqual(first[0], task.name)
@@ -685,7 +685,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         attachment = milestone._amc_build_task_excel()
         sheet = xlsx_rows(attachment.raw)
         flat = [cell for row in sheet for cell in row if isinstance(cell, str)]
-        self.assertIn('No approved, deployed task in this billing period.', flat)
+        self.assertIn('No approved, billable task in this billing period.', flat)
         self.assertIn('Total', flat)
 
     # ------------------------------------------------------------------

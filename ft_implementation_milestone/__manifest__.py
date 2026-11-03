@@ -33,7 +33,10 @@
     #   project's customer (switch on the project's Milestones tab, default
     #   on; AMC monthly milestones keep their own e-mail). Logged on the
     #   project's chatter; a customer without e-mail gets a note instead.
-    'version': '19.0.1.4.0',
+    # 19.0.1.5.0: a Completed (or later) milestone is frozen: no field but
+    #   status (forward only) and paid amount can change, and it cannot be
+    #   deleted; the form and the Milestones tab show it read-only.
+    'version': '19.0.1.5.0',
     'summary': 'Milestone templates added to every new Implementation project '
                'at 0%, the 100% plan gate and the locked plan / change-request '
                'flow.',

@@ -6,7 +6,7 @@
             <field name="name">project.activity.update.list</field>
             <field name="model">project.activity.update</field>
             <field name="arch" type="xml">
-                <list string="Project Activity Updates" editable="bottom">
+                <list string="Project Activity Updates" editable="top">
                     <field name="name"/>
                     <field name="stage_id" string="Project STATUS"/>
                     <field name="update_date"/>

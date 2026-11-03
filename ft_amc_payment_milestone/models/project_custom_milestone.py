@@ -107,7 +107,7 @@ class ProjectCustomMilestone(models.Model):
         string='AMC Monthly Milestone', readonly=True, copy=False, index=True,
         help="Created automatically for an AMC project and a calendar month. "
              "Its status follows the AMC billing sequence and it carries the "
-             "Deployed tasks of that month.")
+             "Billable tasks of that month.")
     amc_period_start = fields.Date(string='Billing Period Start', readonly=True, copy=False, index=True)
     amc_period_end = fields.Date(string='Billing Period End', readonly=True, copy=False)
     amc_period_label = fields.Char(string='Billing Period', compute='_compute_amc_period_label')
@@ -119,7 +119,7 @@ class ProjectCustomMilestone(models.Model):
              "switch when the milestone is created; change it per month here.")
     amc_task_ids = fields.One2many(
         'project.task', 'custom_milestone_id', string='AMC Tasks',
-        help="AMC-approved tasks marked Deployed in this billing period.")
+        help="AMC-approved tasks marked Billable in this billing period.")
     amc_task_count = fields.Integer(string='Tasks', compute='_compute_amc_task_count')
     amc_billing_task_ids = fields.Many2many(
         'project.task', compute='_compute_amc_billing_task_ids', string='Billing Tasks',
@@ -131,7 +131,7 @@ class ProjectCustomMilestone(models.Model):
         string='Approved Hours', compute='_compute_amc_hours', store=True, compute_sudo=True,
         help="Sum of the APPROVED timesheet hours (weekly timesheet approval) "
              "of every task attached to this milestone - whatever month they "
-             "were logged in: a task is billed in the month it was deployed. "
+             "were logged in: a task is billed in the month it was marked billable. "
              "Pending and rejected timesheets do not count.")
     # The pre-existing manual field. For AMC monthly milestones it mirrors
     # amc_hours so the Milestones tab and the central list (which already show
@@ -155,7 +155,7 @@ class ProjectCustomMilestone(models.Model):
     # ir.attachment table.
     amc_task_excel_id = fields.Many2one(
         'ir.attachment', string='Task Excel', readonly=True, copy=False, ondelete='set null',
-        help="Excel of the deployed tasks of this month (task, stage, deployed "
+        help="Excel of the billable tasks of this month (task, stage, billable "
              "on, approved by, approved hours, billable hours). Regenerated "
              "when the milestone is marked Completed or with 'Generate Task "
              "Excel'; also attached to the customer e-mail.")
@@ -466,14 +466,14 @@ class ProjectCustomMilestone(models.Model):
         row += 1
 
         rows = self._amc_task_excel_rows()
-        sheet.write_row(row, 0, [_('Task'), _('Deployed On')], header_fmt)
+        sheet.write_row(row, 0, [_('Task'), _('Date')], header_fmt)
         sheet.write(row, 2, _('Billable Hours'), header_num_fmt)
         sheet.freeze_panes(row + 1, 0)
         sheet.repeat_rows(row)
         if not rows:
             row += 1
             sheet.merge_range(row, 0, row, last_col,
-                              _('No approved, deployed task in this billing period.'), text_fmt)
+                              _('No approved, billable task in this billing period.'), text_fmt)
         for data in rows:
             row += 1
             sheet.write(row, 0, data['task'], text_fmt)
@@ -616,7 +616,7 @@ class ProjectCustomMilestone(models.Model):
             # every month) and says so.
             self.sudo().write({'amc_report_id': report.id})
             self.message_post(body=_(
-                "Marked Completed. No approved, deployed task is attached for %s, "
+                "Marked Completed. No approved, billable task is attached for %s, "
                 "so there was no timesheet to e-mail.", self.amc_period_label))
             return report
         self.sudo().write({'amc_report_id': report.id, 'amc_sent_on': now})

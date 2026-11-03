@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="ft_pms_planning_workflow.PasteAttachmentField"
+       t-inherit="web.Many2ManyBinaryField" t-inherit-mode="primary">
+        <xpath expr="//div[@aria-atomic='true']" position="attributes">
+            <attribute name="tabindex">0</attribute>
+            <attribute name="t-on-paste">onPaste</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('oe_add')]" position="attributes">
+            <attribute name="class">oe_add d-flex gap-1</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('oe_add')]/FileInput" position="after">
+            <button type="button" class="btn btn-secondary o_paste"
+                    data-tooltip="Paste screenshot (or Ctrl+V)" t-on-click="onPasteClick">
+                <span class="fa fa-clipboard" aria-label="Paste"/>
+            </button>
+        </xpath>
+    </t>
+</templates>

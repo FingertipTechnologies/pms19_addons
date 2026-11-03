@@ -36,7 +36,13 @@
     #   Reset Approval buttons follow the selection; the Approved / Rejected
     #   task filters are AMC-only and stale approvals on non-AMC tasks are
     #   cleared.
-    'version': '19.0.1.30.0',
+    # 19.0.1.32.0: the paste button is on every screenshot evidence field
+    #   (Sandbox Review, Customer UAT Sign-off, Internal / External / Google
+    #   review), not only the Signed BRD one.
+    # 19.0.1.31.0: the Signed BRD E-mail Screenshot field gets a small paste
+    #   button (and Ctrl+V) next to the paperclip; a failed kanban quick create
+    #   opens the full form with every value typed in the card, not just the name.
+    'version': '19.0.1.32.0',
     'summary': 'Project Planner, weekly Task Planner, Avg. Daily Effort and '
                'gated project stage workflow with approvals and notifications.',
     'description': """
@@ -100,6 +106,9 @@ PMS Planning & Stage Workflow
             'ft_pms_planning_workflow/static/src/control_panel_buttons/control_panel_buttons.js',
             'ft_pms_planning_workflow/static/src/control_panel_buttons/control_panel_buttons.xml',
             'ft_pms_planning_workflow/static/src/list_header_buttons/list_header_buttons.js',
+            'ft_pms_planning_workflow/static/src/paste_attachment/paste_attachment_field.js',
+            'ft_pms_planning_workflow/static/src/paste_attachment/paste_attachment_field.xml',
+            'ft_pms_planning_workflow/static/src/kanban_quick_create/kanban_quick_create_patch.js',
         ],
     },
     'uninstall_hook': 'uninstall_hook',

@@ -47,14 +47,15 @@
 
             <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='name']" position="after">
                 <field name="ft_milestone_plan_locked" column_invisible="1"/>
-                <field name="percentage" string="%" sum="Total %" readonly="ft_milestone_plan_locked"
+                <field name="ft_milestone_done_locked" column_invisible="1"/>
+                <field name="percentage" string="%" sum="Total %" readonly="ft_milestone_plan_locked or ft_milestone_done_locked"
                        column_invisible="parent.ft_project_type != 'implementation'"/>
             </xpath>
             <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='name']" position="attributes">
-                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+                <attribute name="readonly">ft_milestone_plan_locked or ft_milestone_done_locked</attribute>
             </xpath>
             <xpath expr="//page[@name='qa_milestones']//field[@name='custom_milestone_ids']/list/field[@name='amount']" position="attributes">
-                <attribute name="readonly">ft_milestone_plan_locked</attribute>
+                <attribute name="readonly">ft_milestone_plan_locked or ft_milestone_done_locked</attribute>
             </xpath>
 
         </field>

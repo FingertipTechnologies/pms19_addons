@@ -21,7 +21,7 @@
                     <field name="amc_can_manage" invisible="1"/>
                     <button name="action_amc_mark_completed" type="object"
                             string="Mark Completed &amp; Send" class="btn-primary"
-                            confirm="This marks the milestone Completed, attaches the Excel of its deployed tasks and, when 'Send e-mail to customer' is on, e-mails the month's timesheet and that Excel to the customer. Continue?"
+                            confirm="This marks the milestone Completed, attaches the Excel of its billable tasks and, when 'Send e-mail to customer' is on, e-mails the month's timesheet and that Excel to the customer. Continue?"
                             invisible="not is_amc_monthly or status != 'not_started' or not amc_can_manage"/>
                     <button name="action_amc_customer_approved" type="object"
                             string="Client Approved" class="btn-primary"

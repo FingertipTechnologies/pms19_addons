@@ -113,7 +113,7 @@
                                    options="{'accepted_file_extensions': '.pdf'}"/>
                         </group>
                         <group string="Evidence" name="pwf_req_dev_evidence">
-                            <field name="pwf_brd_signoff_attachment_ids" widget="many2many_binary"
+                            <field name="pwf_brd_signoff_attachment_ids" widget="many2many_binary_paste"
                                    string="Signed BRD E-mail Screenshot"/>
                             <div colspan="2" class="text-muted small" name="pwf_req_dev_note">
                                 All three documents (Schema Design and Components and Their
@@ -210,7 +210,7 @@
                     <separator string="UAT – User Acceptance Testing" colspan="2"/>
                     <group name="pwf_req_uat" colspan="2">
                         <group string="Evidence" name="pwf_req_uat_evidence">
-                            <field name="pwf_sandbox_review_attachment_ids" widget="many2many_binary"
+                            <field name="pwf_sandbox_review_attachment_ids" widget="many2many_binary_paste"
                                    string="Sandbox Review Evidence"/>
                             <field name="pwf_uat_request_state" string="Approval Request"
                                    widget="badge" readonly="1"
@@ -250,7 +250,7 @@
                     <separator string="DATA – Data Upload" colspan="2"/>
                     <group name="pwf_req_data" colspan="2">
                         <group string="Evidence" name="pwf_req_data_evidence">
-                            <field name="pwf_uat_signoff_attachment_ids" widget="many2many_binary"
+                            <field name="pwf_uat_signoff_attachment_ids" widget="many2many_binary_paste"
                                    string="Customer UAT Sign-off / Completion E-mail Screenshot"/>
                         </group>
                         <group string="Finance" name="pwf_req_data_finance">
@@ -315,11 +315,11 @@
                     <separator string="CLOSED – Feedback &amp; Closure" colspan="2"/>
                     <group name="pwf_req_closed" colspan="2">
                         <group string="Evidence" name="pwf_req_closed_evidence">
-                            <field name="pwf_internal_feedback_attachment_ids" widget="many2many_binary"
+                            <field name="pwf_internal_feedback_attachment_ids" widget="many2many_binary_paste"
                                    string="Internal Feedback Screenshot"/>
-                            <field name="pwf_external_feedback_attachment_ids" widget="many2many_binary"
+                            <field name="pwf_external_feedback_attachment_ids" widget="many2many_binary_paste"
                                    string="External Review (Partner Portal) Screenshot"/>
-                            <field name="pwf_google_review_attachment_ids" widget="many2many_binary"
+                            <field name="pwf_google_review_attachment_ids" widget="many2many_binary_paste"
                                    string="Google Review (optional)"/>
                             <div colspan="2" class="text-muted small" name="pwf_req_closed_note">
                                 The Internal Feedback Screenshot and the External Review

@@ -54,7 +54,7 @@
                 <div class="text-muted small mt-2">
                     A payment milestone "Support Services for Month Year" is created automatically on
                     the 1st of every month covered by the contract (Milestones tab). Approved tasks
-                    marked Deployed are billed in the milestone of their deployment month with their
+                    marked Billable are billed in the milestone of their billable month with their
                     approved timesheet hours; marking the milestone Completed attaches the Excel of
                     those tasks and e-mails it with the month's timesheet when the milestone's
                     "Send e-mail to customer" switch is on (default: the switch above).

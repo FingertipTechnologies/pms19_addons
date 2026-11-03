@@ -48,7 +48,11 @@
     #   "The deployment status ... cannot be edited directly": the form sends
     #   the deployment fields back with their default (False); only a set or
     #   changed value is refused.
-    'version': '19.0.1.2.1',
+    # 19.0.1.3.0: labels only - the Deployed status and its fields, buttons,
+    #   filters and menu read "Billable" (Mark / Undo Billable, To Bill, AMC
+    #   Tasks to Bill). Technical values (1_deployed, ft_deployed*) unchanged,
+    #   no migration.
+    'version': '19.0.1.3.0',
     'summary': 'Monthly "Support Services" payment milestones for AMC projects: client '
                'approval / invoice / payment statuses, Deployed task status, approved-hours '
                'task Excel and milestone-driven customer e-mail.',
