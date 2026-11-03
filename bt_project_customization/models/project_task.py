@@ -51,6 +51,7 @@ COMPLETED_STAGE_NAMES = ('Completed',)
 DEVELOPER_JOB_NAMES = (
     'software developer',
     'trainee software developer',
+    'software engineer',
     'technical lead',
 )
 
