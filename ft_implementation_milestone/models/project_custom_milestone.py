@@ -230,7 +230,7 @@ class ProjectCustomMilestone(models.Model):
             partner = project.partner_id
             email = partner.email if partner and email_normalize(partner.email or '') else False
             if not email:
-                project.message_post(body=_(
+                milestone.message_post(body=_(
                     "Milestone '%s' completed: no e-mail sent, the customer has "
                     "no e-mail address.", milestone.name))
                 continue
@@ -242,12 +242,12 @@ class ProjectCustomMilestone(models.Model):
                                   'auto_delete': False})
             except Exception as exc:  # noqa: BLE001 - never block the status change
                 _logger.exception("Milestone %s: completion e-mail failed", milestone.id)
-                project.message_post(body=_(
+                milestone.message_post(body=_(
                     "Milestone '%(name)s' completed: the customer e-mail could "
                     "not be prepared (%(error)s).",
                     name=milestone.name, error=str(exc) or exc.__class__.__name__))
                 continue
-            project.message_post(body=_(
+            milestone.message_post(body=_(
                 "Milestone '%(name)s' completed: e-mail sent to %(email)s.",
                 name=milestone.name, email=email))
 

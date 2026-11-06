@@ -5,3 +5,6 @@ access_amc_report_project_manager,AMC report project manager,model_ft_amc_monthl
 access_amc_report_line_manager,AMC report line manager,model_ft_amc_monthly_report_line,group_amc_manager,1,1,1,1
 access_amc_report_line_system,AMC report line administrator,model_ft_amc_monthly_report_line,base.group_system,1,1,1,1
 access_amc_report_line_project_manager,AMC report line project manager,model_ft_amc_monthly_report_line,project.group_project_manager,1,1,1,1
+access_amc_report_generate_wizard_manager,AMC report generate wizard manager,model_ft_amc_report_generate_wizard,group_amc_manager,1,1,1,1
+access_amc_report_generate_wizard_system,AMC report generate wizard administrator,model_ft_amc_report_generate_wizard,base.group_system,1,1,1,1
+access_amc_report_generate_wizard_project_manager,AMC report generate wizard project manager,model_ft_amc_report_generate_wizard,project.group_project_manager,1,1,1,1

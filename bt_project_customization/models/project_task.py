@@ -423,7 +423,10 @@ class ProjectTask(models.Model):
         # Only a Technical Lead, Project Manager or Project Coordinator may
         # create tasks. Superuser and system administrators bypass the check so
         # data imports, automation and mail-to-task keep working.
-        self._check_task_create_permission()
+        # Exception: an Internal Call may be created by ANYONE, so the check
+        # runs below, once each task's type is known, and only when the batch
+        # holds something other than an Internal Call.
+        needs_create_permission = False
         # Same-day task types (everything but User Story and Testing) default
         # their Deadline to today 23:59:59 local. Copies, so the caller's dicts
         # are not mutated behind its back.
@@ -437,11 +440,20 @@ class ProjectTask(models.Model):
                     default_type = self.default_get(['task_type']).get(
                         'task_type') or False
                 task_type = default_type
+            if task_type != 'internal_call':
+                needs_create_permission = True
             if (not vals.get('date_deadline')
                     and self._ft_requires_same_day_deadline(task_type)):
                 vals['date_deadline'] = self._ft_today_end_utc()
+        if needs_create_permission:
+            self._check_task_create_permission()
         tasks = super().create(vals_list)
-        tasks._check_planned_creation_permission()
+        # Internal Calls are exempt here too: they usually land in the first
+        # (Planned) stage, and holding them to the Planned rule would undo
+        # "anyone can create an Internal Call".
+        tasks.filtered(
+            lambda task: task.task_type != 'internal_call'
+        )._check_planned_creation_permission()
         tasks._check_task_source_rules()
         # Create-only, unlike the rules above it. See the method's docstring.
         tasks._check_task_source_required()
@@ -505,6 +517,18 @@ class ProjectTask(models.Model):
                 task.sudo().write(vals)
 
     def write(self, vals):
+        # "Anyone can create an Internal Call" must not become "anyone can
+        # create any task": a user who may not create tasks cannot turn an
+        # Internal Call into another Task Type afterwards.
+        if (vals.get('task_type', 'internal_call') != 'internal_call'
+                and not self._ft_can_create_any_task()
+                and self.filtered(
+                    lambda task: task.task_type == 'internal_call')):
+            raise UserError(_(
+                "You are not allowed to change the Task Type of an Internal "
+                "Call. Only a Technical Lead, Project Manager, Project "
+                "Coordinator or Digital Marketing Manager can do that."
+            ))
         # Same-day Deadline lock and Task Type change rules. First, before the
         # generic deadline checks below, so a locked same-day deadline is
         # refused with its own message rather than a "must be future" one.
@@ -1474,15 +1498,19 @@ class ProjectTask(models.Model):
                     "Coordinator can change the status of a User Story."
                 ))
 
-    def _check_task_create_permission(self):
+    def _ft_can_create_any_task(self):
+        """Whether the current user may create tasks of every Task Type."""
         if self.env.su or self.env.user.has_group('base.group_system'):
-            return
+            return True
         employee = self.env.user.employee_id
         job_name = (
             (employee.sudo().job_id.name or '').strip().lower()
             if employee else ''
         )
-        if job_name not in TASK_CREATE_JOBS:
+        return job_name in TASK_CREATE_JOBS
+
+    def _check_task_create_permission(self):
+        if not self._ft_can_create_any_task():
             raise UserError(_(
                 "You are not allowed to create tasks. Only a Technical Lead, "
                 "Project Manager, Project Coordinator or Digital Marketing Manager can create tasks."
