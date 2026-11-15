@@ -1,7 +1,10 @@
 // Evidence Description: render pasted images as small clickable icons rather
 // than full-size inline pictures. Scoped to the evidence_description field so
-// no other html field is affected.
-.o_field_widget[name='evidence_description'] {
+// no other html field is affected - plus the Reason for Reopen editors, which
+// opt in with the qa_reopen_reason_editor class (the bug's inline
+// latest_reopen_reason and the entry form's reason).
+.o_field_widget[name='evidence_description'],
+.o_field_widget.qa_reopen_reason_editor {
     // Nothing in the chain from the field down to the editor declares a width,
     // so each level shrank to its content and the box rendered as a tall, thin
     // strip. The width has to be handed down explicitly at every level for the

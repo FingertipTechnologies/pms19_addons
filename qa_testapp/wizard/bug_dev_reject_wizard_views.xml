@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_qa_bug_dev_reject_wizard_form" model="ir.ui.view">
+        <field name="name">qa_testapp.bug_dev_reject_wizard.form</field>
+        <field name="model">qa_testapp.bug_dev_reject_wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Bug">
+                <group>
+                    <field name="ticket_ids" widget="many2many_tags" readonly="1"/>
+                    <field name="reason" placeholder="Why is this bug rejected? (e.g. works as designed, not a bug, out of scope)"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Reject" class="btn-danger"/>
+                    <button special="cancel" string="Cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

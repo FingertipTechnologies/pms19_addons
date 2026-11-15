@@ -10,8 +10,10 @@ access_asset_maintenance_manager,asset.maintenance manager,model_asset_maintenan
 access_expense_category_user,expense.category user,model_expense_category,group_expense_user,1,0,0,0
 access_expense_category_manager,expense.category manager,model_expense_category,group_expense_manager,1,1,1,1
 access_employee_expense_claim_user,employee.expense.claim user,model_employee_expense_claim,group_expense_user,1,1,1,1
+access_employee_expense_claim_hr,employee.expense.claim hr,model_employee_expense_claim,hr.group_hr_user,1,1,1,1
 access_employee_expense_claim_manager,employee.expense.claim manager,model_employee_expense_claim,group_expense_manager,1,1,1,1
 access_employee_expense_line_user,employee.expense.line user,model_employee_expense_line,group_expense_user,1,1,1,1
+access_employee_expense_line_hr,employee.expense.line hr,model_employee_expense_line,hr.group_hr_user,1,1,1,1
 access_employee_expense_line_manager,employee.expense.line manager,model_employee_expense_line,group_expense_manager,1,1,1,1
 access_employee_advance_user,employee.advance user,model_employee_advance,group_expense_user,1,0,0,0
 access_employee_advance_manager,employee.advance manager,model_employee_advance,group_expense_manager,1,1,1,1
@@ -27,3 +29,6 @@ access_recruitment_offer_user,recruitment.offer user,model_recruitment_offer,gro
 access_recruitment_offer_manager,recruitment.offer manager,model_recruitment_offer,group_recruitment_manager,1,1,1,1
 access_employee_onboarding_user,employee.onboarding user,model_employee_onboarding,group_recruitment_user,1,1,1,0
 access_employee_onboarding_manager,employee.onboarding manager,model_employee_onboarding,group_recruitment_manager,1,1,1,1
+access_employee_expense_claim_reject_manager,employee.expense.claim.reject manager,model_employee_expense_claim_reject,group_expense_manager,1,1,1,1
+access_employee_expense_claim_reject_hr,employee.expense.claim.reject hr,model_employee_expense_claim_reject,hr.group_hr_user,1,1,1,1
+access_employee_expense_claim_reject_admin,employee.expense.claim.reject admin,model_employee_expense_claim_reject,base.group_system,1,1,1,1

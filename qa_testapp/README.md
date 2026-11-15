@@ -24,6 +24,10 @@ A comprehensive Quality Assurance suite for Odoo 18 covering:
 - Auto Bug ID, Title/Summary, Description, Steps to Reproduce, Expected/Actual Result
 - Severity, Priority, Status, Reproducibility, Device, Environment, Project/ORG, Reporter & Date, Evidence (notes & attachments), Related test case
 - Uses Odoo Chatter for notes & attachments
+- Reason for Reopen tab: each press of Re-Open creates a "Reopen N" entry (N = the bug's
+  reopen count) with the same rich text + attachments as the Evidence tab (typed reason,
+  pasted screenshots, uploaded files / screen recordings). The latest entry is edited inline;
+  earlier entries are listed read-only and kept as history (enforced server-side).
 
 ## Installation
 

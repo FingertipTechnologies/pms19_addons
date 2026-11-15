@@ -11,3 +11,5 @@ access_qa_ticket_senior,QA Ticket Senior QA,model_qa_testapp_ticket,qa_testapp.g
 access_qa_test_case_senior,QA Test Case Senior QA,model_qa_testapp_test_case,qa_testapp.group_qa_senior,1,1,1,0
 access_qa_bulk_approve_wizard,QA Bulk Approve Wizard,model_qa_testapp_bulk_approve_wizard,base.group_user,1,1,1,1
 access_qa_resource_url_user,QA Reference URL,model_qa_testapp_resource_url,base.group_user,1,1,1,1
+access_qa_bug_dev_reject_wizard,QA Bug Dev Reject Wizard,model_qa_testapp_bug_dev_reject_wizard,base.group_user,1,1,1,1
+access_qa_bug_reopen_reason_user,QA Bug Reopen Reason,model_qa_testapp_bug_reopen_reason,base.group_user,1,1,1,1

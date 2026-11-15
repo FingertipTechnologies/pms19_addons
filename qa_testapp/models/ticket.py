@@ -75,7 +75,12 @@ class QATicket(models.Model):
         ('in_progress', 'In Progress'),
         ('fixed', 'Fixed'),
         ('closed', 'Closed'),
-        ('reopened', 'Re-Opened')
+        ('reopened', 'Re-Opened'),
+        # Developer resolutions (set with the header buttons; Rejected asks
+        # for a reason). QA closes or re-opens them like a Fixed bug.
+        ('rejected', 'Rejected'),
+        ('unable_to_reproduce', 'Unable to Reproduce'),
+        ('duplicate', 'Duplicate'),
     ], string='Status', default='open', tracking=True)
     reproducibility = fields.Selection([
         ('always', 'Always'),
@@ -114,6 +119,33 @@ class QATicket(models.Model):
         readonly=True, copy=False, tracking=True,
         help='Number of times this bug has been re-opened.',
     )
+    # One "Reason for Reopen" entry per press of Re-Open, numbered from
+    # reopen_count ("Reopen 1", "Reopen 2", ...) - no second counter. Only the
+    # entry of the current count is editable; see models/bug_reopen_reason.py.
+    reopen_reason_ids = fields.One2many(
+        'qa_testapp.bug_reopen_reason', 'ticket_id',
+        string='Reasons for Reopen', copy=False,
+    )
+    latest_reopen_reason_id = fields.Many2one(
+        'qa_testapp.bug_reopen_reason', string='Current Reopen Entry',
+        compute='_compute_latest_reopen_reason_id', store=True, copy=False,
+        help='The entry created by the most recent Re-Open: the only one still editable. '
+             'Stored: the inline Reason for Reopen proxies are related through it and '
+             'the ORM must be able to search tickets by it.',
+    )
+    # Writable proxies so the Reason for Reopen tab edits the latest entry
+    # inline with the very same widgets as the Evidence tab (qa_evidence_html /
+    # qa_evidence_files) instead of through a dialog. Writing them writes the
+    # entry itself - through its own write(), so its read-only guard applies.
+    # Older entries are only reachable read-only, through reopen_reason_ids.
+    latest_reopen_reason = fields.Html(
+        related='latest_reopen_reason_id.reason', readonly=False,
+        string='Reason for Reopen',
+    )
+    latest_reopen_attachment_ids = fields.Many2many(
+        related='latest_reopen_reason_id.attachment_ids', readonly=False,
+        string='Reopen Attachments',
+    )
     escalation_level = fields.Selection([
         ('none', 'None'),
         ('qa_lead', 'QA Lead'),
@@ -146,6 +178,31 @@ class QATicket(models.Model):
         help="Set when the creator clicks Edit to change a record that is "
              "still pending approval. Only the creator can unlock it.",
     )
+
+    dev_rejection_reason = fields.Text(
+        string='Developer Rejection Reason', copy=False, readonly=True, tracking=True,
+        help="Why the developer rejected the bug (status Rejected). Distinct from "
+             "the PM's approval rejection_reason.",
+    )
+
+    is_dev_user = fields.Boolean(
+        string='Current User Is Developer', compute='_compute_is_dev_user',
+        help="The current user is the bug's assignee (developer) and not a "
+             "Junior / Senior QA: only they see Rejected / Unable to Reproduce / Duplicate.")
+
+    @api.depends('assignee_id')
+    @api.depends_context('uid')
+    def _compute_is_dev_user(self):
+        is_qa = self._is_junior_qa() or self._is_senior_qa() \
+            or self.env.user.has_group('qa_testapp.group_qa_bug_only')
+        for rec in self:
+            rec.is_dev_user = bool(rec.assignee_id) and rec.assignee_id == self.env.user and not is_qa
+
+    @api.depends('reopen_count', 'reopen_reason_ids.number')
+    def _compute_latest_reopen_reason_id(self):
+        for rec in self:
+            rec.latest_reopen_reason_id = rec.reopen_reason_ids.filtered(
+                lambda r: r.number == rec.reopen_count)[:1]
 
     @api.depends('project_id', 'project_id.user_id')
     def _compute_approver_id(self):
@@ -219,6 +276,34 @@ class QATicket(models.Model):
             self.is_client = False
             self.reporter_id = self.env.user
 
+    can_manage_bug_reopen = fields.Boolean(
+        compute='_compute_can_manage_bug_reopen',
+    )
+
+    def _can_manage_bug_reopen(self):
+        user = self.env.user
+
+        if user.has_group('qa_testapp.group_qa_bug_only'):
+            return False
+
+        return (
+            user.has_group('qa_testapp.group_qa_junior')
+            or user.has_group('qa_testapp.group_qa_senior')
+        )
+
+    def _check_qa_bug_action(self):
+        if not self._can_manage_bug_reopen():
+            raise UserError(
+                "Only internal Junior QA or Senior QA can close or "
+                "reopen bugs and modify reopen reasons."
+            )
+
+    @api.depends_context('uid')
+    def _compute_can_manage_bug_reopen(self):
+        allowed = self._can_manage_bug_reopen()
+        for record in self:
+            record.can_manage_bug_reopen = allowed
+
     def action_in_progress(self):
         self.write({'status': 'in_progress'})
 
@@ -226,13 +311,86 @@ class QATicket(models.Model):
         self.write({'status': 'fixed'})
 
     def action_closed(self):
+        self._check_qa_bug_action()
         self.write({'status': 'closed'})
 
+    # Developer resolutions -------------------------------------------
+    DEV_RESOLUTION_FROM = ('open', 'in_progress', 'reopened')
+
+    def _check_dev_resolution_allowed(self):
+        for rec in self:
+            if not rec.is_dev_user and not self.env.user.has_group('base.group_system'):
+                raise UserError(
+                    "Only the developer assigned to bug %s can reject it or mark it "
+                    "Unable to Reproduce / Duplicate." % (rec.bug_id or '',)
+                )
+            if rec.status not in self.DEV_RESOLUTION_FROM:
+                raise UserError(
+                    "Bug %s is %s: only an Open, In Progress or Re-Opened bug can be "
+                    "rejected, marked Unable to Reproduce or Duplicate." % (
+                        rec.bug_id or '', dict(rec._fields['status'].selection).get(rec.status, rec.status),
+                    )
+                )
+
+    def action_dev_reject(self, reason=None):
+        reason = (reason or '').strip()
+        if not reason:
+            raise UserError("A reason is required to reject a bug.")
+        self._check_dev_resolution_allowed()
+        for rec in self:
+            rec.write({'status': 'rejected', 'dev_rejection_reason': reason})
+            rec.message_post(body="Bug rejected by %s. Reason: %s" % (self.env.user.name, reason))
+
+    def action_dev_reject_open_wizard(self):
+        self.ensure_one()
+        self._check_dev_resolution_allowed()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Reject Bug',
+            'res_model': 'qa_testapp.bug_dev_reject_wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'active_model': 'qa_testapp.ticket', 'active_ids': self.ids},
+        }
+
+    def action_unable_to_reproduce(self):
+        self._check_dev_resolution_allowed()
+        self.write({'status': 'unable_to_reproduce'})
+        for rec in self:
+            rec.message_post(body="Marked Unable to Reproduce by %s." % self.env.user.name)
+
+    def action_duplicate(self):
+        self._check_dev_resolution_allowed()
+        self.write({'status': 'duplicate'})
+        for rec in self:
+            rec.message_post(body="Marked Duplicate by %s." % self.env.user.name)
+
     def action_reopen(self):
+        self._check_qa_bug_action()
         for ticket in self:
             new_count = ticket.reopen_count + 1
-            ticket.write({'status': 'reopened', 'reopen_count': new_count})
+            ticket.write({'status': 'reopened', 'reopen_count': new_count,
+                          'dev_rejection_reason': False})
+            # The "Reason for Reopen" entry takes the count just written
+            # ("Reopen <new_count>"); created after the write so a bug that
+            # may not change status (pending approval / rejected) gets no
+            # stray entry.
+            ticket._create_reopen_reason_entry(new_count)
             ticket._escalate_on_reopen()
+
+    def _create_reopen_reason_entry(self, number):
+        """Create the empty "Reopen <number>" entry the tester then fills in
+        (typed reason, pasted screenshots, uploaded files) on the Reason for
+        Reopen tab. Runs as the user pressing Re-Open: whoever may write the
+        bug may create and edit its latest entry (record rules mirror the
+        bug's)."""
+        self.ensure_one()
+        return self.env['qa_testapp.bug_reopen_reason'].create({
+            'ticket_id': self.id,
+            'number': number,
+            'reopened_by': self.env.user.id,
+            'reopened_on': fields.Datetime.now(),
+        })
 
     def _escalate_on_reopen(self):
         """Hierarchy-based escalation driven by reopen_count.
@@ -324,6 +482,15 @@ class QATicket(models.Model):
     def create(self, vals_list):
         junior = self._is_junior_qa()
         for vals in vals_list:
+            if (
+                vals.get('status') in ('closed', 'reopened')
+                or vals.get('reopen_count')
+                or vals.get('reopen_reason_ids')
+                or vals.get('latest_reopen_reason_id')
+                or vals.get('latest_reopen_reason')
+                or vals.get('latest_reopen_attachment_ids')
+            ):
+                self._check_qa_bug_action()
             if vals.get('bug_id', 'New') == 'New':
                 vals['bug_id'] = self.env['ir.sequence'].next_by_code('qa_testapp.ticket') or 'New'
             if junior:
@@ -340,6 +507,19 @@ class QATicket(models.Model):
         return records
 
     def write(self, vals):
+        protected_fields = {
+            'reopen_count',
+            'reopen_reason_ids',
+            'latest_reopen_reason_id',
+            'latest_reopen_reason',
+            'latest_reopen_attachment_ids',
+        }
+
+        if (
+            vals.get('status') in ('closed', 'reopened')
+            or protected_fields.intersection(vals)
+        ):
+            self._check_qa_bug_action()
         WORKING_STATUS_FIELDS = {'status', 'reopen_count', 'escalation_level'}
         if vals.keys() & WORKING_STATUS_FIELDS:
             for rec in self:

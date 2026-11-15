@@ -53,6 +53,9 @@ class QABugAnalysis(models.Model):
         ('fixed', 'Fixed'),
         ('closed', 'Closed'),
         ('reopened', 'Re-Opened'),
+        ('rejected', 'Rejected'),
+        ('unable_to_reproduce', 'Unable to Reproduce'),
+        ('duplicate', 'Duplicate'),
     ], string='Status', readonly=True)
     environment = fields.Selection([
         ('sandbox', 'Sandbox'),

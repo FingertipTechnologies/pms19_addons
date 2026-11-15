@@ -76,6 +76,15 @@ class EmployeeExpenseLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            claim_id = (
+                vals.get('expense_claim')
+                or self.env.context.get('default_expense_claim')
+            )
+            if claim_id:
+                self.env['employee.expense.claim'].browse(
+                    claim_id
+                )._check_paid_claim_locked()
         is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
         if not is_manager:
             for vals in vals_list:
@@ -89,6 +98,12 @@ class EmployeeExpenseLine(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        self.mapped('expense_claim')._check_paid_claim_locked()
+
+        if vals.get('expense_claim'):
+            self.env['employee.expense.claim'].browse(
+                vals['expense_claim']
+            )._check_paid_claim_locked()
         is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
         if not is_manager:
             for line in self:
@@ -99,6 +114,7 @@ class EmployeeExpenseLine(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        self.mapped('expense_claim')._check_paid_claim_locked()
         is_manager = self.env.user.has_group('general.group_expense_manager') or self.env.is_admin() or self.env.su
         if not is_manager:
             for line in self:

@@ -1,7 +1,7 @@
 from odoo import api, fields, models
 
 # AMC projects are recognised by ft_project_type alone, never by stage: AMC
-# and General projects share one stage ('Working (AMC/General)'), so no stage
+# and General projects share one stage ('Working'), so no stage
 # test can tell them apart. Imported from ft_project_dashboard rather than
 # restated so the two boards can never disagree about what "AMC" means.
 from odoo.addons.ft_project_dashboard.models.project_dashboard import (

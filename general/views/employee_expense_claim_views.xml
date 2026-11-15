@@ -59,7 +59,7 @@
     </record>
 
     <!-- ============================================================
-         Expense Claim — header
+         Expense Claim — list
          ============================================================ -->
     <record id="view_employee_expense_claim_list" model="ir.ui.view">
         <field name="name">employee.expense.claim.list</field>
@@ -70,16 +70,45 @@
                   decoration-success="approval_status in ('approved','paid')"
                   decoration-danger="approval_status=='rejected'"
                   decoration-muted="approval_status=='draft'">
+                <!-- Bulk buttons: shown at the top of the list once records are
+                     selected (admin / HR / expense manager only). Rows not in an
+                     eligible status are skipped silently (bulk=True).
+                     ft_claim_can_approve / ft_claim_can_pay are computed over the
+                     selected rows by static/src/js/expense_claim_list_header.js:
+                     Approve shows while a selected claim is not yet approved
+                     (draft / submitted), Mark as Paid while one is not yet paid
+                     (and not rejected). Both hide on approved+paid selections.
+                     Each row's flag is the computed field of the same name. -->
+                <header>
+                    <button name="action_bulk_approve" type="object"
+                            string="Approve Claims" class="btn-success"
+                            invisible="not ft_claim_can_approve"
+                            groups="general.group_expense_manager,hr.group_hr_user,base.group_system"/>
+                    <button name="action_bulk_paid" type="object"
+                            string="Mark Claims as Paid" class="btn-primary"
+                            invisible="not ft_claim_can_pay"
+                            groups="general.group_expense_manager,hr.group_hr_user,base.group_system"/>
+                </header>
+                <!-- Technical names used by the header buttons' invisible;
+                     the JS patch replaces them with the selection summary. -->
+                <field name="ft_claim_can_approve" column_invisible="1"/>
+                <field name="ft_claim_can_pay" column_invisible="1"/>
                 <field name="claim_number"/>
                 <field name="employee"/>
                 <field name="department"/>
                 <field name="claim_date"/>
                 <field name="total_amount"/>
+                <field name="advance_paid" optional="hide"/>
+                <field name="balance_with_employee" optional="hide"/>
+                <field name="amount_to_be_paid" optional="hide"/>
                 <field name="approved_amount" optional="hide"/>
                 <field name="paid_amount" optional="hide"/>
+                <field name="advance_used" optional="hide"/>
+                <field name="advance_id" optional="hide"/>
                 <field name="currency_id" invisible="1"/>
                 <field name="approval_status" widget="badge"/>
                 <field name="payment_status" widget="badge"/>
+                <field name="rejection_reason" optional="hide"/>
             </list>
         </field>
     </record>
@@ -92,11 +121,20 @@
                 <header>
                     <button name="action_submit" string="Submit" type="object" class="btn-primary"
                             invisible="approval_status != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-success"
+                            invisible="not is_approver or not ft_claim_can_approve"/>
+                    <button name="action_paid" string="Paid" type="object" class="btn-primary"
+                            invisible="not is_approver or not ft_claim_can_pay"/>
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger"
+                            invisible="not is_approver or approval_status not in ('draft','submitted','approved')"/>
                     <field name="approval_status" widget="statusbar"
-                           statusbar_visible="draft,submitted,approved,paid"/>
+                        statusbar_visible="draft,submitted,approved,paid"
+                        readonly="1"/>
                 </header>
                 <sheet>
                     <field name="is_approver" invisible="1"/>
+                    <field name="ft_claim_can_approve" invisible="1"/>
+                    <field name="ft_claim_can_pay" invisible="1"/>
                     <div class="oe_title">
                         <label for="claim_number"/>
                         <h1><field name="claim_number" readonly="1"/></h1>
@@ -106,7 +144,15 @@
                             <field name="employee" readonly="approval_status != 'draft' and not is_approver"/>
                             <field name="department" readonly="approval_status != 'draft' and not is_approver"/>
                             <field name="claim_date" readonly="approval_status != 'draft' and not is_approver"/>
+                            <field name="currency_id" invisible="1"/>
                             <field name="total_amount"/>
+                            <field name="advance_paid"
+                                readonly="payment_status == 'paid' or approval_status == 'paid' or (approval_status != 'draft' and not is_approver)"/>
+                            <field name="advance_id"
+                                readonly="payment_status == 'paid' or approval_status == 'paid' or (approval_status != 'draft' and not is_approver)"/>
+                            <field name="advance_used"/>
+                            <field name="balance_with_employee"/>
+                            <field name="amount_to_be_paid"/>
                         </group>
                         <group>
                             <field name="expense_period_from" readonly="approval_status != 'draft' and not is_approver"/>
@@ -119,8 +165,8 @@
                     <notebook>
                         <page string="Expense Lines" name="lines">
                             <field name="expense_line_ids"
-                                   context="{'default_expense_claim': id}"
-                                   readonly="approval_status != 'draft' and not is_approver">
+                                context="{'default_expense_claim': id}"
+                                readonly="payment_status == 'paid' or approval_status == 'paid' or (approval_status != 'draft' and not is_approver)">
                                 <list editable="bottom">
                                     <field name="expense_date"/>
                                     <field name="category"/>
@@ -133,21 +179,34 @@
                             </field>
                             <group class="oe_subtotal_footer">
                                 <field name="total_amount" widget="monetary"/>
+                                <field name="advance_paid" widget="monetary"
+                                    readonly="payment_status == 'paid' or approval_status == 'paid' or (approval_status != 'draft' and not is_approver)"/>
+                                <field name="advance_used" widget="monetary"/>
+                                <field name="balance_with_employee" widget="monetary"/>
+                                <field name="amount_to_be_paid" widget="monetary"/>
                             </group>
                         </page>
                         <page string="Approval &amp; Payment" name="approval">
                             <group>
                                 <group string="Approval">
-                                    <field name="approved_by" readonly="not is_approver"/>
-                                    <field name="approved_date" readonly="not is_approver"/>
-                                    <field name="approval_status" readonly="not is_approver"/>
-                                    <field name="approved_amount" readonly="not is_approver"/>
+                                    <field name="approved_by" readonly="not is_approver"
+                                           invisible="approval_status == 'rejected'"/>
+                                    <field name="approved_date" readonly="not is_approver"
+                                           invisible="approval_status == 'rejected'"/>
+                                    <field name="rejected_by" invisible="approval_status != 'rejected'"/>
+                                    <field name="rejected_date" invisible="approval_status != 'rejected'"/>
+                                    <field name="approval_status" readonly="1"/>
+                                    <field name="approved_amount"
+                                        readonly="payment_status == 'paid' or approval_status == 'paid' or not is_approver"/>
+                                    <field name="rejection_reason" invisible="approval_status != 'rejected'"/>
                                 </group>
                                 <group string="Payment">
-                                    <field name="payment_status" readonly="not is_approver"/>
-                                    <field name="paid_date" readonly="not is_approver"/>
+                                    <field name="payment_status" readonly="1"/>
+                                    <field name="paid_date"
+                                        readonly="payment_status == 'paid' or approval_status == 'paid' or not is_approver"/>
                                     <field name="payment_reference" readonly="not is_approver"/>
-                                    <field name="paid_amount" readonly="not is_approver"/>
+                                    <field name="paid_amount"
+                                        readonly="payment_status == 'paid' or approval_status == 'paid' or not is_approver"/>
                                 </group>
                             </group>
                         </page>
@@ -179,6 +238,8 @@
                         domain="[('approval_status','=','approved')]"/>
                 <filter name="paid" string="Paid"
                         domain="[('approval_status','=','paid')]"/>
+                <filter name="rejected" string="Rejected"
+                        domain="[('approval_status','=','rejected')]"/>
                 <separator/>
                 <filter name="unpaid" string="Unpaid"
                         domain="[('payment_status','=','unpaid')]"/>

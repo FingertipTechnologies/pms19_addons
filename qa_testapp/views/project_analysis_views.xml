@@ -53,6 +53,12 @@
                         domain="[('status', '=', 'closed')]"/>
                 <filter name="filter_reopened" string="Re-Opened"
                         domain="[('status', '=', 'reopened')]"/>
+                <filter name="filter_rejected_status" string="Rejected"
+                        domain="[('status', '=', 'rejected')]"/>
+                <filter name="filter_unable" string="Unable to Reproduce"
+                        domain="[('status', '=', 'unable_to_reproduce')]"/>
+                <filter name="filter_duplicate" string="Duplicate"
+                        domain="[('status', '=', 'duplicate')]"/>
                 <separator/>
 
                 <!-- Severity filters -->

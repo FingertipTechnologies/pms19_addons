@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class EmployeeAdvance(models.Model):
@@ -20,24 +21,28 @@ class EmployeeAdvance(models.Model):
         string="Advance Amount", required=True, tracking=True)
     purpose = fields.Text(string="Purpose", required=True)
 
+    # One advance, many claims. Adjusted Amount is what the linked claims
+    # actually used of it (each claim's Advance Used = min(total, advance
+    # paid), rejected claims count nothing), capped at the advance; the
+    # balance is what is still available for the employee's next claim.
+    claim_ids = fields.One2many(
+        'employee.expense.claim', 'advance_id',
+        string="Related Expense Claims",
+        help="Claims adjusted against this advance.")
+    claim_count = fields.Integer(compute='_compute_balance')
     adjusted_amount = fields.Monetary(
         string="Adjusted Amount", compute='_compute_balance', store=True)
     balance_amount = fields.Monetary(
         string="Balance Amount", compute='_compute_balance', store=True,
         tracking=True)
-
     status = fields.Selection(
         selection=[
             ('open', 'Open'),
             ('partially_adjusted', 'Partially Adjusted'),
             ('closed', 'Closed'),
         ],
-        string="Status", required=True, default='open', tracking=True)
-
-    related_expense_claim = fields.Many2one(
-        'employee.expense.claim',
-        string="Related Expense Claim",
-        help="Claim used for adjustment of this advance.")
+        string="Status", compute='_compute_balance', store=True,
+        tracking=True)
 
     currency_id = fields.Many2one(
         'res.currency', string='Currency',
@@ -60,22 +65,27 @@ class EmployeeAdvance(models.Model):
                     'pms.employee.advance') or _('New')
         return super().create(vals_list)
 
-    @api.depends('related_expense_claim.total_amount', 'advance_amount')
+    @api.depends('claim_ids.advance_used', 'advance_amount')
     def _compute_balance(self):
         for rec in self:
-            claim = rec.related_expense_claim
-            adjusted = claim.total_amount if claim else 0.0
-            rec.adjusted_amount = adjusted
-            rec.balance_amount = (rec.advance_amount or 0.0) - adjusted
-
-
-def _recompute_adjustment(self):
-        """Called by linked claims when paid; updates status."""
-        for rec in self:
-            rec._compute_balance()
-            if rec.balance_amount <= 0:
+            used = sum(rec.claim_ids.mapped('advance_used'))
+            advance = rec.advance_amount or 0.0
+            rec.claim_count = len(rec.claim_ids)
+            rec.adjusted_amount = min(used, advance)
+            rec.balance_amount = advance - rec.adjusted_amount
+            if advance and rec.balance_amount <= 0:
                 rec.status = 'closed'
             elif rec.adjusted_amount > 0:
                 rec.status = 'partially_adjusted'
             else:
                 rec.status = 'open'
+
+    @api.constrains('claim_ids', 'employee')
+    def _check_claims_employee(self):
+        for rec in self:
+            others = rec.claim_ids.filtered(lambda c: c.employee != rec.employee)
+            if others:
+                raise ValidationError(_(
+                    "Claim(s) %s belong to another employee and cannot be "
+                    "adjusted against this advance.",
+                    ', '.join(others.mapped('claim_number'))))

@@ -36,15 +36,35 @@
                             <field name="advance_date"/>
                             <field name="advance_amount"/>
                             <field name="currency_id" invisible="1"/>
-                            <field name="related_expense_claim"/>
+                            <field name="claim_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   domain="[('employee', '=', employee), ('approval_status', '!=', 'rejected'), ('advance_id', '=', False)]"
+                                   context="{'default_employee': employee, 'default_advance_id': id}"/>
                         </group>
                         <group>
                             <field name="adjusted_amount" readonly="1"/>
                             <field name="balance_amount" readonly="1"/>
-                             <field name="status"/>
+                            <field name="status"/>
                             <field name="purpose"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Claims" name="claims">
+                            <field name="claim_ids" readonly="1">
+                                <list>
+                                    <field name="claim_number"/>
+                                    <field name="claim_date"/>
+                                    <field name="total_amount" sum="Total"/>
+                                    <field name="advance_paid"/>
+                                    <field name="advance_used" sum="Used"/>
+                                    <field name="amount_to_be_paid"/>
+                                    <field name="approval_status" widget="badge"/>
+                                    <field name="payment_status" widget="badge"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>

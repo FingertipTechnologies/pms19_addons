@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Reason for Reopen entry.
+
+         Opened from the "All Reopen Entries" list on the bug form (read-only
+         there, as a history viewer: the latest entry is edited inline on the
+         bug's Reason for Reopen tab). The field-level readonly mirrors the
+         server rule in models/bug_reopen_reason.py - only the entry of the
+         bug's current reopen is editable - so the form is also correct when
+         reached on its own.
+
+         Same widgets as the bug's Evidence tab: qa_evidence_html for the
+         typed reason with pasted screenshots (click-to-preview) and
+         qa_evidence_files for uploaded files / screen recordings. -->
+    <record id="qa_testapp_view_bug_reopen_reason_form" model="ir.ui.view">
+        <field name="name">qa_testapp.bug_reopen_reason.form</field>
+        <field name="model">qa_testapp.bug_reopen_reason</field>
+        <field name="arch" type="xml">
+            <form class="qa_reopen_reason_form">
+                <sheet>
+                    <field name="can_manage_bug_reopen" invisible="1"/>
+                    <field name="is_latest" invisible="1"/>
+                    <div class="alert alert-secondary" role="alert" invisible="is_latest">
+                        This entry is read-only: the bug has been re-opened again since.
+                        Only the latest entry can be edited.
+                    </div>
+                    <div class="oe_title">
+                        <h2><field name="name" readonly="1"/></h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="ticket_id" readonly="1" options="{'no_open': True}"/>
+                            <!-- <field name="is_latest" readonly="1"/> -->
+                        </group>
+                        <group>
+                            <field name="reopened_by" readonly="1" widget="many2one_avatar_user"/>
+                            <field name="reopened_on" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="Reason (text and pasted screenshots)"/>
+                    <field name="reason" widget="qa_evidence_html" nolabel="1"
+                           class="qa_reopen_reason_editor"
+                           readonly="not is_latest or not can_manage_bug_reopen"
+                           options="{'height': 200}"
+                           placeholder="Why is this bug being re-opened? Paste screenshots directly here."/>
+                    <separator string="Attachments"/>
+                    <field name="attachment_ids" widget="qa_evidence_files" nolabel="1"
+                           readonly="not is_latest or not can_manage_bug_reopen"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="qa_testapp_view_bug_reopen_reason_list" model="ir.ui.view">
+        <field name="name">qa_testapp.bug_reopen_reason.list</field>
+        <field name="model">qa_testapp.bug_reopen_reason</field>
+        <field name="arch" type="xml">
+            <!-- Entries are created by the bug's Re-Open button only. -->
+            <list create="0" delete="0"
+                  decoration-bf="is_latest" decoration-muted="not is_latest">
+                <field name="ticket_id"/>
+                <field name="name"/>
+                <field name="reopened_by" widget="many2one_avatar_user"/>
+                <field name="reopened_on"/>
+                <field name="attachment_count"/>
+                <!-- <field name="is_latest"/> -->
+            </list>
+        </field>
+    </record>
+</odoo>
