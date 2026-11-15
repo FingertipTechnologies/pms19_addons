@@ -1,0 +1,32 @@
+// Challenges is mandatory: the HTML editor has no .o_input, so core's
+// invalid-field styling never reaches it. Outline the editor like any other
+// required field (always a light border, red once the save was refused).
+.o_form_view .o_ft_review_challenges {
+    .o_field_html {
+        border: 1px solid var(--border-color, #dee2e6);
+        border-radius: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        min-height: 6rem;
+    }
+    .o_field_html.o_field_invalid {
+        border-color: var(--danger, #dc3545);
+        background-color: rgba(220, 53, 69, 0.06);
+    }
+    .o_field_invalid ~ *, &:has(.o_field_invalid) .o_form_label {
+        color: var(--danger, #dc3545);
+    }
+}
+/* Remove the inner input underline in Challenges only. */
+.o_form_view .o_ft_review_challenges .o_field_html {
+    .o_input,
+    .odoo-editor-editable {
+        border-bottom: none !important;
+        box-shadow: none !important;
+
+        &:focus,
+        &:focus-visible {
+            border-bottom: none !important;
+            box-shadow: none !important;
+        }
+    }
+}

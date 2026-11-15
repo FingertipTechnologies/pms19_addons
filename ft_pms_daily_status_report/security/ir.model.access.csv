@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_daily_report_log_user,PMS daily report log user,model_ft_pms_daily_report_log,project.group_project_user,1,0,0,0
+access_daily_report_log_manager,PMS daily report log manager,model_ft_pms_daily_report_log,project.group_project_manager,1,1,1,1
+access_daily_report_wizard_manager,PMS daily report wizard manager,model_ft_pms_daily_report_wizard,project.group_project_manager,1,1,1,1

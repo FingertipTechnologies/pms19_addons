@@ -140,7 +140,21 @@
     # Request 360 Feedback wizard and button, the Peer / 360 Rating column,
     # the 360 tab on the assessment, its three mail templates, the reminder
     # cron and its access rights and record rules.
-    'version': '19.0.1.7.1',
+    # 19.0.1.8.0 adds the Monthly Review: the manager's spreadsheet of
+    # Manager / Resource / Improvements, one row per resource per month,
+    # kept month after month (ft.competency.monthly.review). The month is
+    # stored as its first day, so a resource has at most one review a month;
+    # the manager defaults to the resource's manager. Under Development next
+    # to Development Plans for Department Managers and HR (list grouped by
+    # manager, filtered to this month), and My Monthly Reviews under My
+    # Competency for the resource, who can read the ones about them and
+    # nothing else. A manager writes the reviews they are the manager of,
+    # their direct reports' and their department's; HR everything.
+    #   Pre-migration adopts master data rows (levels by rating, categories
+    # by name, competencies by code) that exist without their xmlid, so the
+    # noupdate data file no longer tries to re-create them (staging failed
+    # on the duplicate category 'Leadership').
+    'version': '19.0.1.8.0',
     'category': 'Human Resources',
     'summary': 'Competency framework, role mapping, assessments, gaps and development plans',
     'description': """
@@ -207,6 +221,7 @@ are written to the employee skills of the Community ``hr_skills`` module.
         'views/competency_assessment_views.xml',
         'views/competency_profile_views.xml',
         'views/development_plan_views.xml',
+        'views/competency_monthly_review_views.xml',
         'views/hr_employee_views.xml',
         'views/appraisal_goal_views.xml',
         'views/competency_menus.xml',

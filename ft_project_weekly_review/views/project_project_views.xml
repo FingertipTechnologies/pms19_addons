@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- "Review" tab on the project form. The editable block is shown only
+             to Technical Architect / Delivery Head; everybody else gets the
+             same list read-only (and the access rights / record rule enforce
+             that on the server). -->
+        <record id="view_project_form_weekly_review" model="ir.ui.view">
+            <field name="name">project.project.form.weekly.review</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.edit_project"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page[@name='settings']" position="before">
+                    <page name="ft_weekly_review" string="Review">
+                        <field name="ft_weekly_review_ids"
+                               groups="ft_project_stage_dates.group_technical_architect,ft_project_weekly_review.group_delivery_head"
+                               context="{'default_project_id': id}">
+                            <list default_order="week_start desc, id desc">
+                                <field name="week_label"/>
+                                <field name="reviewer_id"/>
+                                <field name="last_updated"/>
+                            </list>
+                        </field>
+                        <field name="ft_weekly_review_ids"
+                               groups="!ft_project_stage_dates.group_technical_architect,!ft_project_weekly_review.group_delivery_head"
+                               readonly="1">
+                            <list default_order="week_start desc, id desc" create="0" edit="0" delete="0">
+                                <field name="week_label"/>
+                                <field name="reviewer_id"/>
+                                <field name="last_updated"/>
+                            </list>
+                        </field>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

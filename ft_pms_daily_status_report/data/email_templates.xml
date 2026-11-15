@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Body of the daily e-mail, rendered by ir.qweb with the payload of
+         ft.pms.daily.report._build_payloads (one per recipient). Inline
+         styles only: mail clients drop stylesheets. -->
+    <template id="email_body" name="PMS Daily Status Report Email">
+        <t t-set="th_style" t-value="'padding:6px 8px;border:1px solid #d0d0d0;background:#f2f2f2;text-align:left;font-size:13px;white-space:nowrap;'"/>
+        <t t-set="td_style" t-value="'padding:6px 8px;border:1px solid #d0d0d0;font-size:13px;vertical-align:top;'"/>
+        <t t-set="num_style" t-value="'padding:6px 8px;border:1px solid #d0d0d0;font-size:13px;text-align:right;vertical-align:top;'"/>
+        <t t-set="red_row" t-value="'background:#fdecea;'"/>
+        <t t-set="red_text" t-value="'color:#b00020;font-weight:bold;'"/>
+        <div style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#333333;">
+            <p style="margin:0 0 12px 0;">Dear <t t-out="user_name"/>,</p>
+            <p style="margin:0 0 16px 0;">
+                Here is your daily project status report for <b t-out="date_str"/>.
+                It covers the projects where you are the Project Manager or the Technical Lead.
+                Overdue items are highlighted in <span style="color:#b00020;font-weight:bold;">red</span>.
+            </p>
+
+            <!-- ============ Implementation (omitted when the recipient has none) ============ -->
+            <t t-if="implementation['rows']">
+            <h3 style="margin:20px 0 8px 0;font-size:16px;color:#1f3a93;border-bottom:2px solid #1f3a93;padding-bottom:4px;">Implementation Projects</h3>
+            <p style="margin:0 0 10px 0;">
+                <b t-out="implementation['count']"/> project(s) in progress,
+                <span t-att-style="red_text if implementation['overdue_count'] else ''"><t t-out="implementation['overdue_count']"/> overdue</span>,
+                <span t-att-style="red_text if implementation['overdue_days'] else ''"><t t-out="implementation['overdue_days']"/> overdue day(s)</span> in total.
+            </p>
+            <p t-if="implementation['attach']" style="margin:0 0 12px 0;">
+                The table has <t t-out="implementation['count']"/> rows (more than <t t-out="row_limit"/>), so it is attached as an Excel file.
+                <t t-if="implementation['overdue_count']">
+                    <br/>Overdue projects:
+                    <t t-foreach="[r for r in implementation['rows'] if r['is_overdue']]" t-as="row">
+                        <a t-att-href="row['url']" t-att-style="red_text" t-out="row['name']"/> (<t t-out="row['total_overdue_days']"/>d)<t t-if="not row_last">, </t>
+                    </t>
+                </t>
+            </p>
+            <table t-else="" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;margin:0 0 16px 0;">
+                <tr>
+                    <th t-att-style="th_style">Project</th>
+                    <th t-att-style="th_style">Project Manager</th>
+                    <th t-att-style="th_style">Technical Lead</th>
+                    <th t-att-style="th_style">Current Stage</th>
+                    <th t-att-style="th_style">Days Worked</th>
+                    <th t-att-style="th_style">Overdue Days</th>
+                    <th t-att-style="th_style">Overdue Stages</th>
+                </tr>
+                <tr t-foreach="implementation['rows']" t-as="row" t-att-style="red_row if row['is_overdue'] else ''">
+                    <td t-att-style="td_style"><a t-att-href="row['url']" style="color:#1f3a93;" t-out="row['name']"/></td>
+                    <td t-att-style="td_style" t-out="row['manager'] or '-'"/>
+                    <td t-att-style="td_style" t-out="row['tech_lead'] or '-'"/>
+                    <td t-att-style="td_style" t-out="row['current_stage'] or '-'"/>
+                    <td t-att-style="num_style" t-out="row['total_days_worked']"/>
+                    <td t-att-style="num_style + (red_text if row['is_overdue'] else '')" t-out="row['total_overdue_days']"/>
+                    <td t-att-style="td_style + (red_text if row['is_overdue'] else '')" t-out="row['overdue_stages'] or '-'"/>
+                </tr>
+            </table>
+
+            </t>
+
+            <!-- ============ AMC (omitted when the recipient has none) ============ -->
+            <t t-if="amc['rows']">
+            <h3 style="margin:20px 0 8px 0;font-size:16px;color:#1f3a93;border-bottom:2px solid #1f3a93;padding-bottom:4px;">AMC Tasks</h3>
+            <p style="margin:0 0 10px 0;">
+                <b t-out="amc['count']"/> open task(s) in <t t-out="amc['project_count']"/> AMC project(s),
+                <span t-att-style="red_text if amc['overdue_count'] else ''"><t t-out="amc['overdue_count']"/> overdue</span>,
+                <span t-att-style="red_text if amc['overdue_days'] else ''"><t t-out="amc['overdue_days']"/> overdue day(s)</span> in total.
+            </p>
+            <p t-if="amc['attach']" style="margin:0 0 12px 0;">
+                The table has <t t-out="amc['count']"/> rows (more than <t t-out="row_limit"/>), so it is attached as an Excel file.
+                <t t-if="amc['overdue_count']">
+                    <br/>Overdue tasks:
+                    <t t-foreach="[r for r in amc['rows'] if r['is_overdue']][:10]" t-as="row">
+                        <a t-att-href="row['task_url']" t-att-style="red_text" t-out="row['task_name']"/> (<t t-out="row['overdue_days']"/>d)<t t-if="not row_last">, </t>
+                    </t>
+                    <t t-if="amc['overdue_count'] &gt; 10"> and <t t-out="amc['overdue_count'] - 10"/> more in the attachment</t>.
+                </t>
+            </p>
+            <table t-else="" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;margin:0 0 16px 0;">
+                <tr>
+                    <th t-att-style="th_style">Project</th>
+                    <th t-att-style="th_style">Task</th>
+                    <th t-att-style="th_style">Assignees</th>
+                    <th t-att-style="th_style">Stage</th>
+                    <th t-att-style="th_style">Original Deadline</th>
+                    <th t-att-style="th_style">Current Deadline</th>
+                    <th t-att-style="th_style">Total Days</th>
+                    <th t-att-style="th_style">Overdue Days</th>
+                </tr>
+                <tr t-foreach="amc['rows']" t-as="row" t-att-style="red_row if row['is_overdue'] else ''">
+                    <td t-att-style="td_style"><a t-att-href="row['project_url']" style="color:#1f3a93;" t-out="row['project_name']"/></td>
+                    <td t-att-style="td_style"><a t-att-href="row['task_url']" style="color:#1f3a93;" t-out="row['task_name']"/></td>
+                    <td t-att-style="td_style" t-out="row['assignees'] or '-'"/>
+                    <td t-att-style="td_style" t-out="row['stage'] or '-'"/>
+                    <td t-att-style="td_style" t-out="row['original_deadline'] or '-'"/>
+                    <td t-att-style="td_style" t-out="row['deadline'] or '-'"/>
+                    <td t-att-style="num_style" t-out="row['total_days']"/>
+                    <td t-att-style="num_style + (red_text if row['is_overdue'] else '')" t-out="row['overdue_days'] if row['is_overdue'] else '-'"/>
+                </tr>
+            </table>
+
+            </t>
+
+            <p style="margin:16px 0 0 0;">Regards,<br/>Support Fingertip</p>
+            <p style="margin:12px 0 0 0;font-size:12px;color:#888888;">This is an automated e-mail sent by the PMS every day; the figures are those of the Project Dashboard at the time of sending.</p>
+        </div>
+    </template>
+</odoo>

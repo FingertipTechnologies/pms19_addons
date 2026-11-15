@@ -26,3 +26,6 @@ access_competency_level_hr,Rating level (manage),model_employee_competency_level
 access_appraisal_goal_employee,Appraisal goal (own),model_employee_appraisal_goal,group_competency_employee,1,1,0,0
 access_appraisal_goal_manager,Appraisal goal (team),model_employee_appraisal_goal,group_competency_manager,1,1,1,1
 access_appraisal_goal_hr,Appraisal goal (manage),model_employee_appraisal_goal,group_competency_hr_manager,1,1,1,1
+access_competency_monthly_review_employee,Monthly review (own),model_ft_competency_monthly_review,group_competency_employee,1,0,0,0
+access_competency_monthly_review_manager,Monthly review (team),model_ft_competency_monthly_review,group_competency_manager,1,1,1,0
+access_competency_monthly_review_hr,Monthly review (manage),model_ft_competency_monthly_review,group_competency_hr_manager,1,1,1,1

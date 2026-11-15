@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ft_project_weekly_review_user,ft.project.weekly.review user,model_ft_project_weekly_review,base.group_user,1,0,0,0
+access_ft_project_weekly_review_technical_architect,ft.project.weekly.review technical architect,model_ft_project_weekly_review,ft_project_stage_dates.group_technical_architect,1,1,1,1
+access_ft_project_weekly_review_delivery_head,ft.project.weekly.review delivery head,model_ft_project_weekly_review,ft_project_weekly_review.group_delivery_head,1,1,1,1

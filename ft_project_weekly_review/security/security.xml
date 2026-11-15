@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Delivery Head: together with the Technical Architect
+             (ft_project_stage_dates.group_technical_architect) may create,
+             edit and delete the weekly project reviews. Sits under the
+             Project privilege beside User / Administrator / Technical
+             Architect on the user form. Members are added by hand. -->
+        <record id="group_delivery_head" model="res.groups">
+            <field name="name">Delivery Head</field>
+            <field name="sequence">16</field>
+            <field name="privilege_id" ref="project.res_groups_privilege_project"/>
+            <field name="implied_ids" eval="[(4, ref('project.group_project_user'))]"/>
+            <field name="comment">
+                May create and edit the weekly project reviews (Review tab
+                on the project form), together with the Technical Architect.
+            </field>
+        </record>
+
+        <!-- Everybody may read every review; project visibility itself is
+             already restricted by the project.project record rules, and the
+             review list only ever shows inside a project form. -->
+        <record id="rule_project_weekly_review_read_all" model="ir.rule">
+            <field name="name">Project Weekly Review: read all</field>
+            <field name="model_id" ref="model_ft_project_weekly_review"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

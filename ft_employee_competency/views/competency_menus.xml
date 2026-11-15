@@ -46,6 +46,13 @@
               groups="ft_employee_competency.group_competency_employee"
               sequence="20"/>
 
+    <menuitem id="menu_competency_my_monthly_reviews"
+              name="My Monthly Reviews"
+              parent="menu_competency_my"
+              action="action_competency_monthly_review_my"
+              groups="ft_employee_competency.group_competency_employee"
+              sequence="30"/>
+
     <!-- ================================================================
          Assessments
          ================================================================ -->
@@ -88,6 +95,15 @@
               parent="menu_competency_development"
               action="action_development_plan"
               sequence="10"/>
+
+    <!-- The manager's monthly note per resource (Manager / Resource /
+         Improvements). Inherits the parent's audience: Department Manager
+         and HR; an employee reads their own under My Competency. -->
+    <menuitem id="menu_competency_monthly_reviews"
+              name="Monthly Review"
+              parent="menu_competency_development"
+              action="action_competency_monthly_review"
+              sequence="12"/>
 
     <menuitem id="menu_competency_goals"
               name="Goals"

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_daily_report_wizard_form" model="ir.ui.view">
+        <field name="name">ft.pms.daily.report.wizard.form</field>
+        <field name="model">ft.pms.daily.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Send Daily Status Report">
+                <p class="text-muted">
+                    Sends today's Implementation / AMC status e-mail now. Leave the recipients
+                    empty to send to every Project Manager and Technical Lead with a project in scope;
+                    pick users to test with. Each person only receives their own projects.
+                </p>
+                <group>
+                    <field name="user_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    <field name="force"/>
+                </group>
+                <footer>
+                    <button name="action_send" type="object" string="Send Now" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_daily_report_wizard" model="ir.actions.act_window">
+        <field name="name">Send Daily Status Report</field>
+        <field name="res_model">ft.pms.daily.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_daily_report_wizard" name="Send Daily Status Report"
+              parent="project.menu_project_config" action="action_daily_report_wizard"
+              groups="project.group_project_manager" sequence="95"/>
+</odoo>

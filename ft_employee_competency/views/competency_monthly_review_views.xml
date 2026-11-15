@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_competency_monthly_review_list" model="ir.ui.view">
+        <field name="name">ft.competency.monthly.review.list</field>
+        <field name="model">ft.competency.monthly.review</field>
+        <field name="arch" type="xml">
+            <list string="Monthly Reviews">
+                <field name="date" string="Month" width="140px"/>
+                <field name="manager_id" widget="many2one_avatar_employee" width="200px"/>
+                <field name="employee_id" widget="many2one_avatar_employee" width="200px"/>
+                <field name="department_id" optional="hide"/>
+                <field name="improvements"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_competency_monthly_review_form" model="ir.ui.view">
+        <field name="name">ft.competency.monthly.review.form</field>
+        <field name="model">ft.competency.monthly.review</field>
+        <field name="arch" type="xml">
+            <form string="Monthly Review">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1" placeholder="New monthly review"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" options="{'no_create': True}"/>
+                            <field name="manager_id" options="{'no_create': True}"/>
+                            <field name="department_id" readonly="1" invisible="not department_id"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                            <field name="employee_user_id" invisible="1"/>
+                            <field name="manager_user_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Improvements">
+                        <field name="improvements" nolabel="1" colspan="2"
+                               placeholder="e.g. Need to work on post sales, improve communication"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_competency_monthly_review_search" model="ir.ui.view">
+        <field name="name">ft.competency.monthly.review.search</field>
+        <field name="model">ft.competency.monthly.review</field>
+        <field name="arch" type="xml">
+            <search string="Monthly Reviews">
+                <field name="employee_id"/>
+                <field name="manager_id"/>
+                <field name="department_id"/>
+                <field name="improvements"/>
+                <filter name="filter_this_month" string="This Month"
+                        domain="[('date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d')),
+                                 ('date', '&lt;', (context_today() + relativedelta(months=1, day=1)).strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_last_month" string="Last Month"
+                        domain="[('date', '&gt;=', (context_today() + relativedelta(months=-1, day=1)).strftime('%Y-%m-%d')),
+                                 ('date', '&lt;', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="filter_my_team" string="My Team"
+                        domain="['|', ('manager_user_id', '=', uid), ('employee_id.parent_id.user_id', '=', uid)]"/>
+                <filter name="filter_mine" string="About Me"
+                        domain="[('employee_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_date" string="Month" date="date"/>
+                <group>
+                    <filter name="group_manager" string="Manager" context="{'group_by': 'manager_id'}"/>
+                    <filter name="group_month" string="Month" context="{'group_by': 'date:month'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_employee" string="Resource" context="{'group_by': 'employee_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_competency_monthly_review" model="ir.actions.act_window">
+        <field name="name">Monthly Review</field>
+        <field name="res_model">ft.competency.monthly.review</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_competency_monthly_review_search"/>
+        <field name="context">{'search_default_filter_this_month': 1, 'search_default_group_manager': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record a monthly review</p>
+            <p>
+                One line per resource per month: who reviewed them and what
+                they should work on. Previous months are kept.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_competency_monthly_review_my" model="ir.actions.act_window">
+        <field name="name">My Monthly Reviews</field>
+        <field name="res_model">ft.competency.monthly.review</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_competency_monthly_review_search"/>
+        <!-- The reviews ABOUT the current user. Read-only for the Employee
+             role (see ir.model.access.csv); their manager writes them. -->
+        <field name="domain">[('employee_user_id', '=', uid)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No monthly review yet</p>
+            <p>
+                Your manager's monthly notes on what to work on appear here.
+            </p>
+        </field>
+    </record>
+
+</odoo>

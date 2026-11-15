@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_daily_report_log_list" model="ir.ui.view">
+        <field name="name">ft.pms.daily.report.log.list</field>
+        <field name="model">ft.pms.daily.report.log</field>
+        <field name="arch" type="xml">
+            <list create="false" default_order="report_date desc, id desc">
+                <header>
+                    <button name="action_retry_failed" type="object" string="Retry Failed"
+                            groups="project.group_project_manager"/>
+                    <button name="action_sync_mail_state" type="object" string="Refresh Status"
+                            groups="project.group_project_manager"/>
+                </header>
+                <field name="report_date"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="email" optional="show"/>
+                <field name="implementation_count" optional="show"/>
+                <field name="amc_task_count" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sent'"
+                       decoration-warning="state == 'queued'"
+                       decoration-danger="state == 'failed'"/>
+                <field name="sent_on" optional="show"/>
+                <field name="error" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_daily_report_log_form" model="ir.ui.view">
+        <field name="name">ft.pms.daily.report.log.form</field>
+        <field name="model">ft.pms.daily.report.log</field>
+        <field name="arch" type="xml">
+            <form create="false">
+                <header>
+                    <button name="action_retry_failed" type="object" string="Retry"
+                            class="oe_highlight" invisible="state != 'failed'"
+                            groups="project.group_project_manager"/>
+                    <button name="action_sync_mail_state" type="object" string="Refresh Status"
+                            invisible="state != 'queued'"
+                            groups="project.group_project_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="queued,sent,failed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="email"/>
+                            <field name="report_date"/>
+                        </group>
+                        <group>
+                            <field name="mail_id"/>
+                            <field name="mail_state"/>
+                            <field name="sent_on"/>
+                            <field name="implementation_count"/>
+                            <field name="amc_task_count"/>
+                        </group>
+                    </group>
+                    <group string="Error" invisible="not error">
+                        <field name="error" nolabel="1" colspan="2"/>
+                    </group>
+                    <group string="Attachments" invisible="not attachment_ids">
+                        <field name="attachment_ids" nolabel="1" colspan="2">
+                            <list create="false" edit="false">
+                                <field name="name"/>
+                                <field name="datas" filename="name" widget="binary" string="File"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_daily_report_log_search" model="ir.ui.view">
+        <field name="name">ft.pms.daily.report.log.search</field>
+        <field name="model">ft.pms.daily.report.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="report_date"/>
+                <filter name="failed" string="Failed" domain="[('state', '=', 'failed')]"/>
+                <filter name="queued" string="Queued" domain="[('state', '=', 'queued')]"/>
+                <filter name="sent" string="Sent" domain="[('state', '=', 'sent')]"/>
+                <separator/>
+                <filter name="today" string="Today"
+                        domain="[('report_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter name="group_date" string="Report Date" context="{'group_by': 'report_date:day'}"/>
+                    <filter name="group_user" string="Recipient" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_daily_report_log" model="ir.actions.act_window">
+        <field name="name">Daily Status Report Log</field>
+        <field name="res_model">ft.pms.daily.report.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_daily_report_log_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No daily status report has been sent yet</p>
+            <p>One line per recipient and day is logged when the daily Implementation / AMC status e-mail is sent (cron "PMS: Send Daily Implementation and AMC Reports" or Project &gt; Configuration &gt; Send Daily Status Report).</p>
+        </field>
+    </record>
+
+    <!-- "Retry failed" in the Actions menu of the log list -->
+    <record id="server_action_retry_failed" model="ir.actions.server">
+        <field name="name">Retry Failed Daily Reports</field>
+        <field name="model_id" ref="model_ft_pms_daily_report_log"/>
+        <field name="binding_model_id" ref="model_ft_pms_daily_report_log"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('project.group_project_manager'))]"/>
+        <field name="state">code</field>
+        <field name="code">records.action_retry_failed()</field>
+    </record>
+
+    <menuitem id="menu_daily_report_log" name="Daily Status Report Log"
+              parent="project.menu_project_report" action="action_daily_report_log"
+              sequence="60"/>
+</odoo>

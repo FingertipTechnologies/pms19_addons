@@ -227,6 +227,37 @@
         <field name="groups" eval="[(4, ref('group_competency_hr_manager'))]"/>
     </record>
 
+    <!-- Monthly reviews: the manager's note per resource per month. The
+         employee reads the ones about them and nothing else (the access line
+         is read-only too); a manager reaches the ones they wrote, the ones
+         about their direct reports and their department; HR everything. -->
+    <record id="rule_monthly_review_employee" model="ir.rule">
+        <field name="name">Monthly review: own only</field>
+        <field name="model_id" ref="model_ft_competency_monthly_review"/>
+        <field name="domain_force">[('employee_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_employee'))]"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_monthly_review_manager" model="ir.rule">
+        <field name="name">Monthly review: own team</field>
+        <field name="model_id" ref="model_ft_competency_monthly_review"/>
+        <field name="domain_force">['|', '|',
+            ('manager_user_id', '=', user.id),
+            ('employee_id.parent_id.user_id', '=', user.id),
+            ('department_id.manager_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_manager'))]"/>
+    </record>
+
+    <record id="rule_monthly_review_hr" model="ir.rule">
+        <field name="name">Monthly review: all</field>
+        <field name="model_id" ref="model_ft_competency_monthly_review"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_competency_hr_manager'))]"/>
+    </record>
+
     <!-- Multi-company: the master data and cycles belong to a company. -->
     <record id="rule_competency_company" model="ir.rule">
         <field name="name">Competency: multi-company</field>

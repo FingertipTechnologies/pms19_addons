@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_daily_report" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.pms.daily.status.report</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="project.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='project']" position="inside">
+                <block title="Daily Status Report" name="pms_daily_status_report">
+                    <setting id="daily_report_email_from" string="Report Sender"
+                             help="Sender (and reply-to) of the daily Implementation / AMC status e-mail to Project Managers and Technical Leads.">
+                        <field name="daily_report_email_from"
+                               placeholder="e.g. Support Fingertip &lt;support@fingertipplus.com&gt;"/>
+                    </setting>
+                    <setting id="daily_report_send_hour" string="Send Time"
+                             help="Time of day, in the company time zone, at which the daily e-mails go out. The schedule of the cron follows the main company.">
+                        <field name="daily_report_send_hour" widget="float_time"/>
+                    </setting>
+                    <setting id="daily_report_xlsx_row_limit" string="Excel Row Limit"
+                             help="A section with more rows than this is attached as an Excel file; the e-mail body keeps a summary.">
+                        <field name="daily_report_xlsx_row_limit"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

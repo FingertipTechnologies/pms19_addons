@@ -9,4 +9,5 @@ from . import competency_assessment_line
 from . import competency_profile
 from . import appraisal_goal
 from . import development_plan
+from . import competency_monthly_review
 from . import hr_employee
