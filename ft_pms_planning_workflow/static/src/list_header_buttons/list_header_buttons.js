@@ -13,20 +13,29 @@ import { ListController } from "@web/views/list/list_controller";
  *   ft_project_type   'amc' when at least one selected task is an AMC task
  *   pwf_amc_approval  'approved' / 'rejected' when every selected AMC task
  *                     is, false when none has an approval, 'mixed' otherwise
+ *
+ * Other addons add their own summaries by patching
+ * ftListHeaderSelectionContext(ctx, selection, fields) - it receives the
+ * selected records (with data), the list's fields and the context to fill.
  */
 patch(ListController.prototype, {
     evalViewModifier(modifier) {
         const root = this.model.root;
-        const ctx = { ...root.evalContext };
         const fields = root.fields || {};
         if (!("pwf_amc_approval" in fields && "ft_project_type" in fields)) {
-            return evaluateBooleanExpr(modifier, ctx);
+            return super.evalViewModifier(modifier);
         }
+        const ctx = { ...root.evalContext };
+        const selection = (root.selection || []).filter((r) => r.data);
+        this.ftListHeaderSelectionContext(ctx, selection, fields);
+        return evaluateBooleanExpr(modifier, ctx);
+    },
+
+    ftListHeaderSelectionContext(ctx, selection, fields) {
         // Buttons are evaluated even with nothing selected: default to
         // "no AMC task selected" so the names always exist.
         ctx.ft_project_type = false;
         ctx.pwf_amc_approval = false;
-        const selection = (root.selection || []).filter((r) => r.data);
         if (selection.length) {
             const amc = selection.filter((r) => r.data.ft_project_type === "amc");
             const states = amc.map((r) => r.data.pwf_amc_approval || false);
@@ -41,6 +50,5 @@ patch(ListController.prototype, {
                 ctx.pwf_amc_approval = "mixed";
             }
         }
-        return evaluateBooleanExpr(modifier, ctx);
     },
 });

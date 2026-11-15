@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
     <!-- Runs daily. Sends the previous month's report for every active AMC
-         project on/after the 5th of the month (company time zone); later
-         daily runs catch up a missed 5th and retry failed reports. -->
+         project on/after the send day (the 5th, company time zone); later
+         daily runs catch up a missed day and retry failed reports.
+         With ft_amc_payment_milestone installed this record is ARCHIVED by
+         that module (install hook / migration): its single scheduled action
+         "AMC: Monthly Milestones & Timesheets" runs this send together with
+         the milestone creation and send, on its configurable Monthly E-mail
+         Day. -->
     <record id="cron_amc_monthly_reports" model="ir.cron">
         <field name="name">AMC: Send Monthly Timesheet Reports</field>
         <field name="model_id" ref="model_ft_amc_monthly_report"/>

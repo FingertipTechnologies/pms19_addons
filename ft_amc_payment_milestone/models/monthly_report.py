@@ -15,9 +15,13 @@ rides along: _build_attachments makes sure it exists, _send_email adds it
 to the outgoing mail next to the report's PDF and Excel, which stay as
 they are.
 
-The day-5 cron of ft_amc_monthly_timesheet no longer mails such months:
+The report cron of ft_amc_monthly_timesheet no longer mails such months:
 sending is driven by the milestone status (Completed) and its own send
-switch, on the 7th (see project_custom_milestone._cron_ft_amc_send_monthly_milestones).
+switch. Both sends run from ONE scheduled action, "AMC: Monthly
+Milestones & Timesheets" (project_custom_milestone._cron_ft_amc_monthly,
+which also creates the current month's milestones first), on the Monthly
+E-mail Day (settings, default 7): _send_from_day() below makes the report
+cron read that same day instead of its own 5th.
 """
 import logging
 
@@ -27,7 +31,7 @@ from odoo.fields import Command
 
 _logger = logging.getLogger(__name__)
 
-# Context key the day-5 cron runs under; _process() uses it to leave
+# Context key the report cron runs under; _process() uses it to leave
 # milestone-driven months alone.
 REPORT_CRON_CONTEXT_KEY = 'ft_amc_report_cron'
 
@@ -157,16 +161,22 @@ class AmcMonthlyReport(models.Model):
         return res
 
     def _process(self, send=True):
-        """The day-5 cron skips months that have a milestone: their e-mail is
-        sent when the milestone is completed (manually or by the day-7
-        cron). The report record the cron created stays in draft and is
-        reused by the milestone."""
+        """The report cron skips months that have a milestone: their e-mail is
+        sent when the milestone is completed (manually or by the milestone
+        step of the same scheduled action). The report record the cron
+        created stays in draft and is reused by the milestone."""
         self.ensure_one()
         if self.env.context.get(REPORT_CRON_CONTEXT_KEY) and self._amc_monthly_milestone():
-            _logger.info("AMC monthly report %s (%s): skipped by the day-5 cron, the month "
+            _logger.info("AMC monthly report %s (%s): skipped by the report cron, the month "
                          "has an AMC milestone.", self.id, self.name)
             return False
         return super()._process(send=send)
+
+    @api.model
+    def _send_from_day(self):
+        """One send day for both sends: the Monthly E-mail Day of the
+        milestones (settings, default 7) replaces the report's own 5th."""
+        return self.env['project.custom.milestone']._amc_send_day()
 
     @api.model
     def _cron_send_monthly_reports(self):

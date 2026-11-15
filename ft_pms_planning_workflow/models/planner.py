@@ -61,6 +61,9 @@ MAX_WEEK_COUNT = 26
 # ----------------------------------------------------------------------
 # Pure helpers
 # ----------------------------------------------------------------------
+PLANNER_MODES = ('project', 'employee', 'project_employee', 'employee_project')
+
+
 def effort_color(value):
     """Colour key of a day's hours. ``None`` (no data) is 'none', not grey."""
     if value is None:
@@ -353,7 +356,10 @@ class FtPmsPlanner(models.AbstractModel):
         project_ids = _ids(filters.get('project_ids'))
         pm_ids = _ids(filters.get('pm_ids'))
         resource_ids = _ids(filters.get('resource_ids'))
-        mode = 'employee' if filters.get('mode') == 'employee' else 'cumulative'
+        # Four layouts. 'cumulative' is the former name of 'project'.
+        mode = filters.get('mode')
+        if mode == 'cumulative' or mode not in PLANNER_MODES:
+            mode = 'project'
         Task = self.env['project.task']
         Project = self.env['project.project']
         status_filter = (
@@ -409,7 +415,7 @@ class FtPmsPlanner(models.AbstractModel):
         load = {}
         readable_names = {}
         users = self.env['res.users']
-        if mode == 'employee':
+        if mode != 'project':
             user_ids = set()
             for by_day in plan.values():
                 for per_user in by_day.values():
@@ -431,6 +437,35 @@ class FtPmsPlanner(models.AbstractModel):
             'week_label': week_label(d),
         } for d in days]
 
+        # --- Actual (timesheets) / Estimated (planned) hours in the range ----
+        # {project_id: {user_id: hours}}; sudo so the totals do not depend on
+        # the reader's timesheet rules (only sums leave this method, and only
+        # for projects the reader can already see).
+        actual = defaultdict(lambda: defaultdict(float))
+        if projects:
+            aal_domain = [('project_id', 'in', projects.ids),
+                          ('date', '>=', date_from), ('date', '<=', date_to)]
+            if resource_ids:
+                aal_domain.append(('user_id', 'in', resource_ids))
+            if status_domain:
+                aal_domain.append(
+                    ('task_id.stage_id', 'in', Task._ft_final_stage_ids()))
+            for proj, user, hours in self.env[
+                    'account.analytic.line'].sudo()._read_group(
+                        aal_domain, ['project_id', 'user_id'],
+                        ['unit_amount:sum']):
+                actual[proj.id][user.id] += hours or 0.0
+        estimated = defaultdict(lambda: defaultdict(float))
+        for pid, by_day_plan in plan.items():
+            for per_user in by_day_plan.values():
+                for uid, hours in per_user.items():
+                    estimated[pid][uid] += hours
+
+        def totals(act, est):
+            return {'actual': round(act, 2), 'estimated': round(est, 2),
+                    'actual_hhmm': hours_to_hhmm(act),
+                    'estimated_hhmm': hours_to_hhmm(est)}
+
         projects_payload = []
         for project in projects:
             avg_value, avg_state = avg_values.get(project.id, (0.0, 'no_end_date'))
@@ -448,7 +483,9 @@ class FtPmsPlanner(models.AbstractModel):
                 'cells': [self._pwf_cumulative_cell(d, by_day.get(d))
                           for d in days],
             }
-            if mode == 'employee':
+            row.update(totals(sum(actual[project.id].values()),
+                              sum(estimated[project.id].values())))
+            if mode != 'project':
                 row_user_ids = set()
                 for per_user in by_day.values():
                     row_user_ids.update(per_user)
@@ -468,8 +505,51 @@ class FtPmsPlanner(models.AbstractModel):
                             readable_names)
                         for d in days
                     ],
+                    **totals(actual[project.id].get(user.id, 0.0),
+                             estimated[project.id].get(user.id, 0.0)),
                 } for user in row_users]
             projects_payload.append(row)
+
+        # --- Employee-first layouts: one entry per resource, with a total
+        # row (hours across the shown projects, coloured by the person's
+        # load across ALL projects) and that person's projects underneath.
+        employees_payload = []
+        if mode in ('employee', 'employee_project'):
+            for user in users.sorted(lambda u: (u.name or '', u.id)):
+                own = [r for r in projects_payload
+                       if any(e['user_id'] == user.id for e in r['employees'])]
+                cells = []
+                for d in days:
+                    hours = [
+                        (plan.get(r['id'], {}).get(d) or {}).get(user.id)
+                        for r in own]
+                    hours = [h for h in hours if h is not None]
+                    day_load = load.get(user.id, {}).get(d, {})
+                    cell = self._pwf_employee_cell(
+                        d, False, sum(hours) if hours else None,
+                        day_load, readable_names)
+                    cell['collision'] = bool(hours) and len(
+                        [h for h in day_load.values() if h > 0]) > 1
+                    cells.append(cell)
+                sub = []
+                for r in own:
+                    emp = next(e for e in r['employees']
+                               if e['user_id'] == user.id)
+                    sub.append({
+                        'id': r['id'], 'name': r['name'],
+                        'cells': emp['cells'],
+                        **{k: emp[k] for k in (
+                            'actual', 'estimated', 'actual_hhmm',
+                            'estimated_hhmm')},
+                    })
+                employees_payload.append({
+                    'id': user.id, 'user_id': user.id,
+                    'name': user.name or '',
+                    'initials': initials_of(user.name),
+                    'cells': cells, 'projects': sub,
+                    **totals(sum(p['actual'] for p in sub),
+                             sum(p['estimated'] for p in sub)),
+                })
 
         return {
             'range_key': range_key,
@@ -477,7 +557,9 @@ class FtPmsPlanner(models.AbstractModel):
             'date_to': fields.Date.to_string(date_to),
             'today': fields.Date.to_string(today),
             'days': days_payload,
+            'mode': mode,
             'projects': projects_payload,
+            'employees': employees_payload,
             'options': self._pwf_options(project_ids, resource_ids),
             'legend': self._pwf_legend(),
         }

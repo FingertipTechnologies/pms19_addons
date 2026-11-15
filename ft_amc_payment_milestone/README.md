@@ -7,9 +7,10 @@ the existing `project.custom.milestone` model so they show in the project's
 ## Flow
 
 ```
-1st of the month      cron creates "Support Services for <Month Year>" (status
-                      Not Started) for every eligible AMC project - with or
-                      without any work.
+1st of the month      the single daily scheduled action "AMC: Monthly
+                      Milestones & Timesheets" (step 1) creates "Support
+                      Services for <Month Year>" (status Not Started) for every
+                      eligible AMC project - with or without any work.
 
 during the month      PM / TL / admin approve AMC tasks (existing Approve button),
                       approve the weekly timesheets, and mark completed tasks
@@ -18,11 +19,14 @@ during the month      PM / TL / admin approve AMC tasks (existing Approve button
                       milestone of its DEPLOYMENT month; its APPROVED timesheet
                       hours are counted there ("Hours").
 
-7th (configurable)    cron marks the Not Started milestones of the previous
-                      month Completed (send switch on), which
+7th (configurable)    the SAME scheduled action (steps 2 and 3) sends
+"Monthly E-mail Day"  everything for the previous month in the same run: first
+                      ft_amc_monthly_timesheet's reports for the months WITHOUT
+                      a milestone, then it marks the Not Started milestones of
+                      the previous month Completed (send switch on), which
                         1. generates the task Excel and attaches it to the
                            milestone, then
-                        2. e-mails the month's timesheet (PDF + Excel) and that
+                        2. e-mails the month's timesheet (Excel only) and that
                            task Excel to the customer.
                       "Mark Completed & Send" does the same by hand, any time.
 
@@ -76,8 +80,9 @@ regardless of any task, timesheet, approval, deployment, or the project's
 `project.project._amc_ensure_monthly_milestone(period_start)` (idempotent,
 sudo), used by:
 
-* cron **AMC: Create Monthly Payment Milestones** (daily; ensures the current
-  month, so running on the 1st or later is the same);
+* step 1 of the single daily scheduled action **AMC: Monthly Milestones &
+  Timesheets** (`project.project._cron_ft_amc_create_monthly_milestones`;
+  ensures the current month, so running on the 1st or later is the same);
 * the install hook (previous + current month);
 * the **Create This Month's Milestone** button on the project's AMC Monthly
   Timesheet tab;
@@ -194,18 +199,43 @@ previous generated file and leaves user uploads alone (nothing is added to
   with their **approved hours** (whole-task rule, approved lines only, so the
   PDF / Excel totals equal the milestone's Hours) instead of "approved tasks,
   entries dated in the month"; months without a milestone are unchanged. The
-  milestone's task Excel is added to the mail next to the report's PDF and
+  milestone's task Excel is mailed in place of the report's Excel (no PDF) and
   Excel (`_send_email` override in `models/monthly_report.py`).
-* cron **AMC: Send Monthly Milestone Timesheets** (daily): from the send day
-  (Settings > Project > AMC Monthly Timesheet > *Milestone E-mail Day*,
-  `ir.config_parameter` `ft_amc_payment_milestone.send_day`, default **7**),
-  every milestone of a finished month that is still **Not Started** with the
-  switch on is marked Completed (= Excel + e-mail). A failure leaves it Not
-  Started with the error on the chatter; the next run retries. Milestones with
-  the switch off are left alone (manual flow). No reminder activities.
-* The original day-5 cron (`_cron_send_monthly_reports`) **skips months that
-  have an AMC milestone**, so a month is never mailed twice; it still mails
-  months without a milestone (history, ineligible projects).
+* cron **AMC: Monthly Milestones & Timesheets** (daily,
+  `ir_cron_ft_amc_monthly`, `project.custom.milestone._cron_ft_amc_monthly`) -
+  the ONE scheduled action of the whole AMC monthly automation (the only AMC
+  entry of this module in Settings > Technical > Scheduled Actions). Every
+  run does, in this order and in the same run:
+  1. `project.project._cron_ft_amc_create_monthly_milestones()` - the
+     CURRENT month's milestone for every eligible AMC project: created on the
+     1st, a no-op on the later days (catch-up for projects eligible
+     mid-month);
+  2. `ft.amc.monthly.report._cron_send_monthly_reports()` - from the send day
+     (Settings > Project > AMC Monthly Timesheet > *Monthly E-mail Day*,
+     `ir.config_parameter` `ft_amc_payment_milestone.send_day`, default
+     **7**): syncs the queued e-mails and mails the previous month of the AMC
+     projects whose month has **no** milestone (history, ineligible
+     projects); months that have an AMC milestone are skipped (so a month is
+     never mailed twice);
+  3. `_cron_ft_amc_send_monthly_milestones()` - from the same day: every
+     milestone of a finished month that is still **Not Started** with the
+     switch on is marked Completed (= Excel + e-mail). A failure leaves it
+     Not Started with the error on the chatter; the next run retries.
+     Milestones with the switch off are left alone (manual flow). No
+     reminder activities.
+
+  Each step runs in its own savepoint: a crash of one is logged
+  (`_logger.exception`) and the next steps still run; the method returns the
+  labels of the failed steps. The step list is `_cron_ft_amc_monthly_steps()`.
+  The three step methods are unchanged and callable on their own. Steps 2
+  and 3 read the same day through `ft.amc.monthly.report._send_from_day()`
+  (overridden here), so the reports no longer go out on the 5th. The
+  separate crons it replaced - this module's "AMC: Create Monthly Payment
+  Milestones", "AMC: Send Monthly Timesheets & Milestones" (19.0.1.5.0) and
+  "AMC: Send Monthly Milestone Timesheets" (all deleted) and
+  ft_amc_monthly_timesheet's "AMC: Send Monthly Timesheet Reports" (archived,
+  restored by the uninstall hook) - are retired by the 19.0.1.5.0 /
+  19.0.1.6.0 migrations and the install hook.
 
 ## Views
 
@@ -244,10 +274,35 @@ previous generated file and leaves user uploads alone (nothing is added to
 * `post-migration.py`: tasks with `ft_deployed = True` (and Status Done) get
   `state = '1_deployed'` in SQL; no tracking message is posted.
 
+## Migration (19.0.1.4.0 -> 19.0.1.5.0)
+
+* `post-migration.py`: the "AMC: Send Monthly Milestone Timesheets" cron
+  (`ir_cron_ft_amc_send_monthly_milestones`) is deleted with its xmlid and
+  ft_amc_monthly_timesheet's "AMC: Send Monthly Timesheet Reports" cron is
+  archived; the new "AMC: Send Monthly Timesheets & Milestones" is created by
+  the data update. Upgrade `ft_amc_monthly_timesheet` (>= 19.0.2.2.0) first /
+  together.
+
+## Migration (19.0.1.5.0 -> 19.0.1.6.0)
+
+* `post-migration.py`: the "AMC: Create Monthly Payment Milestones"
+  (`ir_cron_ft_amc_create_monthly_milestones`) and "AMC: Send Monthly
+  Timesheets & Milestones" (`ir_cron_ft_amc_send_monthly`) crons are deleted
+  with their xmlids (plus `ir_cron_ft_amc_send_monthly_milestones` as a no-op
+  safety net); the single "AMC: Monthly Milestones & Timesheets"
+  (`ir_cron_ft_amc_monthly`) is created by the data update (a `noupdate`
+  record whose xmlid does not exist yet is still created). A database that
+  jumps from 19.0.1.4.0 straight to 19.0.1.6.0 runs the 19.0.1.5.0 script
+  first (Odoo runs every migration with installed < version <= new, in
+  order) and ends with the same single cron. After `-u
+  ft_amc_payment_milestone`, Scheduled Actions filtered on "amc" shows this
+  one active cron plus ft_amc_monthly_timesheet's archived report cron
+  (hidden by the default Active filter).
+
 ## Tests
 
 `tests/test_amc_payment_milestone.py` (post_install): creation / naming /
-idempotence / kick-off untouched, eligibility, hook and cron, status set and
+idempotence / kick-off untouched, eligibility, hook and creation step, status set and
 labels (no `internal_approved`), sequence and rights (Completed straight from
 Not Started), Deployed rights and bulk all-or-nothing, Deployed as a Status
 value (selection order after Done, closed / `is_closed` search, stage and
@@ -260,7 +315,12 @@ ignored), approval-after-deployment, undo / reopen (un)linking, task Excel
 rights, regeneration replacing only the generated file, empty month),
 e-mail on Completed (approved lines only, Excel on the milestone and on the
 mail next to the report's PDF / Excel; without the switch; failure refused),
-day-7 cron (6th: nothing; 7th: Not Started -> Completed with Excel + mail,
-switch off untouched, current month untouched; 8th: no duplicate; next month
-picked up next run; failure keeps Not Started), day-5 cron skip,
-timesheet-date check bypass.
+milestone send step (6th: nothing; 7th: Not Started -> Completed with Excel +
+mail, switch off untouched, current month untouched; 8th: no duplicate; next
+month picked up next run; failure keeps Not Started), report step skip of
+milestone months, shared send day, the single scheduled action (one cron
+record with the superseded xmlids gone; the three steps called in order;
+creation on the 1st with nothing sent; both sends on the 7th in one run plus
+the current month's milestones, idempotent; a failing creation, report or
+milestone step is logged and does not stop the others), timesheet-date check
+bypass.

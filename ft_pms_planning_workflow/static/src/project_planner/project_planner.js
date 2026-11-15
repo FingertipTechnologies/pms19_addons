@@ -76,6 +76,8 @@ export const RANGE_GROUPS = [
         options: [{ key: CUSTOM_RANGE_KEY, label: _t("Custom dates…") }],
     },
 ];
+// Layouts of the grid ("cumulative" was the former name of "project").
+const MODES = new Set(["project", "employee", "project_employee", "employee_project"]);
 const RANGE_KEYS = new Set(RANGE_GROUPS.flatMap((g) => g.options.map((o) => o.key)));
 
 function isoDate(value) {
@@ -167,10 +169,11 @@ function formatHours(value) {
 }
 
 /**
- * Project Status: one row per project, one compact segment per day coloured
- * by the PLANNED effort (task estimates spread over their week) per allocated
- * resource that day. Clicking a segment
- * opens the Task Planner on that project and date.
+ * Project Status: one row per project (or per employee, or both nested, see
+ * `modes`), one compact segment per day coloured by the PLANNED effort (task
+ * estimates spread over their week) per allocated resource that day.
+ * Clicking a segment opens the Task Planner on that project / resource and
+ * date.
  */
 export class ProjectPlanner extends Component {
     static template = "ft_pms_planning_workflow.ProjectPlanner";
@@ -212,7 +215,7 @@ export class ProjectPlanner extends Component {
                 project_ids: toIdList(initial.project_ids),
                 pm_ids: toIdList(initial.pm_ids),
                 resource_ids: toIdList(initial.resource_ids),
-                mode: initial.mode === "employee" ? "employee" : "cumulative",
+                mode: MODES.has(initial.mode) ? initial.mode : "project",
                 status_filter: initial.status_filter === "completed" ? "completed" : "all",
             },
             // Custom date inputs: edited locally, applied when both are valid.
@@ -302,7 +305,7 @@ export class ProjectPlanner extends Component {
          * their projects (collision); otherwise the project (cumulative) row:
          * value = average per allocated resource.
          */
-        const decorate = (cells, employeeName = false) =>
+        const decorate = (cells, employeeName = false, isTotal = false) =>
             (cells || []).map((cell, index) => {
                 const color = CELL_COLORS.has(cell.color) ? cell.color : "none";
                 const date = cell.date || days[index]?.date;
@@ -312,17 +315,22 @@ export class ProjectPlanner extends Component {
                     lines.push(_t("No planned work"));
                 } else if (employeeName) {
                     lines.push(
-                        _t("%(name)s: %(hours)s h planned on this project", {
-                            name: employeeName,
-                            hours: formatHours(cell.value),
-                        })
+                        isTotal
+                            ? _t("%(name)s: %(hours)s h planned on the shown projects", {
+                                  name: employeeName,
+                                  hours: formatHours(cell.value),
+                              })
+                            : _t("%(name)s: %(hours)s h planned on this project", {
+                                  name: employeeName,
+                                  hours: formatHours(cell.value),
+                              })
                     );
                     if (cell.total !== undefined && cell.total !== null) {
                         lines.push(_t("Total across all projects: %s h", formatHours(cell.total)));
                     }
                     const others = cell.other_projects || [];
                     if (others.length) {
-                        lines.push(_t("Other projects:"));
+                        lines.push(isTotal ? _t("Projects:") : _t("Other projects:"));
                         for (const other of others) {
                             lines.push(`  • ${other.name}: ${formatHours(other.hours)} h`);
                         }
@@ -388,6 +396,16 @@ export class ProjectPlanner extends Component {
             }
         });
 
+        // "Actual / Estimated" hours of a row over the selected period.
+        const hoursOf = (item) => ({
+            hoursLabel: `${item.actual_hhmm || "0:00"} / ${item.estimated_hhmm || "0:00"}`,
+            hoursTitle: _t("Actual %(actual)s h (timesheets) / Estimated %(estimated)s h (planned) in the selected period", {
+                actual: item.actual_hhmm || "0:00",
+                estimated: item.estimated_hhmm || "0:00",
+            }),
+            over: (item.actual || 0) > (item.estimated || 0),
+        });
+
         const projects = (data.projects || []).map((project) => {
             let avgLabel = "";
             let avgClass = "text-muted";
@@ -401,16 +419,68 @@ export class ProjectPlanner extends Component {
                 name: project.name,
                 avgLabel,
                 avgClass,
+                ...hoursOf(project),
                 cells: decorate(project.cells),
                 employees: (project.employees || []).map((emp) => ({
                     id: emp.id,
                     userId: emp.user_id || emp.id || false,
                     name: emp.name,
                     initials: emp.initials || nameInitials(emp.name),
+                    ...hoursOf(emp),
                     cells: decorate(emp.cells, emp.name),
                 })),
             };
         });
+
+        // Flat list of grid rows for the chosen layout. level 0 = main row,
+        // level 1 = compact row underneath; cells === null => heading only.
+        const mode = MODES.has(data.mode) ? data.mode : "project";
+        const rows = [];
+        const projectRow = (p, level, cells, userId = false, key = "") => ({
+            key: `p${p.id}${key}`, kind: "project", level, name: p.name,
+            projectId: p.id, userId, cells,
+            hoursLabel: p.hoursLabel, hoursTitle: p.hoursTitle, over: p.over,
+        });
+        const employeeRow = (e, level, cells, projectId = false, key = "") => ({
+            key: `e${e.id}${key}`, kind: "employee", level, name: e.name,
+            initials: e.initials, projectId, userId: e.userId, cells,
+            hoursLabel: e.hoursLabel, hoursTitle: e.hoursTitle, over: e.over,
+        });
+        const emptyRow = (key, text) => ({ key, kind: "empty", level: 1, name: text, cells: null });
+        if (mode === "project") {
+            projects.forEach((p) => rows.push(projectRow(p, 0, p.cells)));
+        } else if (mode === "project_employee") {
+            for (const p of projects) {
+                rows.push(projectRow(p, 0, null));
+                p.employees.forEach((e) => rows.push(employeeRow(e, 1, e.cells, p.id, `-p${p.id}`)));
+                if (!p.employees.length) {
+                    rows.push(emptyRow(`x${p.id}`, _t("No resources allocated in range")));
+                }
+            }
+        } else {
+            for (const emp of data.employees || []) {
+                const e = {
+                    id: emp.id,
+                    userId: emp.user_id || emp.id || false,
+                    name: emp.name,
+                    initials: emp.initials || nameInitials(emp.name),
+                    ...hoursOf(emp),
+                };
+                if (mode === "employee") {
+                    rows.push(employeeRow(e, 0, decorate(emp.cells, emp.name, true)));
+                    continue;
+                }
+                rows.push(employeeRow(e, 0, null));
+                for (const p of emp.projects || []) {
+                    rows.push(projectRow(
+                        { id: p.id, name: p.name, ...hoursOf(p) }, 1,
+                        decorate(p.cells, emp.name), e.userId, `-e${e.id}`));
+                }
+                if (!(emp.projects || []).length) {
+                    rows.push(emptyRow(`x${e.id}`, _t("No projects planned in range")));
+                }
+            }
+        }
 
         return {
             dateFrom: data.date_from,
@@ -420,6 +490,9 @@ export class ProjectPlanner extends Component {
             weekGroups,
             monthGroups,
             projects,
+            rows,
+            mode,
+            firstColumn: mode.startsWith("employee") ? _t("Employee") : _t("Project"),
             options: {
                 projects: normalizeOptions(data.options?.projects),
                 pms: normalizeOptions(data.options?.pms),
@@ -437,8 +510,17 @@ export class ProjectPlanner extends Component {
         return this.state.data?.options || { projects: [], pms: [], resources: [] };
     }
 
-    get showEmployees() {
-        return this.state.filters.mode === "employee";
+    get modes() {
+        return [
+            { key: "project", label: _t("Project wise"),
+              title: _t("One row per project, with its actual / estimated hours") },
+            { key: "employee", label: _t("Employee wise"),
+              title: _t("One row per employee, with their actual / estimated hours") },
+            { key: "project_employee", label: _t("Project and Employee"),
+              title: _t("Each project, then its employees with their actual / estimated hours") },
+            { key: "employee_project", label: _t("Employee and Project"),
+              title: _t("Each employee, then their projects with the actual / estimated hours") },
+        ];
     }
 
     setFilter(name, value) {
@@ -447,6 +529,14 @@ export class ProjectPlanner extends Component {
         }
         this.state.filters[name] = value;
         this.load();
+    }
+
+    /** View (layout) dropdown. */
+    onModeChange(ev) {
+        const key = ev.target.value;
+        if (MODES.has(key)) {
+            this.setFilter("mode", key);
+        }
     }
 
     get isCustomRange() {
@@ -501,31 +591,39 @@ export class ProjectPlanner extends Component {
     // Navigation
     // ------------------------------------------------------------------
 
-    /** One delegated listener for every segment of the grid. */
+    /**
+     * One delegated listener for every segment of the grid. A segment carries
+     * a project id (project rows), a user id (employee total rows, which span
+     * every project of that person) or both (employee rows under a project,
+     * project rows under an employee).
+     */
     onGridClick(ev) {
         const seg = ev.target.closest(".o_pms_seg");
         if (!seg) {
             return;
         }
-        const projectId = parseInt(seg.dataset.projectId, 10);
-        if (!projectId) {
+        const projectId = parseInt(seg.dataset.projectId, 10) || false;
+        const userId = parseInt(seg.dataset.userId, 10) || false;
+        if (!projectId && !userId) {
             return;
         }
-        const userId = parseInt(seg.dataset.userId, 10) || false;
         this.openTaskPlanner(projectId, seg.dataset.date || false, userId);
     }
 
     /**
-     * Project bar -> Task Planner on that project; employee bar -> that
-     * project narrowed to that resource. The clicked day is passed as the
-     * focus date so the board opens on its week. The Project Status filters
-     * themselves are not forwarded (they stay on this action for the
-     * breadcrumb).
+     * Project bar -> Task Planner on that project; project + resource bar
+     * (a resource under a project, or a project under a resource) -> that
+     * project narrowed to that resource; resource total bar (Employee wise,
+     * no project) -> all projects narrowed to that resource (project_id
+     * false, the Task Planner then lists the person's tasks of every
+     * project). The clicked day is passed as the focus date so the board
+     * opens on its week. The Project Status filters themselves are not
+     * forwarded (they stay on this action for the breadcrumb).
      */
     openTaskPlanner(projectId, focusDate, userId = false) {
         const f = this.filtersPayload;
         const params = {
-            project_id: projectId,
+            project_id: projectId || false,
             pm_ids: [],
             resource_ids: userId ? [userId] : [],
             focus_date: focusDate || false,

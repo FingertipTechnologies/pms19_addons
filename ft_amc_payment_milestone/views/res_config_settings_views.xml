@@ -8,10 +8,13 @@
         <field name="inherit_id" ref="ft_amc_monthly_timesheet.res_config_settings_view_form_amc_monthly"/>
         <field name="arch" type="xml">
             <xpath expr="//block[@name='amc_monthly_timesheet']" position="inside">
-                <setting id="amc_milestone_send_day" string="Milestone E-mail Day"
-                         help="Day of the month (1-28) on which the previous month's AMC payment milestones that are still Not Started (send switch on) are marked Completed, their task Excel attached and the month e-mailed to the customer. Default: 7.">
+                <setting id="amc_milestone_send_day" string="Monthly E-mail Day"
+                         help="Day of the month (1-28) on which the single AMC scheduled action (AMC: Monthly Milestones &amp; Timesheets, which also creates the current month's milestones on the 1st) sends everything for the previous month at the same time: the AMC timesheet / task reports of the months without a payment milestone, and the AMC payment milestones that are still Not Started (send switch on), which are marked Completed, get their task Excel attached and are e-mailed to the customer. Default: 7. Later daily runs catch up a missed day and retry failures.">
                     <field name="amc_milestone_send_day"/>
                 </setting>
+            </xpath>
+            <xpath expr="//setting[@id='amc_report_start_month']" position="attributes">
+                <attribute name="help">First day of the first month to report, e.g. 2026-10-01 means October 2026 is the first month e-mailed, on the Monthly E-mail Day of November 2026. Earlier months are never sent automatically. Leave empty for no limit.</attribute>
             </xpath>
         </field>
     </record>

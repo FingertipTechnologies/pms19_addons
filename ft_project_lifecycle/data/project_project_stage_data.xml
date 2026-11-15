@@ -82,7 +82,7 @@
     </record>
 
     <record id="stage_working" model="project.project.stage">
-        <field name="name">Working (AMC/General)</field>
+        <field name="name">Working</field>
         <field name="sequence">95</field>
         <field name="pl_for_general" eval="True"/>
         <field name="pl_for_amc" eval="True"/>
@@ -130,7 +130,7 @@
     </record>
 
     <!-- No AMC stage. AMC is a PROJECT TYPE, not a step in a workflow: AMC
-         projects run Started -> Working (AMC/General) -> Completed, the same
+         projects run Started -> Working -> Completed, the same
          three stages as General ones, and are told apart by ft_project_type.
          A stage named AMC was tried and only ever drew an empty Kanban column.
          hooks._RETIRED_STAGES archives the legacy one on upgrade. -->

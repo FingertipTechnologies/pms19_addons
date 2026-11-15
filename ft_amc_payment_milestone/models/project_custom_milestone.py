@@ -24,8 +24,14 @@ then (b) e-mails the month through ft_amc_monthly_timesheet's report, with
 that Excel added to the mail, when the milestone's own send switch
 (amc_send_email) is on. A failure to send raises, so the status change is
 rolled back and the milestone cannot read Completed while nothing was sent.
-The day-7 cron (_cron_ft_amc_send_monthly_milestones) completes the Not
-Started milestones of the months that are over the same way.
+The ONE scheduled action "AMC: Monthly Milestones & Timesheets"
+(_cron_ft_amc_monthly, daily) first creates the current month's milestones
+(project.project._cron_ft_amc_create_monthly_milestones, effective on the
+1st), then, from the Monthly E-mail Day (settings, default 7), runs
+ft_amc_monthly_timesheet's report send for the months without a milestone
+and _cron_ft_amc_send_monthly_milestones, which completes the Not Started
+milestones of the months that are over the same way - so the AMC timesheet /
+task reports and the milestones go out together.
 """
 import io
 import logging
@@ -60,7 +66,7 @@ AMC_OPEN_STATUSES = ('not_started',)
 AMC_MANAGER_TARGETS = ('completed',)
 PARAM_SEND_DAY = 'ft_amc_payment_milestone.send_day'
 DEFAULT_SEND_DAY = 7
-# Context key the day-7 cron writes under. write() itself behaves the same
+# Context key the milestone send cron writes under. write() itself behaves the same
 # (a send failure raises either way); the cron catches the error in its own
 # savepoint and posts it on the chatter. The key marks those writes for any
 # later override that needs to tell a cron completion from a manual one.
@@ -252,9 +258,10 @@ class ProjectCustomMilestone(models.Model):
 
     @api.model
     def _amc_send_day(self):
-        """Day of the month from which the previous month's milestone e-mail
-        goes out (settings, default 7). Clamped to 1..28 so it exists in
-        every month."""
+        """Monthly E-mail Day (settings, default 7): the day of the month from
+        which the previous month's milestone e-mails AND the AMC timesheet /
+        task reports go out (ft.amc.monthly.report._send_from_day() reads it
+        too). Clamped to 1..28 so it exists in every month."""
         raw = self.env['ir.config_parameter'].sudo().get_param(PARAM_SEND_DAY)
         try:
             day = int(raw) if raw else DEFAULT_SEND_DAY
@@ -680,15 +687,67 @@ class ProjectCustomMilestone(models.Model):
         }
 
     # ------------------------------------------------------------------
-    # cron: send on the 7th (configurable) for the previous month(s)
+    # cron: ONE scheduled action for the whole AMC monthly automation -
+    # create the current month's milestones, then (from the Monthly E-mail
+    # Day, default 7) send the AMC timesheet / task reports and the milestones
     # ------------------------------------------------------------------
     @api.model
+    def _cron_ft_amc_monthly_steps(self):
+        """The steps of the single AMC scheduled action, in run order:
+        (label, callable). Overridable / patchable in one place."""
+        return (
+            ("AMC monthly payment milestones creation",
+             self.env['project.project']._cron_ft_amc_create_monthly_milestones),
+            ("AMC monthly timesheet / task reports sending",
+             self.env['ft.amc.monthly.report']._cron_send_monthly_reports),
+            ("AMC monthly payment milestones sending",
+             self._cron_ft_amc_send_monthly_milestones),
+        )
+
+    @api.model
+    def _cron_ft_amc_monthly(self):
+        """Daily ("AMC: Monthly Milestones & Timesheets"), the ONE scheduled
+        action of the AMC monthly automation. Every run does, in this order:
+
+        1. milestone creation (project.project
+           ._cron_ft_amc_create_monthly_milestones): the CURRENT month's
+           milestone for every eligible AMC project - created on the 1st,
+           a no-op afterwards (catch-up for projects eligible mid-month);
+        2. report send (ft.amc.monthly.report._cron_send_monthly_reports),
+           from the Monthly E-mail Day (settings, default 7): syncs the
+           queued e-mails and mails the previous month of the AMC projects
+           whose month has NO milestone (history, ineligible projects);
+           months with a milestone are left to step 3;
+        3. milestone send (_cron_ft_amc_send_monthly_milestones), from the
+           same day: every Not Started milestone of a month that is over,
+           send switch on, is marked Completed (task Excel + e-mail).
+
+        Steps 2 and 3 read the same day (ft.amc.monthly.report
+        ._send_from_day() is overridden to _amc_send_day()), so they go out
+        on the same run. Each step runs in its own savepoint and its failure
+        is logged: a crash in one never prevents the next ones (the steps
+        themselves already isolate every project / milestone the same way).
+        Returns the labels of the steps that failed (empty: all ran)."""
+        failed = []
+        for label, step in self._cron_ft_amc_monthly_steps():
+            try:
+                with self.env.cr.savepoint():
+                    step()
+            except Exception:  # noqa: BLE001 - one step must not block the next
+                failed.append(label)
+                _logger.exception("AMC monthly scheduled action: the '%s' step failed; the "
+                                  "next steps still run, this one is retried by the next "
+                                  "daily run", label)
+        return failed
+
+    @api.model
     def _cron_ft_amc_send_monthly_milestones(self):
-        """Daily. From the send day of the month (settings, default 7), every
-        AMC monthly milestone whose period is over and that is still Not
-        Started with its send switch on is marked Completed, which builds the
-        task Excel and e-mails the month. A failure is posted on the chatter
-        and the status stays Not Started (Completed always means "sent").
+        """Milestone send step of _cron_ft_amc_monthly (kept callable on its
+        own). From the Monthly E-mail Day (settings, default 7), every AMC
+        monthly milestone whose period is over and that is still Not Started
+        with its send switch on is marked Completed, which builds the task
+        Excel and e-mails the month. A failure is posted on the chatter and
+        the status stays Not Started (Completed always means "sent").
         Milestones with the send switch off are left alone (manual flow)."""
         Milestone = self.sudo()
         Report = self.env['ft.amc.monthly.report'].sudo()

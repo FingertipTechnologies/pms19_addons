@@ -15,7 +15,7 @@ month, as a PDF and an Excel file.
    - only of tasks that are completed and approved when the report runs.
    Approve tasks before the 5th: entries of a task approved after its month's
    report was sent are not emailed later.
-4. A PDF and an Excel file are generated and e-mailed to the customer.
+4. A PDF and an Excel file are generated; only the Excel is e-mailed to the customer (the PDF stays on the report).
    If there are no such entries, nothing is sent (report status *No Data*); the
    daily job re-checks it for the rest of the month, so tasks approved after the
    5th are still sent.
@@ -23,6 +23,12 @@ month, as a PDF and an Excel file.
 If the job could not run on the 5th, the next daily run in that month sends the
 report. Failed reports are retried automatically the next day. Each project gets
 at most one report per month.
+
+With **AMC Payment Milestones** (`ft_amc_payment_milestone`) installed, this
+module's scheduled action "AMC: Send Monthly Timesheet Reports" is archived and
+the send runs inside that module's single scheduled action **AMC: Send Monthly
+Timesheets & Milestones**, on its *Monthly E-mail Day* (Settings, default the
+7th) - the same run that sends the payment milestones, so both go out together.
 
 ## Configuration
 

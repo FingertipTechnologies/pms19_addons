@@ -198,7 +198,7 @@
     # is not re-stamped Done over Deployed, and leaving a final stage returns
     # a Deployed task to In Progress exactly as it does a Done one. Two
     # one-line edits, no migration.
-    'version': '19.0.1.28.0',
+    'version': '19.0.1.29.0',
     'description': 'Project Customization.',
     'category': 'Project',
     'author': 'Broadtech',

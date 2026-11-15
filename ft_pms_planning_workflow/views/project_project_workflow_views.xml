@@ -80,23 +80,24 @@
                     </div>
 
                     <!-- DISC: what the project needs while in Discovery -->
-                    <separator string="DISC – Discovery" colspan="2"/>
+                    <separator string="KICKOFF" colspan="2"/>
                     <group name="pwf_req_disc" colspan="2">
                         <div colspan="2" class="text-muted small" name="pwf_req_disc_note">
-                            <strong>Milestones:</strong> the milestone plan must be complete and
-                            validated at 100% (percentages in the Milestones tab add up to 100%,
-                            at least one milestone).
+                            <strong>Milestones:</strong> Prepare the milestone plan during
+                            KICKOFF before entering DISC. At least one milestone is required,
+                            and the milestone percentages must total 100%.
                             <br/>
-                            <strong>Dates:</strong> the stage dates are mandatory: the Kick-off Date
-                            to be in DISC, the BRD Approval Date to move on to DEV, and each later
-                            stage's date before entering it.
+                            <strong>Dates:</strong> The Kick-off Date is required before
+                            entering DISC. The BRD Approval Date is required before entering
+                            DEV. Each later stage's applicable date remains required before
+                            entering that stage.
                         </div>
                     </group>
 
                     <!-- DEV: Discovery deliverables (documents) are required to
                          ENTER Development, so they are listed here and checked
                          on DISC -> DEV. -->
-                    <separator string="DEV – Development" colspan="2"/>
+                    <separator string="DISC – DISCOVERY" colspan="2"/>
                     <group name="pwf_req_dev" colspan="2">
                         <!-- accepted_file_extensions only narrows the browser's
                              file picker; the server refuses a wrong format whatever
@@ -145,7 +146,7 @@
                     </group>
 
                     <!-- REG -->
-                    <separator string="REG – Regression" colspan="2"/>
+                    <separator string="DEV – DEVELOPMENT" colspan="2"/>
                     <div colspan="2" class="text-muted small" name="pwf_req_reg">
                         No evidence required to move to REG.
                     </div>
@@ -163,7 +164,7 @@
                          checks the same rule on every write and lets a QA
                          user without write access on the project save a
                          sign-off-only change. -->
-                    <separator string="SRV – Regression Sign-Off" colspan="2"/>
+                    <separator string="REG – REGRESSION" colspan="2"/>
                     <group name="pwf_req_srv" colspan="2">
                         <group name="pwf_req_srv_signoff" colspan="2">
                             <div colspan="2" class="text-muted small" name="pwf_req_srv_hint"
@@ -207,7 +208,7 @@
                     </group>
 
                     <!-- UAT -->
-                    <separator string="UAT – User Acceptance Testing" colspan="2"/>
+                    <separator string="SRV – SANDBOX REVIEW" colspan="2"/>
                     <group name="pwf_req_uat" colspan="2">
                         <group string="Evidence" name="pwf_req_uat_evidence">
                             <field name="pwf_sandbox_review_attachment_ids" widget="many2many_binary_paste"
@@ -247,7 +248,7 @@
                     </group>
 
                     <!-- DATA -->
-                    <separator string="DATA – Data Upload" colspan="2"/>
+                    <separator string="UAT – USER ACCEPTANCE TESTING" colspan="2"/>
                     <group name="pwf_req_data" colspan="2">
                         <group string="Evidence" name="pwf_req_data_evidence">
                             <field name="pwf_uat_signoff_attachment_ids" widget="many2many_binary_paste"
@@ -275,14 +276,14 @@
                     </group>
 
                     <!-- TRA -->
-                    <separator string="TRA – Training" colspan="2"/>
+                    <separator string="DATA – DATA UPLOAD" colspan="2"/>
                     <div colspan="2" class="text-muted small" name="pwf_req_tra">
                         No additional evidence: the Customer UAT Sign-off / Completion E-mail
                         Screenshot (DATA) is carried forward and must still be present.
                     </div>
 
                     <!-- SUPPORT -->
-                    <separator string="SUPPORT" colspan="2"/>
+                    <separator string="TRA – TRAINING" colspan="2"/>
                     <group name="pwf_req_support" colspan="2">
                         <group string="Evidence" name="pwf_req_support_evidence">
                             <div colspan="2" class="text-muted small" name="pwf_req_support_note">
@@ -312,7 +313,7 @@
                     </group>
 
                     <!-- CLOSED -->
-                    <separator string="CLOSED – Feedback &amp; Closure" colspan="2"/>
+                    <separator string="SUPPORT" colspan="2"/>
                     <group name="pwf_req_closed" colspan="2">
                         <group string="Evidence" name="pwf_req_closed_evidence">
                             <field name="pwf_internal_feedback_attachment_ids" widget="many2many_binary_paste"

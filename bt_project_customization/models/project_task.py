@@ -50,8 +50,8 @@ COMPLETED_STAGE_NAMES = ('Completed',)
 # role as the people they lead.
 DEVELOPER_JOB_NAMES = (
     'software developer',
-    'trainee software developer',
     'software engineer',
+    'trainee software developer',
     'technical lead',
 )
 

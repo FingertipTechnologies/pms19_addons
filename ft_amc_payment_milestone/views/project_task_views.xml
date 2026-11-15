@@ -10,13 +10,20 @@
         <field name="inherit_id" ref="ft_pms_planning_workflow.view_task_all_list_pwf_amc_approval"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
+                <!-- ft_billable_selection is the SELECTION summary built by
+                     static/src/js/list_header_billable.js: 'all' when every
+                     selected AMC task is already Billable, 'none' when none is,
+                     'mixed' otherwise. Already-billable rows only get Undo. -->
                 <button name="action_ft_mark_deployed" type="object"
-                        string="Mark Billable" class="btn-secondary"/>
+                        string="Mark Billable" class="btn-secondary"
+                        invisible="ft_project_type != 'amc' or ft_billable_selection == 'all'"/>
                 <button name="action_ft_reset_deployed" type="object"
-                        string="Undo Billable"/>
+                        string="Undo Billable"
+                        invisible="ft_project_type != 'amc' or ft_billable_selection == 'none'"/>
             </xpath>
             <xpath expr="//field[@name='pwf_amc_approval']" position="after">
                 <field name="ft_deployed" column_invisible="1"/>
+                <field name="ft_billable_selection" column_invisible="1"/>
                 <field name="ft_deploy_state" string="Billable" widget="badge"
                        readonly="1" optional="show"
                        invisible="ft_project_type != 'amc'"
@@ -37,9 +44,10 @@
             <xpath expr="//header" position="inside">
                 <field name="ft_can_deploy" invisible="1"/>
                 <field name="pwf_amc_is_completed" invisible="1"/>
+                <field name="pwf_amc_approval" invisible="1"/>
                 <button name="action_ft_mark_deployed" type="object"
                         string="Mark Billable" class="btn-secondary"
-                        invisible="not ft_can_deploy or ft_project_type != 'amc' or ft_deployed or not pwf_amc_is_completed or state == '1_canceled'"/>
+                        invisible="not ft_can_deploy or ft_project_type != 'amc' or ft_deployed or pwf_amc_approval != 'approved' or not pwf_amc_is_completed or state == '1_canceled'"/>
                 <button name="action_ft_reset_deployed" type="object"
                         string="Undo Billable"
                         confirm="Undo the billable status of this task? It is detached from its payment milestone while that milestone is still open."

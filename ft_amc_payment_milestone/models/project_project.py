@@ -2,7 +2,8 @@
 """Monthly AMC milestone creation (requirements 36, 37, 50).
 
 ``_amc_ensure_monthly_milestone(period_start)`` is the single entry point:
-the daily cron (current month), the install hook (previous + current month),
+the creation step of the single daily scheduled action "AMC: Monthly
+Milestones & Timesheets" (current month), the install hook (previous + current month),
 the "Create This Month's Milestone" button and the task deployment link
 (month the task was deployed in) all go through it. It is idempotent - the
 UNIQUE(project_id, amc_period_start) constraint backs it up against two
@@ -123,10 +124,13 @@ class ProjectProject(models.Model):
     # ------------------------------------------------------------------
     @api.model
     def _cron_ft_amc_create_monthly_milestones(self):
-        """Daily: make sure the CURRENT month's milestone exists for every
-        eligible AMC project. Running on the 1st creates it; every later run
-        finds it already there (or creates it for a project that became
-        eligible mid-month, e.g. a contract that started today)."""
+        """Creation step of the single daily scheduled action
+        "AMC: Monthly Milestones & Timesheets" (project.custom.milestone
+        ._cron_ft_amc_monthly; kept callable on its own): make sure the
+        CURRENT month's milestone exists for every eligible AMC project.
+        Running on the 1st creates it; every later run finds it already there
+        (or creates it for a project that became eligible mid-month, e.g. a
+        contract that started today). Returns the number created."""
         Report = self.env['ft.amc.monthly.report'].sudo()
         created = 0
         for project in self._amc_milestone_candidates():

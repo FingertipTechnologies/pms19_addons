@@ -10,7 +10,8 @@ class ProjectProject(models.Model):
     amc_report_enabled = fields.Boolean(
         string='Send monthly AMC timesheet', default=True, copy=False,
         help="Email the approved timesheet of the previous month to the customer "
-             "on/after the 5th of every month (AMC projects only).")
+             "on/after the monthly e-mail day (the 5th, or the Monthly E-mail Day in "
+             "Settings when AMC Payment Milestones is installed; AMC projects only).")
     amc_recipient_ids = fields.Many2many(
         'res.partner', 'ft_amc_project_recipient_rel', 'project_id', 'partner_id',
         string='Additional report recipients',

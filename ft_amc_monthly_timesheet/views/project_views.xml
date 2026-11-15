@@ -27,7 +27,9 @@
                                 and the additional recipients; the Project Manager is in CC.
                                 It lists the month's timesheets of tasks that are completed and
                                 approved (Approve button on the task list), and the previous month is sent
-                                automatically on/after the 5th while the project start/end dates cover that month.
+                                automatically on/after the monthly e-mail day (the 5th, or the Monthly E-mail Day
+                                in Settings when AMC Payment Milestones is installed) while the project start/end
+                                dates cover that month.
                                 Use "Generate Month (Preview)" to build any covered month without sending it.
                             </div>
                         </group>

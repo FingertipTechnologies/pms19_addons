@@ -138,7 +138,7 @@ class TestAmcPaymentMilestone(TransactionCase):
             'name': 'APM Implementation Project', 'ft_project_type': 'implementation',
             'user_id': cls.pm.id, 'privacy_visibility': 'employees',
         })
-        # Keep the day-5 report cron away from AMC projects already in the database.
+        # Keep the report cron away from AMC projects already in the database.
         cls.env['project.project'].with_context(active_test=False).search([
             ('ft_project_type', '=', 'amc'), ('id', 'not in', (cls.amc | cls.amc_other).ids),
         ]).write({'amc_report_enabled': False})
@@ -223,9 +223,13 @@ class TestAmcPaymentMilestone(TransactionCase):
         with freeze_time(when), mute_logger(MILESTONE_LOGGER, REPORT_LOGGER):
             self.Milestone._cron_ft_amc_send_monthly_milestones()
 
-    def _run_report_cron(self, when='2026-11-06 06:00:00'):
+    def _run_report_cron(self, when='2026-11-07 06:00:00'):
         with freeze_time(when), mute_logger(REPORT_LOGGER):
             self.Report._cron_send_monthly_reports()
+
+    def _run_combined_cron(self, when):
+        with freeze_time(when), mute_logger(MILESTONE_LOGGER, REPORT_LOGGER):
+            return self.Milestone._cron_ft_amc_monthly()
 
     def _reports(self, project=None, period=OCT):
         return self.Report.search([
@@ -300,7 +304,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         self.assertFalse(self._milestone(self.amc, DEC))
         self.assertTrue(self._milestone(self.amc_other, OCT))
 
-    def test_cron_creates_current_month_once(self):
+    def test_creation_step_creates_current_month_once(self):
         with freeze_time('2026-10-01 06:00:00'):
             self.env['project.project']._cron_ft_amc_create_monthly_milestones()
         milestone = self._milestone(self.amc, OCT)
@@ -373,6 +377,15 @@ class TestAmcPaymentMilestone(TransactionCase):
             task.with_user(self.qa).action_ft_mark_deployed()
         with self.assertRaises(UserError):
             open_task.with_user(self.coord).action_ft_mark_deployed()
+        # Only AMC-approved tasks can be billable (completed but unapproved /
+        # rejected are refused).
+        unapproved = self._task('APM deploy completed not approved', approval=None)
+        rejected = self._task('APM deploy completed rejected task', approval='rejected')
+        with self.assertRaises(UserError):
+            unapproved.with_user(self.coord).action_ft_mark_deployed()
+        with self.assertRaises(UserError):
+            rejected.with_user(self.coord).action_ft_mark_deployed()
+        self.assertFalse(unapproved.ft_deployed)
         # Bulk is all-or-nothing.
         with self.assertRaises(UserError):
             (task | open_task).with_user(self.coord).action_ft_mark_deployed()
@@ -718,8 +731,8 @@ class TestAmcPaymentMilestone(TransactionCase):
         excel = milestone.amc_task_excel_id
         self.assertTrue(excel)
         self.assertIn(excel, milestone.attachment_ids)
-        self.assertEqual(set(mail.attachment_ids.ids),
-                         {report.pdf_attachment_id.id, report.xlsx_attachment_id.id, excel.id})
+        # Excel only, and the milestone's task Excel in place of the report's.
+        self.assertEqual(set(mail.attachment_ids.ids), {excel.id})
         self.assertEqual(excel.name, 'Support Services for October 2026 - Tasks.xlsx')
         sheet = xlsx_rows(excel.raw)
         header_index = next(i for i, row in enumerate(sheet) if row and row[0] == 'Task')
@@ -798,7 +811,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         self.assertTrue(october.message_ids.filtered(
             lambda m: 'Automatic sending' in (m.body or '')))
 
-    def test_day5_report_cron_skips_months_with_a_milestone(self):
+    def test_report_cron_skips_months_with_a_milestone(self):
         self._task('APM task of the milestone-driven month')
         self.amc._amc_ensure_monthly_milestone(OCT)
         self._task('APM task of the project without milestone', project=self.amc_other)
@@ -806,10 +819,155 @@ class TestAmcPaymentMilestone(TransactionCase):
         skipped = self._reports(self.amc)
         self.assertNotIn(skipped.state, ('queued', 'sent'))
         self.assertFalse(skipped.mail_id)
-        # A month without a milestone keeps the original day-5 behaviour.
+        # A month without a milestone keeps the original report behaviour.
         sent = self._reports(self.amc_other)
         self.assertEqual(sent.state, 'queued')
         self.assertTrue(sent.mail_id)
+
+    def test_report_cron_shares_the_milestone_send_day(self):
+        """The reports no longer go out on the 5th: they read the Monthly
+        E-mail Day (default 7), the same day as the milestones."""
+        self.assertEqual(self.Report._send_from_day(), 7)
+        self._task('APM task of the project without milestone', project=self.amc_other)
+        self._run_report_cron('2026-11-06 06:00:00')
+        self.assertFalse(self._reports(self.amc_other))
+        self._run_report_cron('2026-11-07 06:00:00')
+        self.assertEqual(self._reports(self.amc_other).state, 'queued')
+        self.env['ir.config_parameter'].sudo().set_param('ft_amc_payment_milestone.send_day', '12')
+        self.assertEqual(self.Report._send_from_day(), 12)
+        self.assertEqual(self.Milestone._amc_send_day(), 12)
+
+    def test_single_cron_record(self):
+        """Exactly ONE scheduled action of this module: "AMC: Monthly
+        Milestones & Timesheets", daily, running _cron_ft_amc_monthly; the
+        superseded xmlids are gone (fresh install: never created; upgraded
+        database: deleted by the 19.0.1.5.0 / 19.0.1.6.0 migrations)."""
+        cron = self.env.ref('ft_amc_payment_milestone.ir_cron_ft_amc_monthly')
+        self.assertEqual(cron.name, 'AMC: Monthly Milestones & Timesheets')
+        self.assertTrue(cron.active)
+        self.assertEqual(cron.model_id.model, 'project.custom.milestone')
+        self.assertEqual(cron.code.strip(), 'model._cron_ft_amc_monthly()')
+        self.assertEqual((cron.interval_number, cron.interval_type), (1, 'days'))
+        for old in ('ir_cron_ft_amc_create_monthly_milestones', 'ir_cron_ft_amc_send_monthly',
+                    'ir_cron_ft_amc_send_monthly_milestones'):
+            self.assertFalse(self.env.ref('ft_amc_payment_milestone.%s' % old,
+                                          raise_if_not_found=False), old)
+        module_crons = self.env['ir.model.data'].search([
+            ('module', '=', 'ft_amc_payment_milestone'), ('model', '=', 'ir.cron')])
+        self.assertEqual(module_crons.mapped('name'), ['ir_cron_ft_amc_monthly'])
+
+    def test_combined_cron_runs_all_three_steps_in_order(self):
+        """Creation, report send, milestone send: every run, in that order."""
+        calls = []
+        Project = type(self.env['project.project'])
+        with patch.object(Project, '_cron_ft_amc_create_monthly_milestones',
+                          autospec=True, side_effect=lambda self: calls.append('create')), \
+                patch.object(type(self.Report), '_cron_send_monthly_reports',
+                             autospec=True, side_effect=lambda self: calls.append('reports')), \
+                patch.object(type(self.Milestone), '_cron_ft_amc_send_monthly_milestones',
+                             autospec=True, side_effect=lambda self: calls.append('milestones')):
+            failed = self.Milestone._cron_ft_amc_monthly()
+        self.assertEqual(calls, ['create', 'reports', 'milestones'])
+        self.assertEqual(failed, [])
+
+    def test_combined_cron_creates_current_month_on_the_first(self):
+        """Step 1 on the 1st: the current month's milestone appears; the send
+        steps do nothing (before the Monthly E-mail Day)."""
+        self.assertFalse(self._milestone(self.amc, OCT))
+        self._run_combined_cron('2026-10-01 06:00:00')
+        october = self._milestone(self.amc, OCT)
+        self.assertTrue(october)
+        self.assertEqual(october.status, 'not_started')
+        self.assertTrue(self._milestone(self.amc_other, OCT))
+        self.assertFalse(self._milestone(self.implementation, OCT))
+        self.assertFalse(self._reports(self.amc))
+        # Later in the month: idempotent, nothing sent, nothing created twice.
+        self._run_combined_cron('2026-10-15 06:00:00')
+        self.assertEqual(self._milestone(self.amc, OCT), october)
+        self.assertEqual(october.status, 'not_started')
+
+    def test_combined_cron_sends_reports_and_milestones_together(self):
+        """ONE scheduled action: on the Monthly E-mail Day the month without a
+        milestone is mailed by the report step and the milestone month by the
+        milestone step, in the same run (which also creates the current
+        month's milestones); nothing sent the day before."""
+        task = self._task('APM task of the combined cron')
+        self._deploy(task)
+        october = self._milestone(self.amc, OCT)
+        # No deployment, no milestone: amc_other's month is the report step's.
+        self._task('APM task of the project without milestone', project=self.amc_other)
+        self.assertFalse(self._milestone(self.amc_other, OCT))
+
+        self._run_combined_cron('2026-11-06 06:00:00')
+        self.assertEqual(october.status, 'not_started')
+        self.assertFalse(self._reports(self.amc_other))
+        # Step 1 ran all the same: the current (November) milestones exist.
+        self.assertTrue(self._milestone(self.amc, NOV))
+        self.assertTrue(self._milestone(self.amc_other, NOV))
+        self.assertFalse(self._milestone(self.amc_other, OCT))
+
+        self._run_combined_cron('2026-11-07 06:00:00')
+        self.assertEqual(october.status, 'completed')
+        self.assertEqual(october.amc_report_id.state, 'queued')
+        self.assertTrue(october.amc_task_excel_id)
+        other = self._reports(self.amc_other)
+        self.assertEqual(other.state, 'queued')
+        self.assertTrue(other.mail_id)
+        # Idempotent: the next day sends nothing twice.
+        self._run_combined_cron('2026-11-08 06:00:00')
+        self.assertEqual(self.env['mail.mail'].search_count([
+            ('model', '=', 'ft.amc.monthly.report'),
+            ('res_id', 'in', (october.amc_report_id | other).ids)]), 2)
+
+    def test_combined_cron_step_failure_does_not_stop_the_other(self):
+        """A crashing report step (2) is logged; the milestone step (3) and
+        the creation step (1) still run."""
+        task = self._task('APM task of the combined cron, failing report step')
+        self._deploy(task)
+        october = self._milestone(self.amc, OCT)
+        # Not through _run_combined_cron: mute_logger would hide the error
+        # record assertLogs waits for.
+        with patch.object(type(self.Report), '_cron_send_monthly_reports',
+                          side_effect=RuntimeError('report step down')), \
+                freeze_time('2026-11-07 06:00:00'), mute_logger(REPORT_LOGGER), \
+                self.assertLogs(MILESTONE_LOGGER, level='ERROR') as logs:
+            failed = self.Milestone._cron_ft_amc_monthly()
+        self.assertTrue(any('report' in line for line in logs.output))
+        self.assertEqual(failed, ['AMC monthly timesheet / task reports sending'])
+        self.assertEqual(october.status, 'completed')
+        self.assertEqual(october.amc_report_id.state, 'queued')
+        self.assertTrue(self._milestone(self.amc, NOV))
+
+    def test_combined_cron_creation_failure_does_not_stop_sending(self):
+        """A crashing creation step (1) is logged; the report step (2) and the
+        milestone step (3) still send the previous month."""
+        task = self._task('APM task of the combined cron, failing creation step')
+        self._deploy(task)
+        october = self._milestone(self.amc, OCT)
+        self._task('APM task of the project without milestone', project=self.amc_other)
+        Project = type(self.env['project.project'])
+        with patch.object(Project, '_cron_ft_amc_create_monthly_milestones',
+                          side_effect=RuntimeError('creation step down')), \
+                freeze_time('2026-11-07 06:00:00'), mute_logger(REPORT_LOGGER), \
+                self.assertLogs(MILESTONE_LOGGER, level='ERROR') as logs:
+            failed = self.Milestone._cron_ft_amc_monthly()
+        self.assertTrue(any('creation' in line for line in logs.output))
+        self.assertEqual(failed, ['AMC monthly payment milestones creation'])
+        self.assertFalse(self._milestone(self.amc, NOV))
+        self.assertEqual(october.status, 'completed')
+        self.assertEqual(october.amc_report_id.state, 'queued')
+        self.assertEqual(self._reports(self.amc_other).state, 'queued')
+
+    def test_combined_cron_milestone_failure_is_reported(self):
+        """A crashing milestone step (3) is logged after steps 1 and 2 ran."""
+        Milestone = type(self.Milestone)
+        with patch.object(Milestone, '_cron_ft_amc_send_monthly_milestones',
+                          side_effect=RuntimeError('milestone step down')), \
+                freeze_time('2026-11-07 06:00:00'), mute_logger(REPORT_LOGGER), \
+                self.assertLogs(MILESTONE_LOGGER, level='ERROR'):
+            failed = self.Milestone._cron_ft_amc_monthly()
+        self.assertEqual(failed, ['AMC monthly payment milestones sending'])
+        self.assertTrue(self._milestone(self.amc, NOV))
 
     # ------------------------------------------------------------------
     # timesheet date check (project_date_extension)

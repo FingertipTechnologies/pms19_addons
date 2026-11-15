@@ -47,6 +47,12 @@ class TestAmcMonthlyReport(TransactionCase):
         cls.params = cls.env['ir.config_parameter'].sudo()
         cls.params.set_param('ft_amc_monthly_timesheet.email_from', 'Support Test <support@example.com>')
         cls.params.set_param('ft_amc_monthly_timesheet.start_month', False)
+        # ft_amc_payment_milestone (post_install: may be installed) replaces
+        # the 5th by its "Monthly E-mail Day" (default 7); pin it to 5 so the
+        # dates of this suite stay valid. Rolled back with the transaction.
+        if cls.env['ir.module.module'].sudo().search_count([
+                ('name', '=', 'ft_amc_payment_milestone'), ('state', '=', 'installed')]):
+            cls.params.set_param('ft_amc_payment_milestone.send_day', '5')
 
         cls.pm = new_test_user(
             cls.env, 'amc_report_pm', email='pm@example.com',
@@ -382,8 +388,9 @@ class TestAmcMonthlyReport(TransactionCase):
         self.assertIn('extra@example.com', mail.email_to)
         self.assertIn('pm@example.com', mail.email_cc or '')
         self.assertIn('support@example.com', mail.email_from)
-        self.assertEqual(set(mail.attachment_ids.ids),
-                         {report.pdf_attachment_id.id, report.xlsx_attachment_id.id})
+        # Excel only: the PDF stays on the report, it is not mailed.
+        self.assertEqual(set(mail.attachment_ids.ids), {report.xlsx_attachment_id.id})
+        self.assertTrue(report.pdf_attachment_id)
         self.assertIn('October 2026', mail.subject)
         self.assertIn(self.project.name, mail.subject)
 

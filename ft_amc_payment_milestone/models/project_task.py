@@ -100,9 +100,19 @@ class ProjectTask(models.Model):
              "belongs to an AMC project and the user is an AMC approver or "
              "the project's Project Manager.")
 
+    ft_billable_selection = fields.Char(
+        string='Billable Selection (technical)', compute='_compute_ft_billable_selection',
+        help="Technical, always empty on a record. The name exists so the All "
+             "Tasks list header buttons may use it: there it is the SELECTION "
+             "summary ('all' / 'none' / 'mixed') built by "
+             "static/src/js/list_header_billable.js.")
+
     # ------------------------------------------------------------------
     # computes
     # ------------------------------------------------------------------
+    def _compute_ft_billable_selection(self):
+        self.ft_billable_selection = False
+
     @api.depends('ft_deployed', 'pwf_amc_approval', 'stage_id', 'project_id.ft_project_type')
     def _compute_ft_deploy_state(self):
         for task in self:
@@ -153,6 +163,8 @@ class ProjectTask(models.Model):
         for task in tasks:
             reasons = []
             if action == 'deploy':
+                if task.pwf_amc_approval != 'approved':
+                    reasons.append(_("not AMC-approved"))
                 if not task.pwf_amc_is_completed:
                     reasons.append(_("not in a final (Completed) stage"))
                 if task.state == '1_canceled':
@@ -168,8 +180,8 @@ class ProjectTask(models.Model):
             verb = _("marked Billable") if action == 'deploy' else _("reset")
             raise UserError(_(
                 "Nothing was changed: the following task(s) cannot be %(verb)s. "
-                "Only completed (final stage), not cancelled AMC tasks can be "
-                "billable.\n\n%(tasks)s", verb=verb, tasks='\n'.join(problems)))
+                "Only AMC-approved, completed (final stage), not cancelled AMC "
+                "tasks can be billable.\n\n%(tasks)s", verb=verb, tasks='\n'.join(problems)))
 
     @api.model
     def _ft_amc_refuse_deploy_write(self, vals):

@@ -6,7 +6,9 @@ from ft_pms_planning_workflow) when it runs, freezes them as report lines,
 renders a PDF (pure Python ReportLab, see pdf_report.py - no wkhtmltopdf) and an
 Excel file and emails both to the customer through the
 ``mail_template_amc_monthly_timesheet`` template. The daily cron sends the
-previous month on/after the 5th.
+previous month on/after the send day (_send_from_day(): the 5th here;
+ft_amc_payment_milestone replaces it by its configurable "Monthly E-mail Day"
+so the timesheet reports and the payment milestones go out together).
 """
 import base64
 import io
@@ -31,6 +33,8 @@ from .periods import month_end, previous_month
 _logger = logging.getLogger(__name__)
 
 DEFAULT_TZ = 'Asia/Kolkata'
+# Default day of the month from which the previous month is sent. Read
+# through _send_from_day() so an extending module can make it configurable.
 SEND_FROM_DAY = 5
 MANAGER_GROUPS = (
     'ft_amc_monthly_timesheet.group_amc_manager',
@@ -399,7 +403,10 @@ class AmcMonthlyReport(models.Model):
             'cc_emails': cc_emails,
             'email_from': email_from,
         })
-        attachments = self.pdf_attachment_id | self.xlsx_attachment_id
+        # Only the Excel goes to the customer; the PDF stays downloadable on
+        # the report (ft_amc_payment_milestone swaps this Excel for the
+        # milestone's task Excel when the month has a milestone).
+        attachments = self.xlsx_attachment_id
         # sudo: managers may lack access to mail.template; access was checked by
         # the caller. Queued (no force_send): a rollback discards the email.
         mail_id = template.sudo().send_mail(self.id, force_send=False, email_values={
@@ -557,15 +564,25 @@ class AmcMonthlyReport(models.Model):
     # cron
     # ------------------------------------------------------------------
     @api.model
+    def _send_from_day(self):
+        """Day of the month (1-28) from which the previous month's reports are
+        e-mailed. SEND_FROM_DAY (the 5th) here; ft_amc_payment_milestone
+        overrides it with the "Monthly E-mail Day" setting it shares with the
+        payment milestones, so both go out in the same run."""
+        return SEND_FROM_DAY
+
+    @api.model
     def _cron_send_monthly_reports(self):
-        """Daily: on/after the 5th, email the previous month of every AMC project."""
+        """Daily: on/after the send day (_send_from_day), email the previous
+        month of every AMC project."""
         Report = self.sudo()
         Report.search([('state', '=', 'queued')])._sync_mail_state()
         Project = self.env['project.project'].sudo()
         default_company = self.env.ref('base.main_company', raise_if_not_found=False)
+        send_from_day = Report._send_from_day()
         for company in self.env['res.company'].sudo().search([]):
             today = Report._local_today(company)
-            if today.day < SEND_FROM_DAY:
+            if today.day < send_from_day:
                 continue
             period_start, period_end = previous_month(today)
             start_month = company._amc_report_start_month()
@@ -589,8 +606,8 @@ class AmcMonthlyReport(models.Model):
                 if project.date_start > period_end or (project.date and project.date < period_start):
                     continue
                 report = Report.with_company(company)._get_or_create(project, period_start)
-                # no_data is re-checked daily: tasks approved after the 5th
-                # still get their month's entries sent (nothing is emailed
+                # no_data is re-checked daily: tasks approved after the send
+                # day still get their month's entries sent (nothing is emailed
                 # while there is no data).
                 if report.state in ('queued', 'sent'):
                     continue

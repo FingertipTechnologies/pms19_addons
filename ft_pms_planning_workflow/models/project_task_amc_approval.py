@@ -33,7 +33,7 @@ _PWF_AMC_STAMPS = ('pwf_amc_approved_by_id', 'pwf_amc_approved_on')
 _PWF_AMC_LIST_LIMIT = 10
 # Team Lead positions, as spelled in bt_project_customization
 # (DEVELOPER_JOB_NAMES / TESTER_JOB_NAMES), plus the generic 'team lead'.
-_PWF_AMC_LEAD_JOB_NAMES = ('technical lead', 'testing lead', 'tester lead', 'team lead')
+_PWF_AMC_LEAD_JOB_NAMES = ('technical lead', 'testing lead', 'tester lead', 'team lead',  'digital marketing manager')
 _PWF_AMC_APPROVER_JOB_NAMES = frozenset(PM_JOB_NAMES) | frozenset(_PWF_AMC_LEAD_JOB_NAMES)
 
 

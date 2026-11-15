@@ -42,14 +42,27 @@
     # 19.0.1.31.0: the Signed BRD E-mail Screenshot field gets a small paste
     #   button (and Ctrl+V) next to the paperclip; a failed kanban quick create
     #   opens the full form with every value typed in the card, not just the name.
-    'version': '19.0.1.32.0',
+    # 19.0.1.33.0: the Task dropdown of a timesheet line lists only open
+    #   tasks (Planned / Working / Testing): completed-stage, Done, Cancelled
+    #   and Billable tasks are no longer suggested. List header buttons:
+    #   selection summary is a hook (ftListHeaderSelectionContext) other
+    #   addons extend.
+    # 19.0.1.34.0: kanban quick create asks for the Week of a Testing task.
+    # 19.0.1.35.0: Project Status has four layouts picked from a View dropdown
+    #   (Project wise, Employee wise, Project and Employee, Employee and
+    #   Project) with Actual / Estimated hours per row; a resource total bar
+    #   (Employee wise) opens the Task Planner for that resource across all
+    #   projects (it did nothing before).
+    'version': '19.0.1.35.0',
     'summary': 'Project Planner, weekly Task Planner, Avg. Daily Effort and '
                'gated project stage workflow with approvals and notifications.',
     'description': """
 PMS Planning & Stage Workflow
 =============================
 * Project Planner: projects x days timeline coloured by effort
-  (grey < 4h, yellow 4-<6h, green 6-8h, red > 8h), cumulative or employee-wise.
+  (grey < 4h, yellow 4-<6h, green 6-8h, red > 8h); Project wise, Employee
+  wise, Project and Employee or Employee and Project layouts with Actual /
+  Estimated hours per row.
 * Task Planner: weekly board (Weeks from ft_sprint_management), overdue /
   not started / working / completed ordering, estimated / open / completed
   totals, week moves with a mandatory reason that never change the deadline.
@@ -89,6 +102,7 @@ PMS Planning & Stage Workflow
         'views/res_config_settings_views.xml',
         'views/planner_menus.xml',
         'views/project_task_amc_approval_views.xml',
+        'views/project_task_quick_create_views.xml',
         'views/timesheet_approval_views.xml',
         'data/mail_template_data.xml',
         'data/ir_cron_data.xml',

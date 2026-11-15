@@ -20,10 +20,11 @@
                      every one of its tasks. -->
                 <field name="ft_project_type" invisible="1"/>
                 <field name="source_ticket_id"
-                       invisible="task_source not in ['change_request', 'enhancement']"
-                       required="task_source in ['change_request', 'enhancement'] and ft_project_type == 'implementation'"
-                       domain="[('project_id', '=', project_id), ('channel', '=', 'portal')]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
+                    groups="ft_helpdesk_core.group_ft_helpdesk_agent,ft_helpdesk_core.group_ft_helpdesk_admin"
+                    invisible="task_type != 'user_story' or task_source not in ['change_request', 'enhancement']"
+                    required="task_type == 'user_story' and task_source in ['change_request', 'enhancement'] and ft_project_type == 'implementation'"
+                    domain="[('project_id', '=', project_id), ('channel', '=', 'portal')]"
+                    options="{'no_create': True, 'no_create_edit': True}"/>
                 <!-- Required: a task with no estimate cannot be measured by
                      Delivery Efficiency and lands in Not Estimated. -->
                 <field name="estimated" widget="float_time" required="project_id"/>
@@ -114,19 +115,32 @@
         <field name="model">project.task</field>
         <field name="inherit_id" ref="project.quick_create_task_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="attributes">
+                <attribute name="invisible">False</attribute>
+                <attribute name="readonly">False</attribute>
+                <attribute name="placeholder">Select a project…</attribute>
+            </xpath>
             <field name="user_ids" position="before">
+                <!-- Every field a new task must carry is on the card, marked
+                     required and with a placeholder so the empty input is
+                     visible (the quick-create form has no field borders). -->
+                <field name="task_type" required="1"
+                       placeholder="Select the task type…"/>
                 <field name="ft_allowed_module_ids" invisible="1"/>
                 <field name="module_id" required="True"
+                       placeholder="Select a module…"
                        domain="[('id', 'in', ft_allowed_module_ids)]"/>
                 <field name="ft_project_type" invisible="1"/>
-                <!-- Always: this view only ever creates, and a quick-created
-                     task takes the User Story default that the rule keys on. -->
-                <field name="task_source" required="True"/>
+                <!-- Required for User Stories (server rule); the other types
+                     are free to leave it empty. -->
+                <field name="task_source" required="task_type == 'user_story'"
+                       placeholder="Where does this work come from?"/>
                 <field name="source_ticket_id"
-                       invisible="task_source not in ['change_request', 'enhancement']"
-                       required="task_source in ['change_request', 'enhancement'] and ft_project_type == 'implementation'"
-                       domain="[('project_id', '=', project_id), ('channel', '=', 'portal')]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
+                        groups="ft_helpdesk_core.group_ft_helpdesk_agent,ft_helpdesk_core.group_ft_helpdesk_admin"
+                        invisible="task_type != 'user_story' or task_source not in ['change_request', 'enhancement']"
+                        required="task_type == 'user_story' and task_source in ['change_request', 'enhancement'] and ft_project_type == 'implementation'"
+                        domain="[('project_id', '=', project_id), ('channel', '=', 'portal')]"
+                        options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="unplanned_reason"
                        invisible="task_source != 'unplanned'"
                        required="task_source == 'unplanned' and ft_project_type == 'implementation'"
@@ -137,8 +151,17 @@
                      rejected on save with no way to satisfy it from here.
                      Quick create always runs inside a project, so the estimate
                      is unconditionally required here. -->
-                <field name="estimated" widget="float_time" required="1"/>
-                <field name="date_deadline" required="1"/>
+                <field name="estimated" widget="float_time" required="1"
+                       placeholder="HH:MM"/>
+                <field name="date_deadline" required="1"
+                       placeholder="Pick a due date and time…"/>
+                <field name="assignee_group_id"
+                        string="Assignee Group"
+                        placeholder="Select an assignee group…"
+                        options="{'no_create': True, 'no_create_edit': True}"/>
+            </field>
+            <field name="user_ids" position="attributes">
+                <attribute name="placeholder">Assign to…</attribute>
             </field>
         </field>
     </record>

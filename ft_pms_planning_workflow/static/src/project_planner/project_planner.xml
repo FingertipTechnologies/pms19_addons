@@ -19,7 +19,7 @@
             <button type="button"
                     t-att-class="cell.cls"
                     t-att-title="cell.tooltip"
-                    t-att-data-project-id="projectId"
+                    t-att-data-project-id="projectId or ''"
                     t-att-data-date="cell.date"
                     t-att-data-user-id="userId or ''"/>
         </td>
@@ -64,15 +64,16 @@
                                t-on-change="(ev) => this.onCustomDateChange('customTo', ev)"/>
                         <span t-if="state.customError" class="text-danger small" t-esc="state.customError"/>
                     </div>
-                    <div class="btn-group btn-group-sm o_pms_mode" role="group" aria-label="View mode">
-                        <button type="button" class="btn"
-                                t-att-class="state.filters.mode === 'cumulative' ? 'btn-primary' : 'btn-outline-secondary'"
-                                title="One row per project: planned hours per allocated resource that day"
-                                t-on-click="() => this.setFilter('mode', 'cumulative')">Cumulative</button>
-                        <button type="button" class="btn"
-                                t-att-class="state.filters.mode === 'employee' ? 'btn-primary' : 'btn-outline-secondary'"
-                                title="Adds one compact row per allocated resource under each project, coloured by that person's total load across all projects"
-                                t-on-click="() => this.setFilter('mode', 'employee')">Employee-wise</button>
+                    <div class="o_pms_filter o_pms_mode">
+                        <span class="o_pms_filter_label">View</span>
+                        <select class="form-select form-select-sm o_pms_mode_select" aria-label="View mode"
+                                t-on-change="onModeChange">
+                            <option t-foreach="modes" t-as="m" t-key="m.key"
+                                    t-att-value="m.key"
+                                    t-att-selected="m.key === state.filters.mode"
+                                    t-att-title="m.title"
+                                    t-esc="m.label"/>
+                        </select>
                     </div>
                     <button type="button" class="btn btn-sm"
                             t-att-class="state.filters.status_filter === 'completed' ? 'btn-primary' : 'btn-outline-secondary'"
@@ -100,17 +101,18 @@
                         <span><t t-esc="data.dateFrom"/> → <t t-esc="data.dateTo"/></span>
                         <span>·</span>
                         <span><t t-esc="data.projects.length"/> project(s)</span>
-                        <span class="ms-auto">Planned effort from task estimates. Click a project bar to open its Task Planner; click a resource bar to open it for that resource.</span>
+                        <span class="ms-auto">Bars: planned effort from task estimates. Hours: actual / estimated in the period. Click a project bar to open its Task Planner; click a bar of a resource under a project (or a project under a resource) to open that project for that resource; click a resource total bar (Employee wise) to open the Task Planner for that resource across all projects.</span>
                     </div>
-                    <div t-if="!data.projects.length" class="o_pms_empty text-muted">
-                        No projects match these filters.
+                    <div t-if="!data.rows.length" class="o_pms_empty text-muted">
+                        <t t-if="data.mode.startsWith('employee')">No resources are planned for these filters.</t>
+                        <t t-else="">No projects match these filters.</t>
                     </div>
                     <div t-else="" class="o_pms_grid_scroll" t-ref="scroll" t-att-class="{ o_pms_loading: state.loading }">
                         <table class="o_pms_grid" t-on-click="onGridClick"
                                t-attf-style="min-width: {{ 260 + data.days.length * 16 }}px;">
                             <thead>
                                 <tr class="o_pms_head_month">
-                                    <th class="o_pms_col_project o_pms_sticky" rowspan="3">Project</th>
+                                    <th class="o_pms_col_project o_pms_sticky" rowspan="3"><span t-esc="data.firstColumn"/><span class="o_pms_hours" title="Actual / Estimated hours in the selected period">Act / Est</span></th>
                                     <th t-foreach="data.monthGroups" t-as="month" t-key="month.key"
                                         t-att-colspan="month.span" class="o_pms_month">
                                         <span t-esc="month.label"/>
@@ -132,43 +134,28 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="data.projects" t-as="project" t-key="project.id">
-                                    <tr class="o_pms_row o_pms_row_project">
-                                        <th class="o_pms_col_project o_pms_sticky" t-att-title="project.name">
-                                            <div class="o_pms_project_name" t-esc="project.name"/>
-                                        </th>
-                                        <!-- Project segments appear only in Cumulative mode -->
-                                        <t t-if="!showEmployees">
-                                            <t t-call="ft_pms_planning_workflow.PlannerSegments">
-                                                <t t-set="cells" t-value="project.cells"/>
-                                                <t t-set="projectId" t-value="project.id"/>
-                                            </t>
+                                <tr t-foreach="data.rows" t-as="row" t-key="row.key"
+                                    t-attf-class="o_pms_row {{ row.level ? 'o_pms_row_employee' : 'o_pms_row_project' }} o_pms_kind_{{ row.kind }}">
+                                    <th class="o_pms_col_project o_pms_sticky" t-att-title="row.name"
+                                        t-att-class="{ 'text-muted fst-italic': row.kind === 'empty' }">
+                                        <div class="o_pms_employee_label">
+                                            <span t-if="row.kind === 'employee'" class="o_pms_initials" t-esc="row.initials"/>
+                                            <span class="o_pms_employee_name" t-esc="row.name"/>
+                                            <span t-if="row.hoursLabel" class="o_pms_hours"
+                                                  t-att-class="{ o_pms_hours_over: row.over }"
+                                                  t-att-title="row.hoursTitle" t-esc="row.hoursLabel"/>
+                                        </div>
+                                    </th>
+                                    <t t-if="row.cells">
+                                        <t t-call="ft_pms_planning_workflow.PlannerSegments">
+                                            <t t-set="cells" t-value="row.cells"/>
+                                            <t t-set="projectId" t-value="row.projectId"/>
+                                            <t t-set="userId" t-value="row.userId"/>
                                         </t>
-
-                                        <!-- Keep the project heading aligned in Employee-wise mode -->
-                                        <td t-else="" t-att-colspan="data.days.length"/>
-                                    </tr>
-                                    <t t-if="showEmployees">
-                                        <tr t-foreach="project.employees" t-as="employee" t-key="employee.id"
-                                            class="o_pms_row o_pms_row_employee">
-                                            <th class="o_pms_col_project o_pms_sticky" t-att-title="employee.name">
-                                                <div class="o_pms_employee_label">
-                                                    <span class="o_pms_initials" t-esc="employee.initials"/>
-                                                    <span class="o_pms_employee_name" t-esc="employee.name"/>
-                                                </div>
-                                            </th>
-                                            <t t-call="ft_pms_planning_workflow.PlannerSegments">
-                                                <t t-set="cells" t-value="employee.cells"/>
-                                                <t t-set="projectId" t-value="project.id"/>
-                                                <t t-set="userId" t-value="employee.userId"/>
-                                            </t>
-                                        </tr>
-                                        <tr t-if="!project.employees.length" class="o_pms_row o_pms_row_employee">
-                                            <th class="o_pms_col_project o_pms_sticky text-muted fst-italic">No resources allocated in range</th>
-                                            <td t-att-colspan="data.days.length"/>
-                                        </tr>
                                     </t>
-                                </t>
+                                    <!-- Heading / placeholder rows carry no bars -->
+                                    <td t-else="" t-att-colspan="data.days.length"/>
+                                </tr>
                             </tbody>
                         </table>
                     </div>

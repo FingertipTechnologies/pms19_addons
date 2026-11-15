@@ -39,8 +39,8 @@ TERMINAL_STAGE_NAMES = ('Closed', 'Hold')
 # AMC and Implementation are read from the TYPE, never from the stage. They used
 # to be matched against a stage literally named 'AMC', which ft_project_lifecycle
 # archived and emptied - hence a permanent 0 on that card. Stage cannot do this
-# job even in principle: AMC and General projects share one stage, 'Working
-# (AMC/General)', so no stage test can tell them apart. ft_project_type is the
+# job even in principle: AMC and General projects share one stage, 'Working',
+# so no stage test can tell them apart. ft_project_type is the
 # only discriminator, and bt_project_customization carries two migrations whose
 # whole purpose is keeping it populated.
 AMC_PROJECT_TYPE = 'amc'
@@ -320,7 +320,7 @@ class FtProjectDashboard(models.TransientModel):
         """Live projects under an annual maintenance contract.
 
         Read from ft_project_type, not from stage: AMC and General share the
-        'Working (AMC/General)' stage, so stage cannot distinguish them.
+        'Working' stage, so stage cannot distinguish them.
         """
         return (
             self._live_project_leaves()

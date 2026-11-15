@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 from .project_task_workflow import (
@@ -10,6 +10,16 @@ from .project_task_workflow import (
 
 class AccountAnalyticLine(models.Model):
     _inherit = 'account.analytic.line'
+
+    # Timesheet entry (list / task tab / approval views): the Task dropdown
+    # offers only tasks still being worked on - Planned / Working / Testing,
+    # i.e. not in a final (Completed) stage and not Done / Cancelled /
+    # Billable. Core's domain (allow_timesheets, same project, no template)
+    # is kept; existing lines on a closed task keep their value.
+    task_id = fields.Many2one(
+        domain="[('allow_timesheets', '=', True), ('project_id', '=?', project_id), "
+               "('has_template_ancestor', '=', False), "
+               "('pwf_amc_is_completed', '=', False), ('is_closed', '=', False)]")
 
     def _pwf_projects_from_vals(self, vals):
         """Projects a create/write ``vals`` points the line(s) at."""

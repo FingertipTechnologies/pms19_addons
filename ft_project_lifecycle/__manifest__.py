@@ -35,11 +35,11 @@
     # actually progressed. Only two kinds of project move now: those on a stage
     # merged into another (Sandbox Testing into SRV), and active
     # non-Implementation projects sitting on an Implementation-only stage, which
-    # go to the shared Working (AMC/General) column. HOLD and AMC are Kanban
+    # go to the shared Working column. HOLD and AMC are Kanban
     # stages again, per the requirement; REG is created empty after DEV, and
     # Production Testing and Deployment are kept exactly as they are.
     # 19.0.2.1.0 retires the AMC stage. AMC is a Project Type, not a workflow
-    # step — AMC projects run Started -> Working (AMC/General) -> Completed, the
+    # step — AMC projects run Started -> Working -> Completed, the
     # same as General ones — so the stage never received a project and drew a
     # permanently empty Kanban column. Archived, flags cleared, xmlid dropped;
     # not deleted, because seven tables reference project.project.stage.
@@ -71,7 +71,12 @@
     # 19.0.2.4.0 checks the Data Upload Date for the Overdue Reason: a
     # project is overdue for DATA once that date has passed without it
     # reaching DATA. Python only, no migration.
-    'version': '19.0.2.4.0',
+    # 19.0.2.5.0 renames the 'Working (AMC/General)' stage back to 'Working'
+    # so the statusbar reads Started -> Working -> Completed -> CLOSED. The
+    # data file is noupdate, so the rename is applied by adopt_legacy_stages
+    # (step 4), which migrations/0.0.0 runs on this version change; it finds
+    # the row under either name.
+    'version': '19.0.2.5.0',
     'summary': 'Project Type, project-level lifecycle stages and milestone dates.',
     'description': """
 Project Lifecycle

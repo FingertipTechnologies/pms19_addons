@@ -419,7 +419,7 @@ _KEPT_STAGES = (
 #
 # "AMC" was briefly adopted as a Kanban column because the requirement listed it
 # among the stages. It has no role: AMC is a PROJECT TYPE, and AMC projects run
-# Started -> Working (AMC/General) -> Completed like General ones. Nothing routes
+# Started -> Working -> Completed like General ones. Nothing routes
 # to a stage named AMC, so it only ever drew a permanently empty column that
 # invited someone to drag a project onto a dead end. The type is where AMC is
 # expressed; filtering or grouping by Project Type is how you see those projects.
@@ -445,9 +445,15 @@ _MERGES = (
     ('sandbox testing', 'stage_srv'),
 )
 
-# The shared AMC/General "Working" stage, relabelled so the Kanban column says
-# which two types share it.
-_WORKING_LABEL = 'Working (AMC/General)'
+# The shared AMC/General "Working" stage. It was briefly labelled
+# 'Working (AMC/General)'; the statusbar now reads Started -> Working ->
+# Completed -> CLOSED, so the label is plain 'Working' again. Databases that
+# took the longer label are renamed back by step 4 of adopt_legacy_stages,
+# which finds the row under either name.
+_WORKING_LABEL = 'Working'
+# Lower-cased names the Working stage may currently carry in a database
+# (matched by _stage_by_name), newest first.
+_WORKING_LEGACY_NAMES = ('working', 'working (amc/general)')
 
 
 def _stage_by_name(cr, name):
@@ -668,6 +674,30 @@ def adopt_legacy_stages(env):
         row = cr.fetchone()
         return row[0] if row else None
 
+    def working_stage_id():
+        """id of the Working stage: by xmlid, else by either of its names.
+
+        A database whose stage_working xmlid is missing (restored or cloned
+        before this module was installed) still carries the row under
+        'Working' or 'Working (AMC/General)'; find it and re-create the xmlid
+        so env.ref('ft_project_lifecycle.stage_working') resolves afterwards.
+        """
+        sid = xmlid_target('stage_working')
+        if sid:
+            return sid
+        for name in _WORKING_LEGACY_NAMES:
+            sid = _stage_by_name(cr, name)
+            if sid:
+                cr.execute(
+                    "INSERT INTO ir_model_data (module, name, model, res_id, noupdate) "
+                    "VALUES ('ft_project_lifecycle', 'stage_working', "
+                    "        'project.project.stage', %s, true)", (sid,))
+                _logger.info(
+                    "ft_project_lifecycle: xmlid stage_working was missing; "
+                    "re-pointed it at stage '%s' (id %s).", name, sid)
+                return sid
+        return None
+
     adopted, renamed_only, moved = 0, 0, 0
 
     # --- 1. Adopt: point the xmlid at the old record, rename it, place it. ----
@@ -722,7 +752,7 @@ def adopt_legacy_stages(env):
             old_name, into_xmlid, merged)
 
     # --- 3. Active non-Implementation projects off Implementation-only stages.
-    working_id = xmlid_target('stage_working')
+    working_id = working_stage_id()
     impl_only = [
         xmlid_target(x) for _o, x, _n, _s, flags in _ADOPTIONS
         if tuple(flags) == ('implementation',)
@@ -746,12 +776,13 @@ def adopt_legacy_stages(env):
                 "project(s) onto %s: %s", len(strays), _WORKING_LABEL,
                 ', '.join("%s '%s' (%s)" % s for s in strays))
 
-    # --- 4. The AMC/General flow, relabelled so the shared column says so. ----
+    # --- 4. The AMC/General flow: Started -> Working -> Completed. -----------
+    # Also renames a 'Working (AMC/General)' row back to 'Working'.
     for xmlid, label, sequence in (
             ('stage_started', 'Started', 90),
             ('stage_working', _WORKING_LABEL, 95),
             ('stage_completed', 'Completed', 100)):
-        sid = xmlid_target(xmlid)
+        sid = working_id if xmlid == 'stage_working' else xmlid_target(xmlid)
         if sid:
             cr.execute(
                 "UPDATE project_project_stage SET name = jsonb_build_object('en_US', %s::text), sequence = %s, "

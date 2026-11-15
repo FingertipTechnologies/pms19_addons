@@ -74,7 +74,8 @@
         white-space: nowrap;
     }
 
-    .o_pms_range_select {
+    .o_pms_range_select,
+    .o_pms_mode_select {
         width: auto;
         min-width: 150px;
     }
@@ -342,6 +343,27 @@
         .o_pms_initials {
             flex: 0 0 auto;
         }
+    }
+
+    // "Actual / Estimated" hours, right-aligned in the label column.
+    .o_pms_hours {
+        flex: 0 0 auto;
+        margin-left: auto;
+        padding-left: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+        color: var(--gray-600, #6c757d);
+        white-space: nowrap;
+
+        &.o_pms_hours_over {
+            color: var(--danger, #dc3545);
+            font-weight: 600;
+        }
+    }
+
+    thead .o_pms_col_project .o_pms_hours {
+        float: right;
     }
 
     .o_pms_employee_name {
