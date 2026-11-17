@@ -352,7 +352,8 @@ class AmcMonthlyReport(models.Model):
 
         Each file is built independently: a failure of one does not prevent the
         other from being generated and attached for download. Returns the list
-        of error messages (empty when both files were produced).
+        of error messages (empty when all requested files were produced).
+        Sending requests Excel only; manual previews still request both files.
         """
         self.ensure_one()
         stem = self._file_stem()
@@ -361,6 +362,8 @@ class AmcMonthlyReport(models.Model):
             ('pdf_attachment_id', '.pdf', 'application/pdf', self._render_pdf, _("PDF")),
             ('xlsx_attachment_id', '.xlsx', XLSX_MIMETYPE, self._render_xlsx, _("Excel")),
         )
+        if self.env.context.get('amc_skip_pdf'):
+            files = tuple(item for item in files if item[0] != 'pdf_attachment_id')
         values, errors = {}, []
         old = Attachment
         for field_name, extension, mimetype, render, label in files:
@@ -432,8 +435,9 @@ class AmcMonthlyReport(models.Model):
     def _process(self, send=True):
         """Collect, render and (with ``send``) email the report.
 
-        Returns False on success (or no data), else the error message. When the
-        PDF or the Excel file could not be generated, the report is set to
+        Sending builds Excel only; previews build PDF and Excel.
+        Returns False on success (or no data), else the error message. When a
+        requested file could not be generated, the report is set to
         *failed* (keeping the file that was produced, for download) and no email
         is sent. Nothing is raised in that case, so the failed state persists
         even inside the caller's savepoint / transaction.
@@ -445,7 +449,7 @@ class AmcMonthlyReport(models.Model):
         if not self._collect_lines():
             self.write({'state': 'no_data', 'error_message': False})
             return False
-        errors = self._build_attachments()
+        errors = self.with_context(amc_skip_pdf=bool(send))._build_attachments()
         if errors:
             message = '\n'.join(errors)
             self.write({'state': 'failed', 'error_message': message})
