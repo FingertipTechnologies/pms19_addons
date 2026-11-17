@@ -251,6 +251,24 @@ class ProjectTask(models.Model):
         return tasks
 
     def write(self, vals):
+        moved_milestones = self.env['project.custom.milestone']
+        manual_move = 'custom_milestone_id' in vals and not self.env.su
+        if manual_move:
+            target = self.env['project.custom.milestone'].browse(vals['custom_milestone_id']).exists() if vals['custom_milestone_id'] else self.env['project.custom.milestone']
+            for task in self.filtered(lambda t: t.project_id.ft_project_type == 'amc'):
+                old = task.custom_milestone_id
+                if old == target:
+                    continue
+                if not task.ft_can_deploy:
+                    raise UserError(_('Only the project billing approver can change Payment Milestone.'))
+                if old and old.status not in AMC_OPEN_STATUSES:
+                    raise UserError(_('The existing payment milestone is locked.'))
+                if target and (target.project_id.id != vals.get('project_id', task.project_id.id)
+                               or not target.is_amc_monthly or target.status not in AMC_OPEN_STATUSES):
+                    raise UserError(_('Choose an open monthly milestone from the same project.'))
+                if target and not (task.ft_deployed and task.pwf_amc_approval == 'approved'):
+                    raise UserError(_('Approve the task and mark it Billable before assigning a payment milestone.'))
+                moved_milestones |= old | target
         self._ft_amc_refuse_deploy_write(vals)
         self._ft_amc_undo_on_status_change(vals)
         # Reopen detection: a task leaving a final stage (only possible through
@@ -280,6 +298,8 @@ class ProjectTask(models.Model):
                 # safety net for a task that is still 1_deployed).
                 reopened.sudo()._ft_amc_clear_deployed(_("the task was reopened"),
                                                       state='01_in_progress')
+        if moved_milestones:
+            moved_milestones.sudo()._amc_refresh_report(_('Payment milestone changed on task.'))
         return res
 
     # ------------------------------------------------------------------

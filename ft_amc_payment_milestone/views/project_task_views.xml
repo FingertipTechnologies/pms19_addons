@@ -30,6 +30,9 @@
                        decoration-success="ft_deploy_state == 'deployed'"
                        decoration-warning="ft_deploy_state == 'to_deploy'"/>
                 <field name="ft_deployed_date" optional="hide"/>
+                <field name="custom_milestone_id" string="Payment Milestone" optional="show"
+                       domain="[('project_id', '=', project_id), ('is_amc_monthly', '=', True), ('status', '=', 'not_started')]"
+                       options="{'no_create': True}"/>
             </xpath>
         </field>
     </record>
@@ -122,5 +125,22 @@
     <menuitem id="menu_ft_amc_tasks_to_deploy" name="AMC Tasks to Bill"
               parent="ft_amc_monthly_timesheet.menu_amc_root"
               action="action_ft_amc_tasks_to_deploy" sequence="25"/>
+
+    <record id="view_task_payment_milestone_visible" model="ir.ui.view">
+        <field name="name">project.task.payment.milestone.visible</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project_date_extension.view_task_form2_date_extension"/>
+        <field name="priority">120</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='custom_milestone_id']" position="attributes">
+                <attribute name="invisible">ft_project_type == 'amc'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="custom_milestone_id" string="Payment Milestone"
+                       domain="[('project_id', '=', project_id), ('is_amc_monthly', '=', True), ('status', '=', 'not_started')]"
+                       options="{'no_create': True}" invisible="ft_project_type != 'amc'"/>
+            </xpath>
+        </field>
+    </record>
 
 </odoo>

@@ -60,6 +60,8 @@ AMC_STATUS_SEQUENCE = (
 # Statuses from which a task may still be detached (nothing has been sent to
 # the customer yet). From "completed" on, the customer has seen the list, so
 # a task that is reset / reopened stays attached and a note is posted instead.
+_AMC_RESET_TOKEN = object()
+
 AMC_OPEN_STATUSES = ('not_started',)
 # Transitions reserved to the AMC report managers (ft_amc_monthly_timesheet's
 # MANAGER_GROUPS) and the project's Project Manager.
@@ -663,15 +665,21 @@ class ProjectCustomMilestone(models.Model):
     def action_amc_paid(self):
         return self._amc_set_status('paid')
 
+    def _amc_authorized_completed_reset(self):
+        return (self.env.context.get('_amc_reset_token') is _AMC_RESET_TOKEN
+                and all(m.is_amc_monthly and m.status in ('completed', 'not_started') for m in self))
+
     def action_amc_reset_not_started(self):
         self._amc_check_manager()
-        invoiced = self.filtered(lambda m: m.status in AMC_INVOICED_STATUSES)
-        if invoiced:
-            raise UserError(_(
-                "%s cannot be reset: the invoice has been raised for this month "
-                "(Invoice Raised / Part Paid / Paid). Its content is final.",
-                ', '.join(invoiced.mapped('display_name'))))
-        return self._amc_set_status('not_started')
+        if any(not m.is_amc_monthly or m.status not in ('completed', 'not_started') for m in self):
+            raise UserError(_('Only Completed AMC milestones can be reset. Client Approved, invoiced and paid milestones remain locked.'))
+        milestones = self.filtered(lambda m: m.status == 'completed')
+        milestones.with_context(_amc_reset_token=_AMC_RESET_TOKEN).write({'status': 'not_started'})
+        for milestone in milestones:
+            milestone.message_post(body=_(
+                'Reset to Not Started by %s for billing corrections. Previous email history is retained; no email was resent.',
+                self.env.user.name), subtype_xmlid='mail.mt_note')
+        return True
 
     def action_amc_open_report(self):
         self.ensure_one()

@@ -103,6 +103,10 @@ class ProjectCustomMilestone(models.Model):
         Not Started; the paid amount and the chatter stay editable."""
         if self.env.su:
             return
+        # Narrow exception for the permission-checked AMC reset button only.
+        reset_allowed = getattr(self, '_amc_authorized_completed_reset', None)
+        if vals == {'status': 'not_started'} and reset_allowed and reset_allowed():
+            return
         done = self.filtered(lambda m: m._ft_is_done())
         if not done:
             return
