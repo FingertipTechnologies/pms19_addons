@@ -74,7 +74,7 @@ DEFAULT_SEND_DAY = 7
 # later override that needs to tell a cron completion from a manual one.
 CRON_CONTEXT_KEY = 'ft_amc_milestone_cron'
 # Column order of the task Excel (_amc_task_excel_rows / _amc_build_task_excel).
-AMC_EXCEL_COLUMNS = ('task', 'deployed_on', 'billable_hours')
+AMC_EXCEL_COLUMNS = ('task', 'deployed_on', 'completed_on', 'billable_hours')
 # Statuses after which the month is invoiced: nothing may change any more.
 AMC_INVOICED_STATUSES = ('invoice_raised', 'partially_paid', 'paid')
 
@@ -410,6 +410,7 @@ class ProjectCustomMilestone(models.Model):
                 'task': task.name or '',
                 'stage': task.stage_id.name or '',
                 'deployed_on': task._ft_amc_deployment_day() if task.ft_deployed_date else False,
+                'completed_on': task._ft_local_date(task.ft_completion_date) if task.ft_completion_date else False,
                 'approved_by': task.pwf_amc_approved_by_id.name or '',
                 'approved_hours': approved_hours,
                 'billable_hours': task.ft_billable_hours or 0.0,
@@ -449,7 +450,7 @@ class ProjectCustomMilestone(models.Model):
         last_col = len(AMC_EXCEL_COLUMNS) - 1
 
         sheet = workbook.add_worksheet(_('Tasks'))
-        for col, width in enumerate((60, 16, 16)):
+        for col, width in enumerate((60, 16, 22, 16)):
             sheet.set_column(col, col, width)
         sheet.set_landscape()
         sheet.set_paper(9)  # A4
@@ -475,8 +476,8 @@ class ProjectCustomMilestone(models.Model):
         row += 1
 
         rows = self._amc_task_excel_rows()
-        sheet.write_row(row, 0, [_('Task'), _('Date')], header_fmt)
-        sheet.write(row, 2, _('Billable Hours'), header_num_fmt)
+        sheet.write_row(row, 0, [_('Task'), _('Billable Date'), _('Task Completed Date')], header_fmt)
+        sheet.write(row, 3, _('Billable Hours'), header_num_fmt)
         sheet.freeze_panes(row + 1, 0)
         sheet.repeat_rows(row)
         if not rows:
@@ -491,10 +492,15 @@ class ProjectCustomMilestone(models.Model):
                     row, 1, datetime.combine(data['deployed_on'], datetime.min.time()), date_fmt)
             else:
                 sheet.write_blank(row, 1, None, date_fmt)
-            sheet.write_number(row, 2, data['billable_hours'] / 24.0, hours_fmt)
+            if data['completed_on']:
+                sheet.write_datetime(
+                    row, 2, datetime.combine(data['completed_on'], datetime.min.time()), date_fmt)
+            else:
+                sheet.write_blank(row, 2, None, date_fmt)
+            sheet.write_number(row, 3, data['billable_hours'] / 24.0, hours_fmt)
         row += 1
-        sheet.merge_range(row, 0, row, 1, _('Total'), total_label_fmt)
-        sheet.write_number(row, 2, sum(r['billable_hours'] for r in rows) / 24.0, total_fmt)
+        sheet.merge_range(row, 0, row, 2, _('Total'), total_label_fmt)
+        sheet.write_number(row, 3, sum(r['billable_hours'] for r in rows) / 24.0, total_fmt)
         workbook.close()
         return output.getvalue()
 
