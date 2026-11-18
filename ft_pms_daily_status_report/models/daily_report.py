@@ -285,7 +285,7 @@ class FtPmsDailyReport(models.AbstractModel):
             'email_from': email_from,
             'reply_to': email_from,
             'email_to': user.email_formatted,
-            'email_cc': 'shebin@fingertipplus.com',
+            'email_cc': 'shebin@fingertipplus.com, ameen@fingertipplus.com, sunil@fingertipplus.com, rakesh@fingertipplus.com',
             'author_id': self.env.user.partner_id.id,
             'model': LOG_MODEL,
             'res_id': log.id,
