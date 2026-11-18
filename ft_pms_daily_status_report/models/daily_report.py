@@ -59,9 +59,10 @@ class FtPmsDailyReport(models.AbstractModel):
 
     @api.model
     def _recipient_users(self, project):
-        """PM and Technical Lead of a project (internal, active users)."""
-        return (project.user_id | project.technical_lead_id ).filtered(
-            lambda u: u.active and not u.share)
+        """Project Manager only (internal, active users)."""
+        return project.user_id.filtered(
+            lambda u: u.active and not u.share
+        )
 
     # ------------------------------------------------------------------
     # Data (reused from the dashboards)
@@ -284,6 +285,7 @@ class FtPmsDailyReport(models.AbstractModel):
             'email_from': email_from,
             'reply_to': email_from,
             'email_to': user.email_formatted,
+            'email_cc': 'shebin@fingertipplus.com',
             'author_id': self.env.user.partner_id.id,
             'model': LOG_MODEL,
             'res_id': log.id,

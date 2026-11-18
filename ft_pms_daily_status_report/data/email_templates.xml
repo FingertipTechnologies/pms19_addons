@@ -13,7 +13,7 @@
             <p style="margin:0 0 12px 0;">Dear <t t-out="user_name"/>,</p>
             <p style="margin:0 0 16px 0;">
                 Here is your daily project status report for <b t-out="date_str"/>.
-                It covers the projects where you are the Project Manager or the Technical Lead.
+                It covers the projects assigned to you as the Project Manager.
                 Overdue items are highlighted in <span style="color:#b00020;font-weight:bold;">red</span>.
             </p>
 
