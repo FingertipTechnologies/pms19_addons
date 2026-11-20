@@ -1,0 +1,16 @@
+<odoo>
+    <record id="access_bug_notification_user" model="ir.model.access">
+        <field name="name">Bug notifications: own read access</field>
+        <field name="model_id" ref="model_qa_testapp_bug_notification"/>
+        <field name="group_id" ref="base.group_user"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_bug_notification_own" model="ir.rule">
+        <field name="name">Own bug notifications only</field>
+        <field name="model_id" ref="model_qa_testapp_bug_notification"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
+</odoo>

@@ -62,7 +62,7 @@
     # 19.0.0.1.3 caps Internal/External Call tasks at 3:00 hours per person
     # per task, and only lets a task's assignees log time on it (Settings
     # administrators and superuser jobs exempt). No new fields.
-    'version': '19.0.0.1.3',
+    'version': '19.0.0.1.4',
     'summary': 'project hours tracking',
     'category': 'Project',
     'author': 'Fingertip',

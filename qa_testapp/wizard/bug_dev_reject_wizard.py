@@ -8,7 +8,7 @@ class QABugDevRejectWizard(models.TransientModel):
     _description = 'QA Bug - Developer Reject Wizard'
 
     ticket_ids = fields.Many2many('qa_testapp.ticket', string='Bugs', required=True)
-    reason = fields.Text(string='Rejection Reason', required=True)
+    reason = fields.Text(string='Invalid Reason', required=True)
 
     @api.model
     def default_get(self, fields_list):

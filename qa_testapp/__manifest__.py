@@ -37,16 +37,19 @@ A comprehensive Quality Assurance suite for Odoo 18 with:
     'depends': ['base', 'project', 'mail', 'bt_project_customization', 'hr_timesheet', 'project_update', 'project_custom_milestone', 'ft_helpdesk_core', 'ft_helpdesk_portal'],
     'data': [
             'security/qa_security.xml',
+            'security/bug_notification_security.xml',
             'security/ir.model.access.csv',
             'security/bug_reopen_reason_security.xml',
             'data/ticket_sequence.xml',
             'data/approval_mail_templates.xml',
+            'data/priority_cleanup.xml',
             'data/mayora_bug_user.xml',
             'views/test_plan_views.xml',
             'views/test_scenario_views.xml',
             'views/test_case_views.xml',
             'views/bug_reopen_reason_views.xml',
             'views/ticket_views.xml',
+            'views/bug_task_reference_views.xml',
             'views/project_project_views.xml',
             'views/project_analysis_views.xml',
             'views/res_users_views.xml',
@@ -58,6 +61,7 @@ A comprehensive Quality Assurance suite for Odoo 18 with:
     'static': ['static/description/icon.svg'],
     'assets': {
         'web.assets_backend': [
+            'qa_testapp/static/src/bug_notification.js',
             'qa_testapp/static/src/evidence_description/evidence.scss',
             'qa_testapp/static/src/evidence_description/evidence_html_field.js',
             'qa_testapp/static/src/evidence_attachments/evidence_attachments_field.js',

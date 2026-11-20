@@ -109,6 +109,8 @@ PMS Planning & Stage Workflow
     ],
     'assets': {
         'web.assets_backend': [
+            'ft_pms_planning_workflow/static/src/task_timesheet.scss',
+            'ft_pms_planning_workflow/static/src/stage_requirements.scss',
             'ft_pms_planning_workflow/static/src/project_planner/multi_select.js',
             'ft_pms_planning_workflow/static/src/project_planner/multi_select.xml',
             'ft_pms_planning_workflow/static/src/project_planner/project_planner.js',

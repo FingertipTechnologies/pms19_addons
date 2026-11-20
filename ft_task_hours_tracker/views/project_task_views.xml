@@ -12,95 +12,85 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
 
+            <xpath expr="//div[@id='date_deadline_and_recurring_task']" position="after">
+                <field name="ft_testing_start"/>
+                <field name="ft_last_completed_date"/>
+                <field name="ft_last_reopen_date"/>
+                <field name="ft_task_age" string="Age (Days)" readonly="1"/>
+            </xpath>
+
+            <xpath expr="//field[@name='ft_deadline_change_count']/parent::group" position="inside">
+                <field name="ft_working_start"/>
+                <field name="ft_first_completed_date"/>
+                <field name="ft_first_development_complete"/>
+            </xpath>
+
             <!-- Hours shown as a full-width section above the notebook tabs -->
             <xpath expr="//notebook" position="before">
-                <group string="Hours" name="ft_hours_section">
-                <field name="ft_total_hours_taken"
-                       string="Actual Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <field name="ft_billable_hours"
-                       string="Billable Hours"
-                       widget="float_time"/>
-                <field name="ft_non_billable_hours"
-                       string="Non Billable Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <field name="ft_rework_hours"
-                       string="Rework Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <!-- Technical companions to Billable Hours: they record that the
-                     figure was overridden so later timesheets cannot reset it. -->
-                <field name="ft_billable_hours_manual" invisible="1"/>
-                <field name="ft_billable_hours_override" invisible="1"/>
-                <field name="ft_dev_hours_exceeded" invisible="1"/>
-                <field name="ft_qa_hours_exceeded" invisible="1"/>
-                <field name="ft_pm_hours_exceeded" invisible="1"/>
-                <field name="ft_ba_hours_exceeded" invisible="1"/>
-                <field name="ft_trainee_hours_exceeded" invisible="1"/>
-                <field name="ft_dev_hours"
-                       string="Dev Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <div invisible="not ft_dev_hours_exceeded or not ft_allow_billable">
-                    <small class="text-danger">
-                        <i class="fa fa-exclamation-triangle me-1"/>
+                <group string="Hours" name="ft_hours_section" col="2" class="mt-0">
+                    <group col="2">
+                        <field name="ft_total_hours_taken" string="Actual Hours" widget="float_time" readonly="1" />
+                        <field name="ft_billable_hours" string="Billable Hours" widget="float_time" />
+                        <field name="ft_non_billable_hours" string="Non Billable Hours" widget="float_time" readonly="1" />
+                        <field name="ft_rework_hours" string="Rework Hours" widget="float_time" readonly="1" />
+                        <field name="ft_bug_fix_hours" widget="float_time" readonly="1" />
+                        <field name="ft_dev_hours" string="Dev Hours" widget="float_time" readonly="1" />
+                        <div invisible="not ft_dev_hours_exceeded or not ft_allow_billable" colspan="2">
+                            <small class="text-danger">
+                                <i class="fa fa-exclamation-triangle me-1" />
                         Dev hours time limit reached!
                         This task has exceeded the allowed Dev hours. Please create a new task to continue the work.
                     </small>
-                </div>
-                <field name="ft_qa_hours"
-                       string="QA Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <div invisible="not ft_qa_hours_exceeded or not ft_allow_billable">
-                    <small class="text-danger">
-                        <i class="fa fa-exclamation-triangle me-1"/>
+                        </div>
+                    </group>
+                    <group col="2">
+                        <field name="ft_qa_hours" string="QA Hours" widget="float_time" readonly="1" />
+                        <div invisible="not ft_qa_hours_exceeded or not ft_allow_billable" colspan="2">
+                            <small class="text-danger">
+                                <i class="fa fa-exclamation-triangle me-1" />
                         QA hours time limit reached!
                         This task has exceeded the allowed QA hours. Please create a new task to continue the work.
                     </small>
-                </div>
-                <field name="ft_pm_hours"
-                       string="PM Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <div invisible="not ft_pm_hours_exceeded or not ft_allow_billable">
-                    <small class="text-danger">
-                        <i class="fa fa-exclamation-triangle me-1"/>
+                        </div>
+                        <field name="ft_pm_hours" string="PM Hours" widget="float_time" readonly="1" />
+                        <div invisible="not ft_pm_hours_exceeded or not ft_allow_billable" colspan="2">
+                            <small class="text-danger">
+                                <i class="fa fa-exclamation-triangle me-1" />
                         PM hours time limit reached!
                         This task has exceeded the allowed PM hours. Please create a new task to continue the work.
                     </small>
-                </div>
-                <field name="ft_ba_hours"
-                       string="BA Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <div invisible="not ft_ba_hours_exceeded or not ft_allow_billable">
-                    <small class="text-danger">
-                        <i class="fa fa-exclamation-triangle me-1"/>
+                        </div>
+                        <field name="ft_ba_hours" string="BA Hours" widget="float_time" readonly="1" />
+                        <div invisible="not ft_ba_hours_exceeded or not ft_allow_billable" colspan="2">
+                            <small class="text-danger">
+                                <i class="fa fa-exclamation-triangle me-1" />
                         BA hours time limit reached!
                         This task has exceeded the allowed BA hours. Please create a new task to continue the work.
                     </small>
-                </div>
-                <field name="ft_trainee_hours"
-                       string="Trainee Hours"
-                       widget="float_time"
-                       readonly="1"/>
-                <div invisible="not ft_trainee_hours_exceeded or not ft_allow_billable">
-                    <small class="text-danger">
-                        <i class="fa fa-exclamation-triangle me-1"/>
+                        </div>
+                        <field name="ft_trainee_hours" string="Trainee Hours" widget="float_time" readonly="1" />
+                        <div invisible="not ft_trainee_hours_exceeded or not ft_allow_billable" colspan="2">
+                            <small class="text-danger">
+                                <i class="fa fa-exclamation-triangle me-1" />
                         Trainee hours time limit reached!
                         This task has exceeded the allowed Trainee hours. Please create a new task to continue the work.
                     </small>
-                </div>
-                <div invisible="not ft_hours_exceeded or not ft_allow_billable">
-                    <small class="text-danger">
-                        <i class="fa fa-exclamation-triangle me-1"/>
+                        </div>
+                    </group>
+                    <field name="ft_billable_hours_manual" invisible="1" />
+                    <field name="ft_billable_hours_override" invisible="1" />
+                    <field name="ft_dev_hours_exceeded" invisible="1" />
+                    <field name="ft_qa_hours_exceeded" invisible="1" />
+                    <field name="ft_pm_hours_exceeded" invisible="1" />
+                    <field name="ft_ba_hours_exceeded" invisible="1" />
+                    <field name="ft_trainee_hours_exceeded" invisible="1" />
+                    <div invisible="not ft_hours_exceeded or not ft_allow_billable" colspan="2">
+                        <small class="text-danger">
+                            <i class="fa fa-exclamation-triangle me-1" />
                         Task time limit reached!
                         This task has exceeded the allowed hours. Please create a new task to continue the work.
                     </small>
-                </div>
+                    </div>
                 </group>
             </xpath>
 
@@ -133,13 +123,7 @@
                 <field name="ft_billing_status"/>
             </xpath>
 
-            <!-- Age (Days) next to the Deadline in the right-hand column.
-                 Anchored after the deadline's wrapper div (the label/div pair
-                 the base form renders Deadline with), so it gets its own
-                 label row. Read-only: computed, not stored. -->
-            <xpath expr="//div[@id='date_deadline_and_recurring_task']" position="after">
-                <field name="ft_task_age" string="Age (Days)" readonly="1"/>
-            </xpath>
+            
 
         </field>
     </record>
@@ -220,6 +204,8 @@
                        widget="float_time" sum="Total Actual" optional="show"/>
                 <field name="ft_billable_hours" string="Billable Hours"
                        widget="float_time" sum="Total Billable" optional="show"/>
+                <field name="ft_bug_fix_hours" string="Bug Fix Hours"
+                       widget="float_time" sum="Total Bug Fix" optional="show"/>
                 <field name="ft_billing_status" string="Billing Status"
                        optional="show"/>
             </field>

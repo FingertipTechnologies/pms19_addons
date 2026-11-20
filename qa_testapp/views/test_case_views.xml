@@ -21,6 +21,7 @@
                 <field name="test_type"/>
                 <field name="environment"/>
                 <field name="executed_date"/>
+                <field name="executed_by" widget="many2one_avatar_user"/>
             </list>
         </field>
     </record>

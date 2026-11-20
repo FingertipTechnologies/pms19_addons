@@ -27,10 +27,10 @@ from odoo.addons.ft_sprint_management.models.week_utils import (
 
 DEFAULT_RANGE = 'next_60'
 CUSTOM_RANGE = 'custom'
-MAX_CUSTOM_DAYS = 180
+MAX_CUSTOM_DAYS = 61
 RANGE_SIZES = (5, 10, 15, 30, 60)
 RANGE_PREFIXES = ('next', 'last', 'range')
-FIXED_RANGES = ('this_week', 'this_month', 'this_quarter')
+FIXED_RANGES = ('this_week', 'this_month')
 
 # Hours per day.  v < 4 grey; 4 <= v < 6 yellow; 6 <= v <= 8 green; v > 8 red.
 EFFORT_LOW = 4.0
@@ -94,7 +94,7 @@ def resolve_range(range_key, today, date_from=None, date_to=None):
     next_N  = today .. today+N-1
     last_N  = today-N+1 .. today
     range_N = today-N .. today+N
-    this_week Mon-Sun, this_month, this_quarter (calendar quarter).
+    this_week Mon-Sun, this_month.
     custom  = date_from .. date_to (swapped when reversed, at most
               MAX_CUSTOM_DAYS days long); missing/invalid dates fall back.
     Anything unknown falls back to DEFAULT_RANGE.
@@ -113,13 +113,9 @@ def resolve_range(range_key, today, date_from=None, date_to=None):
     if key == 'this_month':
         last = calendar.monthrange(today.year, today.month)[1]
         return today.replace(day=1), today.replace(day=last), key
-    if key == 'this_quarter':
-        first_month = 3 * ((today.month - 1) // 3) + 1
-        last_month = first_month + 2
-        last = calendar.monthrange(today.year, last_month)[1]
-        return (date(today.year, first_month, 1),
-                date(today.year, last_month, last), key)
     prefix, _sep, size = key.partition('_')
+    if prefix == 'range' and size.isdigit() and int(size) > 30:
+        return resolve_range(DEFAULT_RANGE, today)
     if prefix in RANGE_PREFIXES and size.isdigit() and int(size) in RANGE_SIZES:
         n = int(size)
         if prefix == 'next':
@@ -347,6 +343,42 @@ class FtPmsPlanner(models.AbstractModel):
         return plan
 
     @api.model
+    def _pwf_timesheet_rows(self, date_from, date_to, project_ids=None,
+                            pm_ids=None, resource_ids=None, final_only=False):
+        """[(project_id, user_id, day, hours)] of timesheet lines in range.
+
+        Shared by the Project Status and Task planners so both always agree.
+        Every timesheet line (any project, with or without task) counts;
+        ``project_ids=None`` means all projects. The person of a line is the
+        user of its employee, else the line's own user (0 when neither).
+        sudo: only sums leave this method.
+        """
+        domain = [('project_id', '!=', False),
+                  ('date', '>=', date_from), ('date', '<=', date_to)]
+        if project_ids is not None:
+            domain.append(('project_id', 'in', list(project_ids)))
+        if pm_ids:
+            domain.append(('project_id.user_id', 'in', list(pm_ids)))
+        if resource_ids:
+            domain += ['|', ('employee_id.user_id', 'in', list(resource_ids)),
+                       ('user_id', 'in', list(resource_ids))]
+        if final_only:
+            domain.append(('task_id.stage_id', 'in',
+                           self.env['project.task']._ft_final_stage_ids()))
+        wanted = set(resource_ids or [])
+        rows = []
+        for project, employee, user, day, hours in self.env[
+                'account.analytic.line'].sudo()._read_group(
+                    domain, ['project_id', 'employee_id', 'user_id', 'date:day'],
+                    ['unit_amount:sum']):
+            uid = employee.user_id.id or user.id or 0
+            if wanted and uid not in wanted:
+                continue
+            rows.append((project.id, uid, fields.Date.to_date(day),
+                         hours or 0.0))
+        return rows
+
+    @api.model
     def get_project_planner_data(self, filters=None):
         filters = filters or {}
         today = fields.Date.context_today(self)
@@ -411,21 +443,11 @@ class FtPmsPlanner(models.AbstractModel):
                 ['project_id'], ['__count'])
             unscheduled = {project.id: count for project, count in groups}
 
-        # --- 2nd search: collision totals across ALL projects ----------------
-        load = {}
-        readable_names = {}
-        users = self.env['res.users']
-        if mode != 'project':
-            user_ids = set()
-            for by_day in plan.values():
-                for per_user in by_day.values():
-                    user_ids.update(per_user)
-            users = self.env['res.users'].browse(sorted(user_ids))
-            if user_ids:
-                load, readable_names = self._pwf_collision_load(
-                    user_ids, scheduled, days_in_range)
-
         avg_values = projects._pwf_avg_daily_effort_values(today)
+        # With a Project / PM filter, hover tooltips list only the filtered
+        # projects (cell colour / collision still use the full load).
+        if project_ids or pm_ids:
+            self = self.with_context(pwf_shown_project_ids=projects.ids)
 
         days_payload = [{
             'date': fields.Date.to_string(d),
@@ -441,20 +463,42 @@ class FtPmsPlanner(models.AbstractModel):
         # {project_id: {user_id: hours}}; sudo so the totals do not depend on
         # the reader's timesheet rules (only sums leave this method, and only
         # for projects the reader can already see).
+        final_only = False  # Actual = every timesheet line, whatever the Completed toggle
         actual = defaultdict(lambda: defaultdict(float))
+        daily_actual = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
         if projects:
-            aal_domain = [('project_id', 'in', projects.ids),
-                          ('date', '>=', date_from), ('date', '<=', date_to)]
-            if resource_ids:
-                aal_domain.append(('user_id', 'in', resource_ids))
-            if status_domain:
-                aal_domain.append(
-                    ('task_id.stage_id', 'in', Task._ft_final_stage_ids()))
-            for proj, user, hours in self.env[
-                    'account.analytic.line'].sudo()._read_group(
-                        aal_domain, ['project_id', 'user_id'],
-                        ['unit_amount:sum']):
-                actual[proj.id][user.id] += hours or 0.0
+            for pid, uid, entry_day, hours in self._pwf_timesheet_rows(
+                    date_from, date_to, projects.ids, None, resource_ids,
+                    final_only):
+                actual[pid][uid] += hours
+                daily_actual[pid][entry_day][uid] += hours
+        # Employee-first layouts: a person's actual covers EVERY timesheet
+        # line in the period (all projects, also ones without planned work
+        # here), narrowed only by the Project / PM / Resource filters.
+        # {user_id: {project_id: {day: hours}}}
+        emp_actual = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+        if mode in ('employee', 'employee_project'):
+            for pid, uid, entry_day, hours in self._pwf_timesheet_rows(
+                    date_from, date_to, project_ids or None, pm_ids,
+                    resource_ids, final_only):
+                if uid:
+                    emp_actual[uid][pid][entry_day] += hours
+        # --- 2nd search: collision totals across ALL projects ----------------
+        load = {}
+        readable_names = {}
+        users = self.env['res.users']
+        if mode != 'project':
+            user_ids = set(emp_actual)
+            for by_day in plan.values():
+                for per_user in by_day.values():
+                    user_ids.update(per_user)
+            for per_user in actual.values():
+                user_ids.update(uid for uid in per_user if uid)
+            users = self.env['res.users'].browse(sorted(user_ids))
+            if user_ids:
+                load, readable_names = self._pwf_collision_load(
+                    user_ids, scheduled, days_in_range)
+
         estimated = defaultdict(lambda: defaultdict(float))
         for pid, by_day_plan in plan.items():
             for per_user in by_day_plan.values():
@@ -486,7 +530,7 @@ class FtPmsPlanner(models.AbstractModel):
             row.update(totals(sum(actual[project.id].values()),
                               sum(estimated[project.id].values())))
             if mode != 'project':
-                row_user_ids = set()
+                row_user_ids = {uid for uid in actual[project.id] if uid}
                 for per_user in by_day.values():
                     row_user_ids.update(per_user)
                 row_users = users.filtered(
@@ -531,25 +575,93 @@ class FtPmsPlanner(models.AbstractModel):
                     cell['collision'] = bool(hours) and len(
                         [h for h in day_load.values() if h > 0]) > 1
                     cells.append(cell)
+                own_actual = emp_actual.get(user.id, {})
                 sub = []
                 for r in own:
                     emp = next(e for e in r['employees']
                                if e['user_id'] == user.id)
+                    by_day_act = own_actual.get(r['id'], {})
                     sub.append({
                         'id': r['id'], 'name': r['name'],
-                        'cells': emp['cells'],
-                        **{k: emp[k] for k in (
-                            'actual', 'estimated', 'actual_hhmm',
-                            'estimated_hhmm')},
+                        'cells': [dict(c) for c in emp['cells']],
+                        'by_day_actual': by_day_act,
+                        **totals(sum(by_day_act.values()), emp['estimated']),
                     })
+                # Projects she logged time on without planned work shown
+                # here; unreadable ones are folded into "Other projects".
+                shown = {r['id'] for r in own}
+                extra_ids = [pid for pid in own_actual if pid not in shown]
+                if extra_ids:
+                    readable = Project.with_context(active_test=False).search(
+                        [('id', 'in', extra_ids)], order='name, id')
+                    groups = [(p.id, p.display_name, [p.id]) for p in readable]
+                    hidden = [pid for pid in extra_ids
+                              if pid not in readable.ids]
+                    if hidden:
+                        groups.append((False, _('Other projects'), hidden))
+                    for gid, gname, pids in groups:
+                        by_day_act = defaultdict(float)
+                        for pid in pids:
+                            for d, h in own_actual[pid].items():
+                                by_day_act[d] += h
+                        sub.append({
+                            'id': gid, 'name': gname,
+                            'cells': [self._pwf_employee_cell(
+                                d, gid, None,
+                                load.get(user.id, {}).get(d, {}),
+                                readable_names) for d in days],
+                            'by_day_actual': by_day_act,
+                            **totals(sum(by_day_act.values()), 0.0),
+                        })
+                total_by_day = defaultdict(float)
+                for by_day_act in own_actual.values():
+                    for d, h in by_day_act.items():
+                        total_by_day[d] += h
                 employees_payload.append({
                     'id': user.id, 'user_id': user.id,
                     'name': user.name or '',
                     'initials': initials_of(user.name),
                     'cells': cells, 'projects': sub,
-                    **totals(sum(p['actual'] for p in sub),
+                    'by_day_actual': total_by_day,
+                    **totals(sum(total_by_day.values()),
                              sum(p['estimated'] for p in sub)),
                 })
+
+        # Segment labels use timesheet dates, independently of planned weeks.
+        def set_actual(cells, by_day_act):
+            for cell in cells:
+                hours = by_day_act.get(fields.Date.to_date(cell['date']), 0.0)
+                cell['actual'] = round(hours, 2)
+                cell['actual_hhmm'] = hours_to_hhmm(hours)
+
+        for row in projects_payload:
+            proj_daily = daily_actual.get(row['id'], {})
+            set_actual(row['cells'], {
+                d: sum(per_user.values()) for d, per_user in proj_daily.items()})
+            for employee in row.get('employees', []):
+                uid = employee['user_id']
+                set_actual(employee['cells'], {
+                    d: per_user.get(uid, 0.0)
+                    for d, per_user in proj_daily.items()})
+        readable = self.env['project.project'].search(
+            [('id', 'in', list({pid for per_p in emp_actual.values()
+                                for pid in per_p}))])
+        readable_ts = {p.id: p.display_name for p in readable}
+        for employee in employees_payload:
+            set_actual(employee['cells'], employee.pop('by_day_actual'))
+            # Tooltip: where that day's actual hours were logged.
+            per_project = emp_actual.get(employee['user_id'], {})
+            for cell in employee['cells']:
+                day = fields.Date.to_date(cell['date'])
+                split = defaultdict(float)
+                for pid, by_day in per_project.items():
+                    if by_day.get(day):
+                        split[readable_ts.get(pid, _('Other projects'))] += by_day[day]
+                cell['actual_breakdown'] = [
+                    {'name': name, 'hours': round(h, 2)}
+                    for name, h in sorted(split.items())]
+            for sub_row in employee['projects']:
+                set_actual(sub_row['cells'], sub_row.pop('by_day_actual'))
 
         return {
             'range_key': range_key,
@@ -634,11 +746,20 @@ class FtPmsPlanner(models.AbstractModel):
         value = round(hours, 2)
         others = defaultdict(float)
         other_label = _('Other projects')
+        shown = self.env.context.get('pwf_shown_project_ids')
         for other_id, other_hours in (user_load or {}).items():
             if other_id == project_id or not other_hours:
                 continue
+            if shown is not None and other_id not in shown:
+                continue
             others[readable_names.get(other_id) or other_label] += other_hours
-        total = round(max(sum((user_load or {}).values()), hours), 2)
+        full_total = round(max(sum((user_load or {}).values()), hours), 2)
+        if shown is None:
+            total = full_total
+        elif project_id:
+            total = round(hours + sum(others.values()), 2)
+        else:  # resource total row: others already holds every shown project
+            total = round(max(sum(others.values()), hours), 2)
         other_projects = [
             {'name': name, 'hours': round(h, 2)}
             for name, h in sorted(others.items(), key=lambda kv: (-kv[1], kv[0]))
@@ -654,7 +775,7 @@ class FtPmsPlanner(models.AbstractModel):
         cell = self._pwf_cell(day, value, 'planned', tooltip, total=total,
                               other_projects=other_projects,
                               collision=collision)
-        cell['color'] = effort_color(total)
+        cell['color'] = effort_color(full_total)
         return cell
 
     # ------------------------------------------------------------------
@@ -723,20 +844,48 @@ class FtPmsPlanner(models.AbstractModel):
         domain.append(('sprint_id', 'in', weeks.ids))
         tasks = Task.search(domain)
 
+        # Card hours: with a Resource filter, only that person's own
+        # timesheets on the task (matched by the line's employee, as in
+        # Project Status) - not hours others logged on a shared task.
+        task_actual = None
+        if resource_ids and tasks:
+            task_actual = defaultdict(float)
+            wanted = set(resource_ids)
+            for task, employee, user, hours in self.env[
+                    'account.analytic.line'].sudo()._read_group(
+                        [('task_id', 'in', tasks.ids)],
+                        ['task_id', 'employee_id', 'user_id'],
+                        ['unit_amount:sum']):
+                if (employee.user_id.id or user.id) in wanted:
+                    task_actual[task.id] += hours or 0.0
+
         final_ids = set(Task._ft_final_stage_ids())
         by_week = defaultdict(list)
         for task in tasks:
             by_week[task.sprint_id.id].append(task)
 
+        # Actual = timesheet hours dated inside each week (by the selected
+        # resources, if any) in the project scope - not the tasks' lifetime
+        # effective_hours, which mixes in other weeks and other people. Same
+        # line selection / person matching as the Project Status planner, so
+        # a week here equals the sum of the clicked row's daily segments.
+        week_actual = defaultdict(float)
+        if weeks:
+            for _pid, _uid, day, hours in self._pwf_timesheet_rows(
+                    weeks[:1].start_date, sunday_of(weeks[-1:].start_date),
+                    [project.id] if project else None, pm_ids, resource_ids,
+                    final_only=False):
+                week_actual[monday_of(day)] += hours
+
         weeks_payload = []
         for week in weeks:
             rows = []
-            total = completed_total = actual_total = 0.0
+            total = completed_total = 0.0
+            actual_total = week_actual.get(monday_of(week.start_date), 0.0)
             for task in by_week.get(week.id, []):
                 category = self._pwf_task_category(task, today, final_ids)
                 estimated = task.estimated or 0.0
                 total += estimated
-                actual_total += task.effective_hours or 0.0
                 if category == 'completed':
                     completed_total += estimated
                 visible = (
@@ -758,7 +907,8 @@ class FtPmsPlanner(models.AbstractModel):
                 'end': fields.Date.to_string(end),
                 'is_current': start <= today <= end,
                 'contains_focus': bool(focus) and start <= focus <= end,
-                'tasks': [self._pwf_task_payload(task, category, today)
+                'tasks': [self._pwf_task_payload(task, category, today,
+                                                 task_actual)
                           for category, task in rows],
                 'totals': {
                     'estimated': round(total, 2),
@@ -793,7 +943,9 @@ class FtPmsPlanner(models.AbstractModel):
         )
 
     @api.model
-    def _pwf_task_payload(self, task, category, today):
+    def _pwf_task_payload(self, task, category, today, task_actual=None):
+        actual = (task_actual.get(task.id, 0.0) if task_actual is not None
+                  else task.effective_hours or 0.0)
         deadline = task._ft_local_date(task.date_deadline)
         return {
             'id': task.id,
@@ -809,9 +961,9 @@ class FtPmsPlanner(models.AbstractModel):
             'deadline': fields.Date.to_string(deadline) if deadline else False,
             'deadline_label': task._board_deadline(today)['deadline'],
             'estimated': task.estimated or 0.0,
-            'actual': task.effective_hours or 0.0,
+            'actual': actual,
             'estimated_hhmm': hours_to_hhmm(task.estimated or 0.0),
-            'actual_hhmm': hours_to_hhmm(task.effective_hours or 0.0),
+            'actual_hhmm': hours_to_hhmm(actual),
             'priority': int(task.priority or '0'),
         }
 

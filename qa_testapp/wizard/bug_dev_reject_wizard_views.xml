@@ -4,13 +4,13 @@
         <field name="name">qa_testapp.bug_dev_reject_wizard.form</field>
         <field name="model">qa_testapp.bug_dev_reject_wizard</field>
         <field name="arch" type="xml">
-            <form string="Reject Bug">
+            <form string="Mark Bug Invalid">
                 <group>
                     <field name="ticket_ids" widget="many2many_tags" readonly="1"/>
-                    <field name="reason" placeholder="Why is this bug rejected? (e.g. works as designed, not a bug, out of scope)"/>
+                    <field name="reason" placeholder="Why is this bug invalid? (e.g. works as designed, not a bug, out of scope)"/>
                 </group>
                 <footer>
-                    <button name="action_confirm" type="object" string="Reject" class="btn-danger"/>
+                    <button name="action_confirm" type="object" string="Mark Invalid" class="btn-danger"/>
                     <button special="cancel" string="Cancel" class="btn-secondary"/>
                 </footer>
             </form>

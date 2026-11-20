@@ -37,7 +37,7 @@
             <div class="o_pms_tp_card_footer">
                 <span class="o_pms_tp_card_hours">
                     <span title="Estimated hours"><i class="fa fa-hourglass-half me-1"/><t t-esc="task.estimated_hhmm"/></span>
-                    <span title="Actual hours (timesheets)"><i class="fa fa-check me-1"/><t t-esc="task.actual_hhmm"/></span>
+                    <span title="Actual hours (timesheets). With a Resource selected: only that person's own entries on this task."><i class="fa fa-check me-1"/><t t-esc="task.actual_hhmm"/></span>
                     <i t-if="task.priority and task.priority !== '0'" class="fa fa-star text-warning" title="High priority"/>
                 </span>
                 <span t-if="task.assignees and task.assignees.length" class="o_pms_tp_card_avatars">

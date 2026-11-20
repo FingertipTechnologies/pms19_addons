@@ -41,11 +41,10 @@ class QABugAnalysis(models.Model):
         ('trivial', 'Trivial'),
     ], string='Severity', readonly=True)
     priority = fields.Selection([
-        ('p1', 'P1 - Urgent'),
-        ('p2', 'P2 - High'),
-        ('p3', 'P3 - Medium'),
-        ('p4', 'P4 - Low'),
-        ('p5', 'P5 - Backlog'),
+        ('p1', 'Critical'),
+        ('p2', 'High'),
+        ('p3', 'Medium'),
+        ('p4', 'Low'),
     ], string='Priority', readonly=True)
     status = fields.Selection([
         ('open', 'Open'),
@@ -53,9 +52,10 @@ class QABugAnalysis(models.Model):
         ('fixed', 'Fixed'),
         ('closed', 'Closed'),
         ('reopened', 'Re-Opened'),
-        ('rejected', 'Rejected'),
+        ('rejected', 'Invalid'),
         ('unable_to_reproduce', 'Unable to Reproduce'),
         ('duplicate', 'Duplicate'),
+        ('known_issue', 'Known Issue'),
     ], string='Status', readonly=True)
     environment = fields.Selection([
         ('sandbox', 'Sandbox'),

@@ -60,7 +60,6 @@ export const RANGE_GROUPS = [
         options: [
             { key: "this_week", label: _t("This week") },
             { key: "this_month", label: _t("This month") },
-            { key: "this_quarter", label: _t("This quarter") },
         ],
     },
     {
@@ -68,7 +67,6 @@ export const RANGE_GROUPS = [
         options: [
             { key: "range_15", label: _t("± 15 days") },
             { key: "range_30", label: _t("± 30 days") },
-            { key: "range_60", label: _t("± 60 days") },
         ],
     },
     {
@@ -310,60 +308,44 @@ export class ProjectPlanner extends Component {
                 const color = CELL_COLORS.has(cell.color) ? cell.color : "none";
                 const date = cell.date || days[index]?.date;
                 const hasValue = cell.value !== null && cell.value !== undefined;
-                const lines = [dayLabel(index, date)];
-                if (!hasValue) {
-                    lines.push(_t("No planned work"));
-                } else if (employeeName) {
-                    lines.push(
-                        isTotal
-                            ? _t("%(name)s: %(hours)s h planned on the shown projects", {
-                                  name: employeeName,
-                                  hours: formatHours(cell.value),
-                              })
-                            : _t("%(name)s: %(hours)s h planned on this project", {
-                                  name: employeeName,
-                                  hours: formatHours(cell.value),
-                              })
-                    );
-                    if (cell.total !== undefined && cell.total !== null) {
-                        lines.push(_t("Total across all projects: %s h", formatHours(cell.total)));
-                    }
-                    const others = cell.other_projects || [];
-                    if (others.length) {
-                        lines.push(isTotal ? _t("Projects:") : _t("Other projects:"));
-                        for (const other of others) {
-                            lines.push(`  • ${other.name}: ${formatHours(other.hours)} h`);
+                const actualLabel = cell.actual_hhmm || formatHours(cell.actual || 0);
+                const duration = (hours) => {
+                    const minutes = Math.round((hours || 0) * 60);
+                    return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+                };
+                const lines = [dayLabel(index, date) + (employeeName ? ` — ${employeeName}` : "")];
+                lines.push(_t("Actual Hours Worked: %s", duration(cell.actual)));
+                for (const item of cell.actual_breakdown || []) {
+                    lines.push(`   • ${item.name}: ${duration(item.hours)}`);
+                }
+                const planned = cell.total ?? cell.value ?? 0;
+                lines.push(_t("Total Planned Hours: %s", duration(planned)));
+                if (employeeName) {
+                    const projects = cell.other_projects || [];
+                    if (hasValue || projects.length) {
+                        lines.push("", _t("Planned Project Allocation:"));
+                        if (!isTotal && hasValue) {
+                            lines.push(_t("This project: %s", duration(cell.value)));
                         }
+                        for (const project of projects) {
+                            lines.push(`${project.name}: ${duration(project.hours)}`);
+                        }
+                        const count = projects.length + (!isTotal && cell.value > 0 ? 1 : 0);
+                        if (count) {
+                            lines.push("", _t("Hours are allocated across %s projects.", count));
+                        }
+                    } else {
+                        lines.push(_t("No planned work"));
                     }
+                } else if (hasValue) {
+                    lines.push(_t("Planned per resource: %s", duration(cell.value)));
+                    if (cell.resources != null) lines.push(_t("Resources: %s", cell.resources));
                 } else {
-                    lines.push(_t("Planned: %s h per resource", formatHours(cell.value)));
-                    if (cell.total !== undefined && cell.total !== null) {
-                        lines.push(_t("Total planned: %s h", formatHours(cell.total)));
-                    }
-                    if (cell.resources !== undefined && cell.resources !== null) {
-                        lines.push(_t("Resources: %s", cell.resources));
-                    }
-                }
-                if (hasValue) {
-                    // What the colour was taken from: the person's total across
-                    // all projects on employee rows, the per-resource average
-                    // on project rows.
-                    const basis =
-                        employeeName && cell.total !== undefined && cell.total !== null
-                            ? cell.total
-                            : cell.value;
-                    lines.push(
-                        _t("Colour: %(colour)s, from %(hours)s h", {
-                            colour: COLOR_LABELS[color] || color,
-                            hours: formatHours(basis),
-                        })
-                    );
-                }
-                if (cell.collision) {
-                    lines.push(_t("⚠ Allocated on more than one project this day"));
+                    lines.push(_t("No planned work"));
                 }
                 return {
                     date,
+                    actualLabel: cell.actual ? actualLabel : "",
                     collision: Boolean(cell.collision),
                     tooltip: lines.join("\n"),
                     cls: `o_pms_seg o_pms_c_${color}${cell.collision ? " o_pms_collision" : ""}${

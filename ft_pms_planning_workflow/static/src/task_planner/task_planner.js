@@ -39,10 +39,9 @@ export const TOTALS_TOOLTIP = _t(
         "Completed = estimated hours of tasks in a completed stage.\n" +
         "Estimated / Open / Completed are all based on the ESTIMATE, not on time logged."
 );
-
 export const ACTUAL_TOOLTIP = _t(
-    "Actual (timesheets) = hours actually logged in timesheets on these tasks " +
-        "(all dates). It is not part of the estimate-based totals above and can be " +
+    "Actual (timesheets) = timesheet hours logged within this week (by the selected " +
+        "resource, if any). It is not part of the estimate-based totals above and can be " +
         "higher or lower than the estimate."
 );
 

@@ -142,7 +142,22 @@ class QATestCase(models.Model):
                     raise UserError(
                         "Test Case %s has been rejected. Execution fields cannot change." % (rec.test_case_id or '',)
                     )
+        if 'status' in vals:
+            vals = dict(vals, **self._ft_execution_vals(vals['status']))
         return super().write(vals)
+
+    def _ft_execution_vals(self, status):
+        """Executed Date / By follow every status change (cleared when the
+        case goes back to Not Executed)."""
+        if not status or status == 'not_executed':
+            return {'executed_date': False, 'executed_by': False}
+        return {'executed_date': fields.Date.context_today(self),
+                'executed_by': self.env.user.id}
+
+    @api.onchange('status')
+    def _onchange_status_execution(self):
+        for rec in self:
+            rec.update(rec._ft_execution_vals(rec.status))
 
     def action_creator_edit(self):
         """Unlock a still-pending test case so its creator can edit it.

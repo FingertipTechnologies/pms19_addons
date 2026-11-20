@@ -62,7 +62,7 @@
                  reviewed in one place; the Next Stage line says which block the
                  upcoming move is checked against. -->
             <xpath expr="//group[@name='ft_dates']" position="after">
-                <group string="Stage Requirements" name="pwf_stage_requirements"
+                <group string="Stage Requirements" name="pwf_stage_requirements" class="o_pwf_stage_req"
                        invisible="ft_project_type != 'implementation'">
                     <field name="pwf_can_edit_reg" invisible="1"/>
                     <field name="pwf_can_edit_finance" invisible="1"/>
@@ -109,16 +109,16 @@
                             <field name="pwf_components_attachment_ids" widget="many2many_binary"
                                    string="Components and Their Relationships (Excel)"
                                    options="{'accepted_file_extensions': '.xlsx,.xls'}"/>
-                            <field name="pwf_process_flow_attachment_ids" widget="many2many_binary"
-                                   string="Process Flow Chart (PDF)"
-                                   options="{'accepted_file_extensions': '.pdf'}"/>
+                            <field name="pwf_process_flow_attachment_ids" widget="many2many_binary_paste"
+                                   string="Process Flow Chart (PDF / Image)"
+                                   options="{'accepted_file_extensions': '.pdf,.png,.jpg,.jpeg,.gif,.webp,.bmp'}"/>
                         </group>
                         <group string="Evidence" name="pwf_req_dev_evidence">
                             <field name="pwf_brd_signoff_attachment_ids" widget="many2many_binary_paste"
                                    string="Signed BRD E-mail Screenshot"/>
                             <div colspan="2" class="text-muted small" name="pwf_req_dev_note">
                                 All three documents (Schema Design and Components and Their
-                                Relationships as Excel .xlsx/.xls, Process Flow Chart as PDF), the
+                                Relationships as Excel .xlsx/.xls, Process Flow Chart as PDF or image), the
                                 signed BRD, the project's Modules (all of them, at least one, in the
                                 Modules tab), the 100% milestone plan and the BRD Approval Date are
                                 required before the project can move from DISC to DEV.

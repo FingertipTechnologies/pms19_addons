@@ -8,3 +8,7 @@ from . import bug_analysis
 from . import res_users
 from . import ir_ui_menu
 from . import bug_reopen_reason
+
+from . import bug_notification
+
+from . import project_task_reference

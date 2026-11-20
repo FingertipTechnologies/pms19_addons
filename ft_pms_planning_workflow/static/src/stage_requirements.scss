@@ -1,0 +1,90 @@
+// Stage Requirements section on Implementation projects: each stage becomes
+// a card with a coloured header, sub-groups become light panels.
+.o_pwf_stage_req {
+    --pwf-accent: #714b67;
+    --pwf-card-bg: #fff;
+    --pwf-panel-bg: #f8f9fb;
+    --pwf-border: #e3e6ec;
+
+    margin-top: 1rem;
+    padding: 0.75rem 1rem 1rem;
+    border: 1px solid var(--pwf-border);
+    border-radius: 0.75rem;
+    background: var(--pwf-panel-bg);
+
+    // Section title ("Stage Requirements")
+    > .o_horizontal_separator,
+    > div > .o_horizontal_separator:first-child {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--pwf-accent);
+        border-bottom: 2px solid var(--pwf-accent);
+        padding-bottom: 0.35rem;
+    }
+
+    // Stage headers (KICKOFF, DISC – DISCOVERY, DEV, …) as pills
+    .o_horizontal_separator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1.25rem 0 0.5rem;
+        padding: 0.45rem 0.85rem;
+        border: 0;
+        border-left: 4px solid var(--pwf-accent);
+        border-radius: 0.4rem;
+        background: rgba(113, 75, 103, 0.08);
+        color: var(--pwf-accent);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    // Each stage body and its sub-groups (Documents, Evidence, Finance) as cards
+    .o_group .o_inner_group {
+        background: var(--pwf-card-bg);
+        border: 1px solid var(--pwf-border);
+        border-radius: 0.6rem;
+        padding: 0.6rem 0.9rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+        .o_horizontal_separator {
+            margin: 0 0 0.5rem;
+            padding: 0 0 0.3rem;
+            border-left: 0;
+            border-bottom: 1px dashed var(--pwf-border);
+            border-radius: 0;
+            background: none;
+            color: #374151;
+            font-size: 0.8rem;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+    }
+
+    // Help notes
+    .text-muted.small {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        border-left: 3px solid #93c5fd;
+        border-radius: 0.3rem;
+        background: #eff6ff;
+        color: #1e3a8a !important;
+        line-height: 1.5;
+    }
+
+    .alert-warning {
+        border-left: 4px solid #f59e0b;
+        border-radius: 0.5rem;
+    }
+}
+
+.o_web_client.o_dark .o_pwf_stage_req,
+html[data-color-scheme="dark"] .o_pwf_stage_req {
+    --pwf-card-bg: #262a36;
+    --pwf-panel-bg: #1f2230;
+    --pwf-border: #3a3f4f;
+    .text-muted.small { background: #1e293b; color: #bfdbfe !important; }
+    .o_inner_group .o_horizontal_separator { color: #e5e7eb; }
+}

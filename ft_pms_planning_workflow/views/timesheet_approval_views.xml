@@ -255,6 +255,12 @@
                             help="Reject every timesheet of this task that is still Pending (a reason is asked)."/>
                 </div>
             </xpath>
+            <xpath expr="//page[@name='page_timesheets']//field[@name='timesheet_ids']" position="attributes">
+                <attribute name="class" add="o_pwf_task_timesheets" separator=" "/>
+            </xpath>
+            <xpath expr="//page[@name='page_timesheets']//field[@name='timesheet_ids']/list/field[@name='name']" position="attributes">
+                <attribute name="widget">text</attribute>
+            </xpath>
             <xpath expr="//page[@name='page_timesheets']//field[@name='timesheet_ids']/list" position="inside">
                 <field name="ft_approval_state" string="Approval" widget="badge"
                        readonly="1" optional="show"
@@ -283,7 +289,7 @@
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="priority">120</field>
         <field name="arch" type="xml">
-            <xpath expr="//group[@name='ft_hours_section']" position="inside">
+            <xpath expr="//group[@name='ft_hours_section']/group[field[@name='ft_trainee_hours']]" position="inside">
                 <field name="ft_approved_hours" widget="float_time" readonly="1"/>
                 <field name="ft_rejected_hours" widget="float_time" readonly="1"/>
                 <field name="ft_pending_hours" widget="float_time" readonly="1"/>

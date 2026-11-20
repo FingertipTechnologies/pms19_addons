@@ -164,6 +164,8 @@
 
 // ===================================================================== grid
 .o_pms_project_planner {
+    --pms-seg-w: 48px;
+    --pms-seg-h: 24px;
     .o_pms_grid_scroll {
         flex: 1 1 auto;
         min-height: 0;
@@ -375,7 +377,7 @@
     }
 
     .o_pms_row_employee .o_pms_seg {
-        height: calc(var(--pms-seg-h) - 8px);
+        height: var(--pms-seg-h);
     }
 
     .o_pms_row_employee > .o_pms_cell {
@@ -395,7 +397,12 @@
         display: block;
         width: 100%;
         min-width: 6px;
-        max-width: 40px;
+        max-width: none;
+        color: #171717;
+        font-size: 11px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
         height: var(--pms-seg-h);
         margin: 0 auto;
         padding: 0;
@@ -450,5 +457,22 @@
     .o_pms_multi_options {
         max-height: 320px;
         overflow-y: auto;
+    }
+}
+
+// About 50 days fit on screen (the table width is set inline); longer
+// ranges scroll horizontally. Labels stay on one line and readable.
+.o_pms_grid.o_pms_fit_days {
+    .o_pms_cell { padding-left: 1px !important; padding-right: 1px !important; }
+    .o_pms_seg {
+        min-width: 0;
+        overflow: hidden;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        font-size: 9px;
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        text-overflow: clip;
     }
 }

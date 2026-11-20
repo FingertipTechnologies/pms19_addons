@@ -53,12 +53,14 @@
                         domain="[('status', '=', 'closed')]"/>
                 <filter name="filter_reopened" string="Re-Opened"
                         domain="[('status', '=', 'reopened')]"/>
-                <filter name="filter_rejected_status" string="Rejected"
+                <filter name="filter_rejected_status" string="Invalid"
                         domain="[('status', '=', 'rejected')]"/>
                 <filter name="filter_unable" string="Unable to Reproduce"
                         domain="[('status', '=', 'unable_to_reproduce')]"/>
                 <filter name="filter_duplicate" string="Duplicate"
                         domain="[('status', '=', 'duplicate')]"/>
+                <filter name="filter_known_issue" string="Known Issue" domain="[('status', '=', 'known_issue')]"/>
+
                 <separator/>
 
                 <!-- Severity filters -->
@@ -71,9 +73,9 @@
                 <separator/>
 
                 <!-- Priority filters -->
-                <filter name="filter_priority_p1" string="P1 - Urgent"
+                <filter name="filter_priority_p1" string="Critical"
                         domain="[('priority', '=', 'p1')]"/>
-                <filter name="filter_priority_p2" string="P2 - High"
+                <filter name="filter_priority_p2" string="High"
                         domain="[('priority', '=', 'p2')]"/>
                 <separator/>
 

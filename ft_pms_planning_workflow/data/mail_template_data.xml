@@ -4,7 +4,7 @@
         <record id="mail_template_pwf_stage_change" model="mail.template">
             <field name="name">PMS: Project Stage Changed</field>
             <field name="model_id" ref="project.model_project_project"/>
-            <field name="subject">{{ object.name }}: project now in {{ ctx.get('pwf_new_stage_code') or object.stage_id.name }} stage</field>
+            <field name="subject">{{ object.name }}: project now in {{ ctx.get('pwf_new_stage_label') or object._pwf_stage_label(object.stage_id) }} stage</field>
             <field name="email_from">Support Fingertip &lt;support@fingertipplus.com&gt;</field>
             <field name="reply_to">support@fingertipplus.com</field>
             <field name="use_default_to" eval="False"/>
@@ -14,7 +14,7 @@
     <t t-set="pm_name" t-value="ctx.get('pwf_pm_name') or ''"/>
     <t t-set="pm_email" t-value="ctx.get('pwf_pm_email') or ''"/>
     <p style="margin:0 0 12px 0;">Dear <t t-out="ctx.get('pwf_greeting_name') or 'Customer'"/>,</p>
-    <p style="margin:0 0 12px 0;">This is to let you know that the project <b t-out="object.name or ''"/> is now in the <t t-out="ctx.get('pwf_new_stage_desc') or ctx.get('pwf_new_stage_code') or object.stage_id.name or ''"/> stage.</p>
+    <p style="margin:0 0 12px 0;">This is to let you know that the project <b t-out="object.name or ''"/> is now in the <t t-out="ctx.get('pwf_new_stage_label') or object._pwf_stage_label(object.stage_id)"/> stage.</p>
     <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:16px 0;font-size:14px;">
         <tr>
             <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Previous stage</td>
@@ -22,7 +22,7 @@
         </tr>
         <tr>
             <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Current stage</td>
-            <td style="padding:6px 0;" t-out="ctx.get('pwf_new_stage_label') or object.stage_id.name or '-'"/>
+            <td style="padding:6px 0;" t-out="ctx.get('pwf_new_stage_label') or object._pwf_stage_label(object.stage_id)"/>
         </tr>
         <tr>
             <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Next stage</td>

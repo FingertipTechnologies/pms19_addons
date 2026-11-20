@@ -8,10 +8,12 @@
             <list decoration-danger="severity == 'blocker' or escalation_level == 'manager' or approval_state == 'rejected'"
                   decoration-warning="severity == 'critical' or escalation_level == 'qa_lead' or approval_state == 'pending_approval'"
                   decoration-success="status == 'fixed'"
-                  decoration-muted="status in ('closed', 'rejected', 'unable_to_reproduce', 'duplicate')">
+                  decoration-muted="status in ('closed', 'rejected', 'unable_to_reproduce', 'duplicate', 'known_issue')">
                 <field name="bug_id"/>
                 <field name="title"/>
                 <field name="project_id"/>
+                <field name="task_id" optional="show"/>
+                <field name="task_reference" optional="hide"/>
                 <field name="approval_state" widget="badge"
                        decoration-warning="approval_state == 'pending_approval'"
                        decoration-success="approval_state == 'approved'"
@@ -45,7 +47,7 @@
                 <header>
                     <button name="action_creator_edit" type="object" string="Edit"
                             class="btn-primary"
-                            invisible="not is_creator or creator_unlocked"/>
+                            invisible="not is_creator or creator_unlocked or is_dev_user"/>
                     <button name="action_approve" type="object" string="Approve"
                             class="btn-success"
                             invisible="approval_state != 'pending_approval' or not is_current_user_approver"/>
@@ -54,13 +56,13 @@
                             invisible="approval_state != 'pending_approval' or not is_current_user_approver"/>
                     <button name="action_in_progress" type="object" string="In Progress"
                             class="btn-primary"
-                            invisible="approval_state != 'approved' or status in ('in_progress', 'fixed', 'closed', 'rejected', 'unable_to_reproduce', 'duplicate')"/>
+                            invisible="not is_dev_user or approval_state != 'approved' or status in ('in_progress', 'fixed', 'closed', 'rejected', 'unable_to_reproduce', 'duplicate', 'known_issue')"/>
                     <button name="action_fixed" type="object" string="Fixed"
                             class="btn-success"
-                            invisible="approval_state != 'approved' or status in ('open', 'fixed', 'closed', 'rejected', 'unable_to_reproduce', 'duplicate')"/>
+                            invisible="not is_dev_user or approval_state != 'approved' or status in ('open', 'fixed', 'closed', 'rejected', 'unable_to_reproduce', 'duplicate', 'known_issue')"/>
                     <!-- Developer resolutions: from Open / In Progress / Re-Opened only.
                          Rejected asks for a reason (wizard). QA then closes or re-opens. -->
-                    <button name="action_dev_reject_open_wizard" type="object" string="Rejected"
+                    <button name="action_dev_reject_open_wizard" type="object" string="Invalid"
                             class="btn-danger"
                             invisible="not is_dev_user or approval_state != 'approved' or status not in ('open', 'in_progress', 'reopened')"/>
                     <button name="action_unable_to_reproduce" type="object" string="Unable to Reproduce"
@@ -71,12 +73,16 @@
                             class="btn-secondary"
                             confirm="Mark this bug as a Duplicate?"
                             invisible="not is_dev_user or approval_state != 'approved' or status not in ('open', 'in_progress', 'reopened')"/>
+                    <button name="action_known_issue" type="object" string="Known Issue"
+                            class="btn-secondary"
+                            invisible="not is_dev_user or approval_state != 'approved' or status not in ('open', 'in_progress', 'reopened')"/>
+
                     <button name="action_closed" type="object" string="Close"
                             class="btn-secondary"
                             invisible="not can_manage_bug_reopen or approval_state != 'approved' or status in ('open', 'closed')"/>
                     <button name="action_reopen" type="object" string="Re-Open"
                             class="btn-warning"
-                            invisible="not can_manage_bug_reopen or approval_state != 'approved' or status not in ('fixed', 'closed', 'rejected', 'unable_to_reproduce', 'duplicate')"/>
+                            invisible="not can_manage_bug_reopen or approval_state != 'approved' or status not in ('fixed', 'closed', 'rejected', 'unable_to_reproduce', 'duplicate', 'known_issue')"/>
                     <field name="approval_state" widget="statusbar" statusbar_visible="pending_approval,approved"/>
                     <field name="status" widget="statusbar" clickable="1"
                            statusbar_visible="open,in_progress,fixed,closed,reopened"
@@ -105,7 +111,7 @@
                     </div>
                     <div class="alert alert-danger" role="alert"
                          invisible="status != 'rejected'">
-                        Rejected by developer: <field name="dev_rejection_reason" readonly="1" nolabel="1" class="oe_inline"/>
+                        Marked Invalid: <field name="dev_rejection_reason" readonly="1" nolabel="1" class="oe_inline"/>
                     </div>
                     <div class="oe_title">
                         <h1>
@@ -132,6 +138,12 @@
                         <group string="Project and Reporter">
                             <field name="approver_id" readonly="1"/>
                             <field name="project_id" readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="task_id" required="not id"
+                                   domain="[('project_id', '=', project_id), ('task_type', '=', 'user_story')]"
+                                   options="{'no_create': True}"
+                                   readonly="id and not (is_creator and creator_unlocked)"/>
+                            <field name="task_reference" readonly="1" invisible="not task_id"/>
+
                             <field name="module_id"
                                    options="{'no_create': True}"
                                    domain="[('project_ids', '=', project_id)]"
@@ -314,9 +326,11 @@
                 <filter string="Open / In Progress" name="filter_status_active"
                         domain="[('status', 'in', ('open', 'in_progress', 'reopened'))]"/>
                 <filter string="Fixed" name="filter_status_fixed" domain="[('status', '=', 'fixed')]"/>
-                <filter string="Rejected by Developer" name="filter_status_rejected" domain="[('status', '=', 'rejected')]"/>
+                <filter string="Invalid" name="filter_status_rejected" domain="[('status', '=', 'rejected')]"/>
                 <filter string="Unable to Reproduce" name="filter_status_unable" domain="[('status', '=', 'unable_to_reproduce')]"/>
                 <filter string="Duplicate" name="filter_status_duplicate" domain="[('status', '=', 'duplicate')]"/>
+                <filter string="Known Issue" name="filter_known_issue" domain="[('status', '=', 'known_issue')]"/>
+
 
                 <separator/>
                 <group name="group_by">
@@ -333,6 +347,7 @@
         <field name="name">Bug</field>
         <field name="res_model">qa_testapp.ticket</field>
         <field name="view_mode">list,form,kanban</field>
+        <field name="view_id" ref="qa_testapp_view_ticket_list"/>
         <!-- <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
         <field name="context">{'search_default_my_bugs': 1}</field>  -->
     </record>
@@ -340,6 +355,7 @@
         <field name="name">My Bugs</field>
         <field name="res_model">qa_testapp.ticket</field>
         <field name="view_mode">list,form,kanban</field>
+        <field name="view_id" ref="qa_testapp_view_ticket_list"/>
         <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
         <field name="context">{'search_default_my_bugs': 1}</field>
     </record>
@@ -348,6 +364,7 @@
         <field name="name">All Bugs</field>
         <field name="res_model">qa_testapp.ticket</field>
         <field name="view_mode">list,form,kanban</field>
+        <field name="view_id" ref="qa_testapp_view_ticket_list"/>
         <field name="search_view_id" ref="qa_testapp_view_ticket_search"/>
         <field name="context">{}</field>
     </record>

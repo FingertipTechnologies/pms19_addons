@@ -1,6 +1,8 @@
 import logging
 from datetime import timedelta
 
+from markupsafe import Markup
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 
@@ -31,7 +33,7 @@ class QATicket(models.Model):
     actual_result = fields.Text(string='Actual Result')
 
     is_client = fields.Boolean(string='Client', help="Check if this bug was raised by a client.")
-    is_internal = fields.Boolean(string='Internal', help="Check if this bug was found internally.")
+    is_internal = fields.Boolean(string='Internal', default=True, help="Check if this bug was found internally.")
 
     reporter_id = fields.Many2one('res.users', string='Reporter', default=lambda self: self.env.user, tracking=True)
     reporter_display = fields.Char(string='Reporter', compute='_compute_reporter_display')
@@ -54,11 +56,10 @@ class QATicket(models.Model):
         ('trivial', 'Trivial')
     ], string='Severity', default='major', tracking=True)
     priority = fields.Selection([
-        ('p1', 'P1 - Urgent'),
-        ('p2', 'P2 - High'),
-        ('p3', 'P3 - Medium'),
-        ('p4', 'P4 - Low'),
-        ('p5', 'P5 - Backlog')
+        ('p1', 'Critical'),
+        ('p2', 'High'),
+        ('p3', 'Medium'),
+        ('p4', 'Low'),
     ], string='Priority', default='p3', tracking=True)
     target_response_time = fields.Char(
         string='Target Response Time',
@@ -78,9 +79,10 @@ class QATicket(models.Model):
         ('reopened', 'Re-Opened'),
         # Developer resolutions (set with the header buttons; Rejected asks
         # for a reason). QA closes or re-opens them like a Fixed bug.
-        ('rejected', 'Rejected'),
+        ('rejected', 'Invalid'),
         ('unable_to_reproduce', 'Unable to Reproduce'),
         ('duplicate', 'Duplicate'),
+        ('known_issue', 'Known Issue'),
     ], string='Status', default='open', tracking=True)
     reproducibility = fields.Selection([
         ('always', 'Always'),
@@ -104,6 +106,25 @@ class QATicket(models.Model):
         'qa_testapp.resource_url', 'ticket_id', string='URLs')
     reported_date = fields.Datetime(string='Reported Date', default=fields.Datetime.now)
     project_id = fields.Many2one('project.project', string='Project', required=True)
+    task_id = fields.Many2one(
+        'project.task', string='Related Task', tracking=True, ondelete='restrict',
+        domain="[('project_id', '=', project_id)]",
+        help='Select the existing task this bug belongs to.',
+    )
+    task_reference = fields.Char(
+        string='Task ID', related='task_id.qa_task_reference', readonly=True,
+    )
+
+    @api.constrains('task_id', 'project_id')
+    def _check_bug_task_project(self):
+        # Task is mandatory only at creation (enforced in create); legacy bugs
+        # without a task must stay editable, so only validate when one is set.
+        for rec in self:
+            if rec.task_id and rec.task_id.project_id != rec.project_id:
+                raise UserError('The Related Task must belong to the selected project.')
+            if rec.task_id and rec.task_id.task_type != 'user_story':
+                raise UserError('Bugs can only be raised against a User Story task.')
+
     module = fields.Char(string='Module (legacy)', tracking=True)
     module_id = fields.Many2one(
         'cus.module', string='Module', tracking=True,
@@ -180,15 +201,15 @@ class QATicket(models.Model):
     )
 
     dev_rejection_reason = fields.Text(
-        string='Developer Rejection Reason', copy=False, readonly=True, tracking=True,
-        help="Why the developer rejected the bug (status Rejected). Distinct from "
+        string='Invalid Reason', copy=False, readonly=True, tracking=True,
+        help="Why the developer marked the bug Invalid. Distinct from "
              "the PM's approval rejection_reason.",
     )
 
     is_dev_user = fields.Boolean(
         string='Current User Is Developer', compute='_compute_is_dev_user',
         help="The current user is the bug's assignee (developer) and not a "
-             "Junior / Senior QA: only they see Rejected / Unable to Reproduce / Duplicate.")
+             "Junior / Senior QA: only they see Invalid / Unable to Reproduce / Duplicate / Known Issue.")
 
     @api.depends('assignee_id')
     @api.depends_context('uid')
@@ -260,6 +281,8 @@ class QATicket(models.Model):
     @api.onchange('project_id')
     def _onchange_project_id(self):
         self.module_id = False
+        if self.task_id.project_id != self.project_id:
+            self.task_id = False
 
     @api.onchange('is_client')
     def _onchange_is_client(self):
@@ -304,10 +327,24 @@ class QATicket(models.Model):
         for record in self:
             record.can_manage_bug_reopen = allowed
 
+    def init(self):
+        self.env.cr.execute("UPDATE qa_testapp_ticket SET status = 'rejected' WHERE status = 'invalid'")
+
+    def _queue_bug_popup(self, user, kind):
+        self.ensure_one()
+        if not user or not user.active or user.share:
+            return
+        self.env['qa_testapp.bug_notification'].sudo().create({
+            'ticket_id': self.id, 'user_id': user.id, 'kind': kind,
+        })
+        user._bus_send('qa_testapp.bug_notification', {})
+
     def action_in_progress(self):
+        self._check_dev_resolution_allowed()
         self.write({'status': 'in_progress'})
 
     def action_fixed(self):
+        self._check_dev_resolution_allowed()
         self.write({'status': 'fixed'})
 
     def action_closed(self):
@@ -321,13 +358,13 @@ class QATicket(models.Model):
         for rec in self:
             if not rec.is_dev_user and not self.env.user.has_group('base.group_system'):
                 raise UserError(
-                    "Only the developer assigned to bug %s can reject it or mark it "
-                    "Unable to Reproduce / Duplicate." % (rec.bug_id or '',)
+                    "Only the developer assigned to bug %s can change it to In Progress / "
+                    "Fixed / Invalid / Unable to Reproduce / Duplicate / Known Issue." % (rec.bug_id or '',)
                 )
             if rec.status not in self.DEV_RESOLUTION_FROM:
                 raise UserError(
                     "Bug %s is %s: only an Open, In Progress or Re-Opened bug can be "
-                    "rejected, marked Unable to Reproduce or Duplicate." % (
+                    "rejected, marked Unable to Reproduce, Duplicate, Known Issue or Invalid." % (
                         rec.bug_id or '', dict(rec._fields['status'].selection).get(rec.status, rec.status),
                     )
                 )
@@ -335,18 +372,18 @@ class QATicket(models.Model):
     def action_dev_reject(self, reason=None):
         reason = (reason or '').strip()
         if not reason:
-            raise UserError("A reason is required to reject a bug.")
+            raise UserError("A reason is required to mark a bug Invalid.")
         self._check_dev_resolution_allowed()
         for rec in self:
             rec.write({'status': 'rejected', 'dev_rejection_reason': reason})
-            rec.message_post(body="Bug rejected by %s. Reason: %s" % (self.env.user.name, reason))
+            rec.message_post(body="Bug marked Invalid by %s. Reason: %s" % (self.env.user.name, reason))
 
     def action_dev_reject_open_wizard(self):
         self.ensure_one()
         self._check_dev_resolution_allowed()
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Reject Bug',
+            'name': 'Mark Bug Invalid',
             'res_model': 'qa_testapp.bug_dev_reject_wizard',
             'view_mode': 'form',
             'target': 'new',
@@ -364,6 +401,9 @@ class QATicket(models.Model):
         self.write({'status': 'duplicate'})
         for rec in self:
             rec.message_post(body="Marked Duplicate by %s." % self.env.user.name)
+
+    def action_known_issue(self):
+        self.write({'status': 'known_issue'})
 
     def action_reopen(self):
         self._check_qa_bug_action()
@@ -482,6 +522,14 @@ class QATicket(models.Model):
     def create(self, vals_list):
         junior = self._is_junior_qa()
         for vals in vals_list:
+            if not vals.get('task_id'):
+                raise UserError('Select a Related Task before creating the bug.')
+            if vals.get('is_client'):
+                vals['is_internal'] = False
+                vals['reporter_id'] = False
+            else:
+                vals.setdefault('is_internal', True)
+                vals.setdefault('reporter_id', self.env.uid)
             if (
                 vals.get('status') in ('closed', 'reopened')
                 or vals.get('reopen_count')
@@ -507,6 +555,14 @@ class QATicket(models.Model):
         return records
 
     def write(self, vals):
+        if 'task_id' in vals and not vals['task_id'] and any(self.mapped('task_id')):
+            raise UserError('The Related Task cannot be removed from the bug.')
+        newly_fixed = (self.filtered(lambda rec: rec.status != vals["status"])
+                       if vals.get("status") in ('fixed', 'unable_to_reproduce', 'rejected',
+                                                 'duplicate', 'known_issue')
+                       else self.browse())
+        if vals.get("status") in ("known_issue",):
+            self._check_dev_resolution_allowed()
         protected_fields = {
             'reopen_count',
             'reopen_reason_ids',
@@ -531,7 +587,16 @@ class QATicket(models.Model):
                     raise UserError(
                         "Bug %s has been rejected. Status cannot change." % (rec.bug_id or '',)
                     )
+        old_status = {rec.id: rec.status for rec in self} if 'status' in vals else {}
         res = super().write(vals)
+        for rec in self:
+            # No notification when a bug is only moved to In Progress.
+            if (rec.id in old_status and old_status[rec.id] != rec.status
+                    and rec.status != 'in_progress'):
+                rec._ft_notify_status_change(old_status[rec.id])
+        for rec in newly_fixed:
+            if rec.reporter_id != self.env.user:
+                rec._queue_bug_popup(rec.reporter_id, 'fixed')
         if 'evidence_attachment_ids' in vals:
             self._link_evidence_attachments()
         if 'assignee_id' in vals:
@@ -553,6 +618,8 @@ class QATicket(models.Model):
         """Unlock a still-pending bug so its creator can edit it.
         Only the record's creator may unlock it."""
         self.ensure_one()
+        if self.is_dev_user:
+            raise UserError("The developer assigned to bug %s cannot edit it." % (self.bug_id or '',))
         if not self.is_creator:
             raise UserError(
                 "Only the creator can edit bug %s while it is pending approval." % (self.bug_id or '',)
@@ -614,6 +681,58 @@ class QATicket(models.Model):
             if orphans:
                 orphans.write({'res_model': 'qa_testapp.ticket', 'res_id': rec.id})
 
+    @api.model
+    def _ft_migrate_p5_priority(self):
+        """P5 - Backlog was removed: move existing P5 bugs to Low."""
+        self.env.cr.execute(
+            "UPDATE qa_testapp_ticket SET priority = 'p4' WHERE priority = 'p5'")
+
+    # ------------------------------------------------------------------
+    # Status-change notifications (Discuss inbox + e-mail)
+    # ------------------------------------------------------------------
+    def _ft_status_recipients(self):
+        """Reporter (tester) and Assignee (developer), minus whoever made the
+        change; only active internal users."""
+        self.ensure_one()
+        users = (self.reporter_id | self.assignee_id) - self.env.user
+        return users.filtered(lambda u: u.active and not u.share)
+
+    def _ft_notify_status_change(self, old_status):
+        self.ensure_one()
+        users = self._ft_status_recipients()
+        if not users:
+            return
+        labels = dict(self._fields['status']._description_selection(self.env))
+        body = Markup(
+            '<p>Bug <b>%s</b> - %s</p><p>Status changed: <b>%s</b> &#8594; '
+            '<b>%s</b> by %s.</p>') % (
+                self.bug_id or '', self.title or '',
+                labels.get(old_status, old_status or ''),
+                labels.get(self.status, self.status), self.env.user.name)
+        # Always land in the Discuss inbox (chat icon), even for users whose
+        # preference is "by e-mail"; e-mail those users separately below.
+        self.with_context(ft_bug_force_inbox=True).sudo().message_post(
+            body=body, partner_ids=users.partner_id.ids,
+            message_type='comment', subtype_xmlid='mail.mt_comment')
+        email_users = users.filtered(
+            lambda u: u.notification_type == 'email' and u.email)
+        if email_users:
+            self.env['mail.mail'].sudo().create({
+                'subject': 'Bug %s: %s' % (self.bug_id or '', labels.get(self.status, self.status)),
+                'body_html': body,
+                'email_to': ','.join(email_users.mapped('email_formatted')),
+                'model': self._name, 'res_id': self.id,
+                'auto_delete': True,
+            })
+
+    def _notify_get_recipients(self, message, msg_vals=False, **kwargs):
+        recipients = super()._notify_get_recipients(message, msg_vals=msg_vals, **kwargs)
+        if self.env.context.get('ft_bug_force_inbox'):
+            for data in recipients:
+                if data.get('uid') and not data.get('ushare') and data.get('notif') == 'email':
+                    data['notif'] = 'inbox'
+        return recipients
+
     def _notify_assignee(self, approved=False):
         """Notify the assignee that they can start working.
 
@@ -626,6 +745,7 @@ class QATicket(models.Model):
         self.ensure_one()
         if self.approval_state != 'approved':
             return
+        self._queue_bug_popup(self.assignee_id, 'assigned')
         if self.assignee_id and self.assignee_id.email:
             ref = 'qa_testapp.email_template_bug_approved' if approved \
                 else 'qa_testapp.email_template_bug_assigned'

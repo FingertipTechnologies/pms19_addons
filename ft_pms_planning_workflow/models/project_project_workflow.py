@@ -79,7 +79,7 @@ PWF_MILESTONE_FIELDS = ('custom_milestone_ids', 'milestone_ids')
 PWF_DOCUMENT_FORMATS = {
     'pwf_schema_design_attachment_ids': 'excel',
     'pwf_components_attachment_ids': 'excel',
-    'pwf_process_flow_attachment_ids': 'pdf',
+    'pwf_process_flow_attachment_ids': 'pdf_image',
     'pwf_code_review_attachment_ids': 'excel',
 }
 # What each format accepts. The file extension is checked first (it is what
@@ -101,6 +101,12 @@ PWF_FORMAT_RULES = {
     'pdf': {
         'extensions': ('.pdf',),
         'mimetypes': ('application/pdf',),
+    },
+    # Process Flow Chart: a PDF or an image (uploaded or pasted).
+    'pdf_image': {
+        'extensions': ('.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'),
+        'mimetypes': ('application/pdf', 'image/png', 'image/jpeg', 'image/gif',
+                      'image/webp', 'image/bmp'),
     },
 }
 
@@ -141,7 +147,7 @@ class ProjectProject(models.Model):
         'ir.attachment', 'pwf_project_process_flow_attachment_rel',
         'project_id', 'attachment_id',
         string='Process Flow Chart', copy=False,
-        help='Process Flow Chart produced during Discovery (PDF). Required '
+        help='Process Flow Chart produced during Discovery (PDF or image, upload or paste). Required '
              'before the project can move from DISC to DEV.',
     )
     pwf_brd_signoff_attachment_ids = fields.Many2many(
@@ -529,7 +535,7 @@ class ProjectProject(models.Model):
                     'upload the %(document)s as %(extensions)s.',
                     document=label,
                     file=name or _("(unnamed file)"),
-                    an_format=_("an Excel") if fmt == 'excel' else _("a PDF"),
+                    an_format={'excel': _("an Excel"), 'pdf': _("a PDF")}.get(fmt, _("a PDF or image")),
                     extensions=_(" or ").join(rule['extensions']),
                 ))
         if problems:
@@ -617,7 +623,7 @@ class ProjectProject(models.Model):
                        "(Excel, .xlsx/.xls)."))
                 need(self._pwf_value('pwf_process_flow_attachment_ids', vals), key,
                      _("Process Flow Chart (DISC): Upload the Process Flow Chart "
-                       "(PDF)."))
+                       "(PDF or image)."))
                 need(self._pwf_value('module_ids', vals), key,
                      _("Project Modules: Add all the project's modules "
                        "(at least one) in the Modules tab."))
@@ -960,15 +966,13 @@ class ProjectProject(models.Model):
 
     @api.model
     def _pwf_stage_label(self, stage):
-        """Stage label "DATA - Data Upload" (en dash); the bare name when it
-        already carries the description (or none is known); '-' if no stage."""
+        """Customer-facing stage name without internal abbreviations."""
         if not stage:
             return '-'
         name = stage.name or ''
-        desc = PWF_STAGE_DESCRIPTIONS.get(stage._ft_stage_key())
-        if not desc or desc.lower() in name.lower():
-            return name or '-'
-        return '%s \u2013 %s' % (name, desc)
+        if name.strip().lower() in ('kickoff', 'kick-off', 'kick off'):
+            return 'Project Kickoff'
+        return self._pwf_stage_desc(stage) or '-'
 
     def _pwf_send_stage_notification(self, old_stages):
         template = self.env.ref(

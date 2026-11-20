@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Runs on every install/upgrade: bugs still on the removed P5 priority become Low. -->
+    <function model="qa_testapp.ticket" name="_ft_migrate_p5_priority"/>
+</odoo>

@@ -98,6 +98,8 @@ class ProjectProject(models.Model):
 
     def _check_date_sequence(self):
         for project in self:
+            if project.ft_project_type == 'amc':
+                continue
             prev_label = prev_date = None
             for fname, label in project._sequenced_date_fields():
                 value = project[fname]

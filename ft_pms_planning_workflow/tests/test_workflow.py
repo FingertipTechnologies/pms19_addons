@@ -1032,14 +1032,17 @@ class TestPmsStageWorkflow(TransactionCase):
         # info address equal to a partner's e-mail (case-insensitive) is skipped
         self.assertEqual(mails.email_to, 'pwf.info@example.com')
         self.assertIn('%s: project now in %s stage' % (
-            self.project.name, self.stage['reg'].name), mails.subject)
+            self.project.name, 'Regression'), mails.subject)
         # body: previous / new / next stage labels, who moved it, the PM
         body = mails.body_html or ''
         self.assertIn('is now in the', body)
-        self.assertIn('DEV %s Development' % DASH, body)
-        self.assertIn('REG %s Regression' % DASH, body)
+        self.assertIn('Development', body)
+        self.assertNotIn('DEV %s' % DASH, body)
+        self.assertIn('Regression', body)
+        self.assertNotIn('REG %s' % DASH, body)
         self.assertIn('Next stage', body)
-        self.assertIn('SRV %s Sandbox Review' % DASH, body)
+        self.assertIn('Sandbox Review', body)
+        self.assertNotIn('SRV %s' % DASH, body)
         self.assertIn(self.pm.name, body)
         self.assertIn(self.customer.name, body)
 
@@ -1096,11 +1099,13 @@ class TestPmsStageWorkflow(TransactionCase):
         body = latest.body_html or ''
         self.assertIn('is now in the', body)
         self.assertIn('User Acceptance Testing', body)
-        self.assertIn('UAT %s User Acceptance Testing' % DASH, body)
+        self.assertIn('User Acceptance Testing', body)
+        self.assertNotIn('UAT %s' % DASH, body)
         self.assertIn('Next stage', body)
-        self.assertIn('DATA %s Data Upload' % DASH, body)
+        self.assertIn('Data Upload', body)
+        self.assertNotIn('DATA %s' % DASH, body)
         self.assertIn(self.pm.name, body)
-        self.assertIn('project now in UAT stage', latest.subject)
+        self.assertIn('project now in User Acceptance Testing stage', latest.subject)
 
     def test_uat_request_state(self):
         self.assertEqual(self.project.pwf_uat_request_state, 'none')
