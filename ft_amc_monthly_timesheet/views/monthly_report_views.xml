@@ -39,13 +39,11 @@
                     <button name="action_send" type="object" string="Send Now"
                             class="btn-primary"
                             invisible="state not in ('draft', 'failed', 'no_data')"
-                            confirm="Email this report (PDF + Excel) to the customer now?"/>
+                            confirm="Email this report (Excel) to the customer now?"/>
                     <button name="action_refresh_status" type="object" string="Refresh Email Status"
                             invisible="state != 'queued'"/>
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
                             invisible="state not in ('failed', 'no_data')"/>
-                    <button name="action_download_pdf" type="object" string="Download PDF"
-                            icon="fa-file-pdf-o" invisible="not pdf_attachment_id"/>
                     <button name="action_download_xlsx" type="object" string="Download Excel"
                             icon="fa-file-excel-o" invisible="not xlsx_attachment_id"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,queued,sent"/>

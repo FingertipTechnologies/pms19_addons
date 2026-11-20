@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <form string="Generate AMC Monthly Timesheet">
                 <p class="text-muted">
-                    Builds the report (PDF + Excel) of the chosen month for
+                    Builds the Excel report of the chosen month for
                     preview, without emailing it. Pick any day of the month;
                     the whole calendar month is reported. An existing report
                     of that month is refreshed unless it was already sent.

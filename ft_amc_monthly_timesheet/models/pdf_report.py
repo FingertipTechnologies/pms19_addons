@@ -84,6 +84,17 @@ def _resolve_path(path):
         return None
 
 
+# splitInRow (let a tall row break across pages) only exists in newer
+# ReportLab releases; older servers raise "unexpected keyword argument".
+try:
+    import inspect as _inspect
+    _SPLIT_IN_ROW = ({'splitInRow': 1}
+                     if 'splitInRow' in _inspect.signature(Table.__init__).parameters
+                     else {})
+except (TypeError, ValueError):
+    _SPLIT_IN_ROW = {}
+
+
 def _get_fonts():
     """(regular, bold) font names; a Unicode TTF if available, else Helvetica."""
     global _fonts_cache
@@ -472,7 +483,7 @@ def _build_story(report, fonts, avail_width):
     tasks = Table(
         task_data,
         colWidths=[date_w, avail_width - date_w - hours_w, hours_w],
-        repeatRows=1, splitInRow=1, hAlign='LEFT')
+        repeatRows=1, hAlign='LEFT', **_SPLIT_IN_ROW)
     tasks.setStyle(_table_style([
         ('SPAN', (0, -1), (1, -1)),
         ('BACKGROUND', (0, -1), (-1, -1), HEADER_BG),
