@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_crm_erp_sync" model="ir.ui.view">
+        <field name="name">res.partner.form.crm.erp.sync</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='website']" position="before">
+                <label for="customer_code" string="Customer Code" invisible="not is_company"/>
+                <div invisible="not is_company">
+                    <field name="customer_code" nolabel="1" readonly="1"/>
+                </div>
+                <field name="erp_customer_id" string="ERP Customer ID" invisible="not is_company" readonly="1"/>
+                <field name="erp_sync_state" string="ERP Status" invisible="not is_company" readonly="1"/>
+                <field name="erp_last_sync_date" string="Last ERP Sync" invisible="not is_company" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+    <!--search view-->
+    <record id="view_partner_search_crm_erp_sync" model="ir.ui.view">
+        <field name="name">res.partner.search.crm.erp.sync</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//search" position="inside">
+
+                <!-- Search Fields -->
+                <field name="customer_code"
+                       string="Customer Code"/>
+
+                <field name="erp_sync_state" string="ERP Status"/>
+
+                <separator/>
+
+                <!-- Filters -->
+
+                <filter name="filter_erp_pending" string="ERP Pending" domain="[('erp_sync_state','=','pending')]"/>
+
+                <filter name="filter_erp_success" string="ERP Synchronized"
+                        domain="[('erp_sync_state','=','success')]"/>
+
+                <filter name="filter_erp_failed" string="ERP Failed" domain="[('erp_sync_state','=','failed')]"/>
+                <filter name="filter_erp_failed" string="ERP Not Synchronized" domain="[('erp_sync_state','=','not_synced')]"/>
+
+                <filter name="group_by_erp_sync_statee"
+                        string="ERP Status"
+                        context="{'group_by': 'erp_sync_state'}"/>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
+
