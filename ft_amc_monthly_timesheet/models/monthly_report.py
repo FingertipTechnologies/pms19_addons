@@ -274,10 +274,10 @@ class AmcMonthlyReport(models.Model):
         total_fmt = workbook.add_format(dict(
             border, bold=True, bg_color='#D9E1F2', num_format='[h]:mm', valign='top'))
         total_minutes = report_total_minutes(self)
-        last_col = 2
+        last_col = 3
 
         sheet = workbook.add_worksheet(_('Timesheet'))
-        for col, width in enumerate((17, 70, 12)):  # Date, Task, Hours
+        for col, width in enumerate((17, 60, 18, 12)):  # Date, Task, Completed, Hours
             sheet.set_column(col, col, width)
         sheet.set_landscape()
         sheet.set_paper(9)  # A4, like the PDF
@@ -326,8 +326,9 @@ class AmcMonthlyReport(models.Model):
         # Tasks: same columns, headers and row order as the PDF
         sheet.write(row, 0, _('Tasks'), section_fmt)
         row += 1
-        sheet.write_row(row, 0, [_('Date'), _('Task')], header_fmt)
-        sheet.write(row, 2, _('Hours'), header_num_fmt)
+        sheet.write_row(row, 0, [_('Date'), _('Task'), _('Task Completed Date')], header_fmt)
+        sheet.write(row, 3, _('Hours'), header_num_fmt)
+        Task = self.env['project.task'].sudo().with_context(active_test=False)
         sheet.freeze_panes(row + 1, 0)
         sheet.repeat_rows(row)
         for task_row in task_summary_rows(self):
@@ -339,10 +340,18 @@ class AmcMonthlyReport(models.Model):
             else:
                 sheet.write_blank(row, 0, None, date_fmt)
             sheet.write(row, 1, task_row['name'], text_fmt)
-            sheet.write_number(row, 2, task_row['minutes'] / 1440.0, hours_fmt)
+            task = Task.browse(task_row['id']).exists() if task_row['id'] else Task
+            completed = (task._ft_local_date(task.ft_completion_date)
+                         if task and task.ft_completion_date else False)
+            if completed:
+                sheet.write_datetime(
+                    row, 2, datetime.combine(completed, datetime.min.time()), date_fmt)
+            else:
+                sheet.write_blank(row, 2, None, date_fmt)
+            sheet.write_number(row, 3, task_row['minutes'] / 1440.0, hours_fmt)
         row += 1
-        sheet.merge_range(row, 0, row, 1, _('Total hours'), total_label_fmt)
-        sheet.write_number(row, 2, total_minutes / 1440.0, total_fmt)
+        sheet.merge_range(row, 0, row, 2, _('Total hours'), total_label_fmt)
+        sheet.write_number(row, 3, total_minutes / 1440.0, total_fmt)
 
         workbook.close()
         return output.getvalue()
