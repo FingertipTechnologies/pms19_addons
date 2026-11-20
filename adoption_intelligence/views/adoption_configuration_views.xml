@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Settings (singleton) ===================== -->
+    <record id="view_adoption_settings_form" model="ir.ui.view">
+        <field name="name">adoption.settings.form</field>
+        <field name="model">adoption.settings</field>
+        <field name="arch" type="xml">
+            <form create="0" delete="0">
+                <sheet>
+                    <h1>Adoption Intelligence Settings</h1>
+                    <group string="Tracking">
+                        <field name="tracking_enabled"/>
+                        <field name="internal_users_only"/>
+                        <field name="import_counts_as_automated"/>
+                        <field name="max_value_length"/>
+                        <field name="excluded_field_names" placeholder="e.g. barcode,comment"/>
+                    </group>
+                    <group string="Web-client tracking">
+                        <field name="client_navigation_enabled"/>
+                        <field name="client_record_view_enabled"/>
+                        <field name="client_search_enabled"/>
+                        <field name="client_action_attempts_enabled"/>
+                        <field name="idle_threshold_seconds"/>
+                        <field name="heartbeat_interval_seconds"/>
+                        <field name="stale_session_minutes"/>
+                    </group>
+                    <group string="Adoption points">
+                        <field name="points_create"/>
+                        <field name="points_update"/>
+                        <field name="points_meaningful_edit"/>
+                        <field name="points_page_view"/>
+                    </group>
+                    <group string="Retention">
+                        <field name="retention_days_detail"/>
+                        <field name="retention_days_errors"/>
+                    </group>
+                    <group string="Pipeline status">
+                        <field name="last_rollup_date"/>
+                        <field name="last_rollup_at"/>
+                        <field name="last_rollup_status"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_adoption_settings" model="ir.actions.server">
+        <field name="name">Adoption Intelligence Settings</field>
+        <field name="model_id" ref="model_adoption_settings"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_settings()</field>
+    </record>
+
+    <!-- ===================== Tracked models ===================== -->
+    <record id="view_adoption_tracking_config_list" model="ir.ui.view">
+        <field name="name">adoption.tracking.config.list</field>
+        <field name="model">adoption.tracking.config</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="status != 'active'" decoration-danger="status == 'missing'">
+                <header>
+                    <button name="action_seed_defaults" type="object" string="Add recommended models" display="always"/>
+                </header>
+                <field name="model_label"/>
+                <field name="model_name"/>
+                <field name="is_tracking_enabled" widget="boolean_toggle"/>
+                <field name="track_create" widget="boolean_toggle"/>
+                <field name="track_update" widget="boolean_toggle"/>
+                <field name="track_delete" widget="boolean_toggle"/>
+                <field name="track_field_changes" widget="boolean_toggle"/>
+                <field name="track_read" widget="boolean_toggle"/>
+                <field name="track_view_time" widget="boolean_toggle"/>
+                <field name="weight" optional="hide"/>
+                <field name="status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_tracking_config_form" model="ir.ui.view">
+        <field name="name">adoption.tracking.config.form</field>
+        <field name="model">adoption.tracking.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group string="Model">
+                            <field name="model_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="model_name"/>
+                            <field name="status"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Operations">
+                            <field name="is_tracking_enabled"/>
+                            <field name="track_create"/>
+                            <field name="track_update"/>
+                            <field name="track_delete"/>
+                        </group>
+                        <group string="Fields">
+                            <field name="track_field_changes"/>
+                            <field name="track_all_fields"/>
+                            <field name="track_x2many"/>
+                        </group>
+                        <group string="Browser instrumentation">
+                            <field name="track_read"/>
+                            <field name="track_view_time"/>
+                        </group>
+                        <group string="Scoring and retention">
+                            <field name="weight"/>
+                            <field name="retention_days"/>
+                        </group>
+                        <group string="Observation window">
+                            <field name="observed_since"/>
+                            <field name="last_disabled_at"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Fields (exclude / meaningful / mask)">
+                            <p class="text-muted">
+                                Untick <b>Tracked</b> to exclude a field. <b>Meaningful</b> fields count towards
+                                Process Compliance. <b>Mask</b> records that a field changed without storing its values.
+                                Passwords, tokens and secrets are always excluded automatically.
+                            </p>
+                            <field name="field_config_ids">
+                                <list editable="bottom">
+                                    <field name="field_id" options="{'no_create': True}"
+                                           domain="[('model_id', '=', parent.model_id), ('ttype', 'not in', ['binary', 'image', 'properties', 'properties_definition', 'serialized'])]"/>
+                                    <field name="field_type"/>
+                                    <field name="is_tracked"/>
+                                    <field name="is_meaningful"/>
+                                    <field name="mask_value"/>
+                                    <field name="weight"/>
+                                    <field name="category"/>
+                                    <field name="active" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_adoption_tracking_config_search" model="ir.ui.view">
+        <field name="name">adoption.tracking.config.search</field>
+        <field name="model">adoption.tracking.config</field>
+        <field name="arch" type="xml">
+            <search>
+                <!--<field name="model_label"/>
+                <field name="model_name"/>
+                <filter name="enabled" string="Tracking" domain="[('is_tracking_enabled', '=', True)]"/>
+                <filter name="disabled" string="Disabled" domain="[('is_tracking_enabled', '=', False)]"/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>-->
+            </search>
+        </field>
+    </record>
+    <record id="action_adoption_tracking_config" model="ir.actions.act_window">
+        <field name="name">Tracked Models</field>
+        <field name="res_model">adoption.tracking.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No model is tracked yet</p>
+            <p>Click "Add recommended models" to enable tracking for the standard business models installed
+               in this database, or create a configuration for any other model.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Meaningful / excluded fields ===================== -->
+    <record id="view_adoption_field_config_list" model="ir.ui.view">
+        <field name="name">adoption.field.config.list</field>
+        <field name="model">adoption.field.config</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="not is_tracked">
+                <field name="model_name"/>
+                <field name="field_label"/>
+                <field name="field_name"/>
+                <field name="field_type"/>
+                <field name="is_tracked"/>
+                <field name="is_meaningful"/>
+                <field name="mask_value"/>
+                <field name="weight"/>
+                <field name="category"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_field_config_form" model="ir.ui.view">
+        <field name="name">adoption.field.config.form</field>
+        <field name="model">adoption.field.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="tracking_config_id" options="{'no_create': True}"/>
+                            <field name="model_id" invisible="1"/>
+                            <field name="field_id" options="{'no_create': True}"
+                                   domain="[('model_id', '=', model_id), ('ttype', 'not in', ['binary', 'image', 'properties', 'properties_definition', 'serialized'])]"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="is_tracked"/>
+                            <field name="is_meaningful"/>
+                            <field name="mask_value"/>
+                            <field name="weight"/>
+                            <field name="category"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_adoption_field_config_search" model="ir.ui.view">
+        <field name="name">adoption.field.config.search</field>
+        <field name="model">adoption.field.config</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="model_name"/>
+                <field name="field_name"/>
+                <field name="category"/>
+                <filter name="meaningful" string="Meaningful" domain="[('is_meaningful', '=', True)]"/>
+                <filter name="excluded" string="Excluded" domain="[('is_tracked', '=', False)]"/>
+                <filter name="masked" string="Masked" domain="[('mask_value', '=', True)]"/>
+                <group>
+                    <filter name="gb_model" string="Model" context="{'group_by': 'model_name'}"/>
+                    <filter name="gb_category" string="Category" context="{'group_by': 'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_adoption_field_config" model="ir.actions.act_window">
+        <field name="name">Meaningful Fields</field>
+        <field name="res_model">adoption.field.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_gb_model': 1}</field>
+    </record>
+
+    <!-- ===================== Error log ===================== -->
+    <record id="view_adoption_error_log_list" model="ir.ui.view">
+        <field name="name">adoption.error.log.list</field>
+        <field name="model">adoption.error.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" decoration-danger="severity == 'error'" decoration-warning="severity == 'warning'">
+                <field name="occurred_at"/>
+                <field name="severity" widget="badge"/>
+                <field name="context"/>
+                <field name="model_name"/>
+                <field name="user_id"/>
+                <field name="message"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_error_log_form" model="ir.ui.view">
+        <field name="name">adoption.error.log.form</field>
+        <field name="model">adoption.error.log</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <field name="occurred_at"/>
+                        <field name="severity"/>
+                        <field name="context"/>
+                        <field name="model_name"/>
+                        <field name="user_id"/>
+                        <field name="transaction_id"/>
+                        <field name="message"/>
+                    </group>
+                    <field name="detail"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_adoption_error_log_search" model="ir.ui.view">
+        <field name="name">adoption.error.log.search</field>
+        <field name="model">adoption.error.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="context"/>
+                <field name="model_name"/>
+                <field name="message"/>
+                <filter name="errors" string="Errors" domain="[('severity', '=', 'error')]"/>
+                <filter name="warnings" string="Warnings" domain="[('severity', '=', 'warning')]"/>
+                <group>
+                    <filter name="gb_ctx" string="Context" context="{'group_by': 'context'}"/>
+                    <filter name="gb_model" string="Model" context="{'group_by': 'model_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_adoption_error_log" model="ir.actions.act_window">
+        <field name="name">Error Log</field>
+        <field name="res_model">adoption.error.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== Recalculate wizard ===================== -->
+    <record id="view_adoption_recalculate_wizard_form" model="ir.ui.view">
+        <field name="name">adoption.recalculate.wizard.form</field>
+        <field name="model">adoption.recalculate.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                    <field name="rescore"/>
+                    <field name="result" invisible="not result"/>
+                </group>
+                <p class="text-muted">
+                    Safe to repeat: summaries and scores are updated in place, never duplicated. Days older than the
+                    detail retention are skipped, because their detail has already been purged and recomputing
+                    would overwrite good summaries with zeros.
+                </p>
+                <footer>
+                    <button name="action_run" type="object" string="Recalculate" class="btn-primary" invisible="result"/>
+                    <button string="Close" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_adoption_recalculate_wizard" model="ir.actions.act_window">
+        <field name="name">Recalculate</field>
+        <field name="res_model">adoption.recalculate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

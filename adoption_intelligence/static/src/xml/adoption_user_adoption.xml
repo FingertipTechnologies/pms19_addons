@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="adoption_intelligence.UserAdoption">
+        <div class="ad-view">
+            <t t-if="loader.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div></t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading user activity…</div></t>
+            <t t-elif="loader.data">
+                <t t-set="d" t-value="loader.data"/>
+                <t t-set="k" t-value="d.kpis"/>
+                <div class="ad-progress" t-if="loader.loading"/>
+                <div class="ad-userhead">
+                    <div class="ad-avatar" t-esc="d.user.name.slice(0, 1).toUpperCase()"/>
+                    <div><h2 t-esc="d.user.name"/><div class="ad-muted"><t t-esc="d.range.from"/> → <t t-esc="d.range.to"/></div></div>
+                </div>
+
+                <div class="ad-grid">
+                    <div class="ad-card ad-scorecard">
+                        <t t-if="d.score">
+                            <ScoreRing value="d.score.total" size="120"/>
+                            <div>
+                                <span t-attf-class="ad-badge {{band[d.score.band]}}" t-esc="d.score.band_label"/>
+                                <div class="ad-muted ad-small" t-if="!d.score.is_final">Month in progress</div>
+                                <div class="ad-muted ad-small" t-if="d.score.notes" t-esc="d.score.notes"/>
+                            </div>
+                        </t>
+                        <div t-else="" class="ad-muted">No score for this month yet.</div>
+                    </div>
+                    <div class="ad-card ad-span2" t-if="d.score">
+                        <h3>Score breakdown</h3>
+                        <div class="ad-bars">
+                            <t t-foreach="componentRows" t-as="c" t-key="c.label">
+                                <div class="ad-bar-row">
+                                    <div class="ad-bar-label" t-esc="c.label"/>
+                                    <div class="ad-bar-track"><div class="ad-bar-fill" t-attf-style="width: {{c.pct}}%"/></div>
+                                    <div class="ad-bar-value"><t t-esc="c.value.toFixed(1)"/> / <t t-esc="c.max"/></div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ad-kpis ad-kpis-sm">
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Created</div><div class="ad-kpi-value" t-esc="fmt(k.created)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Updated</div><div class="ad-kpi-value" t-esc="fmt(k.updated)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Deleted</div><div class="ad-kpi-value" t-esc="fmt(k.deleted)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Records viewed</div><div class="ad-kpi-value" t-esc="fmt(k.viewed)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Field edits</div><div class="ad-kpi-value" t-esc="fmt(k.field_edits)"/><div class="ad-kpi-sub"><t t-esc="fmt(k.meaningful_edits)"/> meaningful</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Active days</div><div class="ad-kpi-value" t-esc="k.active_days"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Logins</div><div class="ad-kpi-value" t-esc="fmt(k.logins)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Reports / dashboards</div><div class="ad-kpi-value"><t t-esc="k.reports"/> / <t t-esc="k.dashboards"/></div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Estimated active time</div><div class="ad-kpi-value" t-esc="fmtMinutes(k.active_minutes)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Automated changes</div><div class="ad-kpi-value" t-esc="fmt(k.automated)"/><div class="ad-kpi-sub">earn no points</div></div>
+                </div>
+
+                <div class="ad-grid">
+                    <div class="ad-card ad-span2"><h3>Activity trend</h3>
+                        <TrendChart points="d.trend" a="'field_edits'" b="'active_minutes'" aLabel="'Field edits'" bLabel="'Active minutes'"/></div>
+                    <div class="ad-card"><h3>Most used models</h3><BarList items="modelBars"/></div>
+                    <div class="ad-card"><h3>Time viewing records</h3>
+                        <div class="ad-muted ad-small">Estimated active time, not proof of reading.</div>
+                        <table class="ad-table"><tbody>
+                            <t t-foreach="d.top_records" t-as="r" t-key="r_index"><tr><td><t t-esc="r.model"/> · <t t-esc="r.record"/></td><td class="num"><t t-esc="r.minutes"/> min</td></tr></t>
+                            <tr t-if="!d.top_records.length"><td class="ad-muted">None recorded (enable record views on the model).</td></tr>
+                        </tbody></table></div>
+                    <div class="ad-card"><h3>Top pages</h3>
+                        <table class="ad-table"><tbody>
+                            <t t-foreach="d.top_pages" t-as="p" t-key="p_index"><tr><td t-esc="p.name"/><td class="num" t-esc="p.count"/></tr></t>
+                            <tr t-if="!d.top_pages.length"><td class="ad-muted">No navigation recorded.</td></tr>
+                        </tbody></table></div>
+                </div>
+
+                <div class="ad-card">
+                    <div class="ad-toolbar"><h3 class="ad-grow">Recent activity</h3>
+                        <select class="ad-input" t-on-change="onOperation" aria-label="Operation">
+                            <option value="">All operations</option><option value="create">Create</option><option value="update">Update</option><option value="delete">Delete</option>
+                        </select></div>
+                    <div class="ad-table-wrap">
+                        <table class="ad-table ad-clickable">
+                            <thead><tr><th>When (UTC)</th><th>Model</th><th>Record</th><th>Operation</th><th>Origin</th><th class="num">Fields</th></tr></thead>
+                            <tbody>
+                                <t t-foreach="d.activity" t-as="a" t-key="a.id">
+                                    <tr t-on-click="() => this.openRecord(a)" t-attf-class="{{a.automated ? 'ad-dim' : ''}}">
+                                        <td t-esc="a.when"/><td t-esc="a.model"/><td t-esc="a.record"/>
+                                        <td><span t-attf-class="ad-op ad-op-{{a.operation}}" t-esc="a.operation"/></td>
+                                        <td><t t-esc="a.source"/><t t-if="a.type === 'secondary'"> · follow-on</t><t t-if="a.automated"> · automated</t></td>
+                                        <td class="num"><t t-esc="a.changes"/><t t-if="a.meaningful"> (<t t-esc="a.meaningful"/>★)</t></td>
+                                    </tr>
+                                </t>
+                                <tr t-if="!d.activity.length"><td colspan="6" class="ad-muted">No activity in this range.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="ad-btn" t-if="d.has_more" t-on-click="more">Load more</button>
+                </div>
+
+                <div class="ad-card">
+                    <h3>Recent field changes</h3>
+                    <div class="ad-table-wrap">
+                        <table class="ad-table">
+                            <thead><tr><th>When (UTC)</th><th>Model</th><th>Record</th><th>Field</th><th>Was</th><th>Became</th></tr></thead>
+                            <tbody>
+                                <t t-foreach="d.changes" t-as="c" t-key="c.id">
+                                    <tr t-attf-class="{{c.automated ? 'ad-dim' : ''}}">
+                                        <td t-esc="c.when"/><td t-esc="c.model"/><td t-esc="c.record"/>
+                                        <td><t t-esc="c.field"/><span class="ad-star" t-if="c.meaningful" title="Meaningful field"> ★</span></td>
+                                        <td><span t-if="c.kind === 'initial'" class="ad-muted">(new record)</span><span t-else="" t-esc="c.old or '—'"/></td>
+                                        <td><span t-if="c.kind === 'final'" class="ad-muted">(deleted)</span><span t-else="" t-esc="c.new or '—'"/></td>
+                                    </tr>
+                                </t>
+                                <tr t-if="!d.changes.length"><td colspan="6" class="ad-muted">No field changes in this range.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

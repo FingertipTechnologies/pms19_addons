@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_adoption_scores" model="ir.actions.report">
+        <field name="name">Adoption Scores (PDF)</field>
+        <field name="model">adoption.user.score</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">adoption_intelligence.report_adoption_scores</field>
+        <field name="report_file">adoption_intelligence.report_adoption_scores</field>
+        <field name="binding_model_id" ref="model_adoption_user_score"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_adoption_scores">
+        <t t-call="web.html_container">
+            <t t-call="web.internal_layout">
+                <div class="page">
+                    <h2>Adoption Leaderboard</h2>
+                    <p class="text-muted">
+                        Score = Presence 15 + Data activity 20 + Process compliance 25 + Feature adoption 15 +
+                        Engagement 15 + Data quality 10, each normalised to the organisation's 75th percentile.
+                        Active time is an estimate.
+                    </p>
+                    <t t-set="ranked" t-value="docs.sorted(key=lambda d: (-d.total_score, -d.active_days))"/>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th><th>Employee</th><th>Period</th><th class="text-end">Score</th><th>Band</th>
+                                <th class="text-end">Active days</th><th class="text-end">Created</th>
+                                <th class="text-end">Updated</th><th class="text-end">Meaningful edits</th>
+                                <th class="text-end">Active min</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="ranked" t-as="d">
+                                <tr>
+                                    <td><t t-esc="d_index + 1"/></td>
+                                    <td><t t-esc="d.user_id.name"/></td>
+                                    <td><t t-esc="d.period_start"/> - <t t-esc="d.period_end"/></td>
+                                    <td class="text-end"><t t-esc="'%.1f' % d.total_score"/></td>
+                                    <td><t t-esc="d.adoption_band.replace('_', ' ').title()"/></td>
+                                    <td class="text-end"><t t-esc="d.active_days"/></td>
+                                    <td class="text-end"><t t-esc="d.records_created"/></td>
+                                    <td class="text-end"><t t-esc="d.records_updated"/></td>
+                                    <td class="text-end"><t t-esc="d.meaningful_edits"/></td>
+                                    <td class="text-end"><t t-esc="'%.0f' % d.active_minutes"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Activity log ===================== -->
+    <record id="view_adoption_activity_log_list" model="ir.ui.view">
+        <field name="name">adoption.activity.log.list</field>
+        <field name="model">adoption.activity.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="activity_datetime desc"
+                  decoration-muted="is_automated" decoration-danger="operation == 'delete'"
+                  decoration-success="operation == 'create'">
+                <field name="activity_datetime"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="model_label"/>
+                <field name="record_name"/>
+                <field name="operation" widget="badge"/>
+                <field name="activity_type" optional="show"/>
+                <field name="source" optional="show"/>
+                <field name="is_automated" optional="show"/>
+                <field name="field_change_count" sum="Total" optional="show"/>
+                <field name="meaningful_change_count" sum="Total" optional="show"/>
+                <field name="adoption_points" sum="Total" optional="show"/>
+                <field name="model_name" optional="hide"/>
+                <field name="record_id" optional="hide"/>
+                <field name="transaction_id" optional="hide"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_activity_log_form" model="ir.ui.view">
+        <field name="name">adoption.activity.log.form</field>
+        <field name="model">adoption.activity.log</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="model_label"/>
+                            <field name="model_name"/>
+                            <field name="record_name"/>
+                            <field name="record_id"/>
+                            <field name="operation"/>
+                        </group>
+                        <group>
+                            <field name="activity_datetime"/>
+                            <field name="source"/>
+                            <field name="activity_type"/>
+                            <field name="is_automated"/>
+                            <field name="adoption_points"/>
+                            <field name="transaction_id"/>
+                            <field name="session_identifier"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Field changes">
+                            <field name="field_change_ids">
+                                <list>
+                                    <field name="field_label"/>
+                                    <field name="field_name" optional="hide"/>
+                                    <field name="change_kind"/>
+                                    <field name="old_value"/>
+                                    <field name="new_value"/>
+                                    <field name="is_meaningful"/>
+                                    <field name="is_masked" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_adoption_activity_log_search" model="ir.ui.view">
+        <field name="name">adoption.activity.log.search</field>
+        <field name="model">adoption.activity.log</field>
+        <field name="arch" type="xml">
+           <search>
+                <field name="user_id"/>
+                <field name="model_label" string="Model"/>
+                <field name="model_name"/>
+                <field name="record_name" string="Record"/>
+                <field name="record_id"/>
+                <field name="transaction_id"/>
+                <filter name="today" string="Today"
+                        domain="[('activity_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="last7" string="Last 7 days"
+                        domain="[('activity_date', '&gt;=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter name="last30" string="Last 30 days"
+                        domain="[('activity_date', '&gt;=', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="op_create" string="Create" domain="[('operation', '=', 'create')]"/>
+                <filter name="op_update" string="Update" domain="[('operation', '=', 'update')]"/>
+                <filter name="op_delete" string="Delete" domain="[('operation', '=', 'delete')]"/>
+                <separator/>
+                <filter name="human" string="User-initiated" domain="[('is_automated', '=', False)]"/>
+                <filter name="automated" string="Automated" domain="[('is_automated', '=', True)]"/>
+                <separator/>
+                <filter name="primary" string="Primary" domain="[('activity_type', '=', 'primary')]"/>
+                <filter name="secondary" string="Secondary (follow-on)" domain="[('activity_type', '=', 'secondary')]"/>
+                <separator/>
+                <filter name="src_web" string="Web client" domain="[('source', '=', 'web')]"/>
+                <filter name="src_api" string="External API" domain="[('source', '=', 'api')]"/>
+                <filter name="src_import" string="Import" domain="[('source', '=', 'import')]"/>
+                <filter name="src_auto" string="Automation / cron"
+                        domain="[('source', 'in', ('automation', 'other'))]"/>
+                <group>
+                    <filter name="gb_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="gb_model" string="Model" context="{'group_by': 'model_name'}"/>
+                    <filter name="gb_op" string="Operation" context="{'group_by': 'operation'}"/>
+                    <filter name="gb_type" string="Activity category" context="{'group_by': 'activity_type'}"/>
+                    <filter name="gb_source" string="Source" context="{'group_by': 'source'}"/>
+                    <filter name="gb_day" string="Day" context="{'group_by': 'activity_date:day'}"/>
+                    <filter name="gb_week" string="Week" context="{'group_by': 'activity_date:week'}"/>
+                    <filter name="gb_month" string="Month" context="{'group_by': 'activity_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_adoption_activity_log_pivot" model="ir.ui.view">
+        <field name="name">adoption.activity.log.pivot</field>
+        <field name="model">adoption.activity.log</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="user_id" type="row"/>
+                <field name="operation" type="col"/>
+                <field name="field_change_count" type="measure"/>
+                <field name="adoption_points" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_adoption_activity_log_graph" model="ir.ui.view">
+        <field name="name">adoption.activity.log.graph</field>
+        <field name="model">adoption.activity.log</field>
+        <field name="arch" type="xml">
+            <graph type="bar" stacked="True">
+                <field name="activity_date" interval="day"/>
+                <field name="operation"/>
+            </graph>
+        </field>
+    </record>
+    <record id="action_adoption_activity_log" model="ir.actions.act_window">
+        <field name="name">Activity Log</field>
+        <field name="res_model">adoption.activity.log</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="context">{'search_default_last7': 1, 'search_default_human': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No activity recorded yet</p>
+            <p>Create, update or delete a record of a tracked model. Each successful operation appears here.
+                Configure models under Adoption Intelligence &gt; Configuration &gt; Tracked Models.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================== Navigation log ===================== -->
+    <record id="view_adoption_navigation_log_list" model="ir.ui.view">
+        <field name="name">adoption.navigation.log.list</field>
+        <field name="model">adoption.navigation.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="navigation_datetime desc">
+                <field name="navigation_datetime"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="event_type" widget="badge"/>
+                <field name="model_name"/>
+                <field name="record_name"/>
+                <field name="page_name"/>
+                <field name="action_type" optional="show"/>
+                <field name="action_identifier" optional="hide"/>
+                <field name="session_identifier" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_navigation_log_search" model="ir.ui.view">
+        <field name="name">adoption.navigation.log.search</field>
+        <field name="model">adoption.navigation.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="model_name"/>
+                <field name="page_name"/>
+                <filter name="last7" string="Last 7 days"
+                        domain="[('activity_date', '&gt;=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="records" string="Record views" domain="[('event_type', '=', 'record_view')]"/>
+                <filter name="reports" string="Reports" domain="[('event_type', '=', 'report_view')]"/>
+                <filter name="dashboards" string="Dashboards" domain="[('event_type', '=', 'dashboard_view')]"/>
+                <filter name="searches" string="Searches" domain="[('event_type', '=', 'search')]"/>
+                <filter name="attempts" string="Attempted actions" domain="[('event_type', '=', 'action_click')]"/>
+                <group>
+                    <filter name="gb_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="gb_type" string="Type" context="{'group_by': 'event_type'}"/>
+                    <filter name="gb_model" string="Model" context="{'group_by': 'model_name'}"/>
+                    <filter name="gb_day" string="Day" context="{'group_by': 'activity_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_adoption_navigation_log" model="ir.actions.act_window">
+        <field name="name">Navigation</field>
+        <field name="res_model">adoption.navigation.log</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_last7': 1}</field>
+    </record>
+
+    <!-- ===================== Timed sessions ===================== -->
+    <record id="view_adoption_active_session_list" model="ir.ui.view">
+        <field name="name">adoption.active.session.list</field>
+        <field name="model">adoption.active.session</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="started_at desc" decoration-muted="state != 'open'">
+                <field name="started_at"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="kind"/>
+                <field name="model_name"/>
+                <field name="record_name"/>
+                <field name="page_name" optional="show"/>
+                <field name="elapsed_seconds" sum="Total"/>
+                <field name="active_seconds" sum="Total"/>
+                <field name="idle_seconds"/>
+                <field name="heartbeat_count" optional="hide"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_active_session_search" model="ir.ui.view">
+        <field name="name">adoption.active.session.search</field>
+        <field name="model">adoption.active.session</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="model_name"/>
+                <field name="record_name"/>
+                <filter name="last7" string="Last 7 days"
+                        domain="[('activity_date', '&gt;=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter name="records" string="Record views" domain="[('kind', '=', 'record')]"/>
+                <filter name="open" string="Open" domain="[('state', '=', 'open')]"/>
+                <group>
+                    <filter name="gb_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="gb_model" string="Model" context="{'group_by': 'model_name'}"/>
+                    <filter name="gb_kind" string="Kind" context="{'group_by': 'kind'}"/>
+                    <filter name="gb_day" string="Day" context="{'group_by': 'activity_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_adoption_active_session_pivot" model="ir.ui.view">
+        <field name="name">adoption.active.session.pivot</field>
+        <field name="model">adoption.active.session</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="user_id" type="row"/>
+                <field name="activity_date" interval="week" type="col"/>
+                <field name="active_seconds" type="measure"/>
+                <field name="elapsed_seconds" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="action_adoption_active_session" model="ir.actions.act_window">
+        <field name="name">Time on Screen</field>
+        <field name="res_model">adoption.active.session</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="context">{'search_default_last7': 1}</field>
+    </record>
+
+    <!-- ===================== Login summary ===================== -->
+    <record id="view_adoption_login_summary_list" model="ir.ui.view">
+        <field name="name">adoption.login.summary.list</field>
+        <field name="model">adoption.login.summary</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="login_date desc">
+                <field name="login_date"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="login_count" sum="Total"/>
+                <field name="first_login"/>
+                <field name="last_login"/>
+                <field name="browser_logins" optional="hide"/>
+                <field name="mobile_logins" optional="hide"/>
+                <field name="api_logins" optional="hide"/>
+                <field name="session_count" optional="show"/>
+                <field name="first_activity" optional="hide"/>
+                <field name="last_activity" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_login_summary_search" model="ir.ui.view">
+        <field name="name">adoption.login.summary.search</field>
+        <field name="model">adoption.login.summary</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <filter name="last30" string="Last 30 days"
+                        domain="[('login_date', '&gt;=', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter name="gb_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="gb_day" string="Day" context="{'group_by': 'login_date:day'}"/>
+                    <filter name="gb_month" string="Month" context="{'group_by': 'login_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_adoption_login_summary_pivot" model="ir.ui.view">
+        <field name="name">adoption.login.summary.pivot</field>
+        <field name="model">adoption.login.summary</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="user_id" type="row"/>
+                <field name="login_date" interval="month" type="col"/>
+                <field name="login_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="action_adoption_login_summary" model="ir.actions.act_window">
+        <field name="name">Logins</field>
+        <field name="res_model">adoption.login.summary</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="context">{'search_default_last30': 1}</field>
+    </record>
+</odoo>

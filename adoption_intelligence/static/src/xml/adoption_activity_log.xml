@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="adoption_intelligence.ActivityLogView">
+        <div class="ad-view">
+            <div class="ad-toolbar">
+                <input type="search" class="ad-input" placeholder="Search record name…" t-att-value="ui.search" t-on-change="(ev) => this.onFilter('search', ev)"/>
+                <select class="ad-input" t-on-change="(ev) => this.onFilter('operation', ev)" aria-label="Operation">
+                    <option value="" t-att-selected="!ui.operation">All operations</option>
+                    <option value="create" t-att-selected="ui.operation === 'create'">Create</option>
+                    <option value="update" t-att-selected="ui.operation === 'update'">Update</option>
+                    <option value="delete" t-att-selected="ui.operation === 'delete'">Delete</option>
+                </select>
+                <select class="ad-input" t-on-change="(ev) => this.onFilter('source', ev)" aria-label="Source">
+                    <option value="" t-att-selected="!ui.source">All sources</option>
+                    <option value="web" t-att-selected="ui.source === 'web'">Web client</option>
+                    <option value="api" t-att-selected="ui.source === 'api'">External API</option>
+                    <option value="import" t-att-selected="ui.source === 'import'">Import</option>
+                    <option value="automation" t-att-selected="ui.source === 'automation'">Automation / cron</option>
+                    <option value="other" t-att-selected="ui.source === 'other'">Other</option>
+                </select>
+                <select class="ad-input" t-on-change="(ev) => this.onFilter('origin', ev)" aria-label="Origin">
+                    <option value="" t-att-selected="!ui.origin">User + automated</option>
+                    <option value="human" t-att-selected="ui.origin === 'human'">User-initiated only</option>
+                    <option value="automated" t-att-selected="ui.origin === 'automated'">Automated only</option>
+                </select>
+                <span class="ad-grow"/>
+                <button type="button" class="ad-btn" t-on-click="exportXlsx"><i class="fa fa-file-excel-o"/> Excel</button>
+            </div>
+
+            <t t-if="loader.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div></t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading activity…</div></t>
+            <t t-elif="loader.data">
+                <t t-set="d" t-value="loader.data"/>
+                <div class="ad-progress" t-if="loader.loading"/>
+                <div class="ad-kpis ad-kpis-sm ad-kpis-5">
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Created</div><div class="ad-kpi-value ad-op-create" t-esc="fmt(d.counts.create)"/><div class="ad-kpi-sub">new records</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Updated</div><div class="ad-kpi-value ad-op-update" t-esc="fmt(d.counts.update)"/><div class="ad-kpi-sub">edited records</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Deleted</div><div class="ad-kpi-value ad-op-delete" t-esc="fmt(d.counts.delete)"/><div class="ad-kpi-sub">removed records</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">User-initiated</div><div class="ad-kpi-value" t-esc="fmt(d.origin.human)"/><div class="ad-kpi-sub">done by people</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Automated</div><div class="ad-kpi-value" t-esc="fmt(d.origin.automated)"/><div class="ad-kpi-sub">cron, imports, follow-ons</div></div>
+                </div>
+                <div class="ad-card">
+                    <div class="ad-card ad-empty" t-if="!d.rows.length"><i class="fa fa-info-circle"/> No activity matches these filters. Create, edit or delete a record of a tracked model, or widen the filters.</div>
+                    <div class="ad-table-wrap" t-else="">
+                        <table class="ad-table ad-clickable">
+                            <thead><tr><th>When (UTC)</th><th>User</th><th>Model</th><th>Record</th><th>Operation</th><th>Origin</th><th class="num">Fields</th><th class="num">Points</th><th/></tr></thead>
+                            <tbody>
+                                <t t-foreach="d.rows" t-as="a" t-key="a.id">
+                                    <tr t-on-click="() => this.toggle(a)" t-attf-class="{{a.automated ? 'ad-dim' : ''}}">
+                                        <td t-esc="a.when"/><td t-esc="a.user"/><td t-esc="a.model"/>
+                                        <td><a href="#" t-if="a.operation !== 'delete'" t-on-click.prevent.stop="() => this.openRecord(a)" t-esc="a.record"/><span t-else="" t-esc="a.record"/></td>
+                                        <td><span t-attf-class="ad-op ad-op-{{a.operation}}" t-esc="a.operation"/></td>
+                                        <td><t t-esc="a.source"/><t t-if="a.type === 'secondary'"> · follow-on</t><t t-if="a.automated"> · automated</t></td>
+                                        <td class="num"><t t-esc="a.changes"/><t t-if="a.meaningful"> (<t t-esc="a.meaningful"/>★)</t></td>
+                                        <td class="num" t-esc="a.points"/>
+                                        <td><i t-if="a.changes" t-attf-class="fa {{ui.open === a.id ? 'fa-chevron-up' : 'fa-chevron-down'}}"/></td>
+                                    </tr>
+                                    <tr t-if="ui.open === a.id" class="ad-expand">
+                                        <td colspan="9">
+                                            <t t-set="ch" t-value="ui.changes[a.id]"/>
+                                            <div class="ad-muted ad-small">Transaction <t t-esc="a.transaction or '—'"/></div>
+                                            <div t-if="!a.changes" class="ad-muted">No field-level detail for this event.</div>
+                                            <div t-elif="!ch or ch.loading" class="ad-muted"><i class="fa fa-circle-o-notch fa-spin"/> Loading…</div>
+                                            <div t-elif="ch.error" class="ad-error" t-esc="ch.error"/>
+                                            <table t-else="" class="ad-table">
+                                                <thead><tr><th>Field</th><th>Was</th><th>Became</th></tr></thead>
+                                                <tbody>
+                                                    <t t-foreach="ch.rows" t-as="c" t-key="c.id">
+                                                        <tr>
+                                                            <td><t t-esc="c.field"/><span class="ad-star" t-if="c.meaningful"> ★</span></td>
+                                                            <td><span t-if="c.kind === 'initial'" class="ad-muted">(new record)</span><span t-else="" t-esc="c.old or '—'"/></td>
+                                                            <td><span t-if="c.kind === 'final'" class="ad-muted">(deleted)</span><span t-else="" t-esc="c.new or '—'"/></td>
+                                                        </tr>
+                                                    </t>
+                                                    <tr t-if="!ch.rows.length"><td colspan="3" class="ad-muted">Values are not visible to you for this event.</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="ad-pager">
+                        <span class="ad-muted" t-esc="rangeText"/>
+                        <span><button type="button" class="ad-btn" t-att-disabled="!hasPrev" t-on-click="prev"><i class="fa fa-chevron-left"/> Previous</button>
+                        <button type="button" class="ad-btn" t-att-disabled="!hasNext" t-on-click="next">Next <i class="fa fa-chevron-right"/></button></span>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Row-level security.  Ordinary users: their own rows. Managers (who imply
+         the user group, so the two rules OR together): every row whose company or
+         whose user's companies are among the caller's active companies. -->
+
+    <!-- Tables carrying company_id -->
+    <record id="rule_activity_log_own" model="ir.rule">
+        <field name="name">Adoption activity log: own rows</field>
+        <field name="model_id" ref="model_adoption_activity_log"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+    <record id="rule_activity_log_manager" model="ir.rule">
+        <field name="name">Adoption activity log: managers (allowed companies)</field>
+        <field name="model_id" ref="model_adoption_activity_log"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+
+    <record id="rule_field_change_own" model="ir.rule">
+        <field name="name">Adoption field change: own rows</field>
+        <field name="model_id" ref="model_adoption_field_change"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+    <record id="rule_field_change_manager" model="ir.rule">
+        <field name="name">Adoption field change: managers (allowed companies)</field>
+        <field name="model_id" ref="model_adoption_field_change"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+
+    <record id="rule_navigation_log_own" model="ir.rule">
+        <field name="name">Adoption navigation: own rows</field>
+        <field name="model_id" ref="model_adoption_navigation_log"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+    <record id="rule_navigation_log_manager" model="ir.rule">
+        <field name="name">Adoption navigation: managers (allowed companies)</field>
+        <field name="model_id" ref="model_adoption_navigation_log"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+
+    <record id="rule_active_session_own" model="ir.rule">
+        <field name="name">Adoption sessions: own rows</field>
+        <field name="model_id" ref="model_adoption_active_session"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+    <record id="rule_active_session_manager" model="ir.rule">
+        <field name="name">Adoption sessions: managers (allowed companies)</field>
+        <field name="model_id" ref="model_adoption_active_session"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+
+    <!-- Aggregated tables: scoped through the user's companies -->
+    <record id="rule_login_summary_own" model="ir.rule">
+        <field name="name">Adoption login summary: own rows</field>
+        <field name="model_id" ref="model_adoption_login_summary"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+    <record id="rule_login_summary_manager" model="ir.rule">
+        <field name="name">Adoption login summary: managers (allowed companies)</field>
+        <field name="model_id" ref="model_adoption_login_summary"/>
+        <field name="domain_force">[('user_id.company_ids', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+
+    <record id="rule_daily_summary_own" model="ir.rule">
+        <field name="name">Adoption daily summary: own rows</field>
+        <field name="model_id" ref="model_adoption_daily_summary"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+    <record id="rule_daily_summary_manager" model="ir.rule">
+        <field name="name">Adoption daily summary: managers (allowed companies)</field>
+        <field name="model_id" ref="model_adoption_daily_summary"/>
+        <field name="domain_force">[('user_id.company_ids', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+
+    <record id="rule_user_score_own" model="ir.rule">
+        <field name="name">Adoption user score: own rows</field>
+        <field name="model_id" ref="model_adoption_user_score"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+    <record id="rule_user_score_manager" model="ir.rule">
+        <field name="name">Adoption user score: managers (allowed companies)</field>
+        <field name="model_id" ref="model_adoption_user_score"/>
+        <field name="domain_force">[('user_id.company_ids', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+</odoo>

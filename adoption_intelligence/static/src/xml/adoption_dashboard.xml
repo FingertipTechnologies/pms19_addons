@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ================= Shell ================= -->
+    <t t-name="adoption_intelligence.Dashboard">
+        <div t-attf-class="o_action o_adoption theme-{{state.theme}}">
+            <div class="ad-shell">
+                <aside class="ad-nav">
+                    <div class="ad-brandblock">
+                        <div class="ad-logo">A</div>
+                        <div>
+                            <div class="ad-brand-title">Adoption Intelligence</div>
+                            <div class="ad-brand-sub">Odoo Adoption Analytics</div>
+                        </div>
+                    </div>
+                    <t t-if="state.init">
+                        <nav class="ad-navlist">
+                            <t t-foreach="tabs" t-as="tab" t-key="tab.id">
+                                <button type="button" t-attf-class="ad-nav-item {{state.tab === tab.id ? 'is-active' : ''}}"
+                                        t-on-click="() => this.setTab(tab.id)">
+                                    <span class="ad-nav-ico"><i t-attf-class="fa {{tab.icon}}"/></span> <span t-esc="tab.label"/>
+                                </button>
+                            </t>
+                            <div class="ad-nav-sep">Analytics</div>
+                            <t t-foreach="analyticsTabs" t-as="tab" t-key="tab.id">
+                                <button type="button" t-attf-class="ad-nav-item {{state.tab === tab.id ? 'is-active' : ''}}"
+                                        t-on-click="() => this.setTab(tab.id)">
+                                    <span class="ad-nav-ico"><i t-attf-class="fa {{tab.icon}}"/></span> <span t-esc="tab.label"/>
+                                </button>
+                            </t>
+                        </nav>
+                    </t>
+                    <div class="ad-nav-foot">
+                        <button type="button" class="ad-nav-item" t-on-click="toggleTheme">
+                            <span class="ad-nav-ico"><i t-attf-class="fa {{state.theme === 'dark' ? 'fa-sun-o' : 'fa-moon-o'}}"/></span>
+                            <span t-esc="state.theme === 'dark' ? 'Light theme' : 'Dark theme'"/>
+                        </button>
+                    </div>
+                </aside>
+
+                <main class="ad-main">
+                    <t t-if="state.error">
+                        <div class="ad-card ad-error" role="alert">
+                            <i class="fa fa-exclamation-triangle"/> Could not load Adoption Intelligence: <span t-esc="state.error"/>
+                        </div>
+                    </t>
+                    <t t-elif="!state.init"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading…</div></t>
+                    <t t-else="">
+                        <header class="ad-topbar">
+                            <span class="ad-context"><span class="ad-dot"/> <b t-esc="title"/> <span class="ad-muted">•</span> <span t-esc="scopeLabel"/></span>
+                            <span class="ad-grow"/>
+                            <t t-if="showRange">
+                                <label class="ad-lbl" for="ad-from">From</label>
+                                <input id="ad-from" type="date" class="ad-input" t-att-value="state.from" t-on-change="(ev) => this.onDate('from', ev)"/>
+                                <label class="ad-lbl" for="ad-to">To</label>
+                                <input id="ad-to" type="date" class="ad-input" t-att-value="state.to" t-on-change="(ev) => this.onDate('to', ev)"/>
+                            </t>
+                            <button type="button" class="ad-btn" t-if="pdfEnabled" t-on-click="downloadPdf"><i class="fa fa-download"/> Download PDF</button>
+                        </header>
+
+                        <div class="ad-pagehead">
+                            <div class="ad-titleblock">
+                                <h1 t-esc="title"/>
+                                <p class="ad-sub" t-esc="subtitle"/>
+                            </div>
+                            <div class="ad-filters">
+                                <div class="ad-field" t-if="showRange and state.tab !== 'leaderboard'">
+                                    <label for="ad-preset">Filter</label>
+                                    <select id="ad-preset" class="ad-input" t-on-change="onPreset">
+                                        <t t-foreach="presets" t-as="p" t-key="p.id"><option t-att-value="p.id" t-att-selected="state.preset === p.id" t-esc="p.label"/></t>
+                                        <option value="custom" t-att-selected="state.preset === 'custom'" disabled="disabled">Custom range</option>
+                                    </select>
+                                </div>
+                                <div class="ad-field" t-if="showGroupBy">
+                                    <label for="ad-group">Group by</label>
+                                    <select id="ad-group" class="ad-input" t-on-change="onGroupBy">
+                                        <option value="day" t-att-selected="state.groupBy === 'day'">Group by Day</option>
+                                        <option value="week" t-att-selected="state.groupBy === 'week'">Group by Week</option>
+                                        <option value="month" t-att-selected="state.groupBy === 'month'">Group by Month</option>
+                                    </select>
+                                </div>
+                                <div class="ad-field" t-if="showUserFilter">
+                                    <label for="ad-user">User</label>
+                                    <select id="ad-user" class="ad-input" t-on-change="onUser">
+                                        <option value="" t-att-selected="!state.userId">All users (org)</option>
+                                        <t t-foreach="state.init.users" t-as="u" t-key="u.id">
+                                            <option t-att-value="u.id" t-att-selected="isUser(u.id)" t-esc="u.name"/>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="ad-field" t-if="showModelFilter">
+                                    <label for="ad-model">Model</label>
+                                    <select id="ad-model" class="ad-input" t-on-change="onModel">
+                                        <option value="" t-att-selected="!state.model">All models</option>
+                                        <t t-foreach="state.init.models" t-as="m" t-key="m.name">
+                                            <option t-att-value="m.name" t-att-selected="m.name === state.model" t-esc="m.label"/>
+                                        </t>
+                                    </select>
+                                </div>
+                                <button type="button" class="ad-btn ad-btn-icon" t-on-click="refresh" title="Refresh" aria-label="Refresh"><i class="fa fa-refresh"/></button>
+                            </div>
+                        </div>
+
+                        <AdoptionOverview t-if="state.tab === 'overview'" init="state.init" from="state.from" to="state.to" userId="state.userId" model="state.model" rev="state.rev"/>
+                        <AdoptionLeaderboard t-elif="state.tab === 'leaderboard'" init="state.init" to="state.to" rev="state.rev" onOpenUser="(id) => this.openUser(id)"/>
+                        <AdoptionUserAdoption t-elif="state.tab === 'user'" init="state.init" from="state.from" to="state.to" userId="state.userId" model="state.model" rev="state.rev"/>
+                        <AdoptionFieldAdoption t-elif="state.tab === 'fields'" init="state.init" from="state.from" to="state.to" userId="state.userId" model="state.model" rev="state.rev"/>
+                        <AdoptionHealth t-elif="state.tab === 'health'" init="state.init" rev="state.rev"/>
+                        <AdoptionNavigationView t-elif="state.tab === 'navigation'" init="state.init" from="state.from" to="state.to" userId="state.userId" model="state.model" rev="state.rev"/>
+                        <AdoptionActivityLogView t-elif="state.tab === 'activity'" init="state.init" from="state.from" to="state.to" userId="state.userId" model="state.model" rev="state.rev"/>
+                        <AdoptionModelAnalytics t-elif="state.tab === 'models'" init="state.init" from="state.from" to="state.to" userId="state.userId" model="state.model" rev="state.rev" onSelectModel="(name) => this.selectModel(name)"/>
+                        <AdoptionReports t-elif="state.tab === 'reports'" init="state.init" from="state.from" to="state.to" userId="state.userId" model="state.model" granularity="state.groupBy" rev="state.rev" onDownloadPdf="() => this.downloadPdf()"/>
+                    </t>
+                </main>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================= Overview ================= -->
+    <t t-name="adoption_intelligence.Overview">
+        <div class="ad-view">
+            <t t-if="loader.error">
+                <div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div>
+            </t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading overview…</div></t>
+            <t t-elif="loader.data">
+                <t t-set="d" t-value="loader.data"/>
+                <t t-set="k" t-value="d.kpis"/>
+                <div class="ad-progress" t-if="loader.loading"/>
+                <div class="ad-note" t-if="d.model_filtered">Filtered to one model: engagement figures (logins, pages, time) are not model specific and stay unfiltered.</div>
+                <div class="ad-card ad-empty" t-if="k.events_total === 0 and k.active_minutes === 0 and k.logins === 0">
+                    <i class="fa fa-info-circle"/> No activity recorded in this range yet. Create or edit a record of a tracked model, or widen the date range.
+                </div>
+
+                <div class="ad-kpis">
+                    <div class="ad-card ad-kpi ad-kpi-score">
+                        <ScoreRing value="k.avg_score === null ? false : k.avg_score" label="k.health" size="116"/>
+                        <div>
+                            <div class="ad-kpi-label">Adoption score</div>
+                            <div class="ad-kpi-sub" t-esc="k.health"/>
+                            <div class="ad-kpi-sub"><t t-esc="d.scored_users"/> scored user(s)</div>
+                        </div>
+                    </div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Active users</div>
+                        <div class="ad-kpi-value"><t t-esc="k.active_users"/><span class="ad-kpi-of"> / <t t-esc="k.total_users"/></span></div>
+                        <div class="ad-kpi-sub">users with captured activity</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Users at risk</div>
+                        <div t-attf-class="ad-kpi-value {{k.users_at_risk ? 'ad-bad' : ''}}"><t t-esc="k.users_at_risk"/></div>
+                        <div class="ad-kpi-sub">At Risk + Inactive bands</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Activity events</div>
+                        <div class="ad-kpi-value" t-esc="fmt(k.events_total)"/>
+                        <div class="ad-kpi-sub"><t t-esc="fmt(k.human_events)"/> user-initiated · <t t-esc="fmt(k.automated_events)"/> automated</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">CRUD activity</div>
+                        <div class="ad-kpi-value" t-esc="fmt(k.crud.created + k.crud.updated + k.crud.deleted)"/>
+                        <div class="ad-kpi-sub"><t t-esc="fmt(k.crud.created)"/> created · <t t-esc="fmt(k.crud.updated)"/> updated · <t t-esc="fmt(k.crud.deleted)"/> deleted</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Field edits</div>
+                        <div class="ad-kpi-value" t-esc="fmt(k.field_edits)"/>
+                        <div class="ad-kpi-sub"><t t-esc="fmt(k.meaningful_edits)"/> on meaningful fields</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Estimated active time</div>
+                        <div class="ad-kpi-value" t-esc="fmtMinutes(k.active_minutes)"/>
+                        <div class="ad-kpi-sub">visible + focused + recent input</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Logins / pages</div>
+                        <div class="ad-kpi-value"><t t-esc="fmt(k.logins)"/> <span class="ad-kpi-of">/ <t t-esc="fmt(k.pages)"/></span></div>
+                        <div class="ad-kpi-sub"><t t-esc="k.reports"/> reports · <t t-esc="k.dashboards"/> dashboards · <t t-esc="k.searches"/> searches</div></div>
+                </div>
+
+                <div class="ad-grid">
+                    <div class="ad-card ad-span2">
+                        <h3>Daily adoption trend</h3>
+                        <TrendChart points="d.trend" a="'field_edits'" b="'active_minutes'" aLabel="'Field edits'" bLabel="'Active minutes'"/>
+                    </div>
+                    <div class="ad-card">
+                        <h3>Human vs automation</h3>
+                        <div class="ad-donut" t-att-style="donutStyle"><div><t t-esc="k.human_pct"/>%</div></div>
+                        <div class="ad-center ad-muted">of change events are user-initiated</div>
+                    </div>
+                    <div class="ad-card">
+                        <h3>Adoption bands</h3>
+                        <BarList items="bands"/>
+                    </div>
+                    <div class="ad-card">
+                        <h3>Organisation health</h3>
+                        <BarList items="factors" suffix="'%'"/>
+                    </div>
+                    <div class="ad-card">
+                        <h3>Model adoption</h3>
+                        <BarList t-if="objects.length" items="objects"/>
+                        <div class="ad-muted" t-else="">No model activity in this range.</div>
+                    </div>
+                    <div class="ad-card ad-span2">
+                        <h3>Object / model detail</h3>
+                        <div class="ad-table-wrap">
+                            <table class="ad-table">
+                                <thead><tr><th>Model</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Deleted</th><th class="num">Viewed</th><th class="num">Field edits</th><th class="num">Users</th></tr></thead>
+                                <tbody>
+                                    <t t-foreach="d.objects" t-as="o" t-key="o.model">
+                                        <tr><td t-esc="o.label"/><td class="num" t-esc="fmt(o.created)"/><td class="num" t-esc="fmt(o.updated)"/><td class="num" t-esc="fmt(o.deleted)"/><td class="num" t-esc="fmt(o.viewed)"/><td class="num" t-esc="fmt(o.field_edits)"/><td class="num" t-esc="o.users"/></tr>
+                                    </t>
+                                    <tr t-if="!d.objects.length"><td colspan="7" class="ad-muted">No data.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="ad-card ad-span2">
+                        <h3>Recommended actions <span class="ad-muted ad-small">(rule based, from the live numbers)</span></h3>
+                        <ul class="ad-insights">
+                            <t t-foreach="d.insights" t-as="i" t-key="i_index">
+                                <li><span t-attf-class="ad-impact ad-impact-{{i.impact.toLowerCase()}}" t-esc="i.impact"/> <b t-esc="i.title"/><div class="ad-muted" t-esc="i.detail"/></li>
+                            </t>
+                        </ul>
+                    </div>
+                </div>
+                <div class="ad-foot ad-muted">Summaries rolled up through <t t-esc="d.last_rollup_date or 'never'"/>; the most recent day is computed live.</div>
+            </t>
+        </div>
+    </t>
+
+    <!-- ================= Health ================= -->
+    <t t-name="adoption_intelligence.Health">
+        <div class="ad-view">
+            <t t-if="loader.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div></t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Checking…</div></t>
+            <t t-elif="loader.data">
+                <div t-attf-class="ad-card ad-health-{{loader.data.overall}}">
+                    <i t-attf-class="fa {{icon(loader.data.overall)}}"/>
+                    <b t-if="loader.data.overall === 'ok'"> All checks passed.</b>
+                    <b t-elif="loader.data.overall === 'warn'"> Some checks need attention.</b>
+                    <b t-else=""> Something is not working.</b>
+                    <span class="ad-muted"> Generated <t t-esc="loader.data.generated_at"/> UTC</span>
+                </div>
+                <div class="ad-card">
+                    <t t-foreach="loader.data.checks" t-as="c" t-key="c.code">
+                        <div class="ad-check">
+                            <i t-attf-class="fa {{icon(c.status)}} ad-st-{{c.status}}"/>
+                            <div><b t-esc="c.title"/><div class="ad-muted" t-esc="c.detail"/><div class="ad-fix" t-if="c.fix" t-esc="c.fix"/></div>
+                        </div>
+                    </t>
+                </div>
+                <div class="ad-card">
+                    <h3>Self-test</h3>
+                    <p class="ad-muted">Creates, edits and deletes a throw-away contact inside a transaction that is always rolled back, and verifies that exactly the right events and field changes were recorded. Nothing is kept.</p>
+                    <button type="button" class="ad-btn ad-primary" t-on-click="runSelfTest" t-att-disabled="ui.testing or !props.init.is_admin">
+                        <i t-attf-class="fa {{ui.testing ? 'fa-spin fa-circle-o-notch' : 'fa-flask'}}"/> Run self-test
+                    </button>
+                    <span class="ad-muted" t-if="!props.init.is_admin"> Administrators only.</span>
+                    <button type="button" class="ad-btn" t-on-click="openErrors"><i class="fa fa-bug"/> Open error log</button>
+                    <div class="ad-error ad-card" t-if="ui.testError" t-esc="ui.testError"/>
+                    <t t-if="ui.test">
+                        <div class="ad-note" t-if="ui.test.message" t-esc="ui.test.message"/>
+                        <t t-foreach="ui.test.steps" t-as="s" t-key="s_index">
+                            <div class="ad-check"><i t-attf-class="fa {{s.ok ? 'fa-check-circle ad-st-ok' : 'fa-times-circle ad-st-fail'}}"/>
+                                <div><span t-esc="s.name"/><div class="ad-muted" t-if="s.detail" t-esc="s.detail"/></div></div>
+                        </t>
+                        <b t-attf-class="{{ui.test.ok ? 'ad-st-ok' : 'ad-st-fail'}}" t-esc="ui.test.ok ? 'Self-test passed' : 'Self-test FAILED'"/>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- ================= Chart components ================= -->
+    <t t-name="adoption_intelligence.TrendChart">
+        <div class="ad-chart">
+            <t t-if="hasData">
+                <svg t-attf-viewBox="0 0 {{W}} {{H}}" preserveAspectRatio="none" class="ad-svg" role="img" aria-label="Daily trend">
+                    <polygon class="ad-area" t-att-points="aArea"/>
+                    <polyline class="ad-line-a" t-att-points="aLine" fill="none"/>
+                    <polyline t-if="props.b" class="ad-line-b" t-att-points="bLine" fill="none"/>
+                    <t t-foreach="dots" t-as="dot" t-key="dot_index">
+                        <circle t-if="dot.p[props.a]" class="ad-dot" t-att-cx="dot.x" t-att-cy="dot.y" r="3"><title><t t-esc="dot.p.date"/>: <t t-esc="dot.p[props.a]"/> <t t-esc="props.aLabel"/></title></circle>
+                    </t>
+                </svg>
+                <div class="ad-axis"><span t-esc="first"/><span t-esc="last"/></div>
+                <div class="ad-legend"><span class="ad-key-a"/> <t t-esc="props.aLabel"/> <t t-if="props.b"><span class="ad-key-b"/> <t t-esc="props.bLabel"/> (scaled independently)</t></div>
+            </t>
+            <div t-else="" class="ad-muted ad-center ad-pad">No data in this range.</div>
+        </div>
+    </t>
+
+    <t t-name="adoption_intelligence.BarChart">
+        <div class="ad-barchart">
+            <svg t-if="hasData" t-attf-viewBox="0 0 {{W}} {{H}}" class="ad-bc-svg" role="img" aria-label="Bar chart">
+                <t t-foreach="gridlines" t-as="g" t-key="g_index">
+                    <line class="ad-bc-grid" t-att-x1="layout.plot.left" t-att-x2="layout.plot.right" t-att-y1="g.y" t-att-y2="g.y"/>
+                    <text class="ad-bc-ytick" t-att-x="layout.plot.left - 10" t-att-y="g.y + 5" text-anchor="end" t-esc="g.value"/>
+                </t>
+                <t t-foreach="layout.bars" t-as="b" t-key="b_index">
+                    <rect class="ad-bc-bar" t-att-x="b.x" t-att-y="b.y" t-att-width="b.w" t-att-height="b.h" rx="8" ry="8"><title><t t-esc="b.label"/>: <t t-esc="b.value"/></title></rect>
+                    <text t-if="!compact" class="ad-bc-value" t-att-x="b.x + b.w / 2" t-att-y="b.y - 8" text-anchor="middle" t-esc="b.value"/>
+                    <text t-if="b.showLabel" class="ad-bc-xlabel" t-att-x="b.x + b.w / 2" t-att-y="layout.plot.bottom + 26" text-anchor="middle" t-esc="b.label"/>
+                </t>
+            </svg>
+            <div t-else="" class="ad-muted ad-center ad-pad" t-esc="props.emptyText or 'No data in this range.'"/>
+        </div>
+    </t>
+
+    <t t-name="adoption_intelligence.BarList">
+        <div class="ad-bars">
+            <t t-foreach="rows" t-as="r" t-key="r_index">
+                <div class="ad-bar-row">
+                    <div class="ad-bar-label" t-esc="r.label"/>
+                    <div class="ad-bar-track"><div class="ad-bar-fill" t-attf-style="width: {{r.pct}}%"/></div>
+                    <div class="ad-bar-value"><t t-esc="fmt(r.value)"/><t t-esc="props.suffix or ''"/></div>
+                </div>
+            </t>
+            <div t-if="!rows.length" class="ad-muted">No data.</div>
+        </div>
+    </t>
+
+    <t t-name="adoption_intelligence.ScoreRing">
+        <div class="ad-ring" t-att-style="style" role="img" t-att-aria-label="'Score ' + text"><div class="ad-ring-in"><span t-esc="text"/></div></div>
+    </t>
+</templates>

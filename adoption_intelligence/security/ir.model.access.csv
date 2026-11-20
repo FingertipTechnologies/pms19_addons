@@ -1,0 +1,23 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_activity_log_user,adoption.activity.log user,model_adoption_activity_log,group_adoption_user,1,0,0,0
+access_activity_log_manager,adoption.activity.log manager,model_adoption_activity_log,group_adoption_manager,1,0,0,0
+access_field_change_user,adoption.field.change user,model_adoption_field_change,group_adoption_user,1,0,0,0
+access_field_change_manager,adoption.field.change manager,model_adoption_field_change,group_adoption_manager,1,0,0,0
+access_navigation_log_user,adoption.navigation.log user,model_adoption_navigation_log,group_adoption_user,1,0,0,0
+access_navigation_log_manager,adoption.navigation.log manager,model_adoption_navigation_log,group_adoption_manager,1,0,0,0
+access_active_session_user,adoption.active.session user,model_adoption_active_session,group_adoption_user,1,0,0,0
+access_active_session_manager,adoption.active.session manager,model_adoption_active_session,group_adoption_manager,1,0,0,0
+access_login_summary_user,adoption.login.summary user,model_adoption_login_summary,group_adoption_user,1,0,0,0
+access_login_summary_manager,adoption.login.summary manager,model_adoption_login_summary,group_adoption_manager,1,0,0,0
+access_daily_summary_user,adoption.daily.summary user,model_adoption_daily_summary,group_adoption_user,1,0,0,0
+access_daily_summary_manager,adoption.daily.summary manager,model_adoption_daily_summary,group_adoption_manager,1,0,0,0
+access_user_score_user,adoption.user.score user,model_adoption_user_score,group_adoption_user,1,0,0,0
+access_user_score_manager,adoption.user.score manager,model_adoption_user_score,group_adoption_manager,1,0,0,0
+access_error_log_manager,adoption.error.log manager,model_adoption_error_log,group_adoption_manager,1,0,0,0
+access_tracking_config_manager,adoption.tracking.config manager,model_adoption_tracking_config,group_adoption_manager,1,0,0,0
+access_tracking_config_admin,adoption.tracking.config admin,model_adoption_tracking_config,group_adoption_admin,1,1,1,1
+access_field_config_manager,adoption.field.config manager,model_adoption_field_config,group_adoption_manager,1,0,0,0
+access_field_config_admin,adoption.field.config admin,model_adoption_field_config,group_adoption_admin,1,1,1,1
+access_settings_manager,adoption.settings manager,model_adoption_settings,group_adoption_manager,1,0,0,0
+access_settings_admin,adoption.settings admin,model_adoption_settings,group_adoption_admin,1,1,0,0
+access_recalculate_wizard_admin,adoption.recalculate.wizard admin,model_adoption_recalculate_wizard,group_adoption_admin,1,1,1,1

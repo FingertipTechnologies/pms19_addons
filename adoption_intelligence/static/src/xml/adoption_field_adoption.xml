@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="adoption_intelligence.FieldAdoption">
+        <div class="ad-view">
+            <t t-if="loader.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div></t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading field adoption…</div></t>
+            <t t-elif="loader.data">
+                <t t-set="d" t-value="loader.data"/>
+                <div class="ad-progress" t-if="loader.loading"/>
+                <div class="ad-card ad-warn" t-if="d.warnings.length or !d.tracking_enabled">
+                    <i class="fa fa-exclamation-triangle"/>
+                    <span t-if="!d.tracking_enabled"> Field-change tracking is currently OFF<t t-if="d.all_models"> for every model</t><t t-else=""> for this model</t>, so nothing new is being observed.</span>
+                    <div t-foreach="d.warnings" t-as="w" t-key="w_index" t-esc="w"/>
+                </div>
+                <div class="ad-toolbar">
+                    <h3 class="ad-grow"><t t-esc="d.label"/><t t-if="d.all_models"> (<t t-esc="d.tracked_models"/> tracked)</t> · <t t-esc="d.rows.length"/> field(s) edited by <t t-esc="d.population"/> user(s) in scope</h3>
+                    <button type="button" t-attf-class="ad-chip {{ui.meaningfulOnly ? 'is-active' : ''}}" t-on-click="toggleMeaningful"><i class="fa fa-star"/> Meaningful only</button>
+                    <button type="button" class="ad-btn" t-on-click="exportXlsx"><i class="fa fa-file-excel-o"/> Excel</button>
+                </div>
+
+                <div class="ad-card">
+                    <div class="ad-card ad-empty" t-if="!d.rows.length"><i class="fa fa-info-circle"/> No user edits recorded in this range.</div>
+                    <div class="ad-table-wrap" t-else="">
+                        <table class="ad-table">
+                            <thead><tr><th t-if="d.all_models">Model</th><th>Field</th><th>Category</th><th class="num">Edits</th><th class="num">Users</th><th>Coverage</th><th>Last changed (UTC)</th></tr></thead>
+                            <tbody>
+                                <t t-foreach="d.rows" t-as="r" t-key="r.key">
+                                    <tr>
+                                        <td t-if="d.all_models" t-esc="r.model_label"/>
+                                        <td><t t-esc="r.label"/> <span class="ad-star" t-if="r.meaningful" title="Meaningful field">★</span><div class="ad-muted ad-small" t-esc="r.field"/></td>
+                                        <td t-esc="r.category"/>
+                                        <td class="num" t-esc="fmt(r.edits)"/><td class="num" t-esc="r.users"/>
+                                        <td class="ad-meter-cell"><div class="ad-meter"><div t-attf-class="ad-meter-fill {{r.status === 'low' ? 'ad-band-risk' : 'ad-band-healthy'}}" t-attf-style="width: {{r.coverage}}%"/></div><span t-esc="r.coverage"/>%</td>
+                                        <td t-esc="r.last_changed or '—'"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="ad-grid">
+                    <div class="ad-card">
+                        <h3>Configured but never edited <span class="ad-muted ad-small">(observed for the whole range)</span></h3>
+                        <ul class="ad-list">
+                            <li t-foreach="d.unused" t-as="u" t-key="u.key"><t t-if="d.all_models"><span class="ad-muted" t-esc="u.model_label + ' · '"/></t><t t-esc="u.label"/> <span class="ad-star" t-if="u.meaningful">★</span> <span class="ad-muted" t-esc="u.category"/></li>
+                            <li t-if="!d.unused.length" class="ad-muted">None.</li>
+                        </ul>
+                    </div>
+                    <div class="ad-card">
+                        <h3>Unknown <span class="ad-muted ad-small">(not enough history to say)</span></h3>
+                        <ul class="ad-list">
+                            <li t-foreach="d.unknown" t-as="u" t-key="u.key"><t t-if="d.all_models"><span class="ad-muted" t-esc="u.model_label + ' · '"/></t><t t-esc="u.label"/> <span class="ad-muted">— <t t-esc="statusLabel(u.status)"/></span></li>
+                            <li t-if="!d.unknown.length" class="ad-muted">None.</li>
+                        </ul>
+                    </div>
+                    <div class="ad-card">
+                        <h3>Underused <span class="ad-muted ad-small">(&lt; 25% of users)</span></h3>
+                        <ul class="ad-list">
+                            <li t-foreach="d.underused" t-as="u" t-key="u.key"><t t-if="d.all_models"><span class="ad-muted" t-esc="u.model_label + ' · '"/></t><t t-esc="u.label"/> <span class="ad-muted"><t t-esc="u.coverage"/>%</span></li>
+                            <li t-if="!d.underused.length" class="ad-muted">None.</li>
+                        </ul>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

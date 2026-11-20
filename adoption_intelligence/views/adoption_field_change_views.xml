@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_adoption_field_change_list" model="ir.ui.view">
+            <field name="name">adoption.field.change.list</field>
+            <field name="model">adoption.field.change</field>
+            <field name="arch" type="xml">
+                <list create="0" edit="0" delete="0" default_order="change_datetime desc"
+                      decoration-muted="is_automated">
+                    <field name="change_datetime"/>
+                    <field name="user_id" widget="many2one_avatar_user"/>
+                    <field name="model_name"/>
+                    <field name="record_name"/>
+                    <field name="field_label"/>
+                    <field name="old_value"/>
+                    <field name="new_value"/>
+                    <field name="change_kind" optional="show"/>
+                    <field name="is_meaningful" optional="show"/>
+                    <field name="is_automated" optional="show"/>
+                    <field name="is_masked" optional="hide"/>
+                    <field name="field_name" optional="hide"/>
+                    <field name="record_id" optional="hide"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_adoption_field_change_form" model="ir.ui.view">
+            <field name="name">adoption.field.change.form</field>
+            <field name="model">adoption.field.change</field>
+            <field name="arch" type="xml">
+                <form create="0" edit="0" delete="0">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="user_id"/>
+                                <field name="model_name"/>
+                                <field name="record_name"/>
+                                <field name="record_id"/>
+                                <field name="field_label"/>
+                                <field name="field_name"/>
+                                <field name="field_type"/>
+                            </group>
+                            <group>
+                                <field name="change_datetime"/>
+                                <field name="change_kind"/>
+                                <field name="is_meaningful"/>
+                                <field name="is_automated"/>
+                                <field name="is_masked"/>
+                                <field name="activity_log_id"/>
+                            </group>
+                        </group>
+                        <group string="Values">
+                            <field name="old_value"/>
+                            <field name="new_value"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="view_adoption_field_change_search" model="ir.ui.view">
+            <field name="name">adoption.field.change.search</field>
+            <field name="model">adoption.field.change</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="user_id"/>
+                    <field name="model_name"/>
+                    <field name="field_label" string="Field"/>
+                    <field name="field_name"/>
+                    <field name="record_name" string="Record"/>
+                    <field name="old_value"/>
+                    <field name="new_value"/>
+                    <filter name="last7" string="Last 7 days" domain="[('activity_date', '&gt;=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                    <filter name="last30" string="Last 30 days" domain="[('activity_date', '&gt;=', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                    <separator/>
+                    <filter name="meaningful" string="Meaningful fields" domain="[('is_meaningful', '=', True)]"/>
+                    <filter name="human" string="User-initiated" domain="[('is_automated', '=', False)]"/>
+                    <filter name="automated" string="Automated" domain="[('is_automated', '=', True)]"/>
+                    <filter name="edits" string="Edits only" domain="[('change_kind', '=', 'update')]"/>
+                    <group>
+                        <filter name="gb_user" string="User" context="{'group_by': 'user_id'}"/>
+                        <filter name="gb_model" string="Model" context="{'group_by': 'model_name'}"/>
+                        <filter name="gb_field" string="Field" context="{'group_by': 'field_name'}"/>
+                        <filter name="gb_day" string="Day" context="{'group_by': 'activity_date:day'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        <record id="view_adoption_field_change_pivot" model="ir.ui.view">
+            <field name="name">adoption.field.change.pivot</field>
+            <field name="model">adoption.field.change</field>
+            <field name="arch" type="xml">
+                <pivot>
+                    <field name="field_name" type="row"/>
+                    <field name="user_id" type="col"/>
+                </pivot>
+            </field>
+        </record>
+        <record id="action_adoption_field_change" model="ir.actions.act_window">
+            <field name="name">Field Changes</field>
+            <field name="res_model">adoption.field.change</field>
+            <field name="view_mode">list,form,pivot</field>
+            <field name="context">{'search_default_last7': 1, 'search_default_human': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">No field changes recorded yet</p>
+                <p>Edit a tracked record: every field that really changed is stored here with its old and new value.</p>
+            </field>
+        </record>
+    </data>
+</odoo>

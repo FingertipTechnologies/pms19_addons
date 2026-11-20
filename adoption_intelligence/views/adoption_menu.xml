@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_adoption_root" name="Adoption Intelligence" sequence="95"
+              web_icon="adoption_intelligence,static/description/icon.png"
+              groups="adoption_intelligence.group_adoption_user"/>
+
+    <!-- Dashboards -->
+    <menuitem id="menu_adoption_dashboards" name="Dashboards" parent="menu_adoption_root" sequence="1"/>
+    <menuitem id="menu_adoption_overview" name="Overview" parent="menu_adoption_dashboards" sequence="10"
+              action="action_adoption_overview" groups="adoption_intelligence.group_adoption_manager"/>
+    <menuitem id="menu_adoption_leaderboard" name="Leaderboard" parent="menu_adoption_dashboards" sequence="20"
+              action="action_adoption_leaderboard" groups="adoption_intelligence.group_adoption_manager"/>
+    <menuitem id="menu_adoption_user" name="User Adoption" parent="menu_adoption_dashboards" sequence="30"
+              action="action_adoption_user_adoption" groups="adoption_intelligence.group_adoption_user"/>
+    <menuitem id="menu_adoption_fields" name="Field Adoption" parent="menu_adoption_dashboards" sequence="40"
+              action="action_adoption_field_adoption" groups="adoption_intelligence.group_adoption_manager"/>
+    <menuitem id="menu_adoption_health" name="Health and Errors" parent="menu_adoption_dashboards" sequence="50"
+              action="action_adoption_health" groups="adoption_intelligence.group_adoption_manager"/>
+
+    <!-- Records / reports (row-level security decides what each user actually sees) -->
+    <menuitem id="menu_adoption_activity" name="Activity Log" parent="menu_adoption_root" sequence="10"
+              action="action_adoption_activity_log"/>
+    <menuitem id="menu_adoption_field_change" name="Field Changes" parent="menu_adoption_root" sequence="20"
+              action="action_adoption_field_change"/>
+    <menuitem id="menu_adoption_navigation" name="Navigation" parent="menu_adoption_root" sequence="30"
+              action="action_adoption_navigation_log"/>
+    <menuitem id="menu_adoption_sessions" name="Time on Screen" parent="menu_adoption_root" sequence="40"
+              action="action_adoption_active_session"/>
+    <menuitem id="menu_adoption_logins" name="Logins" parent="menu_adoption_root" sequence="50"
+              action="action_adoption_login_summary"/>
+    <menuitem id="menu_adoption_daily_summary" name="Daily Summary" parent="menu_adoption_root" sequence="60"
+              action="action_adoption_daily_summary"/>
+    <menuitem id="menu_adoption_scores" name="Scores" parent="menu_adoption_root" sequence="70"
+              action="action_adoption_user_score"/>
+
+    <!-- Configuration (administrators) -->
+    <menuitem id="menu_adoption_config" name="Configuration" parent="menu_adoption_root" sequence="90"
+              groups="adoption_intelligence.group_adoption_manager"/>
+    <menuitem id="menu_adoption_settings" name="Settings" parent="menu_adoption_config" sequence="10"
+              action="action_adoption_settings" groups="adoption_intelligence.group_adoption_admin"/>
+    <menuitem id="menu_adoption_tracking_config" name="Tracked Models" parent="menu_adoption_config" sequence="20"
+              action="action_adoption_tracking_config"/>
+    <menuitem id="menu_adoption_field_config" name="Meaningful Fields" parent="menu_adoption_config" sequence="30"
+              action="action_adoption_field_config"/>
+    <menuitem id="menu_adoption_error_log" name="Error Log" parent="menu_adoption_config" sequence="40"
+              action="action_adoption_error_log"/>
+    <menuitem id="menu_adoption_recalculate" name="Recalculate" parent="menu_adoption_config" sequence="50"
+              action="action_adoption_recalculate_wizard" groups="adoption_intelligence.group_adoption_admin"/>
+</odoo>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="adoption_intelligence.NavigationView">
+        <div class="ad-view">
+            <t t-if="loader.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div></t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading navigation…</div></t>
+            <t t-elif="loader.data">
+                <t t-set="d" t-value="loader.data"/>
+                <t t-set="k" t-value="d.kpis"/>
+                <div class="ad-progress" t-if="loader.loading"/>
+                <div class="ad-note">Browser telemetry from the Odoo web client: it shows which screens were opened, not that they were read. Search terms and filter values are never collected.</div>
+                <div class="ad-card ad-empty" t-if="k.total === 0 and k.searches === 0">
+                    <i class="fa fa-info-circle"/> No navigation recorded in this range. Reload the web client and open a few screens, or widen the date range.
+                </div>
+
+                <div class="ad-kpis ad-kpis-sm">
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Screens opened</div><div class="ad-kpi-value" t-esc="fmt(k.total)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Pages / lists</div><div class="ad-kpi-value"><t t-esc="fmt(k.pages)"/> <span class="ad-kpi-of">/ <t t-esc="fmt(k.lists)"/></span></div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Records viewed</div><div class="ad-kpi-value" t-esc="fmt(k.records)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Reports / dashboards</div><div class="ad-kpi-value"><t t-esc="fmt(k.reports)"/> <span class="ad-kpi-of">/ <t t-esc="fmt(k.dashboards)"/></span></div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Searches</div><div class="ad-kpi-value" t-esc="fmt(k.searches)"/><div class="ad-kpi-sub">count only</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Attempted actions</div><div class="ad-kpi-value" t-esc="fmt(k.attempts)"/><div class="ad-kpi-sub">attempts, not successes</div></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Browser sessions</div><div class="ad-kpi-value" t-esc="fmt(k.sessions)"/></div>
+                    <div class="ad-card ad-kpi"><div class="ad-kpi-label">Users</div><div class="ad-kpi-value" t-esc="fmt(k.users)"/></div>
+                </div>
+
+                <div class="ad-grid">
+                    <div class="ad-card ad-span2"><h3>Navigation trend</h3>
+                        <TrendChart points="d.trend" a="'events'" b="'records'" aLabel="'Screens opened'" bLabel="'Records viewed'"/></div>
+                    <div class="ad-card"><h3>Top pages</h3><BarList items="d.top_pages"/></div>
+                    <div class="ad-card"><h3>Most visited models</h3><BarList items="d.top_models"/></div>
+                    <div class="ad-card ad-span2" t-if="d.by_user.length gt 1">
+                        <h3>By user</h3>
+                        <div class="ad-table-wrap"><table class="ad-table">
+                            <thead><tr><th>User</th><th class="num">Screens</th><th class="num">Pages / lists</th><th class="num">Records</th><th class="num">Reports / dashboards</th><th class="num">Searches</th></tr></thead>
+                            <tbody>
+                                <t t-foreach="d.by_user" t-as="u" t-key="u_index">
+                                    <tr><td t-esc="u.name"/><td class="num" t-esc="fmt(u.events)"/><td class="num" t-esc="fmt(u.pages)"/><td class="num" t-esc="fmt(u.records)"/><td class="num" t-esc="fmt(u.reports)"/><td class="num" t-esc="fmt(u.searches)"/></tr>
+                                </t>
+                            </tbody>
+                        </table></div>
+                    </div>
+                </div>
+
+                <div class="ad-card">
+                    <div class="ad-toolbar"><h3 class="ad-grow">Recent navigation</h3>
+                        <select class="ad-input" t-on-change="onType" aria-label="Event type">
+                            <option value="" t-att-selected="!ui.eventType">All events</option>
+                            <option value="record_view" t-att-selected="ui.eventType === 'record_view'">Record views</option>
+                            <option value="list_view" t-att-selected="ui.eventType === 'list_view'">Lists / kanban</option>
+                            <option value="page_view" t-att-selected="ui.eventType === 'page_view'">Pages</option>
+                            <option value="report_view" t-att-selected="ui.eventType === 'report_view'">Reports</option>
+                            <option value="dashboard_view" t-att-selected="ui.eventType === 'dashboard_view'">Dashboards</option>
+                            <option value="search" t-att-selected="ui.eventType === 'search'">Searches</option>
+                            <option value="action_click" t-att-selected="ui.eventType === 'action_click'">Attempted actions</option>
+                        </select>
+                    </div>
+                    <div class="ad-table-wrap"><table class="ad-table">
+                        <thead><tr><th>When (UTC)</th><th>User</th><th>Type</th><th>Model</th><th>Record</th><th>Page</th><th>View</th></tr></thead>
+                        <tbody>
+                            <t t-foreach="d.events" t-as="e" t-key="e.id">
+                                <tr><td t-esc="e.when"/><td t-esc="e.user"/><td><span class="ad-chip-static" t-esc="typeLabel(e.type)"/></td><td t-esc="e.model"/><td t-esc="e.record"/><td t-esc="e.page or e.action"/><td t-esc="e.view"/></tr>
+                            </t>
+                            <tr t-if="!d.events.length"><td colspan="7" class="ad-muted">No events.</td></tr>
+                        </tbody>
+                    </table></div>
+                    <div class="ad-pager">
+                        <span class="ad-muted">Showing <t t-esc="d.events.length"/> of <t t-esc="fmt(d.total_events)"/></span>
+                        <button type="button" class="ad-btn" t-if="d.events.length lt d.total_events" t-on-click="more">Load more</button>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

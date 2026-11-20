@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Landscape A4: the dashboard tables are wide. -->
+    <record id="paperformat_adoption_landscape" model="report.paperformat">
+        <field name="name">Adoption Intelligence (A4 landscape)</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">22</field>
+        <field name="margin_bottom">14</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_spacing">18</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- One generic report for every dashboard screen (see models/adoption_screen_report.py). -->
+    <record id="action_report_adoption_screen" model="ir.actions.report">
+        <field name="name">Adoption dashboard screen</field>
+        <field name="model">adoption.dashboard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">adoption_intelligence.report_screen</field>
+        <field name="report_file">adoption_intelligence.report_screen</field>
+        <field name="paperformat_id" ref="paperformat_adoption_landscape"/>
+    </record>
+
+    <template id="report_screen">
+        <t t-call="web.html_container">
+            <t t-call="web.internal_layout">
+                <t t-foreach="docs" t-as="doc">
+                    <div class="page">
+                        <style>
+                            .ad-pdf h1 { font-size: 22px; margin: 0 0 2px; }
+                            .ad-pdf .ad-pdf-sub { color: #4a6fa8; font-size: 11px; margin-bottom: 4px; }
+                            .ad-pdf .ad-pdf-meta { color: #6b7089; font-size: 10px; margin-bottom: 12px; }
+                            .ad-pdf .ad-pdf-kpis { margin-bottom: 8px; }
+                            .ad-pdf .ad-pdf-kpi { display: inline-block; min-width: 130px; margin: 0 8px 8px 0; padding: 6px 10px;
+                                border: 1px solid #e0e3f2; border-radius: 6px; background: #f6f7fc; }
+                            .ad-pdf .ad-pdf-kpi span { display: block; font-size: 8px; text-transform: uppercase; color: #5b6a9a; font-weight: bold; }
+                            .ad-pdf .ad-pdf-kpi b { font-size: 14px; }
+                            .ad-pdf h3 { font-size: 13px; margin: 14px 0 6px; color: #1e3a8a; }
+                            .ad-pdf table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 4px; }
+                            .ad-pdf th { text-align: left; background: #e6eefc; color: #1e3a8a; padding: 4px 6px; border-bottom: 1px solid #bfd3fb; text-transform: uppercase; font-size: 8px; }
+                            .ad-pdf td { padding: 3px 6px; border-bottom: 1px solid #eceef6; }
+                            .ad-pdf tr { page-break-inside: avoid; }
+                            .ad-pdf .num { text-align: right; }
+                            .ad-pdf .ad-pdf-bar { display: table; width: 100%; font-size: 9px; margin: 2px 0; }
+                            .ad-pdf .ad-pdf-bar > div { display: table-cell; vertical-align: middle; }
+                            .ad-pdf .ad-pdf-track { width: 55%; background: #eceef6; height: 8px; }
+                            .ad-pdf .ad-pdf-fill { background: #2563eb; height: 8px; }
+                            .ad-pdf .ad-pdf-note { color: #6b7089; font-size: 9px; font-style: italic; }
+                        </style>
+                        <div class="ad-pdf">
+                            <h1><t t-esc="doc['title']"/></h1>
+                            <div class="ad-pdf-sub"><t t-esc="doc['subtitle']"/></div>
+                            <div class="ad-pdf-meta">
+                                <t t-esc="doc['scope']"/>
+                                <t t-if="doc['range']"> &#183; <t t-esc="doc['range']"/></t>
+                                &#183; generated <t t-esc="doc['generated']"/> UTC by <t t-esc="doc['user']"/>
+                            </div>
+                            <div class="ad-pdf-kpis" t-if="doc.get('kpis')">
+                                <t t-foreach="doc['kpis']" t-as="kpi">
+                                    <div class="ad-pdf-kpi"><span><t t-esc="kpi[0]"/></span><b><t t-esc="kpi[1]"/></b></div>
+                                </t>
+                            </div>
+                            <t t-foreach="doc.get('notes') or []" t-as="note"><div class="ad-pdf-note" t-esc="note"/></t>
+
+                            <t t-foreach="doc['sections']" t-as="sec">
+                                <h3 t-esc="sec['title']"/>
+                                <t t-if="sec['kind'] == 'bars'">
+                                    <div class="ad-pdf-bar" t-foreach="sec['items']" t-as="item">
+                                        <div style="width: 25%;"><t t-esc="item['label']"/></div>
+                                        <div class="ad-pdf-track"><div class="ad-pdf-fill" t-attf-style="width: {{item['pct']}}%;"/></div>
+                                        <div style="width: 10%; text-align: right;"><b t-esc="item['text']"/></div>
+                                    </div>
+                                    <div t-if="not sec['items']" class="ad-pdf-note">No data.</div>
+                                </t>
+                                <t t-else="">
+                                    <table>
+                                        <thead><tr>
+                                            <th t-foreach="sec['columns']" t-as="col" t-attf-class="{{ 'num' if col_index in sec['numeric'] else '' }}"><t t-esc="col"/></th>
+                                        </tr></thead>
+                                        <tbody>
+                                            <tr t-foreach="sec['rows']" t-as="row">
+                                                <td t-foreach="row" t-as="cell" t-attf-class="{{ 'num' if cell_index in sec['numeric'] else '' }}"><t t-esc="cell"/></td>
+                                            </tr>
+                                            <tr t-if="not sec['rows']"><td t-att-colspan="len(sec['columns'])" class="ad-pdf-note">No data in this range.</td></tr>
+                                        </tbody>
+                                    </table>
+                                    <div t-if="sec.get('note')" class="ad-pdf-note" t-esc="sec['note']"/>
+                                </t>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

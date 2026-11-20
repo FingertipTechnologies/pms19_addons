@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Adoption Privilege -->
+    <record id="privilege_adoption" model="res.groups.privilege">
+        <field name="name">Adoption</field>
+        <field name="description">Access levels for Adoption Intelligence.</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- Adoption User -->
+    <record id="group_adoption_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="privilege_id" ref="privilege_adoption"/>
+        <field name="comment">
+            Sees their own adoption data only.
+        </field>
+    </record>
+
+    <!-- Adoption Manager -->
+    <record id="group_adoption_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="privilege_id" ref="privilege_adoption"/>
+        <field name="comment">
+            Sees every user's adoption data within their
+            allowed companies, leaderboards, field adoption
+            and health.
+        </field>
+        <field name="implied_ids"
+               eval="[(4, ref('group_adoption_user'))]"/>
+    </record>
+
+    <!-- Adoption Administrator -->
+    <record id="group_adoption_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="privilege_id" ref="privilege_adoption"/>
+        <field name="comment">
+            Configures tracking, retention and scoring inputs;
+            runs recalculation and the self-test.
+        </field>
+        <field name="implied_ids"
+               eval="[(4, ref('group_adoption_manager'))]"/>
+    </record>
+
+    <!-- Every internal user gets Adoption User -->
+    <record id="base.group_user" model="res.groups">
+        <field name="implied_ids"
+               eval="[(4, ref('adoption_intelligence.group_adoption_user'))]"/>
+    </record>
+
+    <!-- Settings administrators get Adoption Administrator -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids"
+               eval="[(4, ref('adoption_intelligence.group_adoption_admin'))]"/>
+    </record>
+
+</odoo>

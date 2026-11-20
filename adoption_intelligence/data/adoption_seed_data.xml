@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Singleton settings record (original defaults, except detail retention which
+         is 90 days as specified for this project; the Salesforce seed used 365).
+         Recommended tracked models / meaningful fields are NOT declared here: they
+         are created by post_init_hook only for models installed in this database,
+         because XML cannot reference a model that may not exist. -->
+    <data noupdate="1">
+        <record id="settings_default" model="adoption.settings">
+            <field name="name">Adoption Intelligence Settings</field>
+            <field name="retention_days_detail">90</field>
+        </record>
+    </data>
+</odoo>

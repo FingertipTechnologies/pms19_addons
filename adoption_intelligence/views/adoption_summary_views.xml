@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== Daily summary ===================== -->
+    <record id="view_adoption_daily_summary_list" model="ir.ui.view">
+        <field name="name">adoption.daily.summary.list</field>
+        <field name="model">adoption.daily.summary</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="summary_date desc, user_id">
+                <field name="summary_date"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="model_name"/>
+                <field name="records_created" sum="Total"/>
+                <field name="records_updated" sum="Total"/>
+                <field name="records_deleted" sum="Total"/>
+                <field name="records_viewed" sum="Total"/>
+                <field name="field_edits" sum="Total"/>
+                <field name="meaningful_field_edits" sum="Total"/>
+                <field name="automated_changes" sum="Total" optional="show"/>
+                <field name="adoption_points" sum="Total" optional="show"/>
+                <field name="pages_viewed" sum="Total" optional="hide"/>
+                <field name="reports_viewed" sum="Total" optional="hide"/>
+                <field name="dashboards_viewed" sum="Total" optional="hide"/>
+                <field name="searches" sum="Total" optional="hide"/>
+                <field name="active_minutes" sum="Total" optional="show"/>
+                <field name="login_count" sum="Total" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_daily_summary_search" model="ir.ui.view">
+        <field name="name">adoption.daily.summary.search</field>
+        <field name="model">adoption.daily.summary</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="model_name"/>
+                <filter name="last30" string="Last 30 days" domain="[('summary_date', '&gt;=', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter name="last90" string="Last 90 days" domain="[('summary_date', '&gt;=', (context_today() - relativedelta(days=90)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="per_model" string="Per model" domain="[('is_day_level', '=', False)]"/>
+                <filter name="engagement" string="Engagement (all models)" domain="[('is_day_level', '=', True)]"/>
+                <group>
+                    <filter name="gb_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="gb_model" string="Model" context="{'group_by': 'model_name'}"/>
+                    <filter name="gb_day" string="Day" context="{'group_by': 'summary_date:day'}"/>
+                    <filter name="gb_week" string="Week" context="{'group_by': 'summary_date:week'}"/>
+                    <filter name="gb_month" string="Month" context="{'group_by': 'summary_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_adoption_daily_summary_pivot" model="ir.ui.view">
+        <field name="name">adoption.daily.summary.pivot</field>
+        <field name="model">adoption.daily.summary</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="user_id" type="row"/>
+                <field name="summary_date" interval="week" type="col"/>
+                <field name="records_created" type="measure"/>
+                <field name="records_updated" type="measure"/>
+                <field name="meaningful_field_edits" type="measure"/>
+                <field name="active_minutes" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_adoption_daily_summary_graph" model="ir.ui.view">
+        <field name="name">adoption.daily.summary.graph</field>
+        <field name="model">adoption.daily.summary</field>
+        <field name="arch" type="xml">
+            <graph type="line">
+                <field name="summary_date" interval="day"/>
+                <field name="field_edits" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="action_adoption_daily_summary" model="ir.actions.act_window">
+        <field name="name">Daily Summary (daily / weekly / monthly)</field>
+        <field name="res_model">adoption.daily.summary</field>
+        <field name="view_mode">pivot,list,graph</field>
+        <field name="context">{'search_default_last30': 1, 'search_default_per_model': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No summaries yet</p>
+            <p>Summaries are produced by the nightly rollup. Use Configuration &gt; Recalculate to build them now.
+               Use the Day / Week / Month group-bys for daily, weekly and monthly statistics.</p>
+        </field>
+    </record>
+
+    <!-- ===================== Scores ===================== -->
+    <record id="view_adoption_user_score_list" model="ir.ui.view">
+        <field name="name">adoption.user.score.list</field>
+        <field name="model">adoption.user.score</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0" default_order="period_start desc, total_score desc"
+                  decoration-success="adoption_band in ('power_user', 'healthy')"
+                  decoration-warning="adoption_band == 'needs_improvement'"
+                  decoration-danger="adoption_band == 'at_risk'" decoration-muted="adoption_band == 'inactive'">
+                <field name="period_start"/>
+                <field name="period_end"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="total_score"/>
+                <field name="adoption_band" widget="badge"/>
+                <field name="presence_score" optional="show"/>
+                <field name="data_activity_score" optional="show"/>
+                <field name="process_compliance_score" optional="show"/>
+                <field name="feature_adoption_score" optional="show"/>
+                <field name="engagement_score" optional="show"/>
+                <field name="data_quality_score" optional="show"/>
+                <field name="active_days" optional="show"/>
+                <field name="active_minutes" optional="hide"/>
+                <field name="is_final" optional="hide"/>
+                <field name="calculation_datetime" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_adoption_user_score_form" model="ir.ui.view">
+        <field name="name">adoption.user.score.form</field>
+        <field name="model">adoption.user.score</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="period_type"/>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="is_final"/>
+                        </group>
+                        <group>
+                            <field name="total_score"/>
+                            <field name="adoption_band"/>
+                            <field name="calculation_datetime"/>
+                        </group>
+                    </group>
+                    <group string="Components (weighted points)">
+                        <group>
+                            <field name="presence_score" string="Presence (max 15)"/>
+                            <field name="data_activity_score" string="Data activity (max 20)"/>
+                            <field name="process_compliance_score" string="Process compliance (max 25)"/>
+                        </group>
+                        <group>
+                            <field name="feature_adoption_score" string="Feature adoption (max 15)"/>
+                            <field name="engagement_score" string="Engagement (max 15)"/>
+                            <field name="data_quality_score" string="Data quality (max 10)"/>
+                        </group>
+                    </group>
+                    <group string="Inputs">
+                        <group>
+                            <field name="active_days"/>
+                            <field name="records_created"/>
+                            <field name="records_updated"/>
+                            <field name="records_deleted"/>
+                            <field name="field_edits"/>
+                            <field name="meaningful_edits"/>
+                        </group>
+                        <group>
+                            <field name="objects_used"/>
+                            <field name="reports_viewed"/>
+                            <field name="dashboards_viewed"/>
+                            <field name="active_minutes"/>
+                            <field name="logins"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Calculation notes"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_adoption_user_score_search" model="ir.ui.view">
+        <field name="name">adoption.user.score.search</field>
+        <field name="model">adoption.user.score</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <filter name="monthly" string="Monthly" domain="[('period_type', '=', 'month')]"/>
+                <filter name="this_month" string="This month" domain="[('period_start', '=', context_today().strftime('%Y-%m-01'))]"/>
+                <separator/>
+                <filter name="power" string="Power User" domain="[('adoption_band', '=', 'power_user')]"/>
+                <filter name="healthy" string="Healthy" domain="[('adoption_band', '=', 'healthy')]"/>
+                <filter name="needs" string="Needs Improvement" domain="[('adoption_band', '=', 'needs_improvement')]"/>
+                <filter name="risk" string="At Risk" domain="[('adoption_band', '=', 'at_risk')]"/>
+                <filter name="inactive" string="Inactive" domain="[('adoption_band', '=', 'inactive')]"/>
+                <group>
+                    <filter name="gb_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="gb_band" string="Band" context="{'group_by': 'adoption_band'}"/>
+                    <filter name="gb_period" string="Period" context="{'group_by': 'period_start:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_adoption_user_score_pivot" model="ir.ui.view">
+        <field name="name">adoption.user.score.pivot</field>
+        <field name="model">adoption.user.score</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="user_id" type="row"/>
+                <field name="period_start" interval="month" type="col"/>
+                <field name="total_score" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_adoption_user_score_graph" model="ir.ui.view">
+        <field name="name">adoption.user.score.graph</field>
+        <field name="model">adoption.user.score</field>
+        <field name="arch" type="xml">
+            <graph type="bar">
+                <field name="user_id"/>
+                <field name="total_score" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="action_adoption_user_score" model="ir.actions.act_window">
+        <field name="name">Adoption Scores</field>
+        <field name="res_model">adoption.user.score</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="context">{'search_default_this_month': 1}</field>
+    </record>
+</odoo>

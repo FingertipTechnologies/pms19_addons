@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="adoption_intelligence.Leaderboard">
+        <div class="ad-view">
+            <div class="ad-toolbar">
+                <span class="ad-chip-static"><i class="fa fa-calendar"/> Period: <b t-esc="monthLabel"/></span>
+                <input type="search" class="ad-input" placeholder="Search employee…" t-att-value="ui.search" t-on-change="onSearch"/>
+                <div class="ad-presets">
+                    <button type="button" t-attf-class="ad-chip {{ui.sub === 'score' ? 'is-active' : ''}}" t-on-click="() => ui.sub = 'score'">Adoption score</button>
+                    <button type="button" t-attf-class="ad-chip {{ui.sub === 'points' ? 'is-active' : ''}}" t-on-click="() => ui.sub = 'points'">Points ranking</button>
+                </div>
+                <span class="ad-grow"/>
+                <button type="button" class="ad-btn" t-on-click="exportXlsx"><i class="fa fa-file-excel-o"/> Excel</button>
+                <button type="button" class="ad-btn ad-primary" t-if="loader.data and loader.data.can_recalculate" t-att-disabled="ui.busy" t-on-click="recalculate">
+                    <i t-attf-class="fa {{ui.busy ? 'fa-spin fa-circle-o-notch' : 'fa-calculator'}}"/> Recalculate
+                </button>
+            </div>
+
+            <t t-if="loader.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div></t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading leaderboard…</div></t>
+            <t t-elif="loader.data">
+                <t t-set="d" t-value="loader.data"/>
+                <div class="ad-progress" t-if="loader.loading"/>
+                <div class="ad-note">
+                    Score = <t t-foreach="components" t-as="c" t-key="c.key"><span><t t-esc="c.label"/> <b t-esc="c.max"/><t t-if="!c_last"> + </t></span></t>
+                    = 100. Each component is the user's value divided by the organisation's 75th percentile, capped at 1.
+                    <t t-if="!d.is_final"> This period is still in progress or not fully rolled up.</t>
+                    <t t-if="d.calculated_at"> Last calculated <t t-esc="d.calculated_at"/> UTC.</t>
+                </div>
+
+                <div class="ad-card" t-if="ui.sub === 'score'">
+                    <div class="ad-card ad-empty" t-if="!d.rows.length"><i class="fa fa-info-circle"/> No scores for this period yet. Scores are calculated nightly; an administrator can press Recalculate.</div>
+                    <div class="ad-table-wrap" t-else="">
+                        <table class="ad-table ad-clickable">
+                            <thead><tr><th>#</th><th>Employee</th><th>Score</th><th>Band</th><th class="num">Active days</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Meaningful edits</th><th class="num">Active time</th></tr></thead>
+                            <tbody>
+                                <t t-foreach="d.rows" t-as="r" t-key="r.id">
+                                    <tr t-on-click="() => this.toggle(r)">
+                                        <td><b t-esc="r.rank"/></td>
+                                        <td><a href="#" t-on-click.prevent.stop="() => props.onOpenUser(r.user_id)" t-esc="r.name"/></td>
+                                        <td class="ad-meter-cell">
+                                            <div class="ad-meter"><div t-attf-class="ad-meter-fill {{band[r.band]}}" t-attf-style="width: {{r.total_score}}%"/></div>
+                                            <b t-esc="r.total_score.toFixed(1)"/>
+                                        </td>
+                                        <td><span t-attf-class="ad-badge {{band[r.band]}}" t-esc="r.band_label"/></td>
+                                        <td class="num" t-esc="r.active_days"/><td class="num" t-esc="fmt(r.records_created)"/><td class="num" t-esc="fmt(r.records_updated)"/>
+                                        <td class="num" t-esc="fmt(r.meaningful_edits)"/><td class="num" t-esc="fmtMinutes(r.active_minutes)"/>
+                                    </tr>
+                                    <tr t-if="ui.expanded === r.user_id" class="ad-expand">
+                                        <td colspan="9">
+                                            <div class="ad-comp-grid">
+                                                <t t-foreach="components" t-as="c" t-key="c.key">
+                                                    <div class="ad-comp">
+                                                        <div class="ad-muted ad-small"><t t-esc="c.label"/></div>
+                                                        <div class="ad-bar-track"><div class="ad-bar-fill" t-attf-style="width: {{pct(r, c.key, c.max)}}%"/></div>
+                                                        <div class="ad-small"><b t-esc="r.components[c.key].toFixed(1)"/> / <t t-esc="c.max"/></div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                            <div class="ad-muted ad-small" t-if="r.notes" t-esc="r.notes"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="ad-card" t-else="">
+                    <div class="ad-muted ad-small">Activity points (create / update / meaningful edit, weighted by model; automation earns none) plus a small credit for every page, report and dashboard opened.</div>
+                    <div class="ad-card ad-empty" t-if="!d.points.length"><i class="fa fa-info-circle"/> No points earned in this period.</div>
+                    <div class="ad-table-wrap" t-else="">
+                        <table class="ad-table">
+                            <thead><tr><th>#</th><th>Employee</th><th class="num">Points</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Pages</th></tr></thead>
+                            <tbody>
+                                <t t-foreach="d.points" t-as="p" t-key="p.user_id">
+                                    <tr>
+                                        <td><span t-attf-class="ad-medal ad-medal-{{p.medal or 'none'}}" t-esc="p.rank"/></td>
+                                        <td><a href="#" t-on-click.prevent="() => props.onOpenUser(p.user_id)" t-esc="p.name"/></td>
+                                        <td class="num"><b t-esc="p.points"/></td><td class="num" t-esc="p.created"/><td class="num" t-esc="p.updated"/><td class="num" t-esc="p.pages"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="adoption_intelligence.Reports">
+        <div class="ad-view">
+
+            <!-- ============ Period comparison ============ -->
+            <t t-if="summary.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="summary.error"/></div></t>
+            <t t-elif="summary.loading and !summary.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading reports…</div></t>
+            <t t-elif="summary.data">
+                <t t-set="s" t-value="summary.data"/>
+                <div class="ad-progress" t-if="summary.loading"/>
+                <div class="ad-note" t-if="s.model_filtered">Filtered to one model: engagement columns (viewed, pages, reports, dashboards, searches, active minutes, logins) are not model specific and stay unfiltered.</div>
+
+                <div class="ad-card ad-card-accent">
+                    <h3 class="ad-card-title" t-esc="chartTitle"/>
+                    <BarChart items="chartItems" emptyText="'No activity in this range.'"/>
+                </div>
+
+                <div class="ad-card">
+                    <div class="ad-cardhead">
+                        <h3 class="ad-card-title">Comparison Table</h3>
+                        <button type="button" class="ad-btn ad-primary" t-on-click="() => props.onDownloadPdf()"><i class="fa fa-download"/> Download PDF</button>
+                    </div>
+                    <div class="ad-table-wrap"><table class="ad-table ad-table-compare">
+                        <thead><tr><th>Period</th><th class="num">Field edits</th><th class="num">Records touched</th><th class="num">Active users</th><th>Change vs previous</th></tr></thead>
+                        <tbody>
+                            <t t-foreach="comparisonRows" t-as="r" t-key="r.key">
+                                <tr>
+                                    <td t-esc="r.period"/><td class="num" t-esc="fmt(r.field_edits)"/><td class="num" t-esc="fmt(r.touched)"/><td class="num" t-esc="r.active_users"/>
+                                    <td><span t-attf-class="ad-pill ad-pill-{{r.change.tone}}" t-esc="r.change.text"/></td>
+                                </tr>
+                            </t>
+                            <tr t-if="!comparisonRows.length"><td colspan="5" class="ad-muted">No activity in this range.</td></tr>
+                        </tbody>
+                    </table></div>
+                </div>
+
+                <div class="ad-card">
+                    <div class="ad-cardhead">
+                        <h3 class="ad-card-title">Detailed summary</h3>
+                        <button type="button" class="ad-btn" t-on-click="exportSummary"><i class="fa fa-file-excel-o"/> Excel</button>
+                    </div>
+                    <div class="ad-table-wrap"><table class="ad-table">
+                        <thead><tr><th>Period</th><th class="num">Active users</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Deleted</th><th class="num">Viewed</th><th class="num">Field edits</th><th class="num">Meaningful</th><th class="num">Automated</th><th class="num">Points</th><th class="num">Pages</th><th class="num">Reports</th><th class="num">Dashboards</th><th class="num">Searches</th><th class="num">Active time</th><th class="num">Logins</th></tr></thead>
+                        <tbody>
+                            <t t-foreach="s.rows" t-as="r" t-key="r.bucket">
+                                <tr>
+                                    <td><b t-esc="r.label"/></td><td class="num" t-esc="r.active_users"/>
+                                    <td class="num" t-esc="fmt(r.created)"/><td class="num" t-esc="fmt(r.updated)"/><td class="num" t-esc="fmt(r.deleted)"/><td class="num" t-esc="fmt(r.viewed)"/>
+                                    <td class="num" t-esc="fmt(r.field_edits)"/><td class="num" t-esc="fmt(r.meaningful)"/><td class="num" t-esc="fmt(r.automated)"/><td class="num" t-esc="fmt(r.points)"/>
+                                    <td class="num" t-esc="fmt(r.pages)"/><td class="num" t-esc="fmt(r.reports)"/><td class="num" t-esc="fmt(r.dashboards)"/><td class="num" t-esc="fmt(r.searches)"/>
+                                    <td class="num" t-esc="fmtMinutes(r.active_minutes)"/><td class="num" t-esc="fmt(r.logins)"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot><tr>
+                            <td><b>Total</b></td><td class="num"><b t-esc="s.totals.active_users"/></td>
+                            <td class="num"><b t-esc="fmt(s.totals.created)"/></td><td class="num"><b t-esc="fmt(s.totals.updated)"/></td><td class="num"><b t-esc="fmt(s.totals.deleted)"/></td><td class="num"><b t-esc="fmt(s.totals.viewed)"/></td>
+                            <td class="num"><b t-esc="fmt(s.totals.field_edits)"/></td><td class="num"><b t-esc="fmt(s.totals.meaningful)"/></td><td class="num"><b t-esc="fmt(s.totals.automated)"/></td><td class="num"><b t-esc="fmt(s.totals.points)"/></td>
+                            <td class="num"><b t-esc="fmt(s.totals.pages)"/></td><td class="num"><b t-esc="fmt(s.totals.reports)"/></td><td class="num"><b t-esc="fmt(s.totals.dashboards)"/></td><td class="num"><b t-esc="fmt(s.totals.searches)"/></td>
+                            <td class="num"><b t-esc="fmtMinutes(s.totals.active_minutes)"/></td><td class="num"><b t-esc="fmt(s.totals.logins)"/></td>
+                        </tr></tfoot>
+                    </table></div>
+                    <div class="ad-muted ad-small">Rolled up through <t t-esc="s.last_rollup_date or 'never'"/>; the most recent day is computed live. Active users counts each user once per period.</div>
+                </div>
+            </t>
+
+            <!-- ============ Field-change report ============ -->
+            <h2 class="ad-section">Field-change report</h2>
+            <div class="ad-toolbar">
+                <button type="button" t-attf-class="ad-chip {{ui.meaningfulOnly ? 'is-active' : ''}}" t-on-click="() => this.toggle('meaningfulOnly')"><i class="fa fa-star"/> Meaningful only</button>
+                <button type="button" t-attf-class="ad-chip {{ui.includeAutomated ? 'is-active' : ''}}" t-on-click="() => this.toggle('includeAutomated')">Include automated</button>
+                <select class="ad-input" t-on-change="onKind" aria-label="Kind">
+                    <option value="" t-att-selected="!ui.kind">All kinds</option>
+                    <option value="update" t-att-selected="ui.kind === 'update'">Edits</option>
+                    <option value="initial" t-att-selected="ui.kind === 'initial'">Value at creation</option>
+                    <option value="final" t-att-selected="ui.kind === 'final'">Value at deletion</option>
+                </select>
+                <span class="ad-grow"/>
+                <button type="button" class="ad-btn" t-on-click="exportChanges"><i class="fa fa-file-excel-o"/> Excel</button>
+            </div>
+            <t t-if="changes.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="changes.error"/></div></t>
+            <t t-elif="changes.loading and !changes.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading field changes…</div></t>
+            <t t-elif="changes.data">
+                <t t-set="c" t-value="changes.data"/>
+                <div class="ad-progress" t-if="changes.loading"/>
+                <div class="ad-grid">
+                    <div class="ad-card ad-span2">
+                        <h3>Most changed fields</h3>
+                        <div class="ad-table-wrap"><table class="ad-table">
+                            <thead><tr><th>Model</th><th>Field</th><th class="num">Changes</th><th class="num">Users</th><th>Last change (UTC)</th></tr></thead>
+                            <tbody>
+                                <t t-foreach="c.summary" t-as="f" t-key="f_index"><tr><td t-esc="f.model"/><td t-esc="f.field"/><td class="num" t-esc="fmt(f.edits)"/><td class="num" t-esc="f.users"/><td t-esc="f.last or '—'"/></tr></t>
+                                <tr t-if="!c.summary.length"><td colspan="5" class="ad-muted">No field changes match these filters.</td></tr>
+                            </tbody>
+                        </table></div>
+                    </div>
+                </div>
+                <div class="ad-card">
+                    <h3>Individual changes</h3>
+                    <div class="ad-table-wrap"><table class="ad-table">
+                        <thead><tr><th>When (UTC)</th><th>User</th><th>Model</th><th>Record</th><th>Field</th><th>Was</th><th>Became</th></tr></thead>
+                        <tbody>
+                            <t t-foreach="c.rows" t-as="r" t-key="r.id">
+                                <tr t-attf-class="{{r.automated ? 'ad-dim' : ''}}">
+                                    <td t-esc="r.when"/><td t-esc="r.user"/><td t-esc="r.model"/><td t-esc="r.record"/>
+                                    <td><t t-esc="r.field"/><span class="ad-star" t-if="r.meaningful"> ★</span></td>
+                                    <td><span t-if="r.kind === 'initial'" class="ad-muted">(new record)</span><span t-else="" t-esc="r.old or '—'"/></td>
+                                    <td><span t-if="r.kind === 'final'" class="ad-muted">(deleted)</span><span t-else="" t-esc="r.new or '—'"/></td>
+                                </tr>
+                            </t>
+                            <tr t-if="!c.rows.length"><td colspan="7" class="ad-muted">No changes.</td></tr>
+                        </tbody>
+                    </table></div>
+                    <div class="ad-pager">
+                        <span class="ad-muted" t-esc="rangeText"/>
+                        <span><button type="button" class="ad-btn" t-att-disabled="!hasPrev" t-on-click="prev"><i class="fa fa-chevron-left"/> Previous</button>
+                        <button type="button" class="ad-btn" t-att-disabled="!hasNext" t-on-click="next">Next <i class="fa fa-chevron-right"/></button></span>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

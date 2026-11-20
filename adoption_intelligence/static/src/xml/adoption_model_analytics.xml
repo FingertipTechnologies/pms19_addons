@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="adoption_intelligence.ModelAnalytics">
+        <div class="ad-view">
+            <t t-if="loader.error"><div class="ad-card ad-error" role="alert"><i class="fa fa-exclamation-triangle"/> <span t-esc="loader.error"/></div></t>
+            <t t-elif="loader.loading and !loader.data"><div class="ad-loading"><i class="fa fa-circle-o-notch fa-spin"/> Loading model analytics…</div></t>
+            <t t-elif="loader.data">
+                <t t-set="d" t-value="loader.data"/>
+                <div class="ad-progress" t-if="loader.loading"/>
+
+                <div class="ad-card ad-card-accent">
+                    <h3 class="ad-card-title">Model Adoption Comparison</h3>
+                    <div class="ad-empty" t-if="!cards.length"><i class="fa fa-info-circle"/> No models are tracked yet. Add some under Configuration &gt; Tracked Models.</div>
+                    <div class="ad-cmp" t-else="">
+                        <t t-foreach="cards" t-as="c" t-key="c.model">
+                            <div class="ad-cmp-row">
+                                <div class="ad-cmp-head"><span t-esc="c.label"/><b t-esc="c.pct + '%'"/></div>
+                                <div class="ad-track"><div class="ad-fill" t-attf-style="width: {{c.pct}}%"/></div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <div class="ad-cards3">
+                    <t t-foreach="cards" t-as="c" t-key="c.model">
+                        <div t-attf-class="ad-card ad-modelcard {{props.model === c.model ? 'is-selected' : ''}}" role="button" tabindex="0"
+                             t-on-click="() => props.onSelectModel(c.model)" t-att-title="'Open ' + c.label + ' deep dive'">
+                            <div class="ad-mc-head">
+                                <span class="ad-mc-icon"><i class="fa fa-cube"/></span>
+                                <span class="ad-mc-name" t-esc="c.label"/>
+                                <span class="ad-mc-pct" t-esc="c.pct + '%'"/>
+                            </div>
+                            <div class="ad-track"><div class="ad-fill" t-attf-style="width: {{c.pct}}%"/></div>
+                            <div class="ad-stats3">
+                                <div class="ad-stat"><span>Users</span><b t-esc="c.users"/></div>
+                                <div class="ad-stat"><span>Created</span><b t-esc="fmt(c.created)"/></div>
+                                <div class="ad-stat"><span>Updates</span><b t-esc="fmt(c.updated)"/></div>
+                            </div>
+                            <div class="ad-mc-foot ad-muted">
+                                <span><t t-esc="fmt(c.deleted)"/> deleted</span>
+                                <span><t t-esc="fmt(c.viewed)"/> viewed</span>
+                                <span><t t-esc="fmt(c.field_edits)"/> field edits</span>
+                                <span t-if="c.minutes"><t t-esc="fmtMinutes(c.minutes)"/> on records</span>
+                                <span t-if="c.status !== 'active'" t-attf-class="ad-status ad-status-{{c.status}}" t-esc="statusLabel(c.status)"/>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <div class="ad-card ad-empty" t-if="!d.detail"><i class="fa fa-hand-pointer-o"/> Click a model card above, or pick one in the Model filter, to see its deep dive.</div>
+
+                <t t-if="d.detail">
+                    <t t-set="m" t-value="d.detail"/>
+                    <h2 class="ad-section"><t t-esc="m.label"/> <span class="ad-muted ad-small" t-esc="m.model"/></h2>
+                    <div class="ad-card ad-warn" t-if="m.fields.warnings.length or !m.fields.tracking_enabled">
+                        <i class="fa fa-exclamation-triangle"/>
+                        <span t-if="!m.fields.tracking_enabled"> Field-change tracking is OFF for this model.</span>
+                        <div t-foreach="m.fields.warnings" t-as="w" t-key="w_index" t-esc="w"/>
+                    </div>
+                    <div class="ad-card">
+                        <h3>Tracking configuration</h3>
+                        <div class="ad-chiprow">
+                            <span class="ad-chip-static">Create <b t-esc="flag(m.config.create)"/></span>
+                            <span class="ad-chip-static">Update <b t-esc="flag(m.config.update)"/></span>
+                            <span class="ad-chip-static">Delete <b t-esc="flag(m.config.delete)"/></span>
+                            <span class="ad-chip-static">Field changes <b t-esc="flag(m.config.field_changes)"/></span>
+                            <span class="ad-chip-static">Record views <b t-esc="flag(m.config.read)"/></span>
+                            <span class="ad-chip-static">View time <b t-esc="flag(m.config.view_time)"/></span>
+                            <span class="ad-chip-static">Weight <b t-esc="m.config.weight"/></span>
+                        </div>
+                    </div>
+                    <div class="ad-grid">
+                        <div class="ad-card ad-span2"><h3>Activity trend</h3>
+                            <TrendChart points="m.trend" a="'events'" b="'field_edits'" aLabel="'Create / update / delete'" bLabel="'Field edits'"/></div>
+                        <div class="ad-card"><h3>Where changes come from</h3><BarList items="sourceBars"/></div>
+                        <div class="ad-card">
+                            <h3>Most maintained fields</h3>
+                            <table class="ad-table"><tbody>
+                                <t t-foreach="m.fields.most" t-as="f" t-key="f.field"><tr><td><t t-esc="f.label"/> <span class="ad-star" t-if="f.meaningful">★</span></td><td class="num" t-esc="fmt(f.edits)"/><td class="num"><t t-esc="f.coverage"/>%</td></tr></t>
+                                <tr t-if="!m.fields.most.length"><td class="ad-muted">No field edits recorded.</td></tr>
+                            </tbody></table>
+                        </div>
+                        <div class="ad-card">
+                            <h3>Least maintained fields</h3>
+                            <table class="ad-table"><tbody>
+                                <t t-foreach="m.fields.least" t-as="f" t-key="f.field"><tr><td><t t-esc="f.label"/> <span class="ad-star" t-if="f.meaningful">★</span></td><td class="num" t-esc="fmt(f.edits)"/><td class="num"><t t-esc="f.coverage"/>%</td></tr></t>
+                                <tr t-if="!m.fields.least.length"><td class="ad-muted">No field edits recorded.</td></tr>
+                            </tbody></table>
+                            <div class="ad-muted ad-small"><t t-esc="m.fields.unused"/> configured field(s) never edited, <t t-esc="m.fields.unknown"/> unknown (not enough history), <t t-esc="m.fields.underused"/> used by fewer than 25% of users.</div>
+                        </div>
+                        <div class="ad-card">
+                            <h3>Top users</h3>
+                            <table class="ad-table">
+                                <thead><tr><th>User</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Deleted</th><th class="num">Field edits</th></tr></thead>
+                                <tbody>
+                                    <t t-foreach="m.top_users" t-as="u" t-key="u_index"><tr><td t-esc="u.name"/><td class="num" t-esc="u.created"/><td class="num" t-esc="u.updated"/><td class="num" t-esc="u.deleted"/><td class="num" t-esc="u.field_edits"/></tr></t>
+                                    <tr t-if="!m.top_users.length"><td colspan="5" class="ad-muted">No user activity.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="ad-card">
+                            <h3>Time on records <span class="ad-muted ad-small">(estimate)</span></h3>
+                            <table class="ad-table"><tbody>
+                                <t t-foreach="m.time_on_records" t-as="r" t-key="r_index"><tr><td t-esc="r.record"/><td class="num"><t t-esc="r.minutes"/> min</td><td class="num"><t t-esc="r.visits"/> visit(s)</td></tr></t>
+                                <tr t-if="!m.time_on_records.length"><td class="ad-muted">None recorded. Enable view time on this model.</td></tr>
+                            </tbody></table>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </div>
+    </t>
+</templates>
