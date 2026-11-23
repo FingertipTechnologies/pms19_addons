@@ -92,18 +92,38 @@ class AmcMonthlyReport(models.Model):
             return super()._find_tasks()
         return self._amc_milestone_tasks(milestone)
 
-    def _collect_lines(self):
-        """Milestone months: one line per milestone task carrying the task's
-        BILLABLE hours (project.task.ft_billable_hours, the figure the
-        milestone's own task Excel and the AMC Tasks to Bill list show), not
-        its approved timesheet hours. Tasks without billable hours are left
-        out. Same snapshot line model as the base, one line per task."""
+    def _amc_billable_report_tasks(self):
+        """The tasks this report lists: approved AND billable, with billable
+        hours.
+
+        Milestone months: the milestone's tasks. Months without a milestone:
+        the approved completed tasks marked billable (ft_deployed) that have
+        timesheets dated in the month - the base selection, narrowed to the
+        billable ones."""
         self.ensure_one()
         milestone = self._amc_monthly_milestone()
-        if not milestone:
-            return super()._collect_lines()
-        tasks = self._amc_milestone_tasks(milestone).filtered(
-            lambda t: (t.ft_billable_hours or 0.0) > 0)
+        if milestone:
+            tasks = self._amc_milestone_tasks(milestone)
+        else:
+            groups = self.env['account.analytic.line'].sudo()._read_group([
+                ('task_id', 'in', self._find_tasks().filtered('ft_deployed').ids),
+                ('project_id', '=', self.project_id.id),
+                ('employee_id', '!=', False),
+                ('date', '>=', self.period_start),
+                ('date', '<=', self.period_end),
+            ], ['task_id'])
+            tasks = self.env['project.task'].sudo().with_context(
+                active_test=False).browse([task.id for (task,) in groups])
+        return tasks.filtered(lambda t: (t.ft_billable_hours or 0.0) > 0).sorted('id')
+
+    def _collect_lines(self):
+        """One line per approved, billable task carrying the task's BILLABLE
+        hours (project.task.ft_billable_hours, the figure the milestone's own
+        task Excel and the AMC Tasks to Bill list show), not its timesheet
+        hours. Tasks without billable hours are left out. Same snapshot line
+        model as the base, one line per task."""
+        self.ensure_one()
+        tasks = self._amc_billable_report_tasks()
         self.line_ids.unlink()
         self.env['ft.amc.monthly.report.line'].create([{
             'report_id': self.id,
