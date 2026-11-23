@@ -6,7 +6,7 @@
     # column had pushed past the table width — taking Description off screen.
     'version': '19.0.1.2.1',
     'category': 'Human Resources',
-    'summary': 'Track daily trainee learning and a central training curriculum',
+    'summary': 'Tracks daily trainee learning and a central training curriculum',
     'description': """
 Training
 ========

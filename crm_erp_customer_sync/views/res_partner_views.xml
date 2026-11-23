@@ -22,8 +22,11 @@
         <field name="name">res.partner.list.crm.erp.sync</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_tree"/>
+        <!-- After bt_contact_customization's column order (priority 99), so
+             Customer Code lands right after Name. -->
+        <field name="priority">100</field>
         <field name="arch" type="xml">
-            <field name="complete_name" position="after">
+            <field name="display_name" position="after">
                 <field name="customer_code" optional="show"/>
             </field>
         </field>

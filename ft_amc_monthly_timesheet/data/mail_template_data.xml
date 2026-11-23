@@ -15,7 +15,7 @@
             <field name="body_html" type="html">
 <div style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#333333;">
     <p style="margin:0 0 12px 0;">Dear <t t-out="object.partner_id.name or 'Customer'"/>,</p>
-    <p style="margin:0 0 12px 0;">Please find attached the approved timesheet of your AMC project <b t-out="object.project_id.name or ''"/> for <t t-out="object.period_label or ''"/>, in PDF and Excel format.</p>
+    <p style="margin:0 0 12px 0;">Please find attached the approved timesheet of your AMC project <b t-out="object.project_id.name or ''"/> for <t t-out="object.period_label or ''"/>, Excel format.</p>
     <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:16px 0;font-size:14px;">
         <tr>
             <td style="padding:6px 24px 6px 0;color:#666666;white-space:nowrap;">Project</td>

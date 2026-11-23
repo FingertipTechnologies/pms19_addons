@@ -107,8 +107,11 @@
         <field name="priority">99</field>
         <field name="arch" type="xml">
 
-            <!-- Email, then Phone, right after Name -->
-            <xpath expr="//field[@name='complete_name']" position="after">
+            <!-- Email, then Phone, right after Name. In Odoo 19 the visible
+                 Name column is display_name (complete_name is hidden), so
+                 anchor on it: anchoring on complete_name put every column
+                 before Name and left Name last. -->
+            <xpath expr="//field[@name='display_name']" position="after">
                 <field name="email" position="move"/>
             </xpath>
             <xpath expr="//field[@name='email']" position="after">
