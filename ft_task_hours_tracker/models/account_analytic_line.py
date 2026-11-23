@@ -425,7 +425,10 @@ class AccountAnalyticLine(models.Model):
     def _is_billable_project(self, project):
         return bool(project and project.allow_billable)
 
-    def _check_single_entry_hours(self, unit_amount):
+    def _check_single_entry_hours(self, unit_amount, task=None):
+        # Testing totals are validated against the 40-hour cap by the workflow.
+        if task and task.task_type == 'testing':
+            return
         time_limit = self._get_task_time_limit()
         if time_limit > 0 and unit_amount > time_limit:
             raise UserError(_(
@@ -465,6 +468,8 @@ class AccountAnalyticLine(models.Model):
         return total
 
     def _check_department_time_limit(self, task, bucket, new_bucket_total):
+        if task and task.task_type == 'testing':
+            return
         time_limit = self._get_task_time_limit()
         if task and bucket and time_limit > 0 and new_bucket_total > time_limit:
             label = self._FT_BUCKET_LABELS.get(bucket, bucket)
@@ -533,7 +538,8 @@ class AccountAnalyticLine(models.Model):
             unit_amount = vals.get('unit_amount') or 0.0
             if unit_amount <= 0:
                 raise UserError(_('Time Spent is required. Please enter the hours spent for the timesheet entry.'))
-            self._check_single_entry_hours(unit_amount)
+            self._check_single_entry_hours(
+                unit_amount, self.env['project.task'].browse(vals.get('task_id')))
             task_id = vals.get('task_id')
             if task_id:
                 task = self.env['project.task'].browse(task_id)
@@ -605,7 +611,9 @@ class AccountAnalyticLine(models.Model):
                 unit_amount = vals.get('unit_amount') or 0.0
                 if unit_amount <= 0:
                     raise UserError(_('Time Spent is required. Please enter the hours spent for the timesheet entry.'))
-                self._check_single_entry_hours(unit_amount)
+                self._check_single_entry_hours(
+                    unit_amount, self.env['project.task'].browse(vals['task_id'])
+                    if 'task_id' in vals else line.task_id)
             # Re-check the department bucket limit when hours, task or employee change
             if 'unit_amount' in vals or 'task_id' in vals or 'employee_id' in vals:
                 unit_amount = vals.get('unit_amount', line.unit_amount) or 0.0

@@ -3,10 +3,10 @@
 
 When a (project, month) has an AMC monthly milestone, the report of that
 month lists the MILESTONE's tasks (approved, completed, deployed in that
-month) with their APPROVED timesheet hours (weekly timesheet approval),
-whatever their dates - the whole-task rule of requirement 49 - instead of
+month) with their BILLABLE hours (project.task.ft_billable_hours), one
+line per task - the whole-task rule of requirement 49 - instead of
 "every approved completed task, entries dated in the month", so the PDF /
-Excel totals equal the milestone's Approved Hours. Months without a
+Excel totals equal the milestone's Billable Hours. Months without a
 milestone (history before this module, projects that are not eligible) keep
 the original behaviour, so nothing already sent changes.
 
@@ -93,39 +93,33 @@ class AmcMonthlyReport(models.Model):
         return self._amc_milestone_tasks(milestone)
 
     def _collect_lines(self):
-        """Milestone months: the APPROVED timesheets (employee set) of the
-        milestone's tasks regardless of their date - the lines the
-        milestone's Approved Hours are made of. Same snapshot lines as the
-        base."""
+        """Milestone months: one line per milestone task carrying the task's
+        BILLABLE hours (project.task.ft_billable_hours, the figure the
+        milestone's own task Excel and the AMC Tasks to Bill list show), not
+        its approved timesheet hours. Tasks without billable hours are left
+        out. Same snapshot line model as the base, one line per task."""
         self.ensure_one()
         milestone = self._amc_monthly_milestone()
         if not milestone:
             return super()._collect_lines()
-        tasks = self._amc_milestone_tasks(milestone)
-        timesheets = self.env['account.analytic.line'].sudo().search([
-            ('task_id', 'in', tasks.ids),
-            ('employee_id', '!=', False),
-            ('ft_approval_state', '=', 'approved'),
-        ], order='task_id, date, id')
+        tasks = self._amc_milestone_tasks(milestone).filtered(
+            lambda t: (t.ft_billable_hours or 0.0) > 0)
         self.line_ids.unlink()
         self.env['ft.amc.monthly.report.line'].create([{
             'report_id': self.id,
-            'task_id': line.task_id.id,
-            'timesheet_id': line.id,
-            'date': line.date,
-            'employee_name': line.employee_id.name,
-            'task_name': line.task_id.name,
-            'task_stage': line.task_id.stage_id.name,
-            'approved_by': line.task_id.pwf_amc_approved_by_id.name,
-            'approved_on': line.task_id.pwf_amc_approved_on,
-            'description': line.name if line.name and line.name != '/' else False,
-            'hours': line.unit_amount,
-        } for line in timesheets])
+            'task_id': task.id,
+            'date': task.pwf_amc_approved_on and task.pwf_amc_approved_on.date(),
+            'task_name': task.name,
+            'task_stage': task.stage_id.name,
+            'approved_by': task.pwf_amc_approved_by_id.name,
+            'approved_on': task.pwf_amc_approved_on,
+            'hours': task.ft_billable_hours,
+        } for task in tasks])
         self.write({
-            'task_ids': [Command.set(timesheets.task_id.ids)],
-            'total_hours': sum(timesheets.mapped('unit_amount')),
+            'task_ids': [Command.set(tasks.ids)],
+            'total_hours': sum(tasks.mapped('ft_billable_hours')),
         })
-        return bool(timesheets)
+        return bool(tasks)
 
     def _build_attachments(self):
         """The report's own PDF / Excel as before, plus: a month with a

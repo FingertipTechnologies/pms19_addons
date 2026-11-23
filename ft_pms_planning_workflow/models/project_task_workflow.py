@@ -25,8 +25,8 @@ _PWF_DEFER_WEEK_TOKEN = secrets.token_hex(16)
 _PWF_WEEK_FIELDS = {'task_type', 'sprint_id', 'date_deadline', 'project_id'}
 
 
-def pwf_testing_hours_exceeded(total):
-    return float_compare(total, PWF_TESTING_MAX_HOURS, precision_digits=2) > 0
+def pwf_testing_hours_exceeded(total, limit=PWF_TESTING_MAX_HOURS):
+    return float_compare(total, limit, precision_digits=2) > 0
 
 
 class ProjectTask(models.Model):
@@ -73,7 +73,7 @@ class ProjectTask(models.Model):
                 ))
 
     # ------------------------------------------------------------------
-    # PT-10 Testing task: <= 40 h estimated / logged, single week
+    # Testing task: estimate <= 40 h; total logged hours <= 40 h, single week
     # ------------------------------------------------------------------
     def _pwf_week_check_deferred(self):
         return self.env.context.get(_PWF_DEFER_WEEK_KEY) == _PWF_DEFER_WEEK_TOKEN
@@ -104,7 +104,7 @@ class ProjectTask(models.Model):
             if pwf_testing_hours_exceeded(total):
                 raise ValidationError(_(
                     "A Testing task can have at most %(cap)s hours of "
-                    "timesheets.\n\nTask: %(task)s\nLogged: %(total)s h",
+                    "timesheets. Create a new Testing task to log additional hours.\n\nTask: %(task)s\nLogged: %(total)s h",
                     cap=PWF_TESTING_MAX_HOURS, task=task.name or '',
                     total=round(total, 2)))
 

@@ -720,7 +720,7 @@ class TestAmcPaymentMilestone(TransactionCase):
         self.assertEqual(report, self._reports())
         self.assertEqual(report.state, 'queued')
         self.assertEqual(report.task_ids, task)
-        self.assertAlmostEqual(report.total_hours, 3.5)  # approved lines only
+        self.assertAlmostEqual(report.total_hours, task.ft_billable_hours)  # billable hours, not approved lines
         self.assertAlmostEqual(milestone.amc_hours, 3.5)
         self.assertTrue(milestone.amc_sent_on)
         mail = report.mail_id

@@ -558,6 +558,7 @@ class ProjectTask(models.Model):
             vals = prepared
         if self._ft_same_day_rules_apply() and 'date_deadline' in vals:
             self._ft_check_same_day_deadline_lock(vals)
+            self._ft_check_qa_deadline_lock(vals)
 
         deadline_changed = self.env['project.task']
         if 'date_deadline' in vals:
@@ -824,6 +825,37 @@ class ProjectTask(models.Model):
                     task=task.name or '',
                 ))
 
+    @api.model
+    def _ft_is_qa_deadline_restricted(self):
+        """QA Group members (Administrators aside) may not move a Deadline."""
+        user = self.env.user
+        return (not self.env.su
+                and user.has_group('bt_project_customization.group_qa_group')
+                and not user.has_group('base.group_system'))
+
+    def _ft_check_qa_deadline_lock(self, vals):
+        """Refuse a QA Group member changing an existing task's Deadline.
+
+        Setting the first Deadline of a task that has none is allowed, and so
+        is the new Deadline a change of Task Type asks for
+        (_ft_prepare_task_type_change governs that one).
+        """
+        if not self._ft_is_qa_deadline_restricted():
+            return
+        new_deadline = self._ft_deadline_value(vals['date_deadline'])
+        for task in self:
+            if not task.date_deadline:
+                continue
+            if 'task_type' in vals and vals['task_type'] != task.task_type:
+                continue
+            if new_deadline != self._ft_deadline_value(task.date_deadline):
+                raise UserError(_(
+                    "QA users are not allowed to change the deadline of a "
+                    "task.\n\nTask: %(task)s\n\nPlease ask the Project "
+                    "Manager to update it.",
+                    task=task.name or '',
+                ))
+
     def _ft_prepare_task_type_change(self, vals):
         """Validate (and complete) ``vals`` for tasks whose Task Type changes.
 
@@ -923,12 +955,16 @@ class ProjectTask(models.Model):
         ``_origin`` is the saved record both inside an onchange (where ``id``
         is a NewId) and outside it (where it is the record itself).
         """
+        # QA Group members cannot move the Deadline of a saved task at all
+        # (_ft_check_qa_deadline_lock enforces it in write()).
+        qa_restricted = self._ft_is_qa_deadline_restricted()
         for task in self:
             origin = task._origin
+            unchanged_type = origin.task_type == task.task_type
             task.ft_deadline_locked = bool(
-                origin.id
-                and self._ft_requires_same_day_deadline(task.task_type)
-                and origin.task_type == task.task_type)
+                origin.id and unchanged_type
+                and (self._ft_requires_same_day_deadline(task.task_type)
+                     or (qa_restricted and origin.date_deadline)))
 
     @api.model
     def _ft_new_deadline_hint(self, task_type):

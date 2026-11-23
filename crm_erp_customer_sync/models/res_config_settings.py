@@ -7,7 +7,7 @@ class ResConfigSettings(models.TransientModel):
     crm_erp_api_url = fields.Char(
         string="ERP Customer API URL",
         config_parameter="crm_erp_customer_sync.api_url",
-        help="ERP customer create/update API endpoint.",
+        help="Arjun's ERP customer create/update API endpoint.",
     )
 
     crm_erp_api_token = fields.Char(

@@ -1,5 +1,6 @@
 import logging
 import math
+import re
 from datetime import datetime, time, timedelta
 
 import pytz
@@ -34,6 +35,8 @@ FT_JOB_BUCKET_MAP = {
     'business analyst': 'ba',
 }
 FT_BUCKETS = ('dev', 'qa', 'pm', 'ba', 'trainee')
+# Job titles not listed above that still count as QA, matched on whole words.
+FT_QA_JOB_RE = re.compile(r'\b(qa|tester|testing|quality)\b')
 
 
 class ProjectTask(models.Model):
@@ -228,9 +231,15 @@ class ProjectTask(models.Model):
             return False
         if name.startswith('trainee'):
             return 'trainee'
-        return FT_JOB_BUCKET_MAP.get(name, False)
+        bucket = FT_JOB_BUCKET_MAP.get(name, False)
+        if not bucket and FT_QA_JOB_RE.search(name):
+            # Any other QA / tester title ("Senior QA", "QA Lead",
+            # "Senior Software Tester", "Quality Analyst", ...).
+            bucket = 'qa'
+        return bucket
 
-    @api.depends('timesheet_ids.unit_amount', 'timesheet_ids.employee_id.job_id')
+    @api.depends('timesheet_ids.unit_amount', 'timesheet_ids.employee_id.job_id',
+                 'task_type', 'estimated')
     def _compute_ft_job_hours(self):
         # Classify by the EMPLOYEE's current job position rather than a stored
         # value, so historical lines map correctly and recompute when the
@@ -255,11 +264,13 @@ class ProjectTask(models.Model):
             task.ft_pm_hours = totals['pm']
             task.ft_ba_hours = totals['ba']
             task.ft_trainee_hours = totals['trainee']
-            task.ft_dev_hours_exceeded = time_limit > 0 and totals['dev'] > time_limit
-            task.ft_qa_hours_exceeded = time_limit > 0 and totals['qa'] > time_limit
-            task.ft_pm_hours_exceeded = time_limit > 0 and totals['pm'] > time_limit
-            task.ft_ba_hours_exceeded = time_limit > 0 and totals['ba'] > time_limit
-            task.ft_trainee_hours_exceeded = time_limit > 0 and totals['trainee'] > time_limit
+            # Testing uses a fixed 40-hour allowance instead of the generic role limit.
+            role_limit = 40.0 if task.task_type == 'testing' else time_limit
+            task.ft_dev_hours_exceeded = (task.task_type == 'testing' or role_limit > 0) and totals['dev'] > role_limit
+            task.ft_qa_hours_exceeded = (task.task_type == 'testing' or role_limit > 0) and totals['qa'] > role_limit
+            task.ft_pm_hours_exceeded = (task.task_type == 'testing' or role_limit > 0) and totals['pm'] > role_limit
+            task.ft_ba_hours_exceeded = (task.task_type == 'testing' or role_limit > 0) and totals['ba'] > role_limit
+            task.ft_trainee_hours_exceeded = (task.task_type == 'testing' or role_limit > 0) and totals['trainee'] > role_limit
 
     @api.depends('ft_total_hours_taken', 'ft_billable_hours_manual',
                  'ft_billable_hours_override')

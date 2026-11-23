@@ -54,7 +54,7 @@ class AccountAnalyticLine(models.Model):
         return super().write(vals)
 
     # ------------------------------------------------------------------
-    # PT-10 Testing task: <= 40 h logged
+    # Testing task: total logged hours cannot exceed 40 hours
     # ------------------------------------------------------------------
     @api.constrains('task_id', 'unit_amount')
     def _check_pwf_testing_task_timesheets(self):
@@ -69,7 +69,7 @@ class AccountAnalyticLine(models.Model):
                     lambda l, t=task: l.task_id == t).mapped('unit_amount'))
                 raise ValidationError(_(
                     "A Testing task can have at most %(cap)s hours of "
-                    "timesheets.\n\nTask: %(task)s\nAlready logged: %(other)s h"
+                    "timesheets. Create a new Testing task to log additional hours.\n\nTask: %(task)s\nAlready logged: %(other)s h"
                     "\nThis entry: %(these)s h\nTotal would be: %(total)s h",
                     cap=PWF_TESTING_MAX_HOURS, task=task.name or '',
                     other=round(total - these, 2), these=round(these, 2),

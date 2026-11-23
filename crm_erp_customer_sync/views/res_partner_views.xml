@@ -17,6 +17,18 @@
             </xpath>
         </field>
     </record>
+    <!--list view-->
+    <record id="view_partner_tree_crm_erp_sync" model="ir.ui.view">
+        <field name="name">res.partner.list.crm.erp.sync</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <field name="complete_name" position="after">
+                <field name="customer_code" optional="show"/>
+            </field>
+        </field>
+    </record>
+
     <!--search view-->
     <record id="view_partner_search_crm_erp_sync" model="ir.ui.view">
         <field name="name">res.partner.search.crm.erp.sync</field>
