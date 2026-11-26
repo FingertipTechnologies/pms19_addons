@@ -633,7 +633,7 @@ class InheritCrmLead(models.Model):
         if (self.lead_status in STATUS_REQUIRING_NO_OPEN_ACTIVITY
                 and self.activity_ids):
             status_label = dict(
-                self._fields['lead_status'].selection
+                self._fields['lead_status']._description_selection(self.env)
             ).get(self.lead_status, self.lead_status)
             return {'warning': {
                 'title': "Open Activity",
@@ -675,7 +675,7 @@ class InheritCrmLead(models.Model):
             if not lead.activity_ids:
                 continue
             status_label = dict(
-                lead._fields['lead_status'].selection
+                lead._fields['lead_status']._description_selection(lead.env)
             ).get(lead.lead_status, lead.lead_status)
             raise ValidationError(
                 "'%s' cannot be set on '%s' while an activity is still open.\n\n"
