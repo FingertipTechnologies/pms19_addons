@@ -32,3 +32,8 @@ access_employee_onboarding_manager,employee.onboarding manager,model_employee_on
 access_employee_expense_claim_reject_manager,employee.expense.claim.reject manager,model_employee_expense_claim_reject,group_expense_manager,1,1,1,1
 access_employee_expense_claim_reject_hr,employee.expense.claim.reject hr,model_employee_expense_claim_reject,hr.group_hr_user,1,1,1,1
 access_employee_expense_claim_reject_admin,employee.expense.claim.reject admin,model_employee_expense_claim_reject,base.group_system,1,1,1,1
+access_employee_comp_off_user,employee.comp.off user,model_employee_comp_off,base.group_user,1,1,1,1
+access_employee_comp_off_hr,employee.comp.off hr,model_employee_comp_off,hr.group_hr_user,1,1,1,1
+access_employee_comp_off_admin,employee.comp.off admin,model_employee_comp_off,base.group_system,1,1,1,1
+access_employee_comp_off_reject_hr,employee.comp.off.reject hr,model_employee_comp_off_reject,hr.group_hr_user,1,1,1,1
+access_employee_comp_off_reject_admin,employee.comp.off.reject admin,model_employee_comp_off_reject,base.group_system,1,1,1,1

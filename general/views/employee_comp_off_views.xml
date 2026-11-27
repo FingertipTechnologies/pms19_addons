@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_comp_off_list" model="ir.ui.view">
+        <field name="name">employee.comp.off.list</field>
+        <field name="model">employee.comp.off</field>
+        <field name="arch" type="xml">
+            <list string="Comp Off">
+                <field name="employee_id"/>
+                <field name="work_date"/>
+                <field name="project_id"/>
+                <field name="hours_worked" widget="float_time" sum="Total Hours"/>
+                <field name="timesheet_hours" widget="float_time"/>
+                <field name="tracked_in_tymake"/>
+                <field name="purpose"/>
+                <field name="work_description" optional="show"/>
+                <field name="approved_by"/>
+                <field name="eligibility" widget="badge"
+                       decoration-muted="eligibility == 'draft'"
+                       decoration-success="eligibility == 'approved'"
+                       decoration-warning="eligibility == 'pending'"
+                       decoration-danger="eligibility == 'rejected'"/>
+                <field name="rejection_reason" optional="hide"/>
+                <field name="availed_date"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'availed'"
+                       decoration-info="status == 'pending'"
+                       decoration-muted="status == 'expired'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_employee_comp_off_form" model="ir.ui.view">
+        <field name="name">employee.comp.off.form</field>
+        <field name="model">employee.comp.off</field>
+        <field name="arch" type="xml">
+            <form string="Comp Off">
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="btn-primary"
+                            invisible="not id or eligibility != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-success"
+                            invisible="not is_hr_approver or eligibility != 'pending'"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            class="btn-danger"
+                            invisible="not is_hr_approver or eligibility != 'pending'"/>
+                    <field name="eligibility" widget="statusbar"
+                           statusbar_visible="draft,pending,approved,rejected"
+                           readonly="1"/>
+                </header>
+                <sheet>
+                    <field name="is_hr_approver" invisible="1"/>
+                    <field name="is_hr_officer" invisible="1"/>
+                    <div class="oe_title">
+                        <label for="employee_id"/>
+                        <h1>
+                            <field name="employee_id"
+                                   readonly="1" force_save="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Work Details">
+                            <field name="work_date"
+                                   readonly="eligibility != 'draft' and not is_hr_approver"/>
+                            <field name="project_id"
+                                   readonly="eligibility != 'draft' and not is_hr_approver"/>
+                            <field name="hours_worked" widget="float_time"
+                                   readonly="eligibility != 'draft' and not is_hr_approver"/>
+                            <field name="timesheet_hours" widget="float_time"
+                                   readonly="1"/>
+                            <field name="tracked_in_tymake" widget="radio"
+                                   options="{'horizontal': true}"
+                                   readonly="eligibility != 'draft' and not is_hr_approver"/>
+                            <field name="purpose"
+                                   placeholder="e.g. Client meeting, deployment, production support..."
+                                   readonly="eligibility != 'draft' and not is_hr_approver"/>
+                        </group>
+                        <group string="Approval &amp; Availment">
+                            <field name="eligibility" readonly="1"/>
+                            <field name="approved_by" readonly="1"
+                                   invisible="eligibility == 'rejected'"/>
+                            <field name="rejected_by" readonly="1"
+                                   invisible="eligibility != 'rejected'"/>
+                            <field name="rejected_date" readonly="1"
+                                   invisible="eligibility != 'rejected'"/>
+                            <field name="rejection_reason" readonly="1"
+                                   invisible="eligibility != 'rejected'"/>
+                            <field name="availed_date"
+                                   readonly="not is_hr_officer or eligibility != 'approved'"/>
+                            <field name="status"
+                                   readonly="not is_hr_officer or eligibility != 'approved'"/>
+                            <field name="company_id" groups="base.group_multi_company"
+                                   readonly="not is_hr_approver"/>
+                        </group>
+                    </group>
+                    <group string="Work Description">
+                        <field name="work_description" nolabel="1" colspan="2"
+                               placeholder="Brief details of activities completed..."
+                               readonly="eligibility != 'draft' and not is_hr_approver"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_employee_comp_off_search" model="ir.ui.view">
+        <field name="name">employee.comp.off.search</field>
+        <field name="model">employee.comp.off</field>
+        <field name="arch" type="xml">
+            <search string="Comp Off">
+                <field name="employee_id"/>
+                <field name="project_id"/>
+                <field name="purpose"/>
+                <field name="approved_by"/>
+                <filter name="my_requests" string="My Requests"
+                        domain="[('employee_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="eligibility_draft" string="Draft"
+                        domain="[('eligibility', '=', 'draft')]"/>
+                <filter name="eligibility_pending" string="Pending Approval"
+                        domain="[('eligibility', '=', 'pending')]"/>
+                <filter name="eligibility_approved" string="Approved"
+                        domain="[('eligibility', '=', 'approved')]"/>
+                <filter name="eligibility_rejected" string="Rejected"
+                        domain="[('eligibility', '=', 'rejected')]"/>
+                <separator/>
+                <filter name="status_pending" string="Status: Pending"
+                        domain="[('status', '=', 'pending')]"/>
+                <filter name="status_availed" string="Status: Availed"
+                        domain="[('status', '=', 'availed')]"/>
+                <filter name="status_expired" string="Status: Expired"
+                        domain="[('status', '=', 'expired')]"/>
+                <separator/>
+                <filter name="tymake_yes" string="Tracked in Tymake"
+                        domain="[('tracked_in_tymake', '=', 'yes')]"/>
+                <group name="group_by">
+                    <filter name="group_employee" string="Employee Name"
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_project" string="Project"
+                            context="{'group_by': 'project_id'}"/>
+                    <filter name="group_eligibility" string="Comp-Off Eligibility"
+                            context="{'group_by': 'eligibility'}"/>
+                    <filter name="group_status" string="Status"
+                            context="{'group_by': 'status'}"/>
+                    <filter name="group_work_date" string="Work Month"
+                            context="{'group_by': 'work_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_employee_comp_off" model="ir.actions.act_window">
+        <field name="name">Comp Off</field>
+        <field name="res_model">employee.comp.off</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_employee_comp_off_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No Comp-Off requests yet
+            </p>
+            <p>
+                Submit compensatory off requests for additional out-of-office hours worked.
+            </p>
+        </field>
+    </record>
+
+    <!-- Positioned directly after Quotes / Announcements (sequence 60) -->
+    <menuitem id="menu_comp_off"
+              name="Comp Off"
+              parent="menu_general_root"
+              action="action_employee_comp_off"
+              sequence="70"/>
+
+    <record id="menu_comp_off" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('base.group_user')])]"/>
+    </record>
+
+</odoo>

@@ -33,7 +33,8 @@
     #   is now part of the same write.
     # 19.0.1.5.2: a new claim defaults Employee to the logged-in user's
     #   employee, and Department follows the employee (still editable).
-    'version': '19.0.1.5.2',
+    # 19.0.1.6.0: add Comp Off model, views, security, and General menu item.
+    'version': '19.0.1.6.0',
     'category': 'Human Resources',
     'summary': 'Asset Management, Expense Management and Recruitment',
     'description': """
@@ -57,6 +58,8 @@ Each sub-system has its own top-level menu, sequences and security groups.
         'base',
         'mail',
         'hr',
+        'project',
+        'hr_timesheet',
         'board',
     ],
     'data': [
@@ -85,6 +88,10 @@ Each sub-system has its own top-level menu, sequences and security groups.
         'views/employee_advance_views.xml',
         'views/expense_reports.xml',
         'views/expense_menus.xml',
+
+        # Comp Off views & menu
+        'wizard/employee_comp_off_reject_views.xml',
+        'views/employee_comp_off_views.xml',
 
         # Recruitment views
         'views/recruitment_skill_views.xml',
